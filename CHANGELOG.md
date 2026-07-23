@@ -1,5 +1,11 @@
 # Changelog
 
+## bridge-0.18.1 — 2026-07-23
+
+### Fixed
+
+- The Windows bridge splash no longer renders as raw unstyled HTML. Core's generated GUI asset manifest keyed entries with host filesystem paths, so a native Windows build produced backslash keys (`css\main.css`) that never matched the webview's forward-slash URL lookups — every stylesheet and script 404'd silently while `index.html` still rendered. Core now normalizes manifest keys to URL form, fails the build on a backslash key or a missing `css/main.css`, and logs asset 404s instead of serving them silently.
+
 ## 0.14.7 — 2026-06-03
 
 ### Fixed
