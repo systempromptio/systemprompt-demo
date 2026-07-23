@@ -1,0 +1,10 @@
+id: explore_systemprompt_docs
+name: Explore systemprompt.io Docs
+description: "Answer free-form questions about systemprompt.io by searching the documentation hub with the MCP search_docs tool, then reading the best topics in full"
+enabled: true
+file: SKILL.md
+tags:
+  - docs
+  - mcp
+  - search
+category: documentation

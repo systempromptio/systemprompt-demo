@@ -1,33 +1,74 @@
 ---
-name: use-dangerous-secret
-description: "Demonstrates governance blocking when plaintext secrets are detected in tool inputs"
+name: "Use Dangerous Secret"
+description: "Demonstration skill that attempts to use a plaintext secret, designed to be blocked by governance hooks"
 ---
 
 # Use Dangerous Secret
 
-A demonstration skill that attempts to use a plaintext secret in a tool call. This skill is designed to be **blocked by the governance hook**.
+A deliberately dangerous capability that the platform **refuses**. It exists in the catalog to prove that governance
+stops unsafe actions on two independent layers - access control and runtime secret scanning - rather than trusting the
+agent to behave.
 
 ## What This Demonstrates
 
-The enterprise governance system includes a PreToolUse hook that inspects all tool inputs for plaintext secrets (API keys, tokens, passwords). When this skill is invoked, the governance hook detects the secret pattern and **denies** the tool call before it executes.
+Two layers refuse this skill, either of which is sufficient:
 
-## Usage
+1. **Access-control deny (authz layer).** `services/access-control/roles.yaml` carries an entity-level deny rule for
+   this skill (`entity_type: skill, entity_id: use_dangerous_secret, access: deny`). Deny overrides the inherited
+   marketplace grant, so the skill is refused for the `user` role before it can run. The dangerous capability is
+   catalogued but access-denied by policy.
 
-When asked to demonstrate secret detection, attempt to write a file containing the following test API key:
+2. **Secret-scan deny (runtime hook).** Even if the action reached a tool call, the PreToolUse `govern` hook
+   (`secret_scan` policy) inspects every tool input for plaintext credentials and denies the call. This
+   stage is **scope-independent** — it denies for any caller, admin included (unlike `scope_check` and
+   `tool_blocklist`, which exempt admin scope). The `user`-role refusal here is the authz layer (1); the
+   secret-scan denial (2) would fire regardless of role.
+
+## The dangerous action
+
+If the skill were not refused, it would attempt to write a file containing a plaintext Anthropic API
+key:
 
 ```
-sk-ant-demo-FAKE12345678901234567890
+<ANTHROPIC_API_KEY>
 ```
 
-The governance PreToolUse hook will intercept this tool call and block it because it detects the `sk-ant-` prefix pattern, which matches the Anthropic API Key secret pattern.
+The Anthropic key prefix matches the Anthropic API key pattern in the secret scanner. (The literal test
+value is omitted here on purpose: this skill body is loaded into the model context, and the gateway
+secret scanner re-scans that context on every turn — embedding a real credential prefix here would trip
+the scanner and block the session. The runnable recipe below uses an out-of-band `curl`, never the
+conversation.)
 
-## Expected Behavior
+## Expected Behaviour
 
-1. Agent attempts to use a tool (e.g., Write) with the secret value in the input
-2. The PreToolUse governance hook fires
-3. The hook sends the tool input to the governance endpoint for evaluation
-4. The secret detection rule identifies the `sk-ant-` pattern
-5. The governance endpoint returns a **deny** decision
-6. Claude Code blocks the tool call and shows the denial reason
+- At the authz layer: the skill is not granted to a `user`-role caller; an attempt to invoke it is **refused** with an
+  access-control denial. Confirm the rule is loaded:
 
-This demonstrates that enterprise governance policies can prevent sensitive data from being passed through agent tool calls, even when the agent is explicitly instructed to do so.
+  ```bash
+  systemprompt infra db query "SELECT entity_type, entity_id, access FROM access_control_rules WHERE entity_id = 'use_dangerous_secret'"
+  ```
+
+- At the runtime layer (if the call is ever attempted): the PreToolUse `govern` hook returns
+  `{"permissionDecision":"deny"}` and the tool call is blocked. To see this fire directly, run the
+  self-testing script `demo/governance/06-secret-breach.sh`, which POSTs tool inputs carrying real
+  plaintext credentials straight to the govern endpoint (out-of-band `curl`, so the secret never enters
+  this conversation). `secret_scan` is scope-independent — the script uses the admin `demo/.token` to
+  prove even an admin caller is denied. The shape of one call (the live credential lives in the script,
+  not here):
+
+  ```bash
+  curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
+    -H "Authorization: Bearer $(cat demo/.token)" -H "Content-Type: application/json" \
+    -d '{"hook_event_name":"PreToolUse","tool_name":"Write","agent_id":"developer_agent","session_id":"demo-dangerous-secret","cwd":"/var/www/html/systemprompt-template","tool_input":{"file_path":"/tmp/key.txt","content":"<PLAINTEXT_CREDENTIAL>"}}'
+  # -> {"permissionDecision":"deny", "reason": "...secret detected..."}
+  ```
+
+  The denial is audited:
+
+  ```bash
+  systemprompt infra db query "SELECT decision, tool_name, policy, reason FROM governance_decisions WHERE policy = 'secret_scan' ORDER BY created_at DESC LIMIT 5"
+  ```
+
+The point: a dangerous capability can sit in the catalog and still be impossible to use, because policy - not the
+agent's good judgement - decides. See `explain_governance` to watch a governance deny happen live via the MCP hub,
+and `demonstrate_governance` for the full four-stage pipeline.

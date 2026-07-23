@@ -1,3 +1,8 @@
+---
+name: "Demonstrate Governance"
+description: "Exercise the four-stage governance pipeline - scope check, secret scan, blocklist, rate limit - through the systemprompt MCP hub, then read back the audited decisions"
+---
+
 # Demonstrate Governance
 
 Drive every stage of the governance pipeline end to end using the `systemprompt`

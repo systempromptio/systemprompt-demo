@@ -1,12 +1,11 @@
 id: demonstrate_governance
 name: Demonstrate Governance
-description: "Exercise the four-stage governance pipeline - scope check, secret scan, blocklist, rate limit - and read back the audited decisions"
+description: "Exercise the four-stage governance pipeline - scope check, secret scan, blocklist, rate limit - through the systemprompt MCP hub, then read back the audited decisions"
 enabled: true
 file: SKILL.md
 tags:
-  - cli
   - governance
   - audit
   - security
-  - admin
+  - mcp
 category: governance

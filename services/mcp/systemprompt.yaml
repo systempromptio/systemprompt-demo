@@ -7,10 +7,10 @@ mcp_servers:
     enabled: true
     display_in_web: true
     removable: false
-    description: systemprompt.io MCP Server - Execute CLI commands (admin only)
+    description: systemprompt.io documentation hub - list_topics, get_topic, search_docs (open to all signed-in users)
     oauth:
       required: true
       scopes:
-      - admin
+      - user
       audience: mcp
       client_id: null

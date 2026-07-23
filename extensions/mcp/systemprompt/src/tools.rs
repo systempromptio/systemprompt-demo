@@ -1,4 +1,8 @@
 //! Tool definitions exposed by the `systemprompt` MCP server.
+//!
+//! The server is a **documentation hub**: it exposes the systemprompt.io
+//! reference topics through three read-only tools — `list_topics`, `get_topic`,
+//! and `search_docs` — all returning text artifacts.
 
 use rmcp::model::{Meta, Tool};
 use schemars::JsonSchema;
@@ -9,24 +13,28 @@ use systemprompt::models::artifacts::{CliArtifact, ToolResponse};
 
 pub const SERVER_NAME: &str = "systemprompt";
 
+/// Input for `list_topics`: no parameters.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+#[expect(
+    clippy::empty_structs_with_brackets,
+    reason = "serde needs an empty object shape to deserialize a no-arg tool input from {}"
+)]
+pub struct ListTopicsInput {}
+
+/// Input for `get_topic`: the id of the topic to read in full.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct CliInput {
-    /// The CLI command to execute (without 'systemprompt' prefix). Examples:
-    /// 'plugins run discord send "message"', 'core skills list'
-    pub command: String,
+pub struct GetTopicInput {
+    /// The topic id to fetch, e.g. "governance-pipeline". Use `list_topics` to
+    /// discover valid ids.
+    pub topic_id: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CliOutput {
-    pub stdout: String,
-    pub stderr: String,
-    pub exit_code: i32,
-    pub success: bool,
-}
-
-#[must_use]
-pub fn input_schema() -> serde_json::Value {
-    schemars::schema_for!(CliInput).to_value()
+/// Input for `search_docs`: a free-text query over all topics.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SearchDocsInput {
+    /// A natural-language question or keywords, e.g. "how are secrets blocked".
+    pub query: String,
 }
 
 #[must_use]
@@ -39,7 +47,7 @@ struct ToolDef<'a> {
     name: &'a str,
     title: &'a str,
     description: &'a str,
-    input_schema: &'a serde_json::Value,
+    input_schema: serde_json::Value,
     output_schema: &'a serde_json::Value,
 }
 
@@ -70,24 +78,38 @@ fn create_tool(def: &ToolDef<'_>) -> Tool {
 
 #[must_use]
 pub fn list_tools() -> Vec<Tool> {
-    let desc = format!(
-        "Execute SystemPrompt CLI commands. Pass the command WITHOUT the 'systemprompt' prefix.\n\n\
-        Common commands:\n  \
-        - core skills list: List installed skills\n  \
-        - core skills show <id>: Show a skill's config and instruction body\n  \
-        - core content list: List markdown content\n  \
-        - plugins run discord send \"message\": Send Discord notification\n  \
-        - plugins run discord send \"message\" --channel <id>: Send to specific channel\n  \
-        - admin agents list: List agents\n\n\
-        Example: {{\"command\": \"core skills list\"}}\n\n\
-        Full documentation: {WEBSITE_URL}/docs"
-    );
-    vec![create_tool(&ToolDef {
-        server_name: SERVER_NAME,
-        name: "systemprompt",
-        title: "SystemPrompt CLI",
-        description: &desc,
-        input_schema: &input_schema(),
-        output_schema: &output_schema(),
-    })]
+    let output = output_schema();
+    vec![
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "list_topics",
+            title: "List Documentation Topics",
+            description: &format!(
+                "List every systemprompt.io documentation topic with its id and a \
+                 one-line summary. Start here, then read one with `get_topic`. \
+                 Full docs: {WEBSITE_URL}/docs"
+            ),
+            input_schema: schemars::schema_for!(ListTopicsInput).to_value(),
+            output_schema: &output,
+        }),
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "get_topic",
+            title: "Get Documentation Topic",
+            description: "Return the full Markdown of one documentation topic by its \
+                 id (from `list_topics`), e.g. {\"topic_id\": \"governance-pipeline\"}.",
+            input_schema: schemars::schema_for!(GetTopicInput).to_value(),
+            output_schema: &output,
+        }),
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "search_docs",
+            title: "Search Documentation",
+            description: "Keyword search across all documentation topics. Returns the \
+                 best-matching topics ranked, with short excerpts, e.g. \
+                 {\"query\": \"how are secrets blocked\"}.",
+            input_schema: schemars::schema_for!(SearchDocsInput).to_value(),
+            output_schema: &output,
+        }),
+    ]
 }

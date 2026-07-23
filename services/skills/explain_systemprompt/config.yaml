@@ -1,0 +1,10 @@
+id: explain_systemprompt
+name: Explain systemprompt.io
+description: "Explain what systemprompt.io is by reading the official docs live through the systemprompt MCP hub (list_topics then get_topic)"
+enabled: true
+file: SKILL.md
+tags:
+  - docs
+  - mcp
+  - onboarding
+category: documentation

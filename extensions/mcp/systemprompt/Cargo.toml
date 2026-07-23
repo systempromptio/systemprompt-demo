@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "Bundled MCP server for the systemprompt.io template: governed tools exercised by the demo agents through the AI governance pipeline."
+description = "Bundled MCP server for the systemprompt.io template: a governed documentation hub (list_topics, get_topic, search_docs) exercised through the AI governance pipeline."
 repository.workspace = true
 homepage.workspace = true
 publish = false
@@ -30,8 +30,6 @@ serde.workspace = true
 serde_json.workspace = true
 
 tracing.workspace = true
-
-shell-words.workspace = true
 
 systemprompt-mcp-shared.workspace = true
 

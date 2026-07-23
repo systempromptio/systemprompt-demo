@@ -1,9 +1,15 @@
 {
   "name": "systemprompt",
-  "description": "Enterprise governance demo — web search and secret detection policies with HTTP hooks",
-  "version": "2.0.0",
+  "description": "systemprompt.io open gateway: a governed MCP documentation hub (list_topics, get_topic, search_docs) plus explainer and governance-demo skills",
+  "version": "3.0.0",
   "author": {
     "name": "systemprompt.io",
     "email": "help@systemprompt.io"
-  }
+  },
+  "keywords": [
+    "governance",
+    "documentation",
+    "mcp",
+    "demo"
+  ]
 }

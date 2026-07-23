@@ -1,8 +1,8 @@
 marketplace:
   id: systemprompt
   name: "systemprompt.io Marketplace"
-  description: "Reference marketplace shipping the governance demo plugin, its skills, agents, and MCP servers."
-  version: "2.0.0"
+  description: "The systemprompt.io open gateway plugin: a governed documentation hub (MCP) plus explainer and governance-demo skills, delivered to Claude Desktop and Cowork."
+  version: "3.0.0"
   visibility: public
   author:
     name: systemprompt.io
@@ -19,16 +19,11 @@ marketplace:
     justification: "Public enterprise governance evaluation demo"
   skills:
     include:
-      - use_dangerous_secret
+      - explain_systemprompt
+      - explain_governance
+      - explore_systemprompt_docs
       - demonstrate_governance
-      - manage_permissions
-      - inspect_conversation
-      - inspect_ai_requests
-      - analytics_dashboards
-      - inspect_agents
-      - inspect_mcp_and_skills
-      - manage_services
-      - systemprompt_cli
+      - use_dangerous_secret
   mcp_servers:
     source: explicit
     include:

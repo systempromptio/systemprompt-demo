@@ -65,5 +65,5 @@ conversation.)
   ```
 
 The point: a dangerous capability can sit in the catalog and still be impossible to use, because policy - not the
-agent's good judgement - decides. See `manage_permissions` for changing what a role may do, and
-`demonstrate_governance` for the full pipeline.
+agent's good judgement - decides. See `explain_governance` to watch a governance deny happen live via the MCP hub,
+and `demonstrate_governance` for the full four-stage pipeline.

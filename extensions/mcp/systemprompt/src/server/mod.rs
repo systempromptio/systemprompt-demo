@@ -8,10 +8,12 @@ mod tool;
 
 use crate::error::SystempromptToolError;
 use crate::tools::{self, SERVER_NAME};
+use crate::topics;
 use rmcp::model::{
     CallToolRequestParams, CallToolResult, Icon, Implementation, InitializeRequestParams,
     InitializeResult, ListResourcesResult, ListToolsResult, PaginatedRequestParams,
-    ProtocolVersion, ReadResourceRequestParams, ReadResourceResult, ServerCapabilities, ServerInfo,
+    ProtocolVersion, ReadResourceRequestParams, ReadResourceResult, Resource, ResourceContents,
+    ServerCapabilities, ServerInfo,
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{ErrorData as McpError, ServerHandler};
@@ -30,6 +32,10 @@ use systemprompt_mcp_shared::record_mcp_access;
 use tool::{authenticate_tool_request, dispatch_tool};
 
 const ARTIFACT_VIEWER_TEMPLATE: &str = include_str!("../../templates/artifact-viewer.html");
+
+/// URI prefix under which each documentation topic is exposed as an MCP
+/// `text/markdown` resource: `systemprompt://docs/<topic-id>`.
+const DOCS_URI_PREFIX: &str = "systemprompt://docs/";
 
 #[derive(Clone, Debug)]
 pub struct SystempromptServer {
@@ -79,7 +85,7 @@ impl ServerHandler for SystempromptServer {
                 format!("SystemPrompt ({})", self.service_id),
                 env!("CARGO_PKG_VERSION"),
             )
-            .with_title("SystemPrompt CLI")
+            .with_title("systemprompt.io Docs")
             .with_icons(vec![
                 Icon::new(format!("{WEBSITE_URL}/files/images/favicon-32x32.png"))
                     .with_mime_type("image/png")
@@ -90,11 +96,12 @@ impl ServerHandler for SystempromptServer {
             ])
             .with_website_url(WEBSITE_URL),
         )
-        .with_instructions(
-            format!("Execute SystemPrompt CLI commands. Skills: 'core skills list' or 'core skills show <id>'. \
-             Content: 'core content list'. Agents: 'admin agents list'. \
-             Discord: 'plugins run discord send \"message\"'. Full documentation: {WEBSITE_URL}/docs"),
-        )
+        .with_instructions(format!(
+            "The systemprompt.io documentation hub. Call `list_topics` to see every \
+             reference topic, `get_topic {{\"topic_id\": \"<id>\"}}` to read one in full, and \
+             `search_docs {{\"query\": \"...\"}}` to search. Topics are also available as \
+             resources under systemprompt://docs/<id>. Full documentation: {WEBSITE_URL}/docs"
+        ))
     }
 
     fn initialize(
@@ -127,7 +134,7 @@ impl ServerHandler for SystempromptServer {
         let tool_name = request.name.to_string();
         let server_name = self.service_id.to_string();
 
-        let (request_context, auth_token) = authenticate_tool_request(
+        let (request_context, _auth_token) = authenticate_tool_request(
             &self.db_pool,
             &tool_name,
             self.service_id.as_str(),
@@ -145,14 +152,7 @@ impl ServerHandler for SystempromptServer {
         )
         .await;
 
-        dispatch_tool(
-            &self.executor,
-            &tool_name,
-            &request,
-            &request_context,
-            &auth_token,
-        )
-        .await
+        dispatch_tool(&self.executor, &tool_name, &request, &request_context).await
     }
 
     fn list_resources(
@@ -160,7 +160,7 @@ impl ServerHandler for SystempromptServer {
         _request: Option<PaginatedRequestParams>,
         _ctx: RequestContext<RoleServer>,
     ) -> impl Future<Output = Result<ListResourcesResult, McpError>> + MaybeSendFuture + '_ {
-        std::future::ready(Ok(build_artifact_viewer_resource(&ArtifactViewerConfig {
+        let mut result = build_artifact_viewer_resource(&ArtifactViewerConfig {
             server_name: SERVER_NAME,
             title: "systemprompt.io Artifact Viewer",
             description: "Interactive UI viewer for systemprompt.io artifacts. Renders tables, lists, \
@@ -172,7 +172,22 @@ impl ServerHandler for SystempromptServer {
                     .with_mime_type("image/png")
                     .with_sizes(vec!["32x32".to_owned()]),
             ]),
-        })))
+        });
+
+        for topic in topics::TOPICS {
+            result.resources.push(
+                Resource::new(
+                    format!("{DOCS_URI_PREFIX}{}", topic.id),
+                    topic.title.to_owned(),
+                )
+                .with_title(topic.title.to_owned())
+                .with_description(topic.summary.to_owned())
+                .with_mime_type("text/markdown".to_owned())
+                .with_size(u64::try_from(topic.body.len()).unwrap_or(u64::MAX)),
+            );
+        }
+
+        std::future::ready(Ok(result))
     }
 
     fn read_resource(
@@ -180,6 +195,24 @@ impl ServerHandler for SystempromptServer {
         request: ReadResourceRequestParams,
         _ctx: RequestContext<RoleServer>,
     ) -> impl Future<Output = Result<ReadResourceResult, McpError>> + MaybeSendFuture + '_ {
+        if let Some(topic_id) = request.uri.strip_prefix(DOCS_URI_PREFIX) {
+            let result = match topics::find(topic_id) {
+                Some(topic) => Ok(ReadResourceResult::new(vec![
+                    ResourceContents::TextResourceContents {
+                        uri: request.uri.clone(),
+                        mime_type: Some("text/markdown".to_owned()),
+                        text: topic.body.to_owned(),
+                        meta: None,
+                    },
+                ])),
+                None => Err(McpError::invalid_params(
+                    format!("Unknown documentation topic resource: {}", request.uri),
+                    None,
+                )),
+            };
+            return std::future::ready(result);
+        }
+
         std::future::ready(read_artifact_viewer_resource(
             &request,
             SERVER_NAME,
