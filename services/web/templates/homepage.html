@@ -21,8 +21,9 @@
     <meta name="twitter:image" content="{{site.branding.image}}">
     <meta name="theme-color" content="{{site.branding.themeColor}}">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-hero.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-showreel.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-sections-titles.css">
-    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-demos.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-getting-started.css">
 </head>
 <body>
     {{{HEADER}}}
@@ -33,7 +34,7 @@
             <div class="hero-glow"></div>
             <div class="container">
                 <div class="hero-content">
-                    <p class="hero-eyebrow">{{#if site.homepage.hero.eyebrow}}{{site.homepage.hero.eyebrow}}{{else}}Enterprise Demo{{/if}}</p>
+                    <p class="hero-eyebrow">{{#if site.homepage.hero.eyebrow}}{{site.homepage.hero.eyebrow}}{{else}}systemprompt.io{{/if}}</p>
                     <h1 class="hero-title">{{site.homepage.hero.title}} <span class="highlight">{{site.homepage.hero.title_highlight}}</span></h1>
                     <p class="hero-subtitle">{{site.homepage.hero.subtitle}}</p>
                     <div class="hero-ctas">
@@ -45,129 +46,94 @@
                         {{/if}}
                     </div>
                     <nav class="hero-nav-chips" aria-label="Jump to homepage section">
-                        <a href="#quick-start" class="hero-nav-chip">Quick Start</a>
-                        <a href="#usage" class="hero-nav-chip">Usage</a>
-                        <a href="#demos" class="hero-nav-chip">Demos</a>
+                        <a href="#why" class="hero-nav-chip">Why it matters</a>
+                        <a href="#integrations" class="hero-nav-chip">Integrations</a>
+                        <a href="#get-started" class="hero-nav-chip">How to use</a>
                     </nav>
                 </div>
-            </div>
-        </section>
-
-        {{#if site.homepage.demos}}
-        <section id="quick-start" class="demos-quick-start">
-            <div class="container">
-                <header class="section-header">
-                    <h2 class="section-title">Quick Start</h2>
-                    <p class="section-subtitle">Four commands from fresh clone to running demos.</p>
-                </header>
-                <ol class="quick-start-list">
-                    {{#each site.homepage.demos.quick_start}}
-                    <li class="quick-start-step">
-                        <div class="quick-start-number">{{@index}}</div>
-                        <div class="quick-start-body">
-                            <h3 class="quick-start-label">{{this.label}}</h3>
-                            {{#if this.description}}<p class="quick-start-desc">{{this.description}}</p>{{/if}}
-                            <div class="command-row">
-                                <pre class="command-block"><code>{{this.command}}</code></pre>
-                                <button type="button" class="copy-btn" data-code="{{this.command}}" aria-label="Copy command">Copy</button>
-                            </div>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-            </div>
-        </section>
-
-        <section id="demos" class="demos-catalogue">
-            <div class="container">
-                <header class="section-header">
-                    <h2 class="section-title">{{site.homepage.demos.title}}</h2>
-                    <p class="section-subtitle">{{site.homepage.demos.subtitle}}</p>
-                </header>
-
-                <nav class="demo-jump-nav" aria-label="Jump to demo section">
-                    <span class="demo-jump-nav-label">Jump to</span>
-                    <ul class="demo-jump-nav-list">
-                        {{#each site.homepage.demos.pillars}}
-                        <li><a href="#pillar-{{this.id}}" class="demo-jump-nav-link demo-jump-nav-pillar">{{this.title}}</a></li>
-                        {{/each}}
-                    </ul>
-                </nav>
-
-                {{#each site.homepage.demos.pillars}}
-                <div class="demo-pillar" id="pillar-{{this.id}}">
-                    <header class="demo-pillar-header">
-                        <h3 class="demo-pillar-title">{{this.title}}</h3>
-                        <p class="demo-pillar-subtitle">{{this.subtitle}}</p>
-                        {{#if this.feature_url}}
-                        <a href="{{this.feature_url}}" class="demo-pillar-link" target="_blank" rel="noopener">Learn more on systemprompt.io &rarr;</a>
-                        {{/if}}
-                    </header>
-
-                    {{#each this.categories}}
-                    <article class="demo-category" id="demo-{{this.id}}">
-                        <header class="demo-category-header">
-                            <div class="demo-category-heading">
-                                <h4 class="demo-category-title">{{this.title}}</h4>
-                                <p class="demo-category-tagline">{{this.tagline}}</p>
-                            </div>
-                            <div class="demo-category-meta">
-                                <span class="demo-category-cost">{{this.cost}}</span>
-                                {{#if this.feature_url}}
-                                <a href="{{this.feature_url}}" class="demo-category-feature-link" target="_blank" rel="noopener">Feature page &rarr;</a>
-                                {{/if}}
-                            </div>
-                        </header>
-                        <p class="demo-category-story">{{this.story}}</p>
-                        <ol class="demo-story-timeline">
-                            {{#each this.steps}}
-                            <li class="demo-step">
-                                <div class="demo-step-body">
-                                    <h5 class="demo-step-label">{{this.label}}</h5>
-                                    <p class="demo-step-narrative">{{this.narrative}}</p>
-                                    <p class="demo-step-outcome"><span class="demo-step-outcome-label">What you see</span> {{this.outcome}}</p>
-                                    <details class="demo-step-commands">
-                                        <summary class="demo-step-commands-summary">Run it — {{this.name}}</summary>
-                                        <div class="demo-step-commands-body">
-                                            <div class="demo-step-path">
-                                                <code>./{{this.path}}</code>
-                                                <button type="button" class="copy-btn copy-btn-small" data-code="./{{this.path}}" aria-label="Copy script path">Copy path</button>
-                                            </div>
-                                            {{#if this.commands}}
-                                            <p class="demo-step-commands-hint">Or run the individual commands below:</p>
-                                            {{#each this.commands}}
-                                            <div class="command-row">
-                                                <pre class="command-block"><code>{{this}}</code></pre>
-                                                <button type="button" class="copy-btn copy-btn-small" data-code="{{this}}" aria-label="Copy command">Copy</button>
-                                            </div>
-                                            {{/each}}
-                                            {{/if}}
-                                        </div>
-                                    </details>
-                                </div>
-                            </li>
-                            {{/each}}
-                        </ol>
-                    </article>
-                    {{/each}}
+                <div class="hero-showreel">
+                    <div class="hero-showreel-frame">
+                        <iframe class="hero-showreel-video"
+                            src="https://www.youtube-nocookie.com/embed/pbHArVcCGFY?rel=0&amp;modestbranding=1"
+                            title="systemprompt.io showreel"
+                            loading="lazy" allowfullscreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                            referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                    </div>
+                    <div class="hero-showreel-caption">
+                        <p class="hero-showreel-caption-title">The gateway in action</p>
+                        <p class="hero-showreel-caption-text">systemprompt.io is self-hosted AI governance in a single Rust binary. This walkthrough shows the open gateway running end to end: policy checks, audit trails, and cost attribution on every request your team makes.</p>
+                    </div>
                 </div>
-                {{/each}}
             </div>
         </section>
-        {{/if}}
 
-        <section id="usage" class="demos-quick-start homepage-usage">
+        <section id="why" class="value-pillars">
             <div class="container">
                 <header class="section-header">
-                    <h2 class="section-title">Connect it to your local Claude Code</h2>
-                    <p class="section-subtitle">Three clicks, no config files, no tokens to paste. Your user identity is baked into the marketplace URL.</p>
+                    <h2 class="section-title">Why teams switch it on</h2>
+                    <p class="section-subtitle">Your organization is already using AI. The question is whether you can see it, govern it, and keep what it learns. The open gateway puts every request through infrastructure you own.</p>
+                </header>
+                <div class="pillars-grid">
+                    <div class="pillar-card">
+                        <h3 class="pillar-card-title">One gateway, every provider</h3>
+                        <p class="pillar-card-text">Anthropic, OpenAI, and Gemini behind a single governed endpoint. Your tools speak one API; the platform owns the keys, the routing, and the policy that sits in front of them.</p>
+                    </div>
+                    <div class="pillar-card">
+                        <h3 class="pillar-card-title">Every request accounted for</h3>
+                        <p class="pillar-card-text">Each inference call and tool invocation lands in an audit trail with a trace linking identity, agent, tool, result, and cost. Usage and spend roll up per user, per agent, per model.</p>
+                    </div>
+                    <div class="pillar-card">
+                        <h3 class="pillar-card-title">Your data stays yours</h3>
+                        <p class="pillar-card-text">One Rust binary and a Postgres database, running on your own machine or your own infrastructure. No SaaS middleman between your prompts and your provider.</p>
+                    </div>
+                    <div class="pillar-card">
+                        <h3 class="pillar-card-title">Governed by design</h3>
+                        <p class="pillar-card-text">Every tool call passes a four-stage governance pipeline — scope check, secret scan, blocklist, rate limit — before it runs. Decisions are audited, not assumed.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="integrations" class="integrations-strip">
+            <div class="container">
+                <header class="section-header">
+                    <h2 class="section-title">Sign in once. Connected to everything.</h2>
+                    <p class="section-subtitle">Create one account on your gateway and every AI tool you use connects through it. The complexity of keys, policy, and audit is owned by the platform, not by you.</p>
+                </header>
+                <div class="integrations-row">
+                    <div class="integration-item">
+                        <h3 class="integration-name">AI providers</h3>
+                        <p class="integration-text">Anthropic, OpenAI, and Gemini through one governed /v1/messages endpoint, with model routing, cost tracking, and policy enforcement on every call.</p>
+                    </div>
+                    <div class="integration-item">
+                        <h3 class="integration-name">MCP servers</h3>
+                        <p class="integration-text">Ship your own tools as MCP extensions. Every tool call is scoped, scanned for secrets, and rate-limited before it executes — then audited after.</p>
+                    </div>
+                    <div class="integration-item">
+                        <h3 class="integration-name">Claude Cowork &amp; Claude Code</h3>
+                        <p class="integration-text">Your skills, agents, and MCP servers arrive inside the Claude tools you already use, installed and kept in sync by the desktop bridge.</p>
+                    </div>
+                    <div class="integration-item">
+                        <h3 class="integration-name">Governance spine</h3>
+                        <p class="integration-text">Identity, policy evaluations, prompts, responses, and costs land in one Postgres audit table, queryable from the CLI and the analytics dashboard.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="get-started" class="demos-quick-start homepage-usage">
+            <div class="container">
+                <header class="section-header">
+                    <h2 class="section-title">How to use it</h2>
+                    <p class="section-subtitle">From your email to your first governed request in a few minutes. No config files, no tokens, no training course.</p>
                 </header>
                 <ol class="quick-start-list">
                     <li class="quick-start-step">
                         <div class="quick-start-number">1</div>
                         <div class="quick-start-body">
                             <h3 class="quick-start-label">Create your account</h3>
-                            <p class="quick-start-desc">Sign up with an email &mdash; magic-link login, no passwords. You land on the dashboard straight after.</p>
+                            <p class="quick-start-desc">Sign up with your email &mdash; magic-link login, no passwords. You land on the dashboard straight after.</p>
                             <div class="command-row">
                                 <a href="/admin/register" class="hero-cta hero-cta-primary">Sign up</a>
                                 <a href="/admin/login" class="hero-cta hero-cta-secondary">Log in</a>
@@ -177,18 +143,43 @@
                     <li class="quick-start-step">
                         <div class="quick-start-number">2</div>
                         <div class="quick-start-body">
-                            <h3 class="quick-start-label">Click <strong>Connect to Claude Code</strong></h3>
-                            <p class="quick-start-desc">The connect button lives in the top-right of every dashboard page. It opens a panel with one command that installs your personal marketplace &mdash; plugins, skills, agents, and MCP servers, all scoped to your user.</p>
+                            <h3 class="quick-start-label">Download the desktop bridge</h3>
+                            <p class="quick-start-desc">The Systemprompt Bridge runs in your menu bar or system tray. It signs you in, installs your workspace, and keeps your skills in sync inside Claude Code and Claude Cowork.</p>
+                            <div class="header-downloads">
+                                <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-aarch64-apple-darwin-app.zip" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                                    <svg class="download-badge-logo" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+                                        <path d="M16.365 12.86c-.02-2.06 1.68-3.05 1.76-3.1-0.96-1.4-2.45-1.6-2.98-1.62-1.27-.13-2.48.75-3.12.75-.64 0-1.64-.73-2.7-.71-1.39.02-2.67.81-3.38 2.05-1.44 2.5-.37 6.2 1.03 8.23.69.99 1.51 2.1 2.58 2.06 1.04-.04 1.43-.67 2.69-.67 1.26 0 1.61.67 2.71.65 1.12-.02 1.83-1.01 2.51-2.01.79-1.15 1.12-2.27 1.14-2.33-.02-.01-2.19-.84-2.21-3.33zM14.32 6.55c.56-.68.94-1.63.84-2.57-.81.03-1.79.54-2.37 1.22-.52.6-.98 1.56-.86 2.48.9.07 1.83-.46 2.39-1.13z"/>
+                                    </svg>
+                                    <span class="download-badge-text"><span class="download-badge-prefix">Download for</span><span class="download-badge-platform">Mac</span></span>
+                                </a>
+                                <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                                    <svg class="download-badge-logo" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                                        <path d="M3 5.1L10.3 4.1V11.1H3V5.1zM3 12.9H10.3V19.9L3 18.9V12.9zM11.2 3.98L21 2.6V11.1H11.2V3.98zM21 12.9V21.4L11.2 20.02V12.9H21z"/>
+                                    </svg>
+                                    <span class="download-badge-text"><span class="download-badge-prefix">Download for</span><span class="download-badge-platform">Windows</span></span>
+                                </a>
+                            </div>
+                            <p class="quick-start-desc download-alternates">On an Intel Mac, grab <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-apple-darwin-app.zip">the Intel build</a>, or browse <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest" target="_blank" rel="noopener noreferrer">all releases</a> for signed binaries and checksums.</p>
+                        </div>
+                    </li>
+                    <li class="quick-start-step">
+                        <div class="quick-start-number">3</div>
+                        <div class="quick-start-body">
+                            <h3 class="quick-start-label">Connect your AI tools</h3>
+                            <p class="quick-start-desc">Open your dashboard and click <strong>Connect to Claude Code</strong> in the top-right of any page. One copied command installs your personal marketplace &mdash; plugins, skills, agents, and MCP servers, all scoped to your user.</p>
                             <div class="command-row">
                                 <a href="/admin/dashboard" class="hero-cta hero-cta-secondary">Open dashboard</a>
                             </div>
                         </div>
                     </li>
                     <li class="quick-start-step">
-                        <div class="quick-start-number">3</div>
+                        <div class="quick-start-number">4</div>
                         <div class="quick-start-body">
-                            <h3 class="quick-start-label">Paste it into Claude Code</h3>
-                            <p class="quick-start-desc">Click <em>Copy command</em>, drop it into any Claude Code conversation, and your marketplace loads. That&rsquo;s the whole install &mdash; no <code>settings.json</code> edit, no token setup, no second step.</p>
+                            <h3 class="quick-start-label">Ask your first question</h3>
+                            <p class="quick-start-desc">Every request now flows through your gateway with policy, audit, and cost attribution built in. Watch it live with <em>"systemprompt infra logs request list"</em>, or explore the analytics dashboard.</p>
+                            <div class="command-row">
+                                <a href="https://systemprompt.io/documentation/" class="hero-cta hero-cta-secondary">Read the how-to guide</a>
+                            </div>
                         </div>
                     </li>
                 </ol>
@@ -199,6 +190,5 @@
 
     {{{FOOTER}}}
     {{{SCRIPTS}}}
-    <script src="{{JS_BASE_PATH}}/homepage.js" defer></script>
 </body>
 </html>

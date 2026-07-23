@@ -24,7 +24,7 @@ The `systemprompt-bridge` binaries ship under the `bridge-v*` tag series:
 
 ```bash
 curl -sSL -o systemprompt-bridge \
-  https://github.com/systempromptio/systemprompt-template/releases/download/bridge-v0.10.0/systemprompt-bridge-aarch64-apple-darwin
+  https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-aarch64-apple-darwin
 chmod +x systemprompt-bridge
 sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge
 ```
@@ -32,7 +32,7 @@ sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge
 Verify the SHA256:
 
 ```bash
-curl -sSL -O https://github.com/systempromptio/systemprompt-template/releases/download/bridge-v0.10.0/SHA256SUMS.bridge
+curl -sSL -O https://github.com/systempromptio/systemprompt-demo/releases/latest/download/SHA256SUMS.bridge
 shasum -a 256 -c SHA256SUMS.bridge --ignore-missing
 ```
 
@@ -40,7 +40,7 @@ Verify the cosign signature:
 
 ```bash
 cosign verify-blob \
-  --certificate-identity-regexp='https://github.com/systempromptio/systemprompt-core/' \
+  --certificate-identity-regexp='https://github.com/systempromptio/systemprompt-demo/' \
   --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
   --signature SHA256SUMS.bridge.sig \
   --certificate SHA256SUMS.bridge.pem \

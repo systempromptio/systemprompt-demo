@@ -9,8 +9,8 @@ hero:
   title_highlight: "uses AI."
   subtitle: "This is the open gateway distribution of systemprompt.io — self-hosted AI governance in a single Rust binary. Run it on your own machine, install the Systemprompt Bridge on Windows or macOS, and connect Claude Cowork through a governed gateway with policy, audit, and cost attribution built in."
   eyebrow: "systemprompt.io · Open Gateway"
-  cta: "Quick Start"
-  cta_url: "#quick-start"
+  cta: "Get Started"
+  cta_url: "#get-started"
   cta_secondary: "Read the Docs"
   cta_secondary_url: "https://systemprompt.io/documentation/"
 

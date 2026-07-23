@@ -2,41 +2,44 @@ import { apiFetch } from '../services/api.js';
 import { showToast } from '../services/toast.js';
 import { on } from '../services/events.js';
 
+const RELEASES_BASE = 'https://github.com/systempromptio/systemprompt-demo/releases/latest';
+
 const INSTALL_TEMPLATES = {
   macos: {
     title: 'Install on macOS',
-    intro: 'Run the following on the target Mac. The Homebrew tap installs the Systemprompt Bridge app and the systemprompt-bridge CLI; the login command registers this device against the gateway using the PAT above.',
-    downloadLabel: 'Download .dmg from GitHub Releases',
-    downloadHref: 'https://github.com/systempromptio/systemprompt-template/releases/latest',
+    intro: 'Run the following on the target Mac. It downloads the Systemprompt Bridge app from GitHub Releases (use the x86_64 asset on an Intel Mac); the login command registers this device against the gateway using the PAT above.',
+    downloadLabel: 'Download the .app bundle from GitHub Releases',
+    downloadHref: RELEASES_BASE,
     guideHref: '/docs/bridge/install-macos',
     snippet: ({ pat, origin }) => [
-      'brew tap systempromptio/tap',
-      'brew install --cask bridge',
+      `curl -sSL -o systemprompt-bridge-app.zip \\`,
+      `  ${RELEASES_BASE}/download/systemprompt-bridge-aarch64-apple-darwin-app.zip`,
+      'unzip systemprompt-bridge-app.zip -d /Applications',
       `systemprompt-bridge login ${pat} --gateway ${origin}`,
       'open -a "Systemprompt Bridge"'
     ].join('\n'),
   },
   windows: {
     title: 'Install on Windows',
-    intro: 'Run the following in PowerShell on the target Windows machine. Scoop installs the systemprompt-bridge CLI; the login command registers this device against the gateway using the PAT above.',
-    downloadLabel: 'Download .msi from GitHub Releases',
-    downloadHref: 'https://github.com/systempromptio/systemprompt-template/releases/latest',
+    intro: 'Run the following in PowerShell on the target Windows machine. It downloads the systemprompt-bridge executable from GitHub Releases; the login command registers this device against the gateway using the PAT above.',
+    downloadLabel: 'Download the Windows .exe from GitHub Releases',
+    downloadHref: RELEASES_BASE,
     guideHref: '/docs/bridge/install-windows',
     snippet: ({ pat, origin }) => [
-      'scoop bucket add systemprompt https://github.com/systempromptio/scoop-bucket',
-      'scoop install systemprompt-bridge',
-      `systemprompt-bridge login ${pat} --gateway ${origin}`
+      `Invoke-WebRequest -Uri ${RELEASES_BASE}/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe \``,
+      '  -OutFile "$env:LOCALAPPDATA\\systemprompt-bridge.exe"',
+      `& "$env:LOCALAPPDATA\\systemprompt-bridge.exe" login ${pat} --gateway ${origin}`
     ].join('\n'),
   },
   linux: {
     title: 'Install on Linux',
     intro: 'Download the prebuilt systemprompt-bridge binary, install it onto your PATH, then register the device with the gateway using the PAT above.',
     downloadLabel: 'Download Linux binary from GitHub Releases',
-    downloadHref: 'https://github.com/systempromptio/systemprompt-template/releases/latest',
+    downloadHref: RELEASES_BASE,
     guideHref: '/docs/bridge/device-auth',
     snippet: ({ pat, origin }) => [
       'curl -sSL -o systemprompt-bridge \\',
-      '  https://github.com/systempromptio/systemprompt-template/releases/latest/download/systemprompt-bridge-x86_64-unknown-linux-gnu',
+      `  ${RELEASES_BASE}/download/systemprompt-bridge-x86_64-unknown-linux-gnu`,
       'chmod +x systemprompt-bridge',
       'sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge',
       `systemprompt-bridge login ${pat} --gateway ${origin}`

@@ -2,7 +2,7 @@
 
 > **Preferred install:** this repo now ships its own branded desktop build — the **Systemprompt Bridge** (`bridge/` crate, released on `bridge-v*` tags of this repo) with a native settings app for Windows/macOS, browser device-link sign-in at `/bridge-auth/device-link`, and a pre-trusted `~/Systemprompt` Claude Cowork workspace. See [the bridge README](../bridge/README.md) and the [Bridge documentation page](../services/content/documentation/bridge.md). The steps below install the unbranded core helper directly and remain valid.
 
-The `systemprompt-bridge` binary is the **Credential helper script** slot in Claude for Work. It turns a PAT into a short-lived JWT that Claude Desktop merges into every inference request routed at this binary. Download the prebuilt macOS, Windows, or Linux binary from [systempromptio/systemprompt-core releases](https://github.com/systempromptio/systemprompt-core/releases/tag/bridge-v0.10.0).
+The `systemprompt-bridge` binary is the **Credential helper script** slot in Claude for Work. It turns a PAT into a short-lived JWT that Claude Desktop merges into every inference request routed at this binary. Download the prebuilt macOS, Windows, or Linux binary from [systempromptio/systemprompt-demo releases](https://github.com/systempromptio/systemprompt-demo/releases/latest).
 
 `systemprompt-bridge` is a standalone ~2.4 MB Rust binary (no `tokio`, no `sqlx`, no `axum`) that trades a lower-privilege credential for a short-lived JWT. Progressive capability ladder (mTLS → dashboard session → PAT) mounted under `/v1/gateway/auth/bridge/`:
 
@@ -13,7 +13,7 @@ The `systemprompt-bridge` binary is the **Credential helper script** slot in Cla
 
 The helper writes the signed JWT + expiry to the OS cache dir with mode `0600`. Stdout contract is exactly one JSON object; all diagnostics go to stderr. Released out-of-band as `bridge-v*` tags.
 
-Current release: **[bridge-v0.10.0](https://github.com/systempromptio/systemprompt-core/releases/tag/bridge-v0.10.0)** — Linux x86_64, Windows x86_64 (MSVC ABI), macOS aarch64 (cosign-signed).
+Current release: **[latest](https://github.com/systempromptio/systemprompt-demo/releases/latest)** — Linux x86_64, Windows x86_64 (MSVC ABI), macOS aarch64 (cosign-signed).
 
 ## 1. Download
 
@@ -21,9 +21,9 @@ Current release: **[bridge-v0.10.0](https://github.com/systempromptio/systemprom
 
 ```bash
 curl -fsSL -o /usr/local/bin/systemprompt-bridge \
-  https://github.com/systempromptio/systemprompt-core/releases/download/bridge-v0.10.0/systemprompt-bridge-x86_64-unknown-linux-gnu
+  https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-unknown-linux-gnu
 chmod +x /usr/local/bin/systemprompt-bridge
-curl -fsSL -O https://github.com/systempromptio/systemprompt-core/releases/download/bridge-v0.10.0/SHA256SUMS
+curl -fsSL -O https://github.com/systempromptio/systemprompt-demo/releases/latest/download/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
 ```
 
@@ -33,7 +33,7 @@ sha256sum -c SHA256SUMS --ignore-missing
 $dir = "C:\Program Files\systemprompt"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 Invoke-WebRequest `
-  -Uri "https://github.com/systempromptio/systemprompt-core/releases/download/bridge-v0.10.0/systemprompt-bridge-x86_64-pc-windows-msvc.exe" `
+  -Uri "https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe" `
   -OutFile "$dir\systemprompt-bridge.exe"
 [Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$dir", "User")
 ```

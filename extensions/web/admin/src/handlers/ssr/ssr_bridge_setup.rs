@@ -12,7 +12,7 @@ use crate::types::{MarketplaceContext, UserContext};
 use super::ssr_helpers::render_typed_page;
 
 const DOWNLOAD_BASE_URL: &str =
-    "https://github.com/Ejb503/systemprompt-core/releases/latest/download";
+    "https://github.com/systempromptio/systemprompt-demo/releases/latest/download";
 
 #[derive(Debug, Serialize)]
 struct SetupPageData {
