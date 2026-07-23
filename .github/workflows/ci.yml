@@ -11,6 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Rev of systemprompt-core the [patch.crates-io] workspace builds against.
+  # Keep in lockstep with the committed .sqlx cache: bump it, run `just prepare`,
+  # and commit both together.
+  CORE_REV: "a6fc9b295cad984be864ba4158bf15f9b11a0125"
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-D warnings"
   SQLX_OFFLINE: "true"
@@ -27,7 +31,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+        run: |
+          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
       # rust-toolchain.toml pins the nightly channel and its components
       # (rustfmt, clippy, llvm-tools). `rustup show` installs exactly that
       # toolchain, so fmt runs on the same version developers use locally with
@@ -41,7 +47,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+        run: |
+          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --workspace --locked
@@ -52,7 +60,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+        run: |
+          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       # Every extension crate that invokes a sqlx query macro must ship a
@@ -89,7 +99,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+        run: |
+          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
+          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
 
       - name: Check for tests workspace
         id: tests

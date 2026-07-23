@@ -20,7 +20,10 @@ COPY . /src
 # The workspace patches every systemprompt-* crate to a sibling checkout of
 # systemprompt-core ([patch.crates-io] in Cargo.toml), so the builder needs
 # that checkout at /systemprompt-core (= ../systemprompt-core from /src).
-RUN git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git /systemprompt-core
+# CORE_REV must match the workflows' env.CORE_REV and the committed .sqlx cache.
+ARG CORE_REV=a6fc9b295cad984be864ba4158bf15f9b11a0125
+RUN git clone https://github.com/systempromptio/systemprompt-core.git /systemprompt-core \
+    && git -C /systemprompt-core checkout --quiet "$CORE_REV"
 
 ENV SQLX_OFFLINE=true \
     CC=clang \
