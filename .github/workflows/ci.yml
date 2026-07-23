@@ -111,6 +111,12 @@ jobs:
       # follows the same convention but links systemprompt-web-admin, whose
       # sqlx::query! macros need the offline cache — tests/.sqlx symlinks the
       # root one, since `[patch]` and cache lookup are both workspace-scoped.
+      # The contract crate's fixture profile points paths.bin at target/debug,
+      # which profile validation requires to exist even though no binary is run.
+      - name: Ensure target/debug exists for the contract fixture profile
+        if: steps.tests.outputs.present == 'true'
+        run: mkdir -p target/debug
+
       - name: Run tests (unit, integration, and the admin HTTP contract)
         if: steps.tests.outputs.present == 'true'
         env:

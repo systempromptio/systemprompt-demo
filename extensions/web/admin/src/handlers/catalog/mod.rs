@@ -6,8 +6,8 @@
 //! - `/admin/catalog/a2a` — A2A agents from `services/agents/*.yaml`. These run
 //!   as standalone services and connect to the gateway as peers.
 //! - `/admin/catalog/external` — external host apps from
-//!   `services/external_agents/*.yaml` (Claude Desktop / Cowork). They
-//!   connect via `systemprompt-bridge` and the `enabled` flag here mirrors what
+//!   `services/external_agents/*.yaml` (Claude Desktop / Cowork). They connect
+//!   via `systemprompt-bridge` and the `enabled` flag here mirrors what
 //!   surfaces on `/admin/profile` under "Available agents".
 //!
 //! All three pages are strictly read-only: there are no POST/PUT/DELETE

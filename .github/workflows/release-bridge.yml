@@ -69,6 +69,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      # The repo pins a nightly in rust-toolchain.toml, so cargo builds with
+      # that toolchain, not the stable one above. Running rustup from inside
+      # the workspace installs the pinned toolchain plus the cross target's
+      # std (without this, cross builds fail with E0463 "can't find crate std").
+      - name: Install cross target for the pinned toolchain
+        working-directory: systemprompt-demo/bridge
+        run: rustup target add ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: systemprompt-demo/bridge

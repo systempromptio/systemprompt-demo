@@ -36,9 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          docker pull ghcr.io/systempromptio/systemprompt-template:latest
+          docker pull ghcr.io/systempromptio/systemprompt-demo:latest
           docker run --rm --entrypoint /app/bin/systemprompt \
-            ghcr.io/systempromptio/systemprompt-template:latest --version
+            ghcr.io/systempromptio/systemprompt-demo:latest --version
 
   release-tags:
     name: Release tag set + signature
@@ -48,7 +48,7 @@ jobs:
       - uses: sigstore/cosign-installer@v3
       - name: All release tags resolve to one signed multi-arch digest
         env:
-          IMAGE: ghcr.io/systempromptio/systemprompt-template
+          IMAGE: ghcr.io/systempromptio/systemprompt-demo
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           # The Docker workflow builds concurrently with this one on the same
@@ -69,7 +69,7 @@ jobs:
           docker buildx imagetools inspect "$IMAGE:$VERSION" | grep -q "linux/arm64"
           # Keyless signature from the Docker workflow identity.
           cosign verify "$IMAGE@$(echo "$ref" | tr -d '"')" \
-            --certificate-identity-regexp "https://github.com/systempromptio/systemprompt-template/.github/workflows/docker.yml@.*" \
+            --certificate-identity-regexp "https://github.com/systempromptio/systemprompt-demo/.github/workflows/docker.yml@.*" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
   helm-release:

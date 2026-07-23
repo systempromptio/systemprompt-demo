@@ -98,8 +98,8 @@ jobs:
           > Looking for the **gateway** server? It's a separate product published
           > under `v*` tags with 15+ one-click deploy targets (Docker, Helm,
           > Railway, Render, Coolify, and more): see the
-          > [latest gateway release](https://github.com/systempromptio/systemprompt-template/releases?q=%22systemprompt-gateway%22)
-          > and the [full deploy matrix](https://github.com/systempromptio/systemprompt-template/blob/main/docs/README.md).
+          > [latest gateway release](https://github.com/systempromptio/systemprompt-demo/releases?q=%22systemprompt-gateway%22)
+          > and the [full deploy matrix](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/README.md).
 
           ## Platforms
 
@@ -110,11 +110,11 @@ jobs:
           ## Install
 
           - Homebrew (macOS): `brew install systempromptio/tap/bridge`
-          - Scoop (Windows): [docs/cowork/scoop.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/cowork/scoop.md)
-          - Manual: [macOS](https://github.com/systempromptio/systemprompt-template/blob/main/docs/cowork/install-macos.md) ·
-            [Windows](https://github.com/systempromptio/systemprompt-template/blob/main/docs/cowork/install-windows.md) ·
-            [Linux / headless Claude Code](https://github.com/systempromptio/systemprompt-template/blob/main/docs/cowork/claude-code-linux.md)
-          - GUI tour and setup wizard: [docs/cowork/desktop-app.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/cowork/desktop-app.md)
+          - Scoop (Windows): [docs/cowork/scoop.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/scoop.md)
+          - Manual: [macOS](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/install-macos.md) ·
+            [Windows](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/install-windows.md) ·
+            [Linux / headless Claude Code](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/claude-code-linux.md)
+          - GUI tour and setup wizard: [docs/cowork/desktop-app.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/desktop-app.md)
 
           ## Verify
 
@@ -135,9 +135,9 @@ jobs:
           ---
 
           [systemprompt.io](https://systemprompt.io) ·
-          [Documentation](https://github.com/systempromptio/systemprompt-template/blob/main/docs/README.md) ·
+          [Documentation](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/README.md) ·
           [Discord](https://discord.gg/wkAbSuPWpr) ·
-          [Gateway releases](https://github.com/systempromptio/systemprompt-template/releases?q=%22systemprompt-gateway%22)
+          [Gateway releases](https://github.com/systempromptio/systemprompt-demo/releases?q=%22systemprompt-gateway%22)
           EOF
 
       - name: Create or update template release

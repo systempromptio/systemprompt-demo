@@ -1,6 +1,6 @@
 name: Docker
 
-# Publishes ghcr.io/systempromptio/systemprompt-template.
+# Publishes ghcr.io/systempromptio/systemprompt-demo.
 #
 # Tag scheme (see docs/RELEASING.md):
 #   push to main       -> :edge, :sha-<sha>        (moving development image)
@@ -45,7 +45,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE: ghcr.io/systempromptio/systemprompt-template
+  IMAGE: ghcr.io/systempromptio/systemprompt-demo
 
 jobs:
   build:

@@ -207,7 +207,7 @@ jobs:
 
           > Looking for the **bridge** client (macOS / Windows / Linux developer
           > workstations)? It ships under the separate `bridge-v*` tag series:
-          > [latest bridge release](https://github.com/systempromptio/systemprompt-template/releases?q=%22systemprompt-bridge%22).
+          > [latest bridge release](https://github.com/systempromptio/systemprompt-demo/releases?q=%22systemprompt-bridge%22).
 
           ## Deploy anywhere
 
@@ -217,30 +217,30 @@ jobs:
           docker run -d -p 8080:8080 \
             -e DATABASE_URL=postgres://... \
             -e ANTHROPIC_API_KEY=sk-ant-... \
-            ghcr.io/systempromptio/systemprompt-template:${{ steps.tags.outputs.version }}
+            ghcr.io/systempromptio/systemprompt-demo:${{ steps.tags.outputs.version }}
           ```
 
           Every channel below is a copy-paste recipe. Canonical matrix:
-          [docs/README.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/README.md).
+          [docs/README.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/README.md).
 
           | Channel | Recipe | Best for |
           |---|---|---|
-          | Docker / GHCR | [install/ghcr.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/ghcr.md) | Any Docker host |
-          | docker-compose | [one-click compose](https://github.com/systempromptio/systemprompt-template/blob/main/deploy/compose/one-click.docker-compose.yml) | Single host, bundled Postgres |
-          | Helm chart | [install/helm.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/helm.md) · [Artifact Hub](https://artifacthub.io/packages/helm/systemprompt/gateway) | Kubernetes |
-          | Railway | [install/railway.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/railway.md) · [Deploy on Railway](https://railway.com/deploy/systempromptio-the-self-owned-ai-control?referralCode=AQ_ePp&utm_medium=integration&utm_source=template&utm_campaign=generic) | Railway PaaS |
-          | Render | [install/render.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/render.md) · [Deploy to Render](https://render.com/deploy?repo=https://github.com/systempromptio/systemprompt-template) | Render PaaS |
-          | Coolify | [install/coolify.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/coolify.md) | Coolify self-host |
-          | Dokploy | [install/dokploy.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/dokploy.md) | Dokploy self-host |
-          | Portainer | [install/portainer.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/portainer.md) | Portainer stacks |
-          | CapRover | [install/caprover.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/caprover.md) | CapRover self-host |
-          | CasaOS | [install/casaos.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/casaos.md) | Home lab |
-          | Zeabur | [install/zeabur.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/zeabur.md) | Zeabur PaaS |
-          | Northflank | [install/northflank.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/northflank.md) | Northflank PaaS |
-          | DigitalOcean 1-Click | [install/digitalocean.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/digitalocean.md) (marketplace listing coming soon) | Single-VM droplet |
-          | Binary (`curl \| sh`) | [install/binary.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/binary.md) | Bare metal, VMs |
-          | Homebrew | [install/homebrew.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/homebrew.md) | macOS servers / dev |
-          | Nix flake | [install/nix.md](https://github.com/systempromptio/systemprompt-template/blob/main/docs/install/nix.md) | NixOS / Nix |
+          | Docker / GHCR | [install/ghcr.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/ghcr.md) | Any Docker host |
+          | docker-compose | [one-click compose](https://github.com/systempromptio/systemprompt-demo/blob/main/deploy/compose/one-click.docker-compose.yml) | Single host, bundled Postgres |
+          | Helm chart | [install/helm.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/helm.md) · [Artifact Hub](https://artifacthub.io/packages/helm/systemprompt/gateway) | Kubernetes |
+          | Railway | [install/railway.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/railway.md) · [Deploy on Railway](https://railway.com/deploy/systempromptio-the-self-owned-ai-control?referralCode=AQ_ePp&utm_medium=integration&utm_source=template&utm_campaign=generic) | Railway PaaS |
+          | Render | [install/render.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/render.md) · [Deploy to Render](https://render.com/deploy?repo=https://github.com/systempromptio/systemprompt-demo) | Render PaaS |
+          | Coolify | [install/coolify.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/coolify.md) | Coolify self-host |
+          | Dokploy | [install/dokploy.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/dokploy.md) | Dokploy self-host |
+          | Portainer | [install/portainer.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/portainer.md) | Portainer stacks |
+          | CapRover | [install/caprover.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/caprover.md) | CapRover self-host |
+          | CasaOS | [install/casaos.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/casaos.md) | Home lab |
+          | Zeabur | [install/zeabur.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/zeabur.md) | Zeabur PaaS |
+          | Northflank | [install/northflank.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/northflank.md) | Northflank PaaS |
+          | DigitalOcean 1-Click | [install/digitalocean.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/digitalocean.md) (marketplace listing coming soon) | Single-VM droplet |
+          | Binary (`curl \| sh`) | [install/binary.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/binary.md) | Bare metal, VMs |
+          | Homebrew | [install/homebrew.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/homebrew.md) | macOS servers / dev |
+          | Nix flake | [install/nix.md](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/install/nix.md) | NixOS / Nix |
 
           ## Image tags
 
@@ -262,7 +262,7 @@ jobs:
 
           ```
           cosign verify-blob \
-            --certificate-identity-regexp='https://github.com/systempromptio/systemprompt-template/' \
+            --certificate-identity-regexp='https://github.com/systempromptio/systemprompt-demo/' \
             --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
             --signature SHA256SUMS.gateway.sig \
             --certificate SHA256SUMS.gateway.pem \
@@ -272,9 +272,9 @@ jobs:
           ---
 
           [systemprompt.io](https://systemprompt.io) ·
-          [Documentation](https://github.com/systempromptio/systemprompt-template/blob/main/docs/README.md) ·
+          [Documentation](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/README.md) ·
           [Discord](https://discord.gg/wkAbSuPWpr) ·
-          [Bridge releases](https://github.com/systempromptio/systemprompt-template/releases?q=%22systemprompt-bridge%22)
+          [Bridge releases](https://github.com/systempromptio/systemprompt-demo/releases?q=%22systemprompt-bridge%22)
           EOF
 
       - name: Create or update release
@@ -320,7 +320,7 @@ jobs:
           version="${{ steps.ver.outputs.version }}"
           sha() { grep "systemprompt-gateway-${version}-$1" SHA256SUMS.gateway | cut -d' ' -f1; }
           git clone "https://x-access-token:${TAP_TOKEN}@github.com/systempromptio/homebrew-tap.git" tap
-          base="https://github.com/systempromptio/systemprompt-template/releases/download/v${version}"
+          base="https://github.com/systempromptio/systemprompt-demo/releases/download/v${version}"
           cat > tap/Formula/gateway.rb <<EOF
           class Gateway < Formula
             desc "Self-hosted AI governance gateway — JWT, scope, secret-scan, blocklist, rate-limit on every tool call"
