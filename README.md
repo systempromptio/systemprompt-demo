@@ -30,11 +30,11 @@
 
 ---
 
-This repository is the live demo of [systemprompt.io](https://systemprompt.io): a governed `/v1/messages` gateway you sign up for, plus the **Systemprompt Bridge** desktop app that connects Claude Cowork, Claude Desktop, and Claude Code to it. Built on [systemprompt-core](https://github.com/systempromptio/systemprompt-core), published on crates.io as [`systemprompt`](https://crates.io/crates/systemprompt).
+This repository is the source of **demo.systemprompt.io**, the hosted demo of [systemprompt.io](https://systemprompt.io): a governed `/v1/messages` gateway you sign up for, plus the **Systemprompt Bridge** desktop app that connects Claude Cowork, Claude Desktop, and Claude Code to it. Built on [systemprompt-core](https://github.com/systempromptio/systemprompt-core), published on crates.io as [`systemprompt`](https://crates.io/crates/systemprompt).
 
 ## From landing page to governed Claude in five steps
 
-This is the exact flow the demo ships. No sales call, no credit card.
+The hosted demo lives at **[demo.systemprompt.io](https://demo.systemprompt.io)** (launching soon). This is the exact flow. No sales call, no credit card, no API key of your own: the $5 credit covers your usage.
 
 1. **Create your account with a passkey.** Touch ID, Windows Hello, or a security key. No password to leak.
 2. **Tell us about yourself.** A 30-second form.
@@ -89,9 +89,9 @@ The gateway speaks the Anthropic wire format at `POST /v1/messages`, so any Anth
 
 </details>
 
-## Run the whole funnel yourself
+## Or host the whole funnel yourself
 
-The entire demo, from splash page to credit-exhaustion 429, runs on your laptop.
+This repository is the source of demo.systemprompt.io. You can run the entire funnel, from splash page to credit-exhaustion 429, on your own machine. One difference from the hosted demo: locally there is no funded gateway behind you, so `setup-local` asks for your own AI provider key and inference is billed to it. The $5 credit mechanics still work, they just meter spend against your key.
 
 ```bash
 git clone https://github.com/systempromptio/systemprompt-demo
