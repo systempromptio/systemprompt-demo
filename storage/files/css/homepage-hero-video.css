@@ -1,0 +1,296 @@
+/* Full-bleed background-video hero. Layers over the base .hero styles in
+   homepage-hero.css; the scrim keeps text legible over any frame. */
+
+.hero--video {
+  margin-top: calc(-1 * var(--sp-header-height));
+  padding-top: calc(var(--sp-header-height) + var(--sp-space-16));
+  padding-bottom: calc(var(--sp-space-16) + var(--sp-space-10));
+  min-height: 100svh;
+  background: oklch(0.13 0.01 50);
+}
+
+.hero--video .hero-glow {
+  display: none;
+}
+
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.hero-video-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  backdrop-filter: blur(3px) saturate(1.05);
+  background:
+    linear-gradient(90deg, oklch(0.10 0.01 50 / 0.88) 0%, oklch(0.10 0.01 50 / 0.62) 45%, oklch(0.10 0.01 50 / 0.18) 100%),
+    linear-gradient(180deg, oklch(0.10 0.01 50 / 0.50) 0%, transparent 30%, transparent 70%, oklch(0.10 0.01 50 / 0.60) 100%);
+}
+
+.hero--video .container {
+  z-index: 2;
+}
+
+.hero--video .hero-content {
+  text-align: left;
+  max-width: 720px;
+  margin: 0;
+}
+
+.hero--video .hero-eyebrow {
+  color: var(--sp-primitive-orange-400, #ff9f43);
+}
+
+.hero--video .hero-title {
+  color: oklch(0.97 0.005 50);
+}
+
+.hero--video .hero-subtitle {
+  color: oklch(0.85 0.01 50);
+  margin-left: 0;
+  max-width: 56ch;
+}
+
+.hero--video .hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-space-4);
+  margin-bottom: var(--sp-space-8);
+}
+
+.hero--video .primary-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2.25rem;
+  background: linear-gradient(in oklch 135deg, var(--sp-primitive-orange-500), var(--sp-primitive-orange-600));
+  color: var(--sp-primitive-white, #fff);
+  font-family: var(--sp-font-brand);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border-radius: var(--sp-radius-lg);
+  box-shadow: var(--sp-shadow-accent-md, 0 4px 16px oklch(0.67 0.18 50 / 0.2));
+  transition: box-shadow var(--sp-duration-fast) var(--sp-ease-out), transform var(--sp-duration-fast) var(--sp-ease-out);
+}
+
+.hero--video .primary-cta:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 28px oklch(0.67 0.18 50 / 0.4),
+    0 4px 12px oklch(0.67 0.18 50 / 0.25),
+    0 0 0 4px oklch(0.67 0.18 50 / 0.08);
+}
+
+.hero--video .secondary-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2.25rem;
+  background: transparent;
+  color: oklch(0.97 0.005 50);
+  font-family: var(--sp-font-brand);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border: 2px solid oklch(0.97 0.005 50 / 0.35);
+  border-radius: var(--sp-radius-lg);
+  transition: border-color var(--sp-duration-fast) var(--sp-ease-out), color var(--sp-duration-fast) var(--sp-ease-out), background-color var(--sp-duration-fast) var(--sp-ease-out);
+}
+
+.hero--video .secondary-cta:hover {
+  border-color: var(--sp-primitive-orange-400);
+  color: var(--sp-primitive-orange-300);
+  background: oklch(0.72 0.17 52 / 0.08);
+}
+
+.hero--video .hero-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-space-3);
+}
+
+.hero--video .hero-downloads-label {
+  font-family: var(--sp-font-brand);
+  font-size: var(--sp-text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: oklch(0.75 0.01 50);
+  margin: 0;
+}
+
+.hero--video .hero-downloads a.download-badge {
+  background: oklch(0.97 0.005 50 / 0.08);
+  border: 1px solid oklch(0.97 0.005 50 / 0.25);
+  color: oklch(0.97 0.005 50);
+  backdrop-filter: blur(4px);
+}
+
+.hero--video .hero-downloads a.download-badge:hover {
+  background: oklch(0.97 0.005 50 / 0.16);
+  border-color: oklch(0.97 0.005 50 / 0.45);
+  color: var(--sp-primitive-white, #fff);
+}
+
+/* Numbered demo-step strip inside the hero */
+.hero--video .hero-steps {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-space-3);
+  padding: 0;
+  margin: 0 0 var(--sp-space-8);
+}
+
+.hero--video .hero-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  padding: 0.375rem 0.875rem 0.375rem 0.375rem;
+  background: oklch(0.10 0.01 50 / 0.45);
+  border: 1px solid oklch(0.97 0.005 50 / 0.18);
+  border-radius: var(--sp-radius-full);
+  backdrop-filter: blur(4px);
+  font-family: var(--sp-font-brand);
+  font-size: var(--sp-text-sm);
+  font-weight: 600;
+  color: oklch(0.92 0.005 50);
+  white-space: nowrap;
+}
+
+.hero--video .hero-step-num {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--sp-radius-full);
+  background: linear-gradient(in oklch 135deg, var(--sp-primitive-orange-500), var(--sp-primitive-orange-600));
+  color: var(--sp-primitive-white);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Bouncing scroll cue to the five steps */
+.hero-scroll-cue {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-space-6);
+  transform: translateX(-50%);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--sp-radius-full);
+  color: oklch(0.97 0.005 50);
+  background: oklch(0.10 0.01 50 / 0.35);
+  border: 1px solid oklch(0.97 0.005 50 / 0.25);
+  backdrop-filter: blur(4px);
+  animation: hero-scroll-bounce 2.2s var(--sp-ease-in-out) infinite;
+  transition: background-color var(--sp-duration-fast) var(--sp-ease-out), border-color var(--sp-duration-fast) var(--sp-ease-out);
+}
+
+.hero-scroll-cue:hover {
+  background: oklch(0.10 0.01 50 / 0.55);
+  border-color: var(--sp-primitive-orange-400);
+  color: var(--sp-primitive-orange-300);
+}
+
+@keyframes hero-scroll-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
+}
+
+/* Transparent header over the video, solid once scrolled */
+body:has(.hero--video) .site-header {
+  border-bottom: none;
+  box-shadow: 0 1px 0 var(--sp-color-header-border, oklch(0.34 0.01 55 / 0.7)), var(--sp-shadow-sm);
+  transition:
+    background-color var(--sp-duration-fast) var(--sp-ease-out),
+    box-shadow var(--sp-duration-fast) var(--sp-ease-out);
+}
+
+html:not([data-scrolled]) body:has(.hero--video) .site-header {
+  background: linear-gradient(180deg, oklch(0.10 0.01 50 / 0.35), transparent) no-repeat;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html:not([data-scrolled]) body:has(.hero--video) .site-header a,
+html:not([data-scrolled]) body:has(.hero--video) .site-header button,
+html:not([data-scrolled]) body:has(.hero--video) .site-nav {
+  color: oklch(0.96 0.005 50);
+}
+
+/* Both logo.svg and logo-dark.svg are dark artwork; only the white
+   variant reads over the video. */
+html:not([data-scrolled]) body:has(.hero--video) .site-header a.download-badge {
+  border-color: oklch(0.97 0.005 50 / 0.3);
+}
+
+html:not([data-scrolled]) body:has(.hero--video) .site-header a.download-badge:hover {
+  background: oklch(0.97 0.005 50 / 0.15);
+  border-color: oklch(0.97 0.005 50 / 0.5);
+  color: oklch(0.97 0.005 50);
+}
+
+html:not([data-scrolled]) body:has(.hero--video) .site-header .logo-light,
+html:not([data-scrolled]) body:has(.hero--video) .site-header .logo-dark { display: none; }
+html:not([data-scrolled]) body:has(.hero--video) .site-header .logo-video { display: block; }
+.site-header .logo-video { display: none; }
+
+@media (max-width: 768px) {
+  .hero--video {
+    padding-top: calc(var(--sp-header-height) + var(--sp-space-10));
+    padding-bottom: calc(var(--sp-space-12) + var(--sp-space-10));
+  }
+
+  .hero--video .hero-subtitle {
+    max-width: 40ch;
+  }
+
+  .hero--video .primary-cta,
+  .hero--video .secondary-cta {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero--video {
+    padding-top: calc(var(--sp-header-height) + var(--sp-space-8));
+  }
+
+  .hero--video .hero-content {
+    padding: 0 var(--sp-space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-video {
+    display: none;
+  }
+
+  .hero--video {
+    background-image: url("/files/video/hero/hero-poster.webp");
+    background-size: cover;
+    background-position: center;
+  }
+
+  .hero-scroll-cue {
+    animation: none;
+  }
+}

@@ -54,9 +54,15 @@ pub(crate) struct OnboardingForm {
     #[serde(default)]
     pub username: Option<String>,
     #[serde(default)]
-    pub company: Option<String>,
+    pub company: String,
     #[serde(default)]
-    pub use_case: Option<String>,
+    pub role: String,
+    #[serde(default)]
+    pub team_size: String,
+    #[serde(default)]
+    pub why_assessing: String,
+    #[serde(default)]
+    pub credit_plans: Option<String>,
 }
 
 pub(crate) async fn onboarding_submit(
@@ -64,10 +70,15 @@ pub(crate) async fn onboarding_submit(
     State(pool): State<Arc<PgPool>>,
     Form(form): Form<OnboardingForm>,
 ) -> AdminResult<Response> {
-    let full_name = form.full_name.trim().to_owned();
-    if full_name.is_empty() {
-        return Err(AdminError::BadRequest("Full name is required".to_owned()));
-    }
+    // Validate every required field before any side effect. The credit grant and
+    // welcome email fire from `onboarding_completed`, so a missing field must
+    // short-circuit here and never reach that hook.
+    let full_name = required_field(&form.full_name, "Full name")?;
+    let company = required_field(&form.company, "Company name")?;
+    let role = required_field(&form.role, "Role or title")?;
+    let team_size = required_field(&form.team_size, "Team size")?;
+    let why_assessing = required_field(&form.why_assessing, "Why you are assessing systemprompt")?;
+
     let display_name = form
         .username
         .as_deref()
@@ -83,13 +94,13 @@ pub(crate) async fn onboarding_submit(
     .await?;
 
     let profile = OnboardingProfile {
-        company: form
-            .company
+        company,
+        role,
+        team_size,
+        why_assessing,
+        credit_plans: form
+            .credit_plans
             .map(|c| c.trim().to_owned())
-            .filter(|s| !s.is_empty()),
-        use_case: form
-            .use_case
-            .map(|u| u.trim().to_owned())
             .filter(|s| !s.is_empty()),
     };
     onboarding_completed(
@@ -102,6 +113,14 @@ pub(crate) async fn onboarding_submit(
     .await;
 
     Ok(Redirect::to("/admin/setup?welcome=1").into_response())
+}
+
+fn required_field(value: &str, label: &str) -> AdminResult<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(AdminError::BadRequest(format!("{label} is required")));
+    }
+    Ok(trimmed.to_owned())
 }
 
 // Why: kept server-side because only the DB knows whether the user has

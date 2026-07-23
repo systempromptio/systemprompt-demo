@@ -34,15 +34,24 @@ Verify services: `systemprompt infra services status` → 3/3 running.
 
 Open **http://localhost:8080/**. You should see:
 
-- A hero with two CTAs: **Get started** (→ `/register`) and **Sign in** (→ `/login`).
+- A full-viewport background-video hero (`hero.webm`/`hero.mp4` with a WebP
+  poster and a dark scrim; reduced-motion or save-data shows the poster only).
+  The header is transparent over the video (white links, white logo) and turns
+  solid on scroll.
+- Hero copy: eyebrow "Live demo · Five steps · $5 credit included", headline
+  **"Stop renting AI. Own the system."**, primary CTA **Start the demo**
+  (→ `/register`), secondary **See the five steps** (→ `#get-started`), a
+  numbered five-step chip strip, Mac/Windows Bridge badges, and a bouncing
+  down-arrow that scrolls to `#get-started`.
 - One section (`#get-started`) with exactly five numbered steps:
   1. Create your account with a passkey
-  2. Tell us about yourself (30-second form)
+  2. Tell us about yourself (the form that releases the credit)
   3. Check your email — $5 of credit
-  4. Download the Systemprompt Bridge (Mac / Windows badges)
-  5. Sign in on the Bridge — Claude Desktop / Cowork configured automatically
-- No video, no feature grids. The showreel now lives at **/resources/**
-  (linked from the header) as a YouTube embed.
+  4. Download the Systemprompt Bridge (Mac / Windows badges, pinned to the
+     `bridge-v0.18.0` release tag)
+  5. Sign in on the Bridge — Claude Desktop / Cowork configured for you
+- The showreel lives at **/resources/** (linked from the header) as a YouTube
+  embed.
 
 Clean root URLs `/login`, `/register`, `/onboarding`, `/setup` all 307-redirect
 to their `/admin/...` counterparts.
@@ -58,8 +67,21 @@ to their `/admin/...` counterparts.
 
 ## 3. Onboarding form
 
-A short form: username + email (prefilled, read-only), full name (required),
-company and "what do you want to try" (optional). Submitting:
+A three-step card form (progress dots, inline validation). Email is prefilled
+and read-only; username rides along in a hidden field. The required fields gate
+the $5 credit:
+
+- **Step 1 — You:** full name (required).
+- **Step 2 — Company:** company name (required), role or title (required),
+  team size (select, required).
+- **Step 3 — Details:** "Why are you assessing systemprompt?" (required),
+  "What do you want to try with your $5 credit?" (optional).
+
+The server re-validates every required field before any side effect. A missing
+or whitespace-only required field returns **400 Bad Request** and neither marks
+the user onboarded nor fires the credit grant / welcome email — so you cannot
+claim the $5 without completing `full_name`, `company`, `role`, `team_size`, and
+`why_assessing`. Submitting a complete form:
 
 - marks you onboarded (the form is the only writer of `users.full_name`),
 - grants **$5.00 (5,000,000 microdollars)** once — the grant is idempotent
@@ -90,8 +112,8 @@ send degrades to a logged no-op inside the spawned email task.
 The page shows, in order:
 
 1. **Download badges** —
-   - macOS (Apple Silicon): `https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-aarch64-apple-darwin`
-   - Windows: `https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe`
+   - macOS (Apple Silicon): `https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-aarch64-apple-darwin`
+   - Windows: `https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-x86_64-pc-windows-msvc.exe`
 2. **Generate sign-in code** — POSTs to `/admin/devices/bridge-code` and
    displays `{code, expires_at}` (a one-time device-link code, short expiry —
    regenerate if it lapses).

@@ -23,6 +23,9 @@ pub(super) fn css_assets(storage_css: &Path) -> Vec<AssetDefinition> {
 fn core_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
         css!(p, "core/variables.css"),
+        css!(p, "core/tokens-primitives.css"),
+        css!(p, "core/tokens.css"),
+        css!(p, "core/page-tokens.css"),
         css!(p, "core/fonts.css"),
         css!(p, "core/reset.css"),
         css!(p, "components/header-core.css"),
@@ -30,12 +33,15 @@ fn core_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/footer.css"),
         css!(p, "components/mobile-menu.css"),
         css!(p, "components/cta-buttons.css"),
+        css!(p, "components/header-upgrade.css"),
     ]
 }
 
 fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
         css!(p, "homepage-hero.css"),
+        css!(p, "homepage-hero-video.css"),
+        css!(p, "homepage-steps-upgrade.css"),
         css!(p, "homepage-showreel.css"),
         css!(p, "homepage-getting-started.css"),
         css!(p, "homepage-sections-titles.css"),

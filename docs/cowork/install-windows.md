@@ -26,7 +26,7 @@ $dir = "C:\Program Files\systemprompt"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
 Invoke-WebRequest `
-  -Uri https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe `
+  -Uri https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-x86_64-pc-windows-msvc.exe `
   -OutFile "$dir\systemprompt-bridge.exe"
 
 [Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$dir", "User")

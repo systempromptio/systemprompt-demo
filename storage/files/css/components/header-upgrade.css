@@ -1,0 +1,48 @@
+/* Header treatment on the OKLCH token layer. Loads after header-core.css
+   and overrides its hardcoded light-glass background and CTA styling. */
+
+.site-header {
+  background: var(--sp-color-header-bg);
+  backdrop-filter: blur(var(--sp-space-5)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--sp-space-5)) saturate(180%);
+  border-bottom: 1px solid var(--sp-color-header-border);
+}
+
+a.cta-button,
+button.cta-button {
+  padding: 0.625rem var(--sp-space-5);
+  background: var(--sp-color-primary);
+  color: var(--sp-primitive-white);
+  font-family: var(--sp-font-brand);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--sp-radius-sm);
+}
+
+a.cta-button:hover,
+button.cta-button:hover {
+  background: var(--sp-color-primary-hover);
+  color: var(--sp-primitive-white);
+  transform: translateY(-1px);
+}
+
+.header-downloads a.download-badge {
+  padding: 0.375rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--sp-color-border);
+  color: var(--sp-color-text-secondary);
+}
+
+.header-downloads a.download-badge:hover {
+  background: var(--sp-color-surface);
+  border-color: var(--sp-color-primary);
+  color: var(--sp-color-text);
+  box-shadow: none;
+}
+
+.download-badge-platform {
+  font-size: 0.875rem;
+  font-weight: 600;
+}

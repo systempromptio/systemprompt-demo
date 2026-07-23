@@ -12,8 +12,11 @@ use systemprompt::identifiers::UserId;
 // integrations (credits, email, CRM) grow what they need.
 #[derive(Debug, Clone)]
 pub(crate) struct OnboardingProfile {
-    pub company: Option<String>,
-    pub use_case: Option<String>,
+    pub company: String,
+    pub role: String,
+    pub team_size: String,
+    pub why_assessing: String,
+    pub credit_plans: Option<String>,
 }
 
 // Why: grants the $5 signup credit idempotently, then fires the welcome email
@@ -30,8 +33,11 @@ pub(crate) async fn onboarding_completed(
         user_id = %user_id,
         email,
         name,
-        company = profile.company.as_deref().unwrap_or(""),
-        use_case = profile.use_case.as_deref().unwrap_or(""),
+        company = %profile.company,
+        role = %profile.role,
+        team_size = %profile.team_size,
+        why_assessing = %profile.why_assessing,
+        credit_plans = profile.credit_plans.as_deref().unwrap_or(""),
         "onboarding completed"
     );
 

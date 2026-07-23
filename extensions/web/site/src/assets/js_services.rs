@@ -17,6 +17,7 @@ pub(super) fn public_js_assets(storage_js: &Path) -> Vec<AssetDefinition> {
         AssetDefinition::js(storage_js.join("terminal-demo.js"), "js/terminal-demo.js"),
         AssetDefinition::js(storage_js.join("blog-images.js"), "js/blog-images.js"),
         AssetDefinition::js(storage_js.join("homepage.js"), "js/homepage.js"),
+        AssetDefinition::js(storage_js.join("hero-header.js"), "js/hero-header.js"),
     ]
 }
 

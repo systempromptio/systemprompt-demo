@@ -21,16 +21,26 @@
     <meta name="twitter:image" content="{{site.branding.image}}">
     <meta name="theme-color" content="{{site.branding.themeColor}}">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-hero.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-hero-video.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-sections-titles.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-getting-started.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-steps-upgrade.css">
+    <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
 </head>
 <body>
     {{{HEADER}}}
 
     <main id="main">
 
-        <section class="hero">
-            <div class="hero-glow"></div>
+        <section class="hero hero--video">
+            <video class="hero-video" autoplay muted loop playsinline
+                   preload="metadata" width="1920" height="1080"
+                   poster="/files/video/hero/hero-poster.webp"
+                   aria-hidden="true" tabindex="-1">
+                <source src="/files/video/hero/hero.webm" type="video/webm">
+                <source src="/files/video/hero/hero.mp4" type="video/mp4">
+            </video>
+            <div class="hero-video-scrim" aria-hidden="true"></div>
             <div class="container">
                 <div class="hero-content">
                     <p class="hero-eyebrow">{{#if site.homepage.hero.eyebrow}}{{site.homepage.hero.eyebrow}}{{else}}systemprompt.io{{/if}}</p>
@@ -38,31 +48,57 @@
                     <p class="hero-subtitle">{{site.homepage.hero.subtitle}}</p>
                     <div class="hero-ctas">
                         {{#if site.homepage.hero.cta_url}}
-                        <a href="{{site.homepage.hero.cta_url}}" class="hero-cta hero-cta-primary">{{site.homepage.hero.cta}}</a>
+                        <a href="{{site.homepage.hero.cta_url}}" class="primary-cta">{{site.homepage.hero.cta}}</a>
                         {{/if}}
                         {{#if site.homepage.hero.cta_secondary_url}}
-                        <a href="{{site.homepage.hero.cta_secondary_url}}" class="hero-cta hero-cta-secondary">{{site.homepage.hero.cta_secondary}}</a>
+                        <a href="{{site.homepage.hero.cta_secondary_url}}" class="secondary-cta">{{site.homepage.hero.cta_secondary}}</a>
                         {{/if}}
                     </div>
-                    <nav class="hero-nav-chips" aria-label="Jump to homepage section">
-                        <a href="#get-started" class="hero-nav-chip">See the five steps</a>
-                    </nav>
+                    <ol class="hero-steps" aria-label="The five demo steps">
+                        <li class="hero-step"><span class="hero-step-num">1</span>Passkey account</li>
+                        <li class="hero-step"><span class="hero-step-num">2</span>Quick profile</li>
+                        <li class="hero-step"><span class="hero-step-num">3</span>$5 credit by email</li>
+                        <li class="hero-step"><span class="hero-step-num">4</span>Install the Bridge</li>
+                        <li class="hero-step"><span class="hero-step-num">5</span>Claude Desktop, governed</li>
+                    </ol>
+                    <div class="hero-downloads">
+                        <p class="hero-downloads-label">Get the Bridge</p>
+                        <div class="header-downloads">
+                            <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-aarch64-apple-darwin" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                                <svg class="download-badge-logo" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                                    <path d="M16.365 12.86c-.02-2.06 1.68-3.05 1.76-3.1-0.96-1.4-2.45-1.6-2.98-1.62-1.27-.13-2.48.75-3.12.75-.64 0-1.64-.73-2.7-.71-1.39.02-2.67.81-3.38 2.05-1.44 2.5-.37 6.2 1.03 8.23.69.99 1.51 2.1 2.58 2.06 1.04-.04 1.43-.67 2.69-.67 1.26 0 1.61.67 2.71.65 1.12-.02 1.83-1.01 2.51-2.01.79-1.15 1.12-2.27 1.14-2.33-.02-.01-2.19-.84-2.21-3.33zM14.32 6.55c.56-.68.94-1.63.84-2.57-.81.03-1.79.54-2.37 1.22-.52.6-.98 1.56-.86 2.48.9.07 1.83-.46 2.39-1.13z"/>
+                                </svg>
+                                <span class="download-badge-text"><span class="download-badge-platform">Mac</span></span>
+                            </a>
+                            <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-x86_64-pc-windows-msvc.exe" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                                <svg class="download-badge-logo" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                                    <path d="M3 5.1L10.3 4.1V11.1H3V5.1zM3 12.9H10.3V19.9L3 18.9V12.9zM11.2 3.98L21 2.6V11.1H11.2V3.98zM21 12.9V21.4L11.2 20.02V12.9H21z"/>
+                                </svg>
+                                <span class="download-badge-text"><span class="download-badge-platform">Windows</span></span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
+            <a href="#get-started" class="hero-scroll-cue" aria-label="Scroll to the five steps">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>
+            </a>
         </section>
 
         <section id="get-started" class="demos-quick-start homepage-usage">
             <div class="container">
                 <header class="section-header">
-                    <h2 class="section-title">From zero to governed AI in five steps</h2>
-                    <p class="section-subtitle">Create an account, tell us who you are, and we credit you $5 to try systemprompt with Claude Desktop. Install the Bridge, sign in, and your Claude tools are configured automatically.</p>
+                    <h2 class="section-title">From zero to owned AI in five steps</h2>
+                    <p class="section-subtitle">Create an account, tell us who you are, and we credit you $5 to try systemprompt with Claude Desktop. Install the Bridge, sign in, and your Claude tools are configured for you.</p>
                 </header>
                 <ol class="quick-start-list">
                     <li class="quick-start-step">
                         <div class="quick-start-number">1</div>
                         <div class="quick-start-body">
                             <h3 class="quick-start-label">Create your account with a passkey</h3>
-                            <p class="quick-start-desc">No passwords. Register with a passkey &mdash; your device, your face or fingerprint. It takes seconds and there is nothing to remember.</p>
+                            <p class="quick-start-desc">No passwords. Register with a passkey: your device, your face or fingerprint. It takes seconds and there is nothing to remember.</p>
                             <div class="command-row">
                                 <a href="/register" class="hero-cta hero-cta-primary">Create account</a>
                                 <a href="/login" class="hero-cta hero-cta-secondary">Sign in</a>
@@ -73,14 +109,14 @@
                         <div class="quick-start-number">2</div>
                         <div class="quick-start-body">
                             <h3 class="quick-start-label">Tell us about yourself</h3>
-                            <p class="quick-start-desc">A 30-second form: your name, your email, and what you want to build. That is all we need to set up your workspace.</p>
+                            <p class="quick-start-desc">A short form: who you are, your company, and why you are assessing systemprompt. That is what releases your credit and sets up your workspace.</p>
                         </div>
                     </li>
                     <li class="quick-start-step">
                         <div class="quick-start-number">3</div>
                         <div class="quick-start-body">
                             <h3 class="quick-start-label">Check your email</h3>
-                            <p class="quick-start-desc">We send you <strong>$5 of credit</strong> to try systemprompt with Claude Desktop &mdash; enough to run real requests through your own governed gateway.</p>
+                            <p class="quick-start-desc">We send you <strong>$5 of credit</strong> to try systemprompt with Claude Desktop. That is enough to run real requests through your own governed gateway.</p>
                         </div>
                     </li>
                     <li class="quick-start-step">
@@ -89,27 +125,27 @@
                             <h3 class="quick-start-label">Download the Systemprompt Bridge</h3>
                             <p class="quick-start-desc">The Bridge runs in your menu bar or system tray. It signs you in and keeps your skills, agents, and MCP servers in sync inside Claude Desktop and Claude Cowork.</p>
                             <div class="header-downloads">
-                                <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-aarch64-apple-darwin" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                                <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-aarch64-apple-darwin" class="download-badge" download target="_blank" rel="noopener noreferrer">
                                     <svg class="download-badge-logo" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
                                         <path d="M16.365 12.86c-.02-2.06 1.68-3.05 1.76-3.1-0.96-1.4-2.45-1.6-2.98-1.62-1.27-.13-2.48.75-3.12.75-.64 0-1.64-.73-2.7-.71-1.39.02-2.67.81-3.38 2.05-1.44 2.5-.37 6.2 1.03 8.23.69.99 1.51 2.1 2.58 2.06 1.04-.04 1.43-.67 2.69-.67 1.26 0 1.61.67 2.71.65 1.12-.02 1.83-1.01 2.51-2.01.79-1.15 1.12-2.27 1.14-2.33-.02-.01-2.19-.84-2.21-3.33zM14.32 6.55c.56-.68.94-1.63.84-2.57-.81.03-1.79.54-2.37 1.22-.52.6-.98 1.56-.86 2.48.9.07 1.83-.46 2.39-1.13z"/>
                                     </svg>
                                     <span class="download-badge-text"><span class="download-badge-prefix">Download for</span><span class="download-badge-platform">Mac</span></span>
                                 </a>
-                                <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                                <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-x86_64-pc-windows-msvc.exe" class="download-badge" download target="_blank" rel="noopener noreferrer">
                                     <svg class="download-badge-logo" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
                                         <path d="M3 5.1L10.3 4.1V11.1H3V5.1zM3 12.9H10.3V19.9L3 18.9V12.9zM11.2 3.98L21 2.6V11.1H11.2V3.98zM21 12.9V21.4L11.2 20.02V12.9H21z"/>
                                     </svg>
                                     <span class="download-badge-text"><span class="download-badge-prefix">Download for</span><span class="download-badge-platform">Windows</span></span>
                                 </a>
                             </div>
-                            <p class="quick-start-desc download-alternates">On Linux or an Intel Mac, browse <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest" target="_blank" rel="noopener noreferrer">all releases</a> for signed binaries and checksums.</p>
+                            <p class="quick-start-desc download-alternates">On Linux or an Intel Mac, browse <a href="https://github.com/systempromptio/systemprompt-demo/releases/tag/bridge-v0.18.0" target="_blank" rel="noopener noreferrer">the bridge release</a> for signed binaries and checksums.</p>
                         </div>
                     </li>
                     <li class="quick-start-step">
                         <div class="quick-start-number">5</div>
                         <div class="quick-start-body">
                             <h3 class="quick-start-label">Sign in on the Bridge</h3>
-                            <p class="quick-start-desc">Open the Bridge and sign in with the same account. Claude Desktop and Claude Cowork are configured automatically &mdash; every request now flows through your gateway with policy, audit, and cost attribution built in.</p>
+                            <p class="quick-start-desc">Open the Bridge and sign in with the same account. Claude Desktop and Claude Cowork are configured for you, and every request now flows through your gateway with policy, audit, and cost attribution built in.</p>
                         </div>
                     </li>
                 </ol>

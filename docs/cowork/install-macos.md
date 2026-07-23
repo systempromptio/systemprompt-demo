@@ -24,7 +24,7 @@ The `systemprompt-bridge` binaries ship under the `bridge-v*` tag series:
 
 ```bash
 curl -sSL -o systemprompt-bridge \
-  https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-aarch64-apple-darwin
+  https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-aarch64-apple-darwin
 chmod +x systemprompt-bridge
 sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge
 ```
