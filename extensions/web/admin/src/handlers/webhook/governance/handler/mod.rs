@@ -130,13 +130,10 @@ fn spawn_auth_denial(params: &AuthDenialParams<'_>, reason: &str) {
     let headers = params.headers.clone();
 
     tokio::spawn(async move {
-        // Why: Authentication failed before any real user was resolved. Every UserId
-        // must be a real `users` row, so provision the anonymous principal for
-        // this fingerprint (idempotent upsert) to carry the audit's foreign key.
-        // Core now takes the extracted analytics rather than raw headers. The
-        // audit only needs a stable principal, and `compute_fingerprint` falls
-        // back to user agent + locale, so those two signals reproduce the
-        // fingerprint the header-based call used to derive.
+        // Why: Every UserId must be a real `users` row, so provision the anonymous
+        // principal for this fingerprint (idempotent upsert) to carry the audit's
+        // foreign key. Only user agent + locale are set because
+        // `compute_fingerprint` falls back to exactly those two signals.
         let analytics = SessionAnalytics {
             user_agent: header_str(&headers, header::USER_AGENT),
             preferred_locale: header_str(&headers, header::ACCEPT_LANGUAGE),

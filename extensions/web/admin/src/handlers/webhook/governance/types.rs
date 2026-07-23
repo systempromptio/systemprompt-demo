@@ -79,7 +79,6 @@ pub(super) struct ChainEntryOutcome {
     pub detail: String,
 }
 
-// Why: Snapshot of the authenticated principal at evaluation time.
 #[derive(Debug, Serialize, Clone)]
 pub(super) struct PrincipalSnapshot {
     pub user_id: UserId,

@@ -3,8 +3,6 @@
 //! and attaches the per-session governance decision.
 
 
-// Why: Pull a textual representation of a transcript entry's body.
-// Accepts plain strings, Anthropic-style content arrays, or `text` fields.
 pub(super) fn extract_content_text(entry: &serde_json::Value) -> String {
     if let Some(s) = entry.get("content").and_then(|v| v.as_str()) {
         return s.to_owned();

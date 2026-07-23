@@ -77,9 +77,6 @@ pub(crate) struct BridgeProfilePageData {
     pub agents: AgentsBlock,
 }
 
-// Why: Build the full payload. Falls back gracefully when individual sections
-// fail — the bridge does the same so missing data renders as empty cards rather
-// than a page-level error.
 pub(crate) async fn build_bridge_profile_data(
     pool: Arc<PgPool>,
     user_ctx: &UserContext,
