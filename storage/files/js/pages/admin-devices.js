@@ -7,16 +7,16 @@ const RELEASES_BASE = 'https://github.com/systempromptio/systemprompt-demo/relea
 const INSTALL_TEMPLATES = {
   macos: {
     title: 'Install on macOS',
-    intro: 'Run the following on the target Mac. It downloads the Systemprompt Bridge app from GitHub Releases (use the x86_64 asset on an Intel Mac); the login command registers this device against the gateway using the PAT above.',
-    downloadLabel: 'Download the .app bundle from GitHub Releases',
+    intro: 'Run the following on the target Mac. It downloads the Systemprompt Bridge binary from GitHub Releases and installs it onto your PATH; the login command registers this device against the gateway using the PAT above.',
+    downloadLabel: 'Download the macOS binary from GitHub Releases',
     downloadHref: RELEASES_BASE,
     guideHref: '/docs/bridge/install-macos',
     snippet: ({ pat, origin }) => [
-      `curl -sSL -o systemprompt-bridge-app.zip \\`,
-      `  ${RELEASES_BASE}/download/systemprompt-bridge-aarch64-apple-darwin-app.zip`,
-      'unzip systemprompt-bridge-app.zip -d /Applications',
-      `systemprompt-bridge login ${pat} --gateway ${origin}`,
-      'open -a "Systemprompt Bridge"'
+      'curl -sSL -o systemprompt-bridge \\',
+      `  ${RELEASES_BASE}/download/systemprompt-bridge-aarch64-apple-darwin`,
+      'chmod +x systemprompt-bridge',
+      'sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge',
+      `systemprompt-bridge login ${pat} --gateway ${origin}`
     ].join('\n'),
   },
   windows: {
