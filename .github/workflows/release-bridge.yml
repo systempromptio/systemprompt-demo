@@ -127,7 +127,10 @@ jobs:
     steps:
       - name: Resolve tag
         id: tag
-        run: echo "tag=${{ github.event.inputs.bridge_tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+        run: |
+          tag="${{ github.event.inputs.bridge_tag || github.ref_name }}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#bridge-v}" >> "$GITHUB_OUTPUT"
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -156,25 +159,41 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: Systemprompt Bridge ${{ steps.tag.outputs.tag }}
+          name: Systemprompt Bridge v${{ steps.tag.outputs.version }}
+          make_latest: true
           body: |
-            ## Systemprompt Bridge ${{ steps.tag.outputs.tag }}
+            ## Systemprompt Bridge v${{ steps.tag.outputs.version }}
 
-            The systemprompt.io desktop bridge — connects Claude Cowork to your gateway. Downloads:
-            - macOS (Apple Silicon): `systemprompt-bridge-aarch64-apple-darwin` / `…-app.zip`
-            - macOS (Intel): `systemprompt-bridge-x86_64-apple-darwin` / `…-app.zip`
-            - Windows: `systemprompt-bridge-x86_64-pc-windows-msvc.exe`
-            - Linux: `systemprompt-bridge-x86_64-unknown-linux-gnu`
+            The desktop companion for the [systemprompt.io](https://systemprompt.io) open gateway. The Bridge runs in your menu bar or system tray, signs you in with a device link, installs your workspace, and keeps your skills, agents, and MCP servers in sync inside Claude Code and Claude Cowork — while every request your AI tools make flows through a self-hosted gateway you own, with policy, audit trails, and cost attribution built in.
 
-            ### Verifying a signature (cosign keyless)
+            ### Downloads
+
+            | Platform | Asset |
+            |----------|-------|
+            | macOS (Apple Silicon) | `systemprompt-bridge-aarch64-apple-darwin-app.zip` |
+            | macOS (Intel) | `systemprompt-bridge-x86_64-apple-darwin-app.zip` |
+            | Windows | `systemprompt-bridge-x86_64-pc-windows-msvc.exe` |
+            | Linux | `systemprompt-bridge-x86_64-unknown-linux-gnu` |
+
+            Raw macOS binaries (no `.app` wrapper) are also attached. Checksums in `SHA256SUMS`.
+
+            ### Install
+
+            - **macOS** — unzip and drag `Systemprompt Bridge.app` to Applications ([macOS guide](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/install-macos.md))
+            - **Windows** — run the `.exe` ([Windows guide](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/install-windows.md))
+            - **Linux / headless** — install the binary onto your `PATH` and register with `systemprompt-bridge login`
+
+            ### Verify (cosign keyless)
+
+            Every asset is signed in CI via OIDC — the certificate binds the blob to this repository's workflow:
 
             ```bash
             cosign verify-blob \
-              --certificate-identity-regexp='https://github.com/.*/' \
+              --certificate-identity-regexp='https://github.com/systempromptio/systemprompt-demo/' \
               --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
-              --signature systemprompt-bridge-aarch64-apple-darwin.sig \
-              --certificate systemprompt-bridge-aarch64-apple-darwin.pem \
-              systemprompt-bridge-aarch64-apple-darwin
+              --signature systemprompt-bridge-aarch64-apple-darwin-app.zip.sig \
+              --certificate systemprompt-bridge-aarch64-apple-darwin-app.zip.pem \
+              systemprompt-bridge-aarch64-apple-darwin-app.zip
             ```
           files: |
             dist/systemprompt-bridge-*
