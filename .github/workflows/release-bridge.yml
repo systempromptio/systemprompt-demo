@@ -82,6 +82,13 @@ jobs:
           workspaces: systemprompt-demo/bridge
           key: ${{ matrix.target }}
 
+      # dbus-secret-service, tray-icon, and muda link Linux system libraries.
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev pkg-config libgtk-3-dev libxdo-dev libayatana-appindicator3-dev
+
       - name: Build release binary
         working-directory: systemprompt-demo/bridge
         run: cargo build --release --locked --target ${{ matrix.target }}
