@@ -56,7 +56,7 @@ impl GatewayRequestGuard for CreditBalanceGuard {
                     balance
                 },
                 Err(e) => {
-                    // Fail open: a ledger read error must not take the gateway down.
+                    // Why: fail open — a ledger read error must not take the gateway down.
                     tracing::error!(error = %e, subject = %subject, "credit balance check failed; allowing request");
                     return Ok(());
                 },

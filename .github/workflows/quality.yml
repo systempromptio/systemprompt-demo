@@ -141,9 +141,13 @@ jobs:
         run: |
           git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
           git -C ../systemprompt-core checkout --quiet "$CORE_REV"
-      - uses: EmbarkStudios/cargo-deny-action@v2
+      # Runner-native instead of EmbarkStudios/cargo-deny-action: the action
+      # runs in a container that only mounts the workspace, so the sibling
+      # ../systemprompt-core checkout the [patch.crates-io] needs is invisible.
+      - uses: taiki-e/install-action@v2
         with:
-          command: check
+          tool: cargo-deny
+      - run: cargo deny check
 
   machete:
     name: Unused dependency check

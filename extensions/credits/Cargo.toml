@@ -16,8 +16,6 @@ ignored = ["inventory"]
 [dependencies]
 systemprompt = { workspace = true, features = ["full"] }
 sqlx = { workspace = true }
-tokio = { workspace = true }
-serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 inventory = { workspace = true }

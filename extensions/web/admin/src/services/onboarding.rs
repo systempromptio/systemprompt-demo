@@ -8,21 +8,17 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::UserId;
 
-/// Details captured by the onboarding form, forwarded to downstream
-/// integrations (credits, email, CRM). Kept as an owned struct so the signature
-/// is stable as the integration pass grows what it needs.
+// Why: owned struct so the hook signature stays stable as downstream
+// integrations (credits, email, CRM) grow what they need.
 #[derive(Debug, Clone)]
 pub(crate) struct OnboardingProfile {
     pub company: Option<String>,
     pub use_case: Option<String>,
 }
 
-/// Called exactly once per user, right after their onboarding form is
-/// persisted.
-///
-/// Grants the $5 signup credit idempotently, then fires the welcome email in a
-/// detached task so a slow or unconfigured SMTP relay can never fail
-/// onboarding.
+// Why: grants the $5 signup credit idempotently, then fires the welcome email
+// in a detached task so a slow or unconfigured SMTP relay can never fail
+// onboarding.
 pub(crate) async fn onboarding_completed(
     pool: &PgPool,
     user_id: &UserId,

@@ -105,6 +105,8 @@ fn is_non_admin_allowed_path(path: &str) -> bool {
         || path == "/admin/setup"
         || path == "/admin/onboarding"
         || path == "/admin/continue"
+        || path == "/admin/devices/bridge-code"
+        || path == "/admin/devices/pats"
         || path == "/admin/demo-register"
         || path == "/admin/"
         || path == "/admin"

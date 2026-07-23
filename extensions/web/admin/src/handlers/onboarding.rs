@@ -104,9 +104,8 @@ pub(crate) async fn onboarding_submit(
     Ok(Redirect::to("/admin/setup?welcome=1").into_response())
 }
 
-/// Post-login gateway: sends onboarded users to setup and everyone else to the
-/// onboarding form. Kept server-side because only the DB knows whether the
-/// user has finished onboarding.
+// Why: kept server-side because only the DB knows whether the user has
+// finished onboarding.
 pub(crate) async fn post_login_redirect(
     Extension(user_ctx): Extension<UserContext>,
     State(pool): State<Arc<PgPool>>,
