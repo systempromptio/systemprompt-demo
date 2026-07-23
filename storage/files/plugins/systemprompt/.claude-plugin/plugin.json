@@ -1,0 +1,13 @@
+{
+  "name": "systemprompt",
+  "description": "Governance examples — a dangerous skill blocked by policy hooks, and a simple web search skill demonstrating tool governance",
+  "version": "2.0.0",
+  "author": {
+    "name": "systemprompt.io"
+  },
+  "keywords": [
+    "governance",
+    "demo",
+    "enterprise"
+  ]
+}

@@ -1,5 +1,7 @@
 # Install the bridge credential helper
 
+> **Preferred install:** this repo now ships its own branded desktop build — the **Systemprompt Bridge** (`bridge/` crate, released on `bridge-v*` tags of this repo) with a native settings app for Windows/macOS, browser device-link sign-in at `/bridge-auth/device-link`, and a pre-trusted `~/Systemprompt` Claude Cowork workspace. See [the bridge README](../bridge/README.md) and the [Bridge documentation page](../services/content/documentation/bridge.md). The steps below install the unbranded core helper directly and remain valid.
+
 The `systemprompt-bridge` binary is the **Credential helper script** slot in Claude for Work. It turns a PAT into a short-lived JWT that Claude Desktop merges into every inference request routed at this binary. Download the prebuilt macOS, Windows, or Linux binary from [systempromptio/systemprompt-core releases](https://github.com/systempromptio/systemprompt-core/releases/tag/bridge-v0.10.0).
 
 `systemprompt-bridge` is a standalone ~2.4 MB Rust binary (no `tokio`, no `sqlx`, no `axum`) that trades a lower-privilege credential for a short-lived JWT. Progressive capability ladder (mTLS → dashboard session → PAT) mounted under `/v1/gateway/auth/bridge/`:

@@ -1,0 +1,12 @@
+/* systemprompt.io brand overrides for the bridge GUI.
+ *
+ * This file overrides core's empty web/css/brand-overrides.css via the build
+ * overlay (SYSTEMPROMPT_BRIDGE_WEB_OVERLAY). main.css imports it last, so these
+ * rules win the cascade over every component sheet — no forking required. Keep
+ * this to genuine brand-specific cosmetic choices; universal fixes belong in
+ * core, and pure token re-values belong in theme.css. */
+
+/* Warm the sign-in screen's brand column with the systemprompt orange glow. */
+.sp-setup__brand {
+  box-shadow: 12px 0 40px oklch(0.67 0.18 50 / 0.18);
+}

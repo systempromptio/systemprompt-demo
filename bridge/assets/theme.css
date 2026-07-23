@@ -1,0 +1,18 @@
+/* systemprompt.io brand override for the bridge GUI.
+ *
+ * Injected by the core GUI as the last <style> in <head> (see
+ * gui/assets.rs::render_index), so these :root values win the cascade over the
+ * bundled tokens.css. We pin the brand orange accent to the canonical ramp from
+ * systemprompt-web (storage/files/css/core/tokens-primitives.css: orange-500
+ * oklch(0.72 0.17 52), orange-600 oklch(0.67 0.18 50)); everything else
+ * inherits the core dark theme. */
+:root {
+  /* Brand orange (#f79938 / rgb(243,131,24)) */
+  --sp-accent:        oklch(0.72 0.17 52);
+  --sp-accent-hover:  oklch(0.67 0.18 50);
+  --sp-accent-soft:   oklch(0.72 0.17 52 / 0.12);
+  --sp-accent-ring:   oklch(0.72 0.17 52 / 0.40);
+  --sp-accent-deep:   oklch(0.60 0.17 50);
+
+  --sp-shadow-accent: 0 12px 40px oklch(0.67 0.18 50 / 0.22);
+}

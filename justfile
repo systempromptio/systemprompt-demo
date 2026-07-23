@@ -141,6 +141,11 @@ build *FLAGS:
         SQLX_OFFLINE=false cargo build --workspace {{FLAGS}}
     fi
 
+# Build the Systemprompt Bridge desktop app (standalone workspace under bridge/;
+# path-depends on a sibling ../systemprompt-core checkout)
+bridge-build *FLAGS:
+    cd bridge && cargo build --release {{FLAGS}}
+
 # Clippy (Windows) - always uses offline mode
 [windows]
 clippy *FLAGS: lint-no-synthesis lint-gates
@@ -993,7 +998,7 @@ benchmark REQUESTS="200" CONCURRENCY="100":
         -H "Authorization: Bearer $TOKEN" \
         -H "Content-Type: application/json" \
         -d '{"hook_event_name":"PreToolUse","tool_name":"Read","agent_id":"developer_agent","session_id":"bench","tool_input":{"file_path":"/src/main.rs"}}' \
-        "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo"
+        "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt"
 
 # Syntax-check install.sh (install.sh is the user-facing installer)
 install-sh-test:
