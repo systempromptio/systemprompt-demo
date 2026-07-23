@@ -237,6 +237,18 @@
   box-shadow: var(--sp-shadow-sm);
 }
 
+a.pillar-card {
+  display: block;
+  text-decoration: none;
+  transition: border-color var(--sp-transition-fast), transform var(--sp-transition-fast), box-shadow var(--sp-transition-fast);
+}
+
+a.pillar-card:hover {
+  border-color: var(--sp-color-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--sp-shadow-md);
+}
+
 .pillar-card-title {
   margin: 0 0 var(--sp-space-xs);
   font-size: 1.05rem;

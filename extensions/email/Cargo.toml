@@ -1,0 +1,24 @@
+[package]
+name = "systemprompt-email-extension"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Email extension for systemprompt.io — SMTP transport and the welcome/credit email."
+license = "MIT"
+
+[lints]
+workspace = true
+
+# inventory: compile-time registration via register_extension! (::inventory::submit!)
+[package.metadata.cargo-machete]
+ignored = ["inventory"]
+
+[dependencies]
+systemprompt = { workspace = true, features = ["full"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+inventory = { workspace = true }
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }

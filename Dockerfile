@@ -17,6 +17,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /src
 COPY . /src
 
+# The workspace patches every systemprompt-* crate to a sibling checkout of
+# systemprompt-core ([patch.crates-io] in Cargo.toml), so the builder needs
+# that checkout at /systemprompt-core (= ../systemprompt-core from /src).
+RUN git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git /systemprompt-core
+
 ENV SQLX_OFFLINE=true \
     CC=clang \
     CXX=clang++

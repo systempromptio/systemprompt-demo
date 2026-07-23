@@ -86,7 +86,7 @@ pub(crate) async fn register_page(
     Extension(engine): Extension<AdminTemplateEngine>,
 ) -> AdminHtmlResult<Response> {
     if extract_user_from_cookie(&headers).is_ok() {
-        return Ok(Redirect::to("/admin/access/users").into_response());
+        return Ok(Redirect::to("/admin/continue").into_response());
     }
     render_unauthenticated(&engine, "register")
 }

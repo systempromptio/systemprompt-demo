@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>{{branding.domain}} — Tell us who you are</title>
+    <link rel="stylesheet" href="/css/core/fonts.css?v={{css_version}}">
+    <link rel="stylesheet" href="/css/admin-bundle.css?v={{css_version}}">
+    <script>(function(){document.documentElement.style.colorScheme='light';})();</script>
+    <style>
+        html,body{margin:0;background:var(--sp-bg-base);color:var(--sp-text-primary);font-family:"OpenSans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+        .auth-shell{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem 1.25rem;background:radial-gradient(ellipse at 30% 20%,color-mix(in oklch,var(--sp-accent) 7%,transparent) 0%,transparent 55%),radial-gradient(ellipse at 70% 80%,color-mix(in oklch,var(--sp-section-plugins) 5%,transparent) 0%,transparent 55%),linear-gradient(180deg,var(--sp-bg-canvas) 0%,var(--sp-bg-base) 100%)}
+        .auth-card{width:100%;max-width:460px}
+        .auth-card .card{background:var(--sp-bg-surface) !important;border:1px solid var(--sp-border-subtle) !important;backdrop-filter:none !important;padding:2.25rem 2rem}
+        .auth-logo{display:flex;justify-content:center;margin-bottom:0.5rem}
+        .auth-logo .logo-dark{display:none}
+        .auth-title{text-align:center;font-size:1.35rem;font-weight:700;margin:0.75rem 0 0.25rem}
+        .auth-subtitle{text-align:center;font-size:0.9rem;color:var(--sp-text-secondary);margin:0 0 1.5rem}
+        .gift-note{display:flex;align-items:center;gap:0.6rem;padding:0.75rem 0.9rem;margin-bottom:1.5rem;border-radius:8px;background:var(--sp-accent-dim);color:var(--sp-accent-hover);font-size:0.83rem;font-weight:600}
+        .field-optional{font-weight:400;color:var(--sp-text-tertiary);font-size:0.78rem}
+    </style>
+</head>
+<body>
+    <main class="auth-shell">
+        <div class="auth-card">
+            <div class="card">
+                <div class="auth-logo">
+                    <img src="/files/images/logo.svg" alt="{{branding.domain}}" height="36" class="logo-light">
+                </div>
+                <h1 class="auth-title">Tell us who you are</h1>
+                <p class="auth-subtitle">One quick step, then we'll set you up with Claude.</p>
+
+                <div class="gift-note">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                    Finish signing up and we'll add $5 of credit to your account.
+                </div>
+
+                <form id="onboarding-form" method="post" action="/admin/api/onboarding">
+                    <div class="form-group">
+                        <label for="ob-username">Username</label>
+                        <input class="form-input" type="text" id="ob-username" name="username" value="{{username}}" autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="ob-full-name">Full name</label>
+                        <input class="form-input" type="text" id="ob-full-name" name="full_name" placeholder="Jane Smith" required autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="ob-email">Email</label>
+                        <input class="form-input" type="email" id="ob-email" value="{{email}}" readonly autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="ob-company">Company <span class="field-optional">(optional)</span></label>
+                        <input class="form-input" type="text" id="ob-company" name="company" placeholder="Acme Inc." autocomplete="organization">
+                    </div>
+                    <div class="form-group">
+                        <label for="ob-use-case">What do you want to try? <span class="field-optional">(optional)</span></label>
+                        <textarea class="form-input" id="ob-use-case" name="use_case" rows="3" placeholder="Governing Claude Code across my team…"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary w-full">Claim your $5 and continue</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

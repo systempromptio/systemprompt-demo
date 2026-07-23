@@ -1,102 +1,67 @@
-//! SSR page driving first-run instance setup.
+//! SSR setup page: the final funnel step. Download the bridge, get a sign-in
+//! code (or PAT), and device-link Claude Desktop / Cowork.
 
 use crate::error::AdminHtmlResult;
 use crate::templates::AdminTemplateEngine;
 use crate::types::{MarketplaceContext, UserContext};
 use axum::extract::{Extension, Query};
+use axum::http::HeaderMap;
 use axum::response::Response;
 use serde::{Deserialize, Serialize};
+
+const DOWNLOAD_MAC_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-aarch64-apple-darwin";
+const DOWNLOAD_WINDOWS_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe";
+const RELEASES_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/latest";
 
 #[derive(Debug, Serialize)]
 struct SetupPageContext {
     page: &'static str,
     title: &'static str,
-    phases: Vec<SetupPhase>,
-    all_phases_started: bool,
-    just_verified: bool,
-}
-
-#[derive(Debug, Serialize)]
-struct SetupPhase {
-    number: u8,
-    title: String,
-    description: &'static str,
-    guide_url: &'static str,
-    action_url: &'static str,
-    action_label: &'static str,
-    complete: bool,
-    current: bool,
+    user_email: String,
+    gateway_url: String,
+    download_mac_url: &'static str,
+    download_windows_url: &'static str,
+    releases_url: &'static str,
+    welcome: bool,
 }
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct SetupQuery {
     #[serde(default)]
-    verified: Option<String>,
+    welcome: Option<String>,
 }
 
 pub(crate) async fn setup_page(
     Extension(user_ctx): Extension<UserContext>,
     Extension(mkt_ctx): Extension<MarketplaceContext>,
     Extension(engine): Extension<AdminTemplateEngine>,
+    headers: HeaderMap,
     Query(query): Query<SetupQuery>,
 ) -> AdminHtmlResult<Response> {
-    let phase1_complete = mkt_ctx.total_plugins > 0;
-    let phase2_complete = phase1_complete && mkt_ctx.total_plugins > 0;
-    let phase3_complete = phase2_complete && mkt_ctx.total_skills > 0;
-    let just_verified = query.verified.is_some();
-
-    let phases = vec![
-        SetupPhase {
-            number: 1,
-            title: format!("Connect Claude to {}", mkt_ctx.site_url),
-            description: "The essential first step. Connect your Claude surface so skills, plugins, and analytics actually work. Without this, nothing else matters.",
-            guide_url: "/documentation/integration-claude-code",
-            action_url: "",
-            action_label: "",
-            complete: phase1_complete,
-            current: !phase1_complete,
-        },
-        SetupPhase {
-            number: 2,
-            title: String::from("Browse and Fork Plugins"),
-            description: "Explore the plugin catalogue. Fork industry-specific plugins to build your personalised skill library with proven defaults.",
-            guide_url: "/documentation/browse-plugins",
-            action_url: "/admin/browse/plugins/",
-            action_label: "Browse Plugins",
-            complete: phase2_complete,
-            current: phase1_complete && !phase2_complete,
-        },
-        SetupPhase {
-            number: 3,
-            title: String::from("Customize Your Skills"),
-            description: "Use the Skill Manager MCP server to edit forked skills, create new ones, and build a library that matches how your team works.",
-            guide_url: "/documentation/skills",
-            action_url: "/admin/my/skills/",
-            action_label: "My Skills",
-            complete: phase3_complete,
-            current: phase2_complete && !phase3_complete,
-        },
-        SetupPhase {
-            number: 4,
-            title: String::from("Monitor, Report, and Improve"),
-            description: "Track skill effectiveness with the CLI. Identify what is working, retire what is not, and iterate your way to a world-class skill library.",
-            guide_url: "/documentation/dashboard",
-            action_url: "/admin/access/users",
-            action_label: "Open Admin",
-            complete: false,
-            current: phase3_complete,
-        },
-    ];
-
     let ctx = SetupPageContext {
         page: "setup",
-        title: "Setup Guide",
-        phases,
-        all_phases_started: phase1_complete,
-        just_verified,
+        title: "Connect Claude",
+        user_email: user_ctx.email.to_string(),
+        gateway_url: derive_gateway_url(&headers),
+        download_mac_url: DOWNLOAD_MAC_URL,
+        download_windows_url: DOWNLOAD_WINDOWS_URL,
+        releases_url: RELEASES_URL,
+        welcome: query.welcome.is_some(),
     };
 
     Ok(super::render_typed_page(
         &engine, "setup", &ctx, &user_ctx, &mkt_ctx,
     ))
+}
+
+fn derive_gateway_url(headers: &HeaderMap) -> String {
+    let scheme = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("http");
+    let host = headers
+        .get("host")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("localhost:8080");
+    format!("{scheme}://{host}")
 }

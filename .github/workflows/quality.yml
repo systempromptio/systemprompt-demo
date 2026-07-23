@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       # Clippy runs on the pinned nightly (channel + clippy component) declared
       # in rust-toolchain.toml, which `rustup show` installs — so lint results
       # match local `just clippy` with no channel duplicated here.
@@ -37,6 +39,8 @@ jobs:
       RUSTDOCFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --workspace --no-deps
@@ -100,6 +104,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       - uses: dtolnay/rust-toolchain@1.94.0
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --workspace
@@ -121,6 +127,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
@@ -130,6 +138,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-machete

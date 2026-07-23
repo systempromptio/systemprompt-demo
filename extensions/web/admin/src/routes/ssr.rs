@@ -93,6 +93,10 @@ fn access_routes() -> Router<Arc<PgPool>> {
         .route("/access/matrix", get(handlers::ssr::access_control_page))
         .route("/devices/pats", post(handlers::devices::issue_pat))
         .route(
+            "/devices/bridge-code",
+            post(handlers::devices::issue_bridge_code),
+        )
+        .route(
             "/devices/pats/{id}",
             axum::routing::delete(handlers::devices::revoke_pat),
         )
@@ -174,6 +178,8 @@ fn account_routes() -> Router<Arc<PgPool>> {
         .route("/profile", get(handlers::ssr::profile_page))
         .route("/settings", get(handlers::ssr::settings_page))
         .route("/setup", get(handlers::ssr::setup_page))
+        .route("/onboarding", get(handlers::onboarding::onboarding_page))
+        .route("/continue", get(handlers::onboarding::post_login_redirect))
         .route("/demo-register", get(handlers::ssr::demo_register_page))
 }
 
@@ -186,4 +192,8 @@ fn api_routes() -> Router<Arc<PgPool>> {
         )
         .route("/api/chain/{id}", get(handlers::ssr::chain_envelope))
         .route("/api/search/resolve", get(handlers::ssr::search_resolve))
+        .route(
+            "/api/onboarding",
+            post(handlers::onboarding::onboarding_submit),
+        )
 }

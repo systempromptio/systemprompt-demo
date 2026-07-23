@@ -2,10 +2,13 @@ governance:
   policies:
   - id: secret_scan
     enabled: true
+  # scope_check stays enabled and enforced; the systemprompt MCP hub is now open
+  # to every signed-in user (oauth scope: user), so its tool prefix is no longer
+  # admin-only. Any prefix listed here is still denied for non-admin callers.
   - id: scope_check
     enabled: true
     admin_only_prefixes:
-    - mcp__systemprompt__
+    - mcp__admin__
   - id: tool_blocklist
     enabled: true
     patterns:

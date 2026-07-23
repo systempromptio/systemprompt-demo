@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       # rust-toolchain.toml pins the nightly channel and its components
       # (rustfmt, clippy, llvm-tools). `rustup show` installs exactly that
       # toolchain, so fmt runs on the same version developers use locally with
@@ -38,6 +40,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --workspace --locked
@@ -47,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       # Every extension crate that invokes a sqlx query macro must ship a
@@ -82,6 +88,8 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
+        run: git clone --depth 1 https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
 
       - name: Check for tests workspace
         id: tests

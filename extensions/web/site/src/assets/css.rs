@@ -38,18 +38,7 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "homepage-hero.css"),
         css!(p, "homepage-showreel.css"),
         css!(p, "homepage-getting-started.css"),
-        css!(p, "homepage-demos.css"),
-        css!(p, "homepage-demo-terminal.css"),
-        css!(p, "homepage-demo-responsive.css"),
         css!(p, "homepage-sections-titles.css"),
-        css!(p, "homepage-sections-features.css"),
-        css!(p, "homepage-sections-steps.css"),
-        css!(p, "homepage-sections-comparison.css"),
-        css!(p, "homepage-sections-technical.css"),
-        css!(p, "homepage-sections-traits.css"),
-        css!(p, "homepage-sections-faq.css"),
-        css!(p, "homepage-features.css"),
-        css!(p, "homepage-architecture.css"),
     ]
 }
 

@@ -1,73 +1,198 @@
-{{#> layout title=title page=page}}
-    {{#*inline "head_extra"}}{{/inline}}
-    {{#*inline "content"}}
-    {{> components/page-header title=title}}
-    <div class="setup-page">
-        <div class="setup-hero">
-            <h2>Get started with {{marketplace.site_url}}</h2>
-            <p>Follow these four phases to connect Claude, build your skill library, and start getting value from the platform. Phase 1 is required &mdash; without it, nothing else works.</p>
-        </div>
-
-        <div class="setup-stepper" role="list" aria-label="Setup phases">
-            {{#each phases}}
-            <div class="setup-phase {{#if complete}}setup-phase--complete{{else}}{{#if current}}setup-phase--current{{else}}setup-phase--upcoming{{/if}}{{/if}}" role="listitem">
-                <div class="setup-phase-indicator" aria-hidden="true">
-                    <div class="setup-phase-number">
-                        {{#if complete}}
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                            <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/>
-                        </svg>
-                        {{else}}
-                        {{number}}
-                        {{/if}}
-                    </div>
-                    {{#unless @last}}
-                    <div class="setup-phase-connector"></div>
-                    {{/unless}}
-                </div>
-                <div class="setup-phase-content">
-                    <div class="setup-phase-header">
-                        <h3>Phase {{number}}: {{title}}</h3>
-                        {{#if complete}}
-                        <span class="setup-badge setup-badge--complete">Complete</span>
-                        {{else}}
-                        {{#if current}}
-                        <span class="setup-badge setup-badge--current">Current</span>
-                        {{else}}
-                        <span class="sr-only">Upcoming</span>
-                        {{/if}}
-                        {{/if}}
-                    </div>
-                    <p>{{description}}</p>
-                    <div class="setup-phase-actions">
-                        <a href="{{guide_url}}" class="setup-phase-link" target="_blank" rel="noopener noreferrer">
-                            Read the guide
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M5 3l5 5-5 5"/>
-                            </svg>
-                        </a>
-                        {{#if action_url}}
-                        <a href="{{action_url}}" class="setup-phase-action">
-                            {{action_label}}
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M5 3l5 5-5 5"/>
-                            </svg>
-                        </a>
-                        {{/if}}
-                    </div>
-                </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>{{branding.domain}} — Connect Claude</title>
+    <link rel="stylesheet" href="/css/core/fonts.css?v={{css_version}}">
+    <link rel="stylesheet" href="/css/admin-bundle.css?v={{css_version}}">
+    <script>(function(){document.documentElement.style.colorScheme='light';})();</script>
+    <style>
+        html,body{margin:0;background:var(--sp-bg-base);color:var(--sp-text-primary);font-family:"OpenSans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+        .setup-shell{display:flex;justify-content:center;min-height:100vh;padding:3rem 1.25rem;background:radial-gradient(ellipse at 50% 0%,color-mix(in oklch,var(--sp-accent) 6%,transparent) 0%,transparent 55%),linear-gradient(180deg,var(--sp-bg-canvas) 0%,var(--sp-bg-base) 100%)}
+        .setup-wrap{width:100%;max-width:640px}
+        .setup-logo{display:flex;justify-content:center;margin-bottom:1.25rem}
+        .setup-head{text-align:center;margin-bottom:2rem}
+        .setup-head h1{font-size:1.6rem;font-weight:700;margin:0 0 0.4rem}
+        .setup-head p{color:var(--sp-text-secondary);margin:0;font-size:0.95rem}
+        .welcome-banner{display:flex;align-items:center;gap:0.7rem;padding:0.9rem 1.1rem;margin-bottom:1.75rem;border-radius:10px;background:var(--sp-accent-dim);color:var(--sp-accent-hover);font-size:0.9rem;font-weight:600}
+        .step{background:var(--sp-bg-surface);border:1px solid var(--sp-border-subtle);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem}
+        .step-head{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.85rem}
+        .step-num{display:inline-flex;align-items:center;justify-content:center;width:1.9rem;height:1.9rem;border-radius:50%;background:var(--sp-accent);color:#fff;font-weight:700;font-size:0.85rem;flex-shrink:0}
+        .step-head h2{font-size:1.05rem;font-weight:700;margin:0}
+        .step p{color:var(--sp-text-secondary);font-size:0.88rem;line-height:1.55;margin:0 0 0.85rem}
+        .downloads{display:flex;flex-wrap:wrap;gap:0.75rem}
+        .dl-badge{display:inline-flex;align-items:center;gap:0.6rem;padding:0.65rem 1.1rem;border-radius:8px;background:var(--sp-text-primary);color:var(--sp-bg-base);text-decoration:none;font-weight:600;font-size:0.9rem}
+        .dl-badge:hover{filter:brightness(1.1)}
+        .dl-badge svg{fill:currentColor}
+        .dl-alt{margin-top:0.75rem;font-size:0.8rem;color:var(--sp-text-tertiary)}
+        .code-box{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-top:0.9rem;padding:0.85rem 1rem;border:1px dashed var(--sp-border-default);border-radius:8px;background:var(--sp-bg-canvas);font-family:"SFMono-Regular",Consolas,monospace}
+        .code-box .code-val{font-size:1.25rem;font-weight:700;letter-spacing:0.08em;color:var(--sp-text-primary)}
+        .code-expiry{font-size:0.78rem;color:var(--sp-text-tertiary);margin-top:0.5rem}
+        .steps-list{margin:0;padding-left:1.2rem;color:var(--sp-text-secondary);font-size:0.88rem;line-height:1.7}
+        .fallback{margin-top:1rem}
+        .fallback summary{cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--sp-text-secondary)}
+        .fallback > div{padding-top:0.85rem}
+        code.inline{background:var(--sp-bg-canvas);padding:0.1rem 0.4rem;border-radius:4px;font-size:0.85em}
+        .muted{color:var(--sp-text-tertiary);font-size:0.8rem}
+        .setup-foot{text-align:center;margin-top:1.5rem;font-size:0.82rem;color:var(--sp-text-tertiary)}
+    </style>
+</head>
+<body>
+    <main class="setup-shell">
+        <div class="setup-wrap">
+            <div class="setup-logo">
+                <img src="/files/images/logo.svg" alt="{{branding.domain}}" height="34" class="logo-light">
             </div>
-            {{/each}}
+
+            {{#if welcome}}
+            <div class="welcome-banner">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Check your email — we've added $5 of credit to your account.
+            </div>
+            {{/if}}
+
+            <div class="setup-head">
+                <h1>Connect Claude Desktop</h1>
+                <p>Two minutes. Signed in as <strong>{{user_email}}</strong>.</p>
+            </div>
+
+            <div class="step">
+                <div class="step-head"><span class="step-num">1</span><h2>Download the Systemprompt Bridge</h2></div>
+                <p>The Bridge runs in your menu bar or system tray. It signs you in and keeps your skills, agents, and MCP servers in sync inside Claude Desktop and Claude Cowork.</p>
+                <div class="downloads">
+                    <a class="dl-badge" href="{{download_mac_url}}" download target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M16.365 12.86c-.02-2.06 1.68-3.05 1.76-3.1-0.96-1.4-2.45-1.6-2.98-1.62-1.27-.13-2.48.75-3.12.75-.64 0-1.64-.73-2.7-.71-1.39.02-2.67.81-3.38 2.05-1.44 2.5-.37 6.2 1.03 8.23.69.99 1.51 2.1 2.58 2.06 1.04-.04 1.43-.67 2.69-.67 1.26 0 1.61.67 2.71.65 1.12-.02 1.83-1.01 2.51-2.01.79-1.15 1.12-2.27 1.14-2.33-.02-.01-2.19-.84-2.21-3.33zM14.32 6.55c.56-.68.94-1.63.84-2.57-.81.03-1.79.54-2.37 1.22-.52.6-.98 1.56-.86 2.48.9.07 1.83-.46 2.39-1.13z"/></svg>
+                        Download for Mac
+                    </a>
+                    <a class="dl-badge" href="{{download_windows_url}}" download target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 5.1L10.3 4.1V11.1H3V5.1zM3 12.9H10.3V19.9L3 18.9V12.9zM11.2 3.98L21 2.6V11.1H11.2V3.98zM21 12.9V21.4L11.2 20.02V12.9H21z"/></svg>
+                        Download for Windows
+                    </a>
+                </div>
+                <p class="dl-alt">On Linux or an Intel Mac, browse <a href="{{releases_url}}" target="_blank" rel="noopener noreferrer">all releases</a> for signed binaries and checksums.</p>
+            </div>
+
+            <div class="step">
+                <div class="step-head"><span class="step-num">2</span><h2>Get your sign-in code</h2></div>
+                <p>Generate a short-lived code, then type it into the Bridge to link this device — no copy-pasting long tokens.</p>
+                <button type="button" id="gen-code-btn" class="btn btn-primary">Generate sign-in code</button>
+                <div id="code-error" class="login-error" role="alert" aria-live="polite"></div>
+                <div id="code-result" hidden>
+                    <div class="code-box">
+                        <span class="code-val" id="code-val">—</span>
+                        <button type="button" class="btn btn-sm" id="code-copy">Copy</button>
+                    </div>
+                    <p class="code-expiry" id="code-expiry"></p>
+                </div>
+
+                <details class="fallback">
+                    <summary>Prefer a token? Use a personal access token instead</summary>
+                    <div>
+                        <p class="muted">Generate a long-lived <code class="inline">sp-live-…</code> token and paste it into the Bridge's token field. It is shown once.</p>
+                        <button type="button" id="gen-pat-btn" class="btn btn-secondary btn-sm">Issue access token</button>
+                        <div id="pat-error" class="login-error" role="alert" aria-live="polite"></div>
+                        <div id="pat-result" hidden>
+                            <div class="code-box">
+                                <span class="code-val" id="pat-val" style="font-size:0.9rem;letter-spacing:0">—</span>
+                                <button type="button" class="btn btn-sm" id="pat-copy">Copy</button>
+                            </div>
+                            <p class="muted" style="margin-top:0.5rem">Copy it now — you won't see it again.</p>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <div class="step">
+                <div class="step-head"><span class="step-num">3</span><h2>Sign in on the Bridge</h2></div>
+                <p>Launch the Bridge you downloaded — a tray icon appears in your menu bar (Mac) or system tray (Windows).</p>
+                <ol class="steps-list">
+                    <li>Click the systemprompt tray icon and choose <strong>Sign in</strong>.</li>
+                    <li>Enter the sign-in code from step 2 (or paste your access token).</li>
+                    <li>Approve the device link. The icon turns green when connected.</li>
+                    <li>Open Claude Desktop or Cowork — systemprompt's skills and MCP servers are ready to use.</li>
+                </ol>
+            </div>
+
+            <p class="setup-foot">Need to manage devices later? Visit <a href="/admin/devices">your devices</a>.</p>
         </div>
-    </div>
-    {{/inline}}
-    {{#*inline "scripts"}}
-    {{#if just_verified}}
-    <script data-cfasync="false" type="module">
-    import { showToast } from '/js/services/toast.js';
-    showToast('Email verified! Your account is now active.', 'success');
-    window.history.replaceState({}, '', '/admin/setup');
+    </main>
+
+    <script>
+    (function () {
+        const GATEWAY = {{{json gateway_url}}};
+
+        function reveal(el){ el.hidden = false; }
+        function fail(el, msg){ el.textContent = msg; el.style.display = 'block'; }
+        function wireCopy(btnId, valId){
+            const btn = document.getElementById(btnId);
+            const val = document.getElementById(valId);
+            btn.addEventListener('click', function(){
+                navigator.clipboard.writeText(val.textContent.trim()).then(function(){
+                    btn.textContent = 'Copied';
+                    setTimeout(function(){ btn.textContent = 'Copy'; }, 1500);
+                });
+            });
+        }
+        wireCopy('code-copy', 'code-val');
+        wireCopy('pat-copy', 'pat-val');
+
+        const genBtn = document.getElementById('gen-code-btn');
+        genBtn.addEventListener('click', async function(){
+            const errEl = document.getElementById('code-error');
+            errEl.style.display = 'none';
+            genBtn.disabled = true;
+            genBtn.textContent = 'Generating…';
+            try {
+                const res = await fetch('/admin/devices/bridge-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: '{}',
+                });
+                const data = await res.json().catch(function(){ return {}; });
+                if (!res.ok) throw new Error(data.error || data.message || 'Could not generate a code');
+                const code = data.code || data.bridge_code || data.exchange_code || data.user_code;
+                if (!code) throw new Error('No code returned');
+                document.getElementById('code-val').textContent = code;
+                const exp = data.expires_at || data.expires;
+                document.getElementById('code-expiry').textContent =
+                    exp ? ('Expires ' + new Date(exp).toLocaleTimeString()) : 'Use it within a few minutes.';
+                reveal(document.getElementById('code-result'));
+            } catch (e) {
+                fail(errEl, e.message);
+            } finally {
+                genBtn.disabled = false;
+                genBtn.textContent = 'Generate a new code';
+            }
+        });
+
+        const patBtn = document.getElementById('gen-pat-btn');
+        patBtn.addEventListener('click', async function(){
+            const errEl = document.getElementById('pat-error');
+            errEl.style.display = 'none';
+            patBtn.disabled = true;
+            patBtn.textContent = 'Issuing…';
+            try {
+                const res = await fetch('/admin/devices/pats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ name: 'Systemprompt Bridge' }),
+                });
+                const data = await res.json().catch(function(){ return {}; });
+                if (!res.ok) throw new Error(data.error || data.message || 'Could not issue a token');
+                document.getElementById('pat-val').textContent = data.secret || '';
+                reveal(document.getElementById('pat-result'));
+            } catch (e) {
+                fail(errEl, e.message);
+            } finally {
+                patBtn.disabled = false;
+                patBtn.textContent = 'Issue another token';
+            }
+        });
+    })();
     </script>
-    {{/if}}
-    {{/inline}}
-{{/layout}}
+</body>
+</html>

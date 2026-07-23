@@ -11,9 +11,33 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use systemprompt::identifiers::UserId;
 
+use systemprompt::database::Database;
+use systemprompt::oauth::services::issue_bridge_exchange_code;
+
 use crate::error::{AdminError, AdminResult};
 use crate::services::device_service;
 use crate::types::UserContext;
+
+#[derive(Debug, Serialize)]
+pub(crate) struct BridgeCodeResponse {
+    pub code: String,
+    pub expires_at: DateTime<Utc>,
+}
+
+pub(crate) async fn issue_bridge_code(
+    Extension(user_ctx): Extension<UserContext>,
+    State(pool): State<Arc<PgPool>>,
+) -> AdminResult<Response> {
+    let db = Arc::new(Database::from_pools(Arc::clone(&pool), None));
+    let issued = issue_bridge_exchange_code(&db, &user_ctx.user_id)
+        .await
+        .map_err(|e| AdminError::internal(format!("failed to issue bridge code: {e}")))?;
+    Ok(Json(BridgeCodeResponse {
+        code: issued.code,
+        expires_at: issued.expires_at,
+    })
+    .into_response())
+}
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct IssueApiKeyRequest {

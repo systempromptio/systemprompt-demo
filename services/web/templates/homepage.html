@@ -21,14 +21,13 @@
     <meta name="twitter:image" content="{{site.branding.image}}">
     <meta name="theme-color" content="{{site.branding.themeColor}}">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-hero.css">
-    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-showreel.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-sections-titles.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-getting-started.css">
 </head>
 <body>
     {{{HEADER}}}
 
-    <main>
+    <main id="main">
 
         <section class="hero">
             <div class="hero-glow"></div>
@@ -46,78 +45,8 @@
                         {{/if}}
                     </div>
                     <nav class="hero-nav-chips" aria-label="Jump to homepage section">
-                        <a href="#why" class="hero-nav-chip">Why it matters</a>
-                        <a href="#integrations" class="hero-nav-chip">Integrations</a>
-                        <a href="#get-started" class="hero-nav-chip">How to use</a>
+                        <a href="#get-started" class="hero-nav-chip">See the five steps</a>
                     </nav>
-                </div>
-                <div class="hero-showreel">
-                    <div class="hero-showreel-frame">
-                        <iframe class="hero-showreel-video"
-                            src="https://www.youtube-nocookie.com/embed/pbHArVcCGFY?rel=0&amp;modestbranding=1"
-                            title="systemprompt.io showreel"
-                            loading="lazy" allowfullscreen
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
-                            referrerpolicy="strict-origin-when-cross-origin"></iframe>
-                    </div>
-                    <div class="hero-showreel-caption">
-                        <p class="hero-showreel-caption-title">The gateway in action</p>
-                        <p class="hero-showreel-caption-text">systemprompt.io is self-hosted AI governance in a single Rust binary. This walkthrough shows the open gateway running end to end: policy checks, audit trails, and cost attribution on every request your team makes.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="why" class="value-pillars">
-            <div class="container">
-                <header class="section-header">
-                    <h2 class="section-title">Why teams switch it on</h2>
-                    <p class="section-subtitle">Your organization is already using AI. The question is whether you can see it, govern it, and keep what it learns. The open gateway puts every request through infrastructure you own.</p>
-                </header>
-                <div class="pillars-grid">
-                    <div class="pillar-card">
-                        <h3 class="pillar-card-title">One gateway, every provider</h3>
-                        <p class="pillar-card-text">Anthropic, OpenAI, and Gemini behind a single governed endpoint. Your tools speak one API; the platform owns the keys, the routing, and the policy that sits in front of them.</p>
-                    </div>
-                    <div class="pillar-card">
-                        <h3 class="pillar-card-title">Every request accounted for</h3>
-                        <p class="pillar-card-text">Each inference call and tool invocation lands in an audit trail with a trace linking identity, agent, tool, result, and cost. Usage and spend roll up per user, per agent, per model.</p>
-                    </div>
-                    <div class="pillar-card">
-                        <h3 class="pillar-card-title">Your data stays yours</h3>
-                        <p class="pillar-card-text">One Rust binary and a Postgres database, running on your own machine or your own infrastructure. No SaaS middleman between your prompts and your provider.</p>
-                    </div>
-                    <div class="pillar-card">
-                        <h3 class="pillar-card-title">Governed by design</h3>
-                        <p class="pillar-card-text">Every tool call passes a four-stage governance pipeline — scope check, secret scan, blocklist, rate limit — before it runs. Decisions are audited, not assumed.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="integrations" class="integrations-strip">
-            <div class="container">
-                <header class="section-header">
-                    <h2 class="section-title">Sign in once. Connected to everything.</h2>
-                    <p class="section-subtitle">Create one account on your gateway and every AI tool you use connects through it. The complexity of keys, policy, and audit is owned by the platform, not by you.</p>
-                </header>
-                <div class="integrations-row">
-                    <div class="integration-item">
-                        <h3 class="integration-name">AI providers</h3>
-                        <p class="integration-text">Anthropic, OpenAI, and Gemini through one governed /v1/messages endpoint, with model routing, cost tracking, and policy enforcement on every call.</p>
-                    </div>
-                    <div class="integration-item">
-                        <h3 class="integration-name">MCP servers</h3>
-                        <p class="integration-text">Ship your own tools as MCP extensions. Every tool call is scoped, scanned for secrets, and rate-limited before it executes — then audited after.</p>
-                    </div>
-                    <div class="integration-item">
-                        <h3 class="integration-name">Claude Cowork &amp; Claude Code</h3>
-                        <p class="integration-text">Your skills, agents, and MCP servers arrive inside the Claude tools you already use, installed and kept in sync by the desktop bridge.</p>
-                    </div>
-                    <div class="integration-item">
-                        <h3 class="integration-name">Governance spine</h3>
-                        <p class="integration-text">Identity, policy evaluations, prompts, responses, and costs land in one Postgres audit table, queryable from the CLI and the analytics dashboard.</p>
-                    </div>
                 </div>
             </div>
         </section>
@@ -125,26 +54,40 @@
         <section id="get-started" class="demos-quick-start homepage-usage">
             <div class="container">
                 <header class="section-header">
-                    <h2 class="section-title">How to use it</h2>
-                    <p class="section-subtitle">From your email to your first governed request in a few minutes. No config files, no tokens, no training course.</p>
+                    <h2 class="section-title">From zero to governed AI in five steps</h2>
+                    <p class="section-subtitle">Create an account, tell us who you are, and we credit you $5 to try systemprompt with Claude Desktop. Install the Bridge, sign in, and your Claude tools are configured automatically.</p>
                 </header>
                 <ol class="quick-start-list">
                     <li class="quick-start-step">
                         <div class="quick-start-number">1</div>
                         <div class="quick-start-body">
-                            <h3 class="quick-start-label">Create your account</h3>
-                            <p class="quick-start-desc">Sign up with your email &mdash; magic-link login, no passwords. You land on the dashboard straight after.</p>
+                            <h3 class="quick-start-label">Create your account with a passkey</h3>
+                            <p class="quick-start-desc">No passwords. Register with a passkey &mdash; your device, your face or fingerprint. It takes seconds and there is nothing to remember.</p>
                             <div class="command-row">
-                                <a href="/admin/register" class="hero-cta hero-cta-primary">Sign up</a>
-                                <a href="/admin/login" class="hero-cta hero-cta-secondary">Log in</a>
+                                <a href="/register" class="hero-cta hero-cta-primary">Create account</a>
+                                <a href="/login" class="hero-cta hero-cta-secondary">Sign in</a>
                             </div>
                         </div>
                     </li>
                     <li class="quick-start-step">
                         <div class="quick-start-number">2</div>
                         <div class="quick-start-body">
-                            <h3 class="quick-start-label">Download the desktop bridge</h3>
-                            <p class="quick-start-desc">The Systemprompt Bridge runs in your menu bar or system tray. It signs you in, installs your workspace, and keeps your skills in sync inside Claude Code and Claude Cowork.</p>
+                            <h3 class="quick-start-label">Tell us about yourself</h3>
+                            <p class="quick-start-desc">A 30-second form: your name, your email, and what you want to build. That is all we need to set up your workspace.</p>
+                        </div>
+                    </li>
+                    <li class="quick-start-step">
+                        <div class="quick-start-number">3</div>
+                        <div class="quick-start-body">
+                            <h3 class="quick-start-label">Check your email</h3>
+                            <p class="quick-start-desc">We send you <strong>$5 of credit</strong> to try systemprompt with Claude Desktop &mdash; enough to run real requests through your own governed gateway.</p>
+                        </div>
+                    </li>
+                    <li class="quick-start-step">
+                        <div class="quick-start-number">4</div>
+                        <div class="quick-start-body">
+                            <h3 class="quick-start-label">Download the Systemprompt Bridge</h3>
+                            <p class="quick-start-desc">The Bridge runs in your menu bar or system tray. It signs you in and keeps your skills, agents, and MCP servers in sync inside Claude Desktop and Claude Cowork.</p>
                             <div class="header-downloads">
                                 <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest/download/systemprompt-bridge-aarch64-apple-darwin" class="download-badge" download target="_blank" rel="noopener noreferrer">
                                     <svg class="download-badge-logo" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
@@ -163,23 +106,10 @@
                         </div>
                     </li>
                     <li class="quick-start-step">
-                        <div class="quick-start-number">3</div>
+                        <div class="quick-start-number">5</div>
                         <div class="quick-start-body">
-                            <h3 class="quick-start-label">Connect your AI tools</h3>
-                            <p class="quick-start-desc">Open your dashboard and click <strong>Connect to Claude Code</strong> in the top-right of any page. One copied command installs your personal marketplace &mdash; plugins, skills, agents, and MCP servers, all scoped to your user.</p>
-                            <div class="command-row">
-                                <a href="/admin/dashboard" class="hero-cta hero-cta-secondary">Open dashboard</a>
-                            </div>
-                        </div>
-                    </li>
-                    <li class="quick-start-step">
-                        <div class="quick-start-number">4</div>
-                        <div class="quick-start-body">
-                            <h3 class="quick-start-label">Ask your first question</h3>
-                            <p class="quick-start-desc">Every request now flows through your gateway with policy, audit, and cost attribution built in. Watch it live with <em>"systemprompt infra logs request list"</em>, or explore the analytics dashboard.</p>
-                            <div class="command-row">
-                                <a href="https://systemprompt.io/documentation/" class="hero-cta hero-cta-secondary">Read the how-to guide</a>
-                            </div>
+                            <h3 class="quick-start-label">Sign in on the Bridge</h3>
+                            <p class="quick-start-desc">Open the Bridge and sign in with the same account. Claude Desktop and Claude Cowork are configured automatically &mdash; every request now flows through your gateway with policy, audit, and cost attribution built in.</p>
                         </div>
                     </li>
                 </ol>

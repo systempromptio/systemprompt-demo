@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{{HEAD_ASSETS}}}
+    <title>Resources &middot; {{site.branding.name}}</title>
+    <meta name="description" content="Watch the systemprompt.io showreel and dive into the documentation and guides for self-hosted AI governance.">
+    <link rel="icon" type="image/x-icon" href="{{FAVICON_PATH}}">
+    <link rel="canonical" href="{{ORG_URL}}/resources/">
+    <meta property="og:title" content="Resources &middot; {{site.branding.name}}">
+    <meta property="og:description" content="Watch the systemprompt.io showreel and dive into the documentation and guides for self-hosted AI governance.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ORG_URL}}/resources/">
+    <meta property="og:image" content="{{site.branding.image}}">
+    <meta property="og:site_name" content="{{site.branding.name}}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="{{TWITTER_HANDLE}}">
+    <meta name="twitter:title" content="Resources &middot; {{site.branding.name}}">
+    <meta name="twitter:description" content="Watch the systemprompt.io showreel and dive into the documentation and guides for self-hosted AI governance.">
+    <meta name="theme-color" content="{{site.branding.themeColor}}">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-hero.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-showreel.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-sections-titles.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-getting-started.css">
+</head>
+<body>
+    {{{HEADER}}}
+
+    <main id="main">
+
+        <section class="hero">
+            <div class="hero-glow"></div>
+            <div class="container">
+                <div class="hero-content">
+                    <p class="hero-eyebrow">Resources</p>
+                    <h1 class="hero-title">See the gateway <span class="highlight">in action.</span></h1>
+                    <p class="hero-subtitle">A short walkthrough of systemprompt.io running end to end &mdash; policy checks, audit trails, and cost attribution on every request &mdash; plus the documentation and guides to take it further.</p>
+                </div>
+                <div class="hero-showreel">
+                    <div class="hero-showreel-frame">
+                        <iframe class="hero-showreel-video"
+                            src="https://www.youtube-nocookie.com/embed/pbHArVcCGFY?rel=0&amp;modestbranding=1"
+                            title="systemprompt.io showreel"
+                            loading="lazy" allowfullscreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                            referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                    </div>
+                    <div class="hero-showreel-caption">
+                        <p class="hero-showreel-caption-title">The gateway in action</p>
+                        <p class="hero-showreel-caption-text">systemprompt.io is self-hosted AI governance in a single Rust binary. This walkthrough shows the open gateway running end to end: policy checks, audit trails, and cost attribution on every request your team makes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="demos-quick-start">
+            <div class="container">
+                <header class="section-header">
+                    <h2 class="section-title">Learn more</h2>
+                    <p class="section-subtitle">Deployment guides, API reference, and step-by-step tutorials for running AI governance on your own infrastructure.</p>
+                </header>
+                <div class="pillars-grid">
+                    <a class="pillar-card" href="https://systemprompt.io/documentation/" target="_blank" rel="noopener noreferrer">
+                        <h3 class="pillar-card-title">Documentation</h3>
+                        <p class="pillar-card-text">Deployment guides, API reference, and configuration for every domain of the platform.</p>
+                    </a>
+                    <a class="pillar-card" href="https://systemprompt.io/guides" target="_blank" rel="noopener noreferrer">
+                        <h3 class="pillar-card-title">Guides</h3>
+                        <p class="pillar-card-text">Step-by-step tutorials, workflows, and best practices for governing AI end to end.</p>
+                    </a>
+                    <a class="pillar-card" href="https://systemprompt.io/features/demo" target="_blank" rel="noopener noreferrer">
+                        <h3 class="pillar-card-title">Live demo</h3>
+                        <p class="pillar-card-text">Watch four governance layers execute in real time in under six minutes.</p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    {{{FOOTER}}}
+    {{{SCRIPTS}}}
+</body>
+</html>

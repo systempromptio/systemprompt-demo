@@ -7,12 +7,12 @@
 hero:
   title: "Own how your organization"
   title_highlight: "uses AI."
-  subtitle: "This is the open gateway distribution of systemprompt.io — self-hosted AI governance in a single Rust binary. Run it on your own machine, install the Systemprompt Bridge on Windows or macOS, and connect Claude Cowork through a governed gateway with policy, audit, and cost attribution built in."
+  subtitle: "systemprompt.io is self-hosted AI governance in a single Rust binary. Register with a passkey, claim $5 of credit to try it with Claude Desktop, and install the Systemprompt Bridge — your Claude tools connect through a gateway you own, with policy, audit, and cost attribution on every request."
   eyebrow: "systemprompt.io · Open Gateway"
-  cta: "Get Started"
-  cta_url: "#get-started"
-  cta_secondary: "Read the Docs"
-  cta_secondary_url: "https://systemprompt.io/documentation/"
+  cta: "Get started"
+  cta_url: "/register"
+  cta_secondary: "Sign in"
+  cta_secondary_url: "/login"
 
 demos:
   title: "Demo Catalogue"

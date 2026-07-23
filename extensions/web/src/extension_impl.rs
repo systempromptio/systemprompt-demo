@@ -33,6 +33,7 @@ use crate::partials::{
     HeaderPartialRenderer, MemoryLoopAnimationPartialRenderer, RustMeshAnimationPartialRenderer,
     ScriptsPartialRenderer,
 };
+use crate::resources::ResourcesPrerenderer;
 use crate::schemas::{migrations, schema_definitions};
 use crate::{admin, api, config_loader};
 
@@ -80,6 +81,8 @@ impl Extension for WebExtension {
         if let Some(config) = Self::homepage_config() {
             prerenderers.push(Arc::new(HomepagePrerenderer::new(config)));
         }
+
+        prerenderers.push(Arc::new(ResourcesPrerenderer));
 
         if let Some(config) = Self::features_config() {
             for page in &config.pages {
@@ -132,7 +135,8 @@ impl Extension for WebExtension {
     }
 
     fn router(&self, ctx: &dyn ExtensionContext) -> Option<ExtensionRouter> {
-        use axum::routing::post;
+        use axum::response::Redirect;
+        use axum::routing::{get, post};
 
         let db_handle = ctx.database();
         let db = db_handle.as_any().downcast_ref::<Database>()?;
@@ -185,6 +189,22 @@ impl Extension for WebExtension {
         let ssr_router = admin::admin_ssr_router(pool, engine);
 
         let combined = Router::new()
+            .route(
+                "/login",
+                get(|| async { Redirect::temporary("/admin/login") }),
+            )
+            .route(
+                "/register",
+                get(|| async { Redirect::temporary("/admin/register") }),
+            )
+            .route(
+                "/onboarding",
+                get(|| async { Redirect::temporary("/admin/onboarding") }),
+            )
+            .route(
+                "/setup",
+                get(|| async { Redirect::temporary("/admin/setup") }),
+            )
             .nest_service("/admin", ssr_router)
             .nest_service("/bridge-auth", bridge_auth_router)
             .merge(share_api)

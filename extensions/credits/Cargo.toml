@@ -1,0 +1,24 @@
+[package]
+name = "systemprompt-credits-extension"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Credit ledger extension for systemprompt.io — signup grants, balance, and gateway enforcement."
+license = "MIT"
+
+[lints]
+workspace = true
+
+# inventory: compile-time registration via register_extension!/register_gateway_guard!
+[package.metadata.cargo-machete]
+ignored = ["inventory"]
+
+[dependencies]
+systemprompt = { workspace = true, features = ["full"] }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+inventory = { workspace = true }
+async-trait = { workspace = true }

@@ -24,7 +24,15 @@ const TOKEN_PREFIX: &str = "sp_wst_";
 pub(crate) struct PublicRegisterRequest {
     pub name: String,
     pub email: String,
+    /// Optional; the funnel never sends this and self-registration always
+    /// yields a plain `user`. Admin accounts are bootstrapped out-of-band
+    /// via the CLI.
+    #[serde(default = "default_role")]
     pub role: String,
+}
+
+fn default_role() -> String {
+    "user".to_owned()
 }
 
 #[derive(Debug, Serialize)]

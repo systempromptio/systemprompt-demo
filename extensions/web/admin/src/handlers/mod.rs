@@ -15,6 +15,7 @@ pub(crate) mod gateway_catalog;
 pub(crate) mod hooks_track;
 mod jobs;
 pub(crate) mod magic_link;
+pub(crate) mod onboarding;
 mod plugins;
 mod plugins_env;
 pub(crate) mod public_register;
