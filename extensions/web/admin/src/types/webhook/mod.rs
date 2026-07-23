@@ -196,7 +196,7 @@ fn dispatch_event(
             HookEvent::Unknown(other.to_owned())
         },
     };
-    // `agent_id` is a common field rather than part of either variant, so the
+    // Why: `agent_id` is a common field rather than part of either variant, so the
     // subagent events can only be checked for it out here.
     if matches!(
         event,

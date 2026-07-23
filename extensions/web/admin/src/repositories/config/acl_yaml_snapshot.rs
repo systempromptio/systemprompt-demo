@@ -61,7 +61,7 @@ pub async fn render_yaml_snapshot(pool: &PgPool) -> Result<String, MarketplaceEr
             default_included: row.default_included,
             roles: Vec::new(),
         });
-        // The query filters to role rules, so anything else is a row that
+        // Why: The query filters to role rules, so anything else is a row that
         // arrived after this snapshot format was fixed; roles.yaml has no
         // shape for it and dropping it is better than emitting a file the
         // loader would reject.

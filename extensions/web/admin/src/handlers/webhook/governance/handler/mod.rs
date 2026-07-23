@@ -130,7 +130,7 @@ fn spawn_auth_denial(params: &AuthDenialParams<'_>, reason: &str) {
     let headers = params.headers.clone();
 
     tokio::spawn(async move {
-        // Authentication failed before any real user was resolved. Every UserId
+        // Why: Authentication failed before any real user was resolved. Every UserId
         // must be a real `users` row, so provision the anonymous principal for
         // this fingerprint (idempotent upsert) to carry the audit's foreign key.
         // Core now takes the extracted analytics rather than raw headers. The

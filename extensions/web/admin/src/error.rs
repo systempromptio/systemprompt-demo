@@ -203,7 +203,7 @@ impl IntoResponse for AdminHtmlError {
     fn into_response(self) -> Response {
         let status = self.0.status();
         self.0.log(status);
-        // The heading names the class of failure and the paragraph names this
+        // Why: The heading names the class of failure and the paragraph names this
         // instance of it, which is what the hand-rolled pages did one at a
         // time — "Access Denied" over "Admin access required", "Not Found"
         // over which thing was not found.

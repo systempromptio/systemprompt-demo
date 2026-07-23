@@ -3,8 +3,8 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::SessionId;
 
-/// Resolve `id` (`decision_id`, `request_id`, `trace_id`, or `session_id`) to a
-/// `session_id`.
+// Why: Resolve `id` (`decision_id`, `request_id`, `trace_id`, or `session_id`)
+// to a `session_id`.
 pub(super) async fn resolve_session_id(
     pool: &PgPool,
     id: &str,

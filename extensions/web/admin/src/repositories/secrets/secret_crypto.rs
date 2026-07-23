@@ -57,7 +57,7 @@ pub fn decrypt(
 }
 
 pub fn load_master_key() -> Result<[u8; 32], SecretCryptoError> {
-    // Priority chain: env var first, then bootstrap; both `.ok()` carve-outs
+    // Why: Priority chain: env var first, then bootstrap; both `.ok()` carve-outs
     // are missing-is-normal, and an empty chain becomes `MasterKeyMissing`.
     let hex_key = std::env::var("ENCRYPTION_MASTER_KEY")
         .ok()

@@ -88,7 +88,7 @@ impl SessionAnalysis {
     }
 }
 
-// variable-shape: this builds a JSON Schema document (nested
+// Why: variable-shape: this builds a JSON Schema document (nested
 // "type"/"properties"/ "enum" descriptors) passed to the AI provider's tool
 // schema, not a response body; its shape is schema metadata, not a typed DTO we
 // control end-to-end.

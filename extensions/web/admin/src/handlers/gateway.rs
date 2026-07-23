@@ -11,7 +11,7 @@ use crate::handlers::shared;
 use crate::repositories;
 use crate::types::{GatewayRouteView, ReorderRoutesRequest, UpdateGatewaySettingsRequest};
 
-/// JSON body returned by [`create_gateway_route_handler`] on success.
+// Why: JSON body returned by [`create_gateway_route_handler`] on success.
 #[derive(Debug, Serialize)]
 pub(crate) struct CreateRouteResponse {
     pub index: usize,

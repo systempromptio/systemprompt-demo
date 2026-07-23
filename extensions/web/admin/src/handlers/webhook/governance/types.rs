@@ -79,7 +79,7 @@ pub(super) struct ChainEntryOutcome {
     pub detail: String,
 }
 
-/// Snapshot of the authenticated principal at evaluation time.
+// Why: Snapshot of the authenticated principal at evaluation time.
 #[derive(Debug, Serialize, Clone)]
 pub(super) struct PrincipalSnapshot {
     pub user_id: UserId,
@@ -94,10 +94,10 @@ pub(super) struct AuditTarget {
     pub plugin_id: Option<PluginId>,
 }
 
-/// Typed audit blob serialized into `governance_decisions.evaluated_rules`.
-///
-/// The `decision` and `reason` columns are populated from the same data by the
-/// repository layer.
+// Why: Typed audit blob serialized into `governance_decisions.evaluated_rules`.
+//
+// The `decision` and `reason` columns are populated from the same data by the
+// repository layer.
 #[derive(Debug, Serialize, Clone)]
 pub(super) struct DecisionAudit {
     pub decision: Decision,

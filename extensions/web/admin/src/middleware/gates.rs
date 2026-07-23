@@ -69,15 +69,15 @@ pub(crate) async fn require_admin_middleware(request: Request, next: Next) -> Re
     }
 }
 
-/// Restrict non-admin users to the profile page, settings page, and a few
-/// account-management endpoints. Other admin routes redirect to /admin/profile.
-///
-/// Admins pass through unchanged. Anonymous users are handled by
-/// `require_user_middleware` which runs after this layer.
-///
-/// The path comes from `OriginalUri`, as it does in `require_user_middleware`:
-/// this layer sits inside a `nest_service("/admin", …)`, which strips the
-/// prefix, and every arm of `is_non_admin_allowed_path` matches on it.
+// Why: Restrict non-admin users to the profile page, settings page, and a few
+// account-management endpoints. Other admin routes redirect to /admin/profile.
+//
+// Admins pass through unchanged. Anonymous users are handled by
+// `require_user_middleware` which runs after this layer.
+//
+// The path comes from `OriginalUri`, as it does in `require_user_middleware`:
+// this layer sits inside a `nest_service("/admin", …)`, which strips the
+// prefix, and every arm of `is_non_admin_allowed_path` matches on it.
 pub(crate) async fn non_admin_gate_middleware(request: Request, next: Next) -> Response {
     let path = original_path(&request);
     let path = path.as_str();
@@ -108,6 +108,8 @@ fn is_non_admin_allowed_path(path: &str) -> bool {
         || path == "/admin/add-passkey"
         || path == "/admin/verify-pending"
         || path == "/admin/setup"
+        || path == "/admin/onboarding"
+        || path == "/admin/continue"
         || path == "/admin/demo-register"
         || path == "/admin/"
         || path == "/admin"

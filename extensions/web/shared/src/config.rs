@@ -88,7 +88,7 @@ impl BlogConfigValidated {
             }
         }
 
-        // `base_url` is `None` only when the URL failed to parse, which always
+        // Why: `base_url` is `None` only when the URL failed to parse, which always
         // records an error above — so `into_result` will surface it as `Err`.
         match base_url {
             Some(base_url) => errors.into_result(Self {

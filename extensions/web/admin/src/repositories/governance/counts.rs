@@ -4,7 +4,7 @@ use sqlx::PgPool;
 
 use super::{GovernanceCounts, PerPolicyCounts};
 
-// Live upstream in systemprompt-template via the ssr_governance
+// Why: Live upstream in systemprompt-template via the ssr_governance
 // handlers, which this fork does not ship. Kept so the shared
 // repository files stay identical across both trees.
 // lint-ok: unused-pub
@@ -27,7 +27,7 @@ pub async fn get_governance_counts(pool: &PgPool) -> Result<GovernanceCounts, sq
     })
 }
 
-// Live upstream in systemprompt-template via the ssr_governance
+// Why: Live upstream in systemprompt-template via the ssr_governance
 // handlers, which this fork does not ship. Kept so the shared
 // repository files stay identical across both trees.
 // lint-ok: unused-pub
@@ -55,7 +55,7 @@ pub async fn get_governance_counts_windowed(
     })
 }
 
-// Live upstream in systemprompt-template via the ssr_governance
+// Why: Live upstream in systemprompt-template via the ssr_governance
 // handlers, which this fork does not ship. Kept so the shared
 // repository files stay identical across both trees.
 // lint-ok: unused-pub
@@ -83,7 +83,7 @@ pub async fn list_per_policy_counts(pool: &PgPool) -> Result<Vec<PerPolicyCounts
         .collect())
 }
 
-// Live upstream in systemprompt-template via the ssr_governance
+// Why: Live upstream in systemprompt-template via the ssr_governance
 // handlers, which this fork does not ship. Kept so the shared
 // repository files stay identical across both trees.
 // lint-ok: unused-pub

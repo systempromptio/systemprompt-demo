@@ -87,7 +87,7 @@ pub async fn resolve_user_matrix(
     };
     let all_rules = list_all_rules(pool).await?;
     let defaults = load_entity_defaults(pool).await?;
-    // The same lookup the enforcement webhook performs, so the matrix and the
+    // Why: The same lookup the enforcement webhook performs, so the matrix and the
     // decision see identical subject values.
     let attributes = subject_attributes_for(pool, user_id).await;
     let dimensions = dimensions(pool);
@@ -294,7 +294,7 @@ fn deny_source(user_id: &UserId, reason: &DenyReason) -> MatrixSource {
             layer: rule_type.to_string(),
             detail: format!("{rule_type}:{value} deny"),
         },
-        // Everything else is the resolver closing the default rather than a
+        // Why: Everything else is the resolver closing the default rather than a
         // rule firing, so the cell reports the default layer and lets the
         // reason speak for itself.
         other => MatrixSource {

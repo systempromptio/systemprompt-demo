@@ -17,7 +17,7 @@ pub struct RecentHookEvent {
     pub status: Option<String>,
 }
 
-// Live upstream in systemprompt-template via the ssr_governance
+// Why: Live upstream in systemprompt-template via the ssr_governance
 // handlers, which this fork does not ship. Kept so the shared
 // repository files stay identical across both trees.
 // lint-ok: unused-pub
@@ -31,7 +31,7 @@ pub async fn count_pretool_fired_24h(pool: &PgPool) -> Result<i64, MarketplaceEr
     Ok(row.n.unwrap_or(0))
 }
 
-// Live upstream in systemprompt-template via the ssr_governance
+// Why: Live upstream in systemprompt-template via the ssr_governance
 // handlers, which this fork does not ship. Kept so the shared
 // repository files stay identical across both trees.
 // lint-ok: unused-pub
@@ -45,7 +45,7 @@ pub async fn count_posttool_fired_24h(pool: &PgPool) -> Result<i64, MarketplaceE
     Ok(row.n.unwrap_or(0))
 }
 
-// Live upstream in systemprompt-template via the ssr_governance
+// Why: Live upstream in systemprompt-template via the ssr_governance
 // handlers, which this fork does not ship. Kept so the shared
 // repository files stay identical across both trees.
 // lint-ok: unused-pub
