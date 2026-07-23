@@ -98,7 +98,7 @@ echo ""
 
 echo "  Response:"
 GOVERN_RESPONSE=$(curl -s -w "\n%{http_code} %{time_total}" \
-  -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+  -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$GOVERN_PAYLOAD")
@@ -140,7 +140,7 @@ TRACK_PAYLOAD='{
 }'
 
 TRACK_STATUS=$(curl -s -o /dev/null -w "%{http_code} %{time_total}" \
-  -X POST "$BASE_URL/api/public/hooks/track?plugin_id=enterprise-demo" \
+  -X POST "$BASE_URL/api/public/hooks/track?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$TRACK_PAYLOAD")
@@ -334,7 +334,7 @@ GOVERN_OUTPUT=$("$HEY" -n 200 -c 100 -m POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$GOVERN_PAYLOAD" \
-  "$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo" 2>&1)
+  "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" 2>&1)
 
 GOVERN_RPS=$(echo "$GOVERN_OUTPUT" | grep "Requests/sec" | awk '{printf "%.0f", $2}')
 GOVERN_AVG=$(echo "$GOVERN_OUTPUT" | grep "Average:" | head -1 | awk '{printf "%.1f", $2 * 1000}')
@@ -365,7 +365,7 @@ TRACK_OUTPUT=$("$HEY" -n 200 -c 100 -m POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$TRACK_PAYLOAD" \
-  "$BASE_URL/api/public/hooks/track?plugin_id=enterprise-demo" 2>&1)
+  "$BASE_URL/api/public/hooks/track?plugin_id=systemprompt" 2>&1)
 
 TRACK_RPS=$(echo "$TRACK_OUTPUT" | grep "Requests/sec" | awk '{printf "%.0f", $2}')
 TRACK_P50=$(echo "$TRACK_OUTPUT" | grep "50% in" | awk '{printf "%.1f", $3 * 1000}')

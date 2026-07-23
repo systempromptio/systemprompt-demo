@@ -43,7 +43,7 @@ URL="http://localhost:8080"  # or your deployed instance URL
 ## The Governance Endpoint
 
 ```
-POST /api/public/hooks/govern?plugin_id=enterprise-demo
+POST /api/public/hooks/govern?plugin_id=systemprompt
 Authorization: Bearer <token>
 Content-Type: application/json
 ```
@@ -69,7 +69,7 @@ The response contains the governance decision, reason, and the list of rules eva
 An admin-scope agent calling an MCP tool it has access to:
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -93,7 +93,7 @@ curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
 The same tool, but requested by a user-scope agent:
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -123,7 +123,7 @@ The governance layer scans every `tool_input` field for plaintext secrets. If a 
 ### Test 1: AWS Access Key
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -143,7 +143,7 @@ curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
 ### Test 2: GitHub Personal Access Token
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -163,7 +163,7 @@ curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
 ### Test 3: RSA Private Key
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,7 +183,7 @@ curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
 ### Test 4: Clean Input — Passes
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -251,7 +251,7 @@ Copy this entire block into Claude Code (or any terminal) to run all six governa
 # ── Set your token and URL ──────────────────────────────────────
 TOKEN="YOUR_TOKEN_HERE"
 URL="http://localhost:8080"  # or your deployed instance URL
-API="$URL/api/public/hooks/govern?plugin_id=enterprise-demo"
+API="$URL/api/public/hooks/govern?plugin_id=systemprompt"
 
 # ── Test 1: Admin scope → ALLOW ─────────────────────────────────
 # The developer_agent has admin scope, so it can call any MCP tool.

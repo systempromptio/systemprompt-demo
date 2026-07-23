@@ -26,7 +26,7 @@ related_docs:
 
 ## Overview
 
-This demo uses Cowork (Claude Code) with the **enterprise-demo** plugin installed. The `use-dangerous-secret` skill instructs Claude to write a file containing a plaintext API key (shown here as `<ANTHROPIC_API_KEY>`; the live test value lives only in the out-of-band demo script, never in page or chat text). The PreToolUse governance hook detects the secret pattern and **blocks the tool call before it executes**. The denial is fully logged.
+This demo uses Cowork (Claude Code) with the **systemprompt** plugin installed. The `use-dangerous-secret` skill instructs Claude to write a file containing a plaintext API key (shown here as `<ANTHROPIC_API_KEY>`; the live test value lives only in the out-of-band demo script, never in page or chat text). The PreToolUse governance hook detects the secret pattern and **blocks the tool call before it executes**. The denial is fully logged.
 
 > **Terminal alternative:** [Agent Messaging](/documentation/demo-terminal-agents) covers this same path using CLI commands.
 
@@ -44,13 +44,13 @@ systemprompt infra services status
 claude plugin list
 ```
 
-Ensure the platform is healthy and the enterprise-demo plugin appears in Claude Code's plugin list.
+Ensure the platform is healthy and the systemprompt plugin appears in Claude Code's plugin list.
 
 ---
 
 ## Step 1: Invoke the skill in Cowork
 
-Open Claude Code with the enterprise-demo plugin and ask:
+Open Claude Code with the systemprompt plugin and ask:
 
 > "Use the dangerous secret skill to demonstrate secret detection"
 
@@ -58,7 +58,7 @@ This triggers the `use-dangerous-secret` skill, which instructs Claude to write 
 
 ### What happens in the system
 
-1. **Skill loaded** — Claude Code loads the `use-dangerous-secret` skill from the enterprise-demo plugin
+1. **Skill loaded** — Claude Code loads the `use-dangerous-secret` skill from the systemprompt plugin
 2. **Tool selection** — Claude decides to call a tool (e.g., Write) with the secret value in the input
 3. **PreToolUse hook fires** — The HTTP hook sends the tool name and input to the governance endpoint (`/api/public/hooks/govern`)
 4. **Governance evaluation** — The endpoint runs the secret detection rule first:

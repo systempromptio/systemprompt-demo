@@ -49,7 +49,7 @@ WARMUP_PAYLOAD='{"hook_event_name":"PreToolUse","tool_name":"Read","agent_id":"d
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$WARMUP_PAYLOAD" \
-  "$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo" > /dev/null 2>&1
+  "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" > /dev/null 2>&1
 
 echo "  Done. Caches warmed."
 echo ""
@@ -71,7 +71,7 @@ GOVERN_OUTPUT=$("$HEY" -n 500 -c 50 -m POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$GOVERN_PAYLOAD" \
-  "$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo" 2>&1)
+  "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" 2>&1)
 
 GOVERN_RPS=$(echo "$GOVERN_OUTPUT" | grep "Requests/sec" | awk '{printf "%.0f", $2}')
 GOVERN_AVG=$(echo "$GOVERN_OUTPUT" | grep "Average:" | head -1 | awk '{printf "%.1f", $2 * 1000}')
@@ -115,7 +115,7 @@ TRACK_OUTPUT=$("$HEY" -n 500 -c 50 -m POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$TRACK_PAYLOAD" \
-  "$BASE_URL/api/public/hooks/track?plugin_id=enterprise-demo" 2>&1)
+  "$BASE_URL/api/public/hooks/track?plugin_id=systemprompt" 2>&1)
 
 TRACK_RPS=$(echo "$TRACK_OUTPUT" | grep "Requests/sec" | awk '{printf "%.0f", $2}')
 TRACK_AVG=$(echo "$TRACK_OUTPUT" | grep "Average:" | head -1 | awk '{printf "%.1f", $2 * 1000}')
@@ -157,7 +157,7 @@ SUSTAINED_OUTPUT=$("$HEY" -n 1000 -c 100 -m POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$SUSTAINED_PAYLOAD" \
-  "$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo" 2>&1)
+  "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" 2>&1)
 
 SUSTAINED_RPS=$(echo "$SUSTAINED_OUTPUT" | grep "Requests/sec" | awk '{printf "%.0f", $2}')
 SUSTAINED_P50=$(echo "$SUSTAINED_OUTPUT" | grep "50% in" | awk '{printf "%.1f", $3 * 1000}')

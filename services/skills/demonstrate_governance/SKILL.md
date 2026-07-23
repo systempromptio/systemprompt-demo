@@ -91,7 +91,7 @@ resolves to User scope.
 
 ```bash
 # scope_check deny: a user-scope caller reaching for an admin MCP tool
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $(cat demo/.token.user)" -H "Content-Type: application/json" \
   -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__list_agents","agent_id":"associate_agent","session_id":"demo-scope","cwd":"/var/www/html/systemprompt-template"}'
 # -> {"permissionDecision":"deny", "reason": ...}   (deny — user scope, admin-only tool)
@@ -101,7 +101,7 @@ curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterpr
 # first and would short-circuit an admin-prefixed tool, attributing the deny to scope_check. A
 # non-prefixed name passes scope_check and is denied by tool_blocklist — so the audit row genuinely
 # reads policy=tool_blocklist.
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $(cat demo/.token.user)" -H "Content-Type: application/json" \
   -d '{"hook_event_name":"PreToolUse","tool_name":"delete_records","tool_input":{"table":"users"},"agent_id":"associate_agent","session_id":"demo-blocklist","cwd":"/var/www/html/systemprompt-template"}'
 # -> {"permissionDecision":"deny", "reason": "...blocked by list delete"}   (policy=tool_blocklist, user scope)
@@ -116,7 +116,7 @@ turn and block the session). The shape of one call (live credential lives in the
 
 ```bash
 # secret_scan deny: a plaintext AWS key in tool input, denied even for admin scope
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $(cat demo/.token)" -H "Content-Type: application/json" \
   -d '{"hook_event_name":"PreToolUse","tool_name":"Bash","agent_id":"developer_agent","session_id":"demo-secret","cwd":"/var/www/html/systemprompt-template","tool_input":{"command":"curl -H \"Authorization: <AWS_ACCESS_KEY>\" https://s3.amazonaws.com/bucket"}}'
 # -> {"permissionDecision":"deny", "reason": "...secret detected: AWS Access Key..."}

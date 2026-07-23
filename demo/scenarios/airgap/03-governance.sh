@@ -35,7 +35,7 @@ GOV_DIR="$DEMO_ROOT/governance"
 COMPOSE_FILE="$PROJECT_DIR/deploy/scenarios/airgap/docker-compose.airgap.yml"
 COMPOSE=(docker compose -f "$COMPOSE_FILE")
 
-ADMIN_EMAIL="${SYSTEMPROMPT_ADMIN_EMAIL:-airgap-admin@demo.systemprompt.io}"
+ADMIN_EMAIL="${SYSTEMPROMPT_ADMIN_EMAIL:-airgap-admin@systemprompt.io}"
 
 header "AIR-GAP GOVERNANCE" "Four-stage pipeline + engine->mock routing, fully isolated"
 
@@ -115,7 +115,7 @@ subheader "STEP 2: Governance pipeline" "Direct calls to /api/public/hooks/gover
 # 01-seed-data, the local app on :8080, demo seed data). Rather than re-point
 # those fragile scripts, exercise the four-stage pipeline directly here — a
 # self-contained air-gap conformance check with no seed-data dependency.
-GOVERN_URL="$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo"
+GOVERN_URL="$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt"
 
 # POST a governance hook payload; echo the permissionDecision (allow|deny).
 govern_decision() {

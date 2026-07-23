@@ -58,7 +58,7 @@ echo "  POST /api/public/hooks/govern"
 echo "------------------------------------------"
 echo ""
 
-RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

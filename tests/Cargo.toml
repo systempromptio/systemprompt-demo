@@ -1,4 +1,4 @@
-# Test workspace for the Enterprise Demo template.
+# Test workspace for the systemprompt.io template.
 #
 # Kept as a SEPARATE workspace (the root [workspace] lists it under `exclude`)
 # so these test crates never compile when the extension crates are consumed as

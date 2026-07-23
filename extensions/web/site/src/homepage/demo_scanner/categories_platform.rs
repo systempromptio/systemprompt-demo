@@ -23,7 +23,7 @@ pub(super) const PLATFORM_CATEGORIES: &[CategoryMeta] = &[
         id: "web",
         title: "Web Generation",
         tagline: "The same binary that runs governance also ships your marketing site.",
-        story: "Most governance platforms stop at the API. Enterprise Demo also publishes systemprompt.io from the same Rust binary, using the same CLI, against the same database. This walkthrough inventories the content model, then runs the validator so you can see the publishing pipeline is real, typed, and CI-friendly.",
+        story: "Most governance platforms stop at the API. This gateway also publishes systemprompt.io from the same Rust binary, using the same CLI, against the same database. This walkthrough inventories the content model, then runs the validator so you can see the publishing pipeline is real, typed, and CI-friendly.",
         cost: "",
         feature_url: "https://systemprompt.io/features/web-publisher",
     },

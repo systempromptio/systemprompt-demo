@@ -23,7 +23,6 @@ includes:
 
   # External agents (super-agents — native apps + CLI tools that run off our infra, distinct from A2A agents above)
   - ../external_agents/claude_desktop.yaml
-  - ../external_agents/codex_cli.yaml
 
 settings:
   agentPortRange: [9000, 9999]

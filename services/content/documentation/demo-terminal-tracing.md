@@ -51,7 +51,7 @@ Send a governance request and a tracking request, observing the full payloads:
 SESSION_ID="demo-trace-$(date +%s)"
 
 curl -s -w "\nHTTP %{http_code} in %{time_total}s" \
-  -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+  -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -68,7 +68,7 @@ curl -s -w "\nHTTP %{http_code} in %{time_total}s" \
 
 ```bash
 curl -s -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" \
-  -X POST "$URL/api/public/hooks/track?plugin_id=enterprise-demo" \
+  -X POST "$URL/api/public/hooks/track?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -173,7 +173,7 @@ BENCH_SESSION="bench-$(date +%s)"
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"hook_event_name":"PreToolUse","tool_name":"Read","agent_id":"developer_agent","session_id":"'$BENCH_SESSION'","tool_input":{"file_path":"/src/main.rs"}}' \
-  "$URL/api/public/hooks/govern?plugin_id=enterprise-demo"
+  "$URL/api/public/hooks/govern?plugin_id=systemprompt"
 ```
 
 ### What to Look For

@@ -51,7 +51,7 @@ This demo uses the plugin token (not the CLI auth token). The plugin token authe
 An admin agent reading a source file. No secrets, valid scope:
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -76,7 +76,7 @@ curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
 The same admin agent, but the tool input contains an AWS access key:
 
 ```bash
-curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "$URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

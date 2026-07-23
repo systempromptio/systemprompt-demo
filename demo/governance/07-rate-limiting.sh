@@ -55,7 +55,7 @@ echo ""
 ALLOWED=0
 DENIED=0
 for i in $(seq 1 "$TOTAL"); do
-  RESP=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+  RESP=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/tmp/x\"},\"agent_id\":\"developer_agent\",\"session_id\":\"$SID\",\"cwd\":\"/tmp\"}")

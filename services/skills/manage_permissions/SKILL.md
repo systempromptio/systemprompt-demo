@@ -49,7 +49,7 @@ governs every decision.
 ```bash
 systemprompt admin users role demote <user_id>
 
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TK" -H "Content-Type: application/json" \
   -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__users_show","agent_id":"associate_agent","session_id":"perms-deny","tool_input":{}}'
 # -> {"permissionDecision":"deny", reason: "tool mcp__systemprompt__users_show requires admin"}
@@ -60,7 +60,7 @@ curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterpr
 ```bash
 systemprompt admin users role promote <user_id>
 
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TK" -H "Content-Type: application/json" \
   -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__users_show","agent_id":"associate_agent","session_id":"perms-allow","tool_input":{}}'
 # -> {"permissionDecision":"allow"}   (same token, no reload - the DB role changed)

@@ -1,5 +1,5 @@
 #!/bin/bash
-# SEED DATA — Populate the Enterprise Demo with baseline state for every demo.
+# SEED DATA — Populate the systemprompt.io with baseline state for every demo.
 # Run after 00-preflight.sh. Idempotent enough to re-run; reseeding will
 # re-post governance events and create additional contexts.
 #
@@ -26,7 +26,7 @@ set -e
 source "$(cd "$(dirname "$0")" && pwd)/_common.sh"
 load_token
 
-header "SEED DATA" "Populating Enterprise Demo with baseline state"
+header "SEED DATA" "Populating systemprompt.io with baseline state"
 
 # ── STEP 1: Contexts ───────────────────────────
 subheader "STEP 1: Create contexts"
@@ -58,7 +58,7 @@ subheader "STEP 3: Generate governance decisions"
 
 gov() {
   local session="$1" agent="$2" tool="$3" input="$4"
-  curl -s -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+  curl -s -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"$tool\",\"agent_id\":\"$agent\",\"session_id\":\"$session\",\"cwd\":\"$PROJECT_DIR\",\"tool_input\":$input}" \
@@ -67,7 +67,7 @@ gov() {
 
 track() {
   local session="$1" agent="$2" tool="$3" input="$4" latency="$5"
-  curl -s -X POST "$BASE_URL/api/public/hooks/track?plugin_id=enterprise-demo" \
+  curl -s -X POST "$BASE_URL/api/public/hooks/track?plugin_id=systemprompt" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"$tool\",\"agent_id\":\"$agent\",\"session_id\":\"$session\",\"cwd\":\"$PROJECT_DIR\",\"tool_input\":$input,\"tool_response\":\"ok\"}" \

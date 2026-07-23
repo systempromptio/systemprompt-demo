@@ -48,7 +48,7 @@ The key difference: both skills go through the same governance pipeline. The out
 
 ## Step 1: Run both demos in Cowork
 
-Open Claude Code with the enterprise-demo plugin installed.
+Open Claude Code with the systemprompt plugin installed.
 
 ```
 # Allowed path — web search passes governance

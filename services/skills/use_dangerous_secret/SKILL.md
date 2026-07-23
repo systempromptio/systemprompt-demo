@@ -52,7 +52,7 @@ conversation.)
   not here):
 
   ```bash
-  curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+  curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
     -H "Authorization: Bearer $(cat demo/.token)" -H "Content-Type: application/json" \
     -d '{"hook_event_name":"PreToolUse","tool_name":"Write","agent_id":"developer_agent","session_id":"demo-dangerous-secret","cwd":"/var/www/html/systemprompt-template","tool_input":{"file_path":"/tmp/key.txt","content":"<PLAINTEXT_CREDENTIAL>"}}'
   # -> {"permissionDecision":"deny", "reason": "...secret detected..."}

@@ -118,7 +118,7 @@ HEY_OUT=$("$HEY" -n "$N" -c "$C" -m POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD" \
-  "$TARGET_URL/api/public/hooks/govern?plugin_id=enterprise-demo" 2>&1)
+  "$TARGET_URL/api/public/hooks/govern?plugin_id=systemprompt" 2>&1)
 
 RPS=$(echo "$HEY_OUT" | grep "Requests/sec" | awk '{printf "%.0f", $2}')
 P50=$(echo "$HEY_OUT" | grep "50% in" | awk '{printf "%.1f", $3 * 1000}')

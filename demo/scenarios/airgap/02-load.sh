@@ -36,7 +36,7 @@ CORE_DIR="$PROJECT_DIR/../systemprompt-core"
 LOADTEST_MANIFEST="$CORE_DIR/crates/tests/loadtest/Cargo.toml"
 
 # Demo admin email used for token self-acquisition by the loadtest.
-ADMIN_EMAIL="${SYSTEMPROMPT_ADMIN_EMAIL:-airgap-admin@demo.systemprompt.io}"
+ADMIN_EMAIL="${SYSTEMPROMPT_ADMIN_EMAIL:-airgap-admin@systemprompt.io}"
 
 # The pass/fail SLO is owned by the airgap profile in the core loadtest
 # (crates/tests/loadtest/src/config.rs): the early-deny governance path on a

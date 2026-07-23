@@ -5,7 +5,7 @@ version: "2.0.0"
 enabled: true
 event: PreToolUse
 matcher: "*"
-command: "curl -s -X POST http://localhost:3000/api/public/hooks/govern?plugin_id=enterprise-demo"
+command: "curl -s -X POST http://localhost:3000/api/public/hooks/govern?plugin_id=systemprompt"
 async: false
 category: custom
 tags: [governance, demo]

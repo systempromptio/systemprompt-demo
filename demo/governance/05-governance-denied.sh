@@ -85,7 +85,7 @@ echo "  rule: scope_check — user scope cannot access mcp__systemprompt__* tool
 echo "------------------------------------------"
 echo ""
 
-RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $USER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -118,7 +118,7 @@ echo "  row genuinely reads policy=tool_blocklist."
 echo "------------------------------------------"
 echo ""
 
-RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $USER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

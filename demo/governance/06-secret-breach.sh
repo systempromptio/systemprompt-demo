@@ -63,7 +63,7 @@ echo "  TEST 1: AWS Access Key in tool input"
 echo "------------------------------------------"
 echo ""
 
-RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ echo "  TEST 2: GitHub PAT in tool input"
 echo "------------------------------------------"
 echo ""
 
-RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -111,7 +111,7 @@ echo "  TEST 3: Private key in tool input"
 echo "------------------------------------------"
 echo ""
 
-RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -135,7 +135,7 @@ echo "  TEST 4: Clean input (no secrets) — PASSES"
 echo "------------------------------------------"
 echo ""
 
-RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=enterprise-demo" \
+RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

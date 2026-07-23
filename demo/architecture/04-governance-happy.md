@@ -20,7 +20,7 @@ Direct call to the governance API simulating a Claude Code PreToolUse hook. Admi
   ┌─────────────────────────────────────────────────────────┐
   │  HTTP: POST /api/public/hooks/govern                    │
   │  Headers: Authorization: Bearer <JWT>                   │
-  │  Query: plugin_id=enterprise-demo                       │
+  │  Query: plugin_id=systemprompt                       │
   │  Body: { hook_event_name, tool_name, agent_id,          │
   │          session_id, tool_input }                        │
   │                                                         │

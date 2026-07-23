@@ -1,6 +1,6 @@
 # New Engineer Onboarding
 
-Welcome to Enterprise Demo. This is the short version.
+Welcome to systemprompt.io. This is the short version.
 
 ## Day 1
 

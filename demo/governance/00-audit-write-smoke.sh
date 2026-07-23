@@ -12,7 +12,7 @@ load_token
 
 SID="audit-smoke-$(date +%s)-$$"
 
-curl -fsS -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -fsS -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"hook_event_name\":\"PreToolUse\",\"tool_name\":\"Read\",\"agent_id\":\"developer_agent\",\"session_id\":\"$SID\",\"cwd\":\"/tmp\",\"tool_input\":{\"file_path\":\"/x\"}}" \

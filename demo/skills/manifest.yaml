@@ -36,7 +36,7 @@ steps:
     label: Package skills into a plugin
     narrative: >
       Lists core plugins, walks services/plugins/ on disk to preview each
-      plugin YAML (including enterprise-demo and how it bundles skills,
+      plugin YAML (including systemprompt and how it bundles skills,
       MCP servers, and hooks), lists and validates hooks, then lists
       loaded extensions and their capabilities. Plugins are the unit of
       distribution — this is how a skill reaches other installations.

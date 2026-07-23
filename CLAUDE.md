@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# Enterprise Demo
+# systemprompt.io
 
 **Use the CLI to discover commands.** `systemprompt --help` is your starting point.
 
@@ -88,6 +88,7 @@ systemprompt core skills show --help
 - Governance runs as a four-stage synchronous pipeline on every tool call: **scope check → secret scan (35+ patterns) → blocklist → rate limit**. Every decision is audited to Postgres with a trace_id linking identity → agent → tool → result → cost.
 - Per-clone Docker Postgres: `just db-up / db-down / db-logs [tenant=local]`. Project name is derived from a hash of the repo path, so multiple clones on one host get isolated containers and volumes. There is no destructive reset recipe — recover migration checksum drift in place with `just repair-migrations`.
 - Deploy flow: `just build-all` (release binary + MCP servers + web assets) then `just deploy`. The `publish_pipeline` job also runs automatically at server startup.
+- `bridge/` is the **Systemprompt Bridge** desktop app (Windows/macOS) — a standalone Cargo workspace, NOT a member of the root workspace (`exclude = ["tests", "bridge"]`). It path-depends on `../systemprompt-core/bin/bridge` (core's bridge is `publish = false`, so a sibling core checkout is required to build it). Build with `just bridge-build` or `cd bridge && cargo build --release`. It supplies only a `Brand` const + assets; all behaviour lives in core. Device-link sign-in hits this repo's `/bridge-auth` mount. Released via `.github/workflows/release-bridge.yml` on `bridge-v*` tags. Out of the box the catalog offers the Claude hosts only (Claude Code / Claude Desktop / Cowork); Codex is not shipped.
 
 ---
 
@@ -177,7 +178,7 @@ Unknown YAML keys cause loud errors at load time (`#[serde(deny_unknown_fields)]
 2. **Rust code -> `extensions/`** — All `.rs` files live here.
 3. **Config only -> `services/`** — YAML/Markdown only. No Rust code.
 4. **CSS files -> `storage/files/css/`** — NEVER put CSS in `extensions/*/assets/css/`.
-5. **Brand name is `Enterprise Demo`** — Use "Enterprise Demo" for display, "demo.systemprompt.io" for URLs.
+5. **Brand name is `systemprompt.io`** — Use "systemprompt.io" for display and URLs.
 6. **It's a library, not a framework** — Embedded code you own and extend. NEVER call it a "framework".
 7. **Demo scripts must work on macOS and Linux** — BSD vs GNU differ on `grep -oP`, `head -n -1`, `sha256sum`, `sed -i`, and binary downloads (pick `hey_darwin_amd64` vs `hey_linux_amd64`). `demo/_common.sh` provides `install_hey()` for the last case; prefer `grep -oE` + `sed -n 's/.../\1/p'` over `grep -oP … \K …`.
 8. **No Co-Authored-By in commits** — `coauthorAttribution: false` is set in `.claude/settings.json`. Never add `Co-Authored-By:` trailers to commit messages.
@@ -247,9 +248,9 @@ Plugins are flat YAML files under `services/plugins/<name>.yaml` that aggregate 
 
 ```yaml
 plugins:
-  enterprise-demo:
-    id: enterprise-demo
-    name: "Enterprise Demo"
+  systemprompt:
+    id: systemprompt
+    name: "systemprompt.io"
     version: "2.0.0"
     enabled: true
     agents:

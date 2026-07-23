@@ -3,7 +3,7 @@
 ## Scope
 
 This policy applies to all automated agents and human operators invoking AI
-tools through the Enterprise Demo platform. It is enforced at runtime by the
+tools through the systemprompt.io platform. It is enforced at runtime by the
 governance hook pipeline (`PreToolUse` and `PostToolUse`).
 
 ## Principles

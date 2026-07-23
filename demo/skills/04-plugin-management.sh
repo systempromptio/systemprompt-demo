@@ -26,10 +26,10 @@ for cfg in "$MARKETPLACES_DIR"/*/config.yaml; do
 done
 echo ""
 
-subheader "STEP 3: Show enterprise-demo marketplace catalogue"
-echo "  \$ cat services/marketplaces/enterprise-demo/config.yaml"
+subheader "STEP 3: Show systemprompt marketplace catalogue"
+echo "  \$ cat services/marketplaces/systemprompt/config.yaml"
 echo ""
-sed 's/^/    /' "$MARKETPLACES_DIR/enterprise-demo/config.yaml" | head -40
+sed 's/^/    /' "$MARKETPLACES_DIR/systemprompt/config.yaml" | head -40
 
 subheader "STEP 4: List Hooks"
 run_cli_head 20 core hooks list

@@ -1,9 +1,9 @@
 ---
-title: "Enterprise Demo Documentation"
-description: "Terminal demo walkthroughs and dashboard usage guide for the Enterprise Demo."
+title: "systemprompt.io Documentation"
+description: "Terminal demo walkthroughs and dashboard usage guide for the systemprompt.io."
 author: "systemprompt.io"
 slug: ""
-keywords: "enterprise-demo, terminal demo, dashboard, authentication"
+keywords: "systemprompt, terminal demo, dashboard, authentication"
 kind: "guide"
 public: true
 tags: ["documentation"]
@@ -14,7 +14,7 @@ after_reading_this:
   - "Log in to and navigate the admin dashboard"
 ---
 
-# Enterprise Demo Documentation
+# systemprompt.io Documentation
 
 This site covers two things: the **terminal demo** walkthroughs and how to **log in and use the dashboard**. Everything else lives in the code.
 

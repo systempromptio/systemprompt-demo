@@ -61,7 +61,7 @@ echo "  $ curl -X POST ${BASE_URL}/api/public/hooks/track  (PostToolUse)"
 echo ""
 
 HTTP_CODE=$(curl -s -o /tmp/demo-hook-track.json -w "%{http_code}" \
-  -X POST "${BASE_URL}/api/public/hooks/track?plugin_id=enterprise-demo" \
+  -X POST "${BASE_URL}/api/public/hooks/track?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{

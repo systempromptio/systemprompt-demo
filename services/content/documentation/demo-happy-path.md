@@ -26,7 +26,7 @@ related_docs:
 
 ## Overview
 
-This demo uses Cowork (Claude Code) with the **enterprise-demo** plugin installed. The `example-web-search` skill instructs Claude to use the WebSearch tool. The PreToolUse governance hook evaluates the tool input, finds no policy violations, and allows the call. The full request is governed, traced, and logged.
+This demo uses Cowork (Claude Code) with the **systemprompt** plugin installed. The `example-web-search` skill instructs Claude to use the WebSearch tool. The PreToolUse governance hook evaluates the tool input, finds no policy violations, and allows the call. The full request is governed, traced, and logged.
 
 > **Terminal alternative:** [Agent Messaging](/documentation/demo-terminal-agents) covers this same path using CLI commands.
 
@@ -44,13 +44,13 @@ systemprompt infra services status
 claude plugin list
 ```
 
-Ensure the platform is healthy and the enterprise-demo plugin appears in Claude Code's plugin list.
+Ensure the platform is healthy and the systemprompt plugin appears in Claude Code's plugin list.
 
 ---
 
 ## Step 1: Invoke the skill in Cowork
 
-Open Claude Code with the enterprise-demo plugin and ask:
+Open Claude Code with the systemprompt plugin and ask:
 
 > "Search the web for the latest news about AI governance"
 
@@ -58,7 +58,7 @@ This triggers the `example-web-search` skill, which instructs Claude to use the 
 
 ### What happens in the system
 
-1. **Skill loaded** — Claude Code loads the `example-web-search` skill from the enterprise-demo plugin
+1. **Skill loaded** — Claude Code loads the `example-web-search` skill from the systemprompt plugin
 2. **Tool selection** — Claude decides to call the WebSearch tool based on the skill instruction
 3. **PreToolUse hook fires** — The HTTP hook sends the tool name and input to the governance endpoint (`/api/public/hooks/govern`)
 4. **Governance evaluation** — The endpoint runs four rules in sequence:

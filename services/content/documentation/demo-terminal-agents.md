@@ -42,7 +42,7 @@ The `developer_agent` (admin scope) is allowed to call MCP tools. The `associate
 ### Governance Check
 
 ```bash
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -93,7 +93,7 @@ Open [/admin/governance](/admin/governance). You should see the allow decision w
 ### Governance Check
 
 ```bash
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" \
+curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

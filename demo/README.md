@@ -464,7 +464,7 @@ just scaled-down
 
 ## Connecting the Bridge desktop app
 
-The `enterprise-demo` plugin, its skills, agents, and MCP servers ship with the template, but plugin assignment is **per-user** — `setup-local` populates the global registry and `01-seed-data.sh` forks `enterprise-demo` into the active session's user. Whoever is authenticated when you run the seed gets the plugin.
+The `systemprompt` plugin, its skills, agents, and MCP servers ship with the template, but plugin assignment is **per-user** — `setup-local` populates the global registry and `01-seed-data.sh` forks `systemprompt` into the active session's user. Whoever is authenticated when you run the seed gets the plugin.
 
 Bring up the template:
 
@@ -473,7 +473,7 @@ just setup-local <anthropic_key> [openai_key] [gemini_key]
 just start
 ```
 
-Preflight + seed (also forks `enterprise-demo` for the current admin session):
+Preflight + seed (also forks `systemprompt` for the current admin session):
 
 ```bash
 ./demo/00-preflight.sh
@@ -486,7 +486,7 @@ Issue a PAT: open <http://localhost:8080/admin/devices>, sign in, create device,
 curl -X POST http://localhost:8080/api/public/admin/user/fork/plugin \
   -H "Authorization: Bearer <their-JWT>" \
   -H 'Content-Type: application/json' \
-  -d '{"org_plugin_id":"enterprise-demo"}'
+  -d '{"org_plugin_id":"systemprompt"}'
 ```
 
 Build and wire up the bridge helper (from systemprompt-core):

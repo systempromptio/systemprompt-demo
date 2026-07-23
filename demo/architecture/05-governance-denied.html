@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo 05: Governance Deny — demo.systemprompt.io</title>
+    <title>Demo 05: Governance Deny — systemprompt.io</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dosis:wght@600;700&family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -247,7 +247,7 @@
                 <span class="cmd-time">Part 1 of demo</span>
             </div>
             <div class="cmd-line">
-                <span class="prompt">$</span> curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=enterprise-demo" -H "Authorization: Bearer $TOKEN" -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__list_agents","agent_id":"associate_agent","session_id":"demo-governance-denied"}'
+                <span class="prompt">$</span> curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" -H "Authorization: Bearer $TOKEN" -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__list_agents","agent_id":"associate_agent","session_id":"demo-governance-denied"}'
             </div>
             <div class="cmd-body">
                 <table class="detail-table">

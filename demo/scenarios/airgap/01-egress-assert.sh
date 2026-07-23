@@ -70,7 +70,7 @@ fi
 subheader "TOKEN: admin token for the gateway bursts"
 app_cli() { "${COMPOSE[@]}" exec -T app systemprompt "$@" 2>&1; }
 _extract_jwt() { grep -oE 'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -1; }
-ADMIN_EMAIL="${SYSTEMPROMPT_ADMIN_EMAIL:-airgap-admin@demo.systemprompt.io}"
+ADMIN_EMAIL="${SYSTEMPROMPT_ADMIN_EMAIL:-airgap-admin@systemprompt.io}"
 app_cli admin users create --name "airgap-admin" --email "$ADMIN_EMAIL" >/dev/null 2>&1 || true
 # Extract the user id from structured --json output. The default table format
 # has no parseable "id": field, so a text-parse here silently yields empty,

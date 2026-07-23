@@ -334,7 +334,7 @@ The same governance pipeline described above enforces scope, secrets, policy, an
 | **MCP allowlist** | Anthropic-curated | Device-local config | One registry, per-principal policy |
 | **Plugin catalogue** | Anthropic-hosted | Files on disk | Signed, scoped, versioned distribution |
 
-Manual install works end-to-end today; signed installers and MDM packages land in a later release. Full walkthrough: [docs/bridge-install.md](docs/bridge-install.md).
+This repo ships the **Systemprompt Bridge** desktop app for Windows and macOS (`bridge/` — device-link sign-in, plugin/MCP sync, pre-trusted `~/Systemprompt` Claude Cowork workspace; see [bridge/README.md](bridge/README.md)). Manual helper install also works end-to-end: [docs/bridge-install.md](docs/bridge-install.md).
 
 </details>
 
