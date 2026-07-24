@@ -292,7 +292,8 @@ systemprompt-templates = { path = "../systemprompt-core/crates/domain/templates"
 systemprompt-runtime = { path = "../systemprompt-core/crates/app/runtime" }
 systemprompt-scheduler = { path = "../systemprompt-core/crates/app/scheduler" }
 systemprompt-generator = { path = "../systemprompt-core/crates/app/generator" }
-systemprompt-sync = { path = "../systemprompt-core/crates/app/sync" }
+# systemprompt-sync was deleted from core (folded into the cloud/auth refactor);
+# no patch entry — resolves from crates.io if anything still wants it.
 systemprompt-api = { path = "../systemprompt-core/crates/entry/api" }
 systemprompt-cli = { path = "../systemprompt-core/crates/entry/cli" }
 systemprompt-slack = { path = "../systemprompt-core/crates/domain/slack" }
