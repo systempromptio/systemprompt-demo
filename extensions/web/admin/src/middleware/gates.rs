@@ -29,13 +29,29 @@ fn original_path(request: &Request) -> String {
         )
 }
 
+/// The request path and query as the client sent it.
+///
+/// The query string must survive the login bounce: the bridge device-link
+/// carries its loopback callback in `?redirect=...`, so dropping the query
+/// strands the post-login return on a page whose extractor then 400s.
+fn original_path_and_query(request: &Request) -> String {
+    let from_uri = |uri: &axum::http::Uri| {
+        uri.path_and_query()
+            .map_or_else(|| uri.path().to_owned(), |pq| pq.as_str().to_owned())
+    };
+    request
+        .extensions()
+        .get::<axum::extract::OriginalUri>()
+        .map_or_else(|| from_uri(request.uri()), |o| from_uri(&o.0))
+}
+
 pub(crate) async fn require_user_middleware(request: Request, next: Next) -> Response {
     let user_ctx = request.extensions().get::<UserContext>().cloned();
     match user_ctx {
         Some(ctx) if !ctx.user_id.as_str().is_empty() => next.run(request).await,
         _ => {
-            let uri = original_path(&request);
-            let redirect_url = format!("/admin/login?redirect={uri}");
+            let target = original_path_and_query(&request);
+            let redirect_url = format!("/admin/login?redirect={}", urlencoding::encode(&target));
             axum::response::Redirect::temporary(&redirect_url).into_response()
         },
     }

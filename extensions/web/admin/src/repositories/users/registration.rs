@@ -61,6 +61,59 @@ pub async fn mark_onboarded(
     Ok(())
 }
 
+/// The user's saved company profile marker, if the onboarding form was ever
+/// submitted. Flows that require a complete profile (the bridge device-link)
+/// gate on row presence.
+pub async fn find_onboarding_profile(pool: &PgPool, user_id: &UserId) -> Option<String> {
+    sqlx::query_scalar!(
+        "SELECT company FROM user_onboarding_profiles WHERE user_id = $1",
+        user_id.as_str(),
+    )
+    .fetch_optional(pool)
+    .await
+    .inspect_err(
+        |e| tracing::warn!(error = %e, user_id = %user_id, "find_onboarding_profile failed"),
+    )
+    .ok()
+    .flatten()
+}
+
+#[derive(Debug)]
+pub struct NewOnboardingProfile<'a> {
+    pub company: &'a str,
+    pub role: &'a str,
+    pub team_size: &'a str,
+    pub why_assessing: &'a str,
+    pub credit_plans: Option<&'a str>,
+}
+
+pub async fn insert_onboarding_profile(
+    pool: &PgPool,
+    user_id: &UserId,
+    profile: &NewOnboardingProfile<'_>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "INSERT INTO user_onboarding_profiles
+            (user_id, company, role, team_size, why_assessing, credit_plans)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (user_id) DO UPDATE SET
+            company = EXCLUDED.company,
+            role = EXCLUDED.role,
+            team_size = EXCLUDED.team_size,
+            why_assessing = EXCLUDED.why_assessing,
+            credit_plans = EXCLUDED.credit_plans",
+        user_id.as_str(),
+        profile.company,
+        profile.role,
+        profile.team_size,
+        profile.why_assessing,
+        profile.credit_plans,
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 pub async fn insert_setup_token(
     pool: &PgPool,
     token_id: &str,

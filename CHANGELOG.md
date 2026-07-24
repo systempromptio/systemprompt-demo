@@ -1,5 +1,11 @@
 # Changelog
 
+## bridge-0.18.3 — 2026-07-24
+
+### Fixed
+
+- The bridge GUI wordmark is now the white variant. The staged brand logo was the navy `#0F172A` wordmark, which rendered dark-on-dark against the GUI background; `bridge/assets/logo.svg` now carries the white wordmark (orange marks unchanged), matching core's own default.
+
 ## bridge-0.18.2 — 2026-07-23
 
 ### Fixed

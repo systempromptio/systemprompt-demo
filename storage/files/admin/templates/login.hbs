@@ -88,7 +88,8 @@
                 </p>
 
                 <p class="auth-foot">
-                    New here? <a href="/admin/register" class="text-accent">Create an account</a>
+                    New here? <a href="/admin/register" class="text-accent" id="register-link">Create an account</a>
+                    <script>(function(){var l=document.getElementById('register-link');if(window.location.search){l.href='/admin/register'+window.location.search;}})();</script>
                 </p>
             </div>
         </div>

@@ -63,7 +63,8 @@
                 </p>
 
                 <p class="auth-foot">
-                    Already have an account? <a href="/admin/login" class="text-accent">Sign in</a>
+                    Already have an account? <a href="/admin/login" class="text-accent" id="login-link">Sign in</a>
+                    <script>(function(){var l=document.getElementById('login-link');if(window.location.search){l.href='/admin/login'+window.location.search;}})();</script>
                 </p>
             </div>
         </div>
@@ -80,7 +81,9 @@
         } from '/js/services/webauthn-passkey-helpers.js';
 
         const LOGIN_PATH = '/admin/login';
-        const POST_REGISTER = '/admin/onboarding';
+        // Carry an incoming ?redirect= (e.g. the bridge device-link callback)
+        // through onboarding so the flow that started registration resumes.
+        const POST_REGISTER = '/admin/onboarding' + window.location.search;
 
         const form = document.getElementById('register-form');
         const errorDiv = document.getElementById('error');

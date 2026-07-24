@@ -63,6 +63,10 @@ pub(crate) struct OnboardingForm {
     pub why_assessing: String,
     #[serde(default)]
     pub credit_plans: Option<String>,
+    /// Local path to resume after onboarding (e.g. the bridge device-link
+    /// consent page). Only same-site paths are honored.
+    #[serde(default)]
+    pub redirect: Option<String>,
 }
 
 pub(crate) async fn onboarding_submit(
@@ -103,6 +107,20 @@ pub(crate) async fn onboarding_submit(
             .map(|c| c.trim().to_owned())
             .filter(|s| !s.is_empty()),
     };
+
+    repositories::users::registration::insert_onboarding_profile(
+        &pool,
+        &user_ctx.user_id,
+        &repositories::users::registration::NewOnboardingProfile {
+            company: &profile.company,
+            role: &profile.role,
+            team_size: &profile.team_size,
+            why_assessing: &profile.why_assessing,
+            credit_plans: profile.credit_plans.as_deref(),
+        },
+    )
+    .await?;
+
     onboarding_completed(
         &pool,
         &user_ctx.user_id,
@@ -112,7 +130,18 @@ pub(crate) async fn onboarding_submit(
     )
     .await;
 
-    Ok(Redirect::to("/admin/setup?welcome=1").into_response())
+    let target = form
+        .redirect
+        .as_deref()
+        .filter(|r| is_safe_local_redirect(r))
+        .unwrap_or("/admin/setup?welcome=1");
+    Ok(Redirect::to(target).into_response())
+}
+
+/// Same-site path check: a single leading `/` (not `//host` or a full URL),
+/// so the post-onboarding bounce cannot leave the gateway.
+fn is_safe_local_redirect(redirect: &str) -> bool {
+    redirect.starts_with('/') && !redirect.starts_with("//")
 }
 
 fn required_field(value: &str, label: &str) -> AdminResult<String> {

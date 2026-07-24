@@ -33,7 +33,7 @@ export const buildCreationCredentialPayload = (credential) => ({
   type: credential.type,
 });
 
-export async function initPkceAndRedirect(userId, authToken, showLoading) {
+export async function initPkceAndRedirect(userId, authToken, showLoading, redirect) {
   if (!userId || typeof authToken !== 'string' || authToken.length === 0) {
     throw new Error('Login session invalid — please reload this page and try again.');
   }
@@ -42,7 +42,7 @@ export async function initPkceAndRedirect(userId, authToken, showLoading) {
   const csrfState = generateRandomString(32);
   localStorage.setItem('pkce_code_verifier', codeVerifier);
   localStorage.setItem('pkce_csrf_state', csrfState);
-  localStorage.setItem('login_redirect', DEFAULT_REDIRECT);
+  localStorage.setItem('login_redirect', redirect || DEFAULT_REDIRECT);
   showLoading('Redirecting...');
   window.location.href = WEBAUTHN_BASE + '/complete?' + new URLSearchParams({
     user_id: userId, auth_token: authToken,

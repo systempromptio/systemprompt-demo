@@ -28,3 +28,16 @@ CREATE TABLE IF NOT EXISTS user_profile_ext (
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_profile_ext_department ON user_profile_ext(department);
+
+-- Company profile captured by the onboarding form. A row here is the durable
+-- "profile completed" marker: flows that require it (e.g. the bridge
+-- device-link) gate on row presence, not on users.full_name.
+CREATE TABLE IF NOT EXISTS user_onboarding_profiles (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    company TEXT NOT NULL,
+    role TEXT NOT NULL,
+    team_size TEXT NOT NULL,
+    why_assessing TEXT NOT NULL,
+    credit_plans TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

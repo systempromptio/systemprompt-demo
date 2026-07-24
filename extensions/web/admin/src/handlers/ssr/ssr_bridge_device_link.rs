@@ -22,7 +22,9 @@ use super::ssr_helpers::branding_context;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct DeviceLinkQuery {
-    pub redirect: String,
+    /// Absent when a login/registration bounce lost the query string; the
+    /// page then tells the user to restart from the bridge instead of 400ing.
+    pub redirect: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -45,11 +47,30 @@ struct DeviceLinkContext {
 pub(crate) async fn device_link_page(
     Extension(user_ctx): Extension<UserContext>,
     Extension(engine): Extension<AdminTemplateEngine>,
+    State(pool): State<Arc<PgPool>>,
     Query(query): Query<DeviceLinkQuery>,
 ) -> AdminHtmlResult<Response> {
-    let Some(host) = validate_loopback_redirect(&query.redirect) else {
-        return Ok(bad_redirect_response(&query.redirect));
+    let Some(redirect) = query.redirect else {
+        return Ok(missing_redirect_response());
     };
+    let Some(host) = validate_loopback_redirect(&redirect) else {
+        return Ok(bad_redirect_response(&redirect));
+    };
+
+    // Linking a device requires a completed company profile. Bounce to the
+    // onboarding form with this page (including the loopback callback) as the
+    // resume target; the form redirects back here once submitted.
+    if crate::repositories::users::registration::find_onboarding_profile(&pool, &user_ctx.user_id)
+        .await
+        .is_none()
+    {
+        let resume = format!(
+            "/bridge-auth/device-link?redirect={}",
+            urlencoding::encode(&redirect)
+        );
+        let target = format!("/admin/onboarding?redirect={}", urlencoding::encode(&resume));
+        return Ok(Redirect::to(&target).into_response());
+    }
 
     let branding = branding_context(&engine)
         .as_object_mut()
@@ -58,7 +79,7 @@ pub(crate) async fn device_link_page(
     let data = DeviceLinkContext {
         branding,
         user_email: user_ctx.email.to_string(),
-        redirect: query.redirect,
+        redirect,
         redirect_host: host,
     };
     let data = serde_json::to_value(&data).map_err(|e| {
@@ -118,6 +139,21 @@ fn validate_loopback_redirect(redirect: &str) -> Option<String> {
     }
     let port = url.port()?;
     Some(format!("{host}:{port}"))
+}
+
+fn missing_redirect_response() -> Response {
+    // lint-ok: http-error — the loopback callback URL only exists inside the
+    // bridge's sign-in attempt; without it the link cannot be completed here
+    (
+        StatusCode::BAD_REQUEST,
+        Html(
+            "<h1>Link expired</h1><p>This page was opened without its bridge \
+             callback. Return to the Systemprompt Bridge app and click \
+             <strong>Sign in</strong> again.</p>"
+                .to_owned(),
+        ),
+    )
+        .into_response()
 }
 
 fn bad_redirect_response(redirect: &str) -> Response {
