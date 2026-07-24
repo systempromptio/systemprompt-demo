@@ -103,12 +103,12 @@ echo ""
 # ──────────────────────────────────────────────
 echo "------------------------------------------"
 echo "  PART 3: MCP tool call — AUTHENTICATED"
-echo "  Admin calls systemprompt core skills list"
+echo "  Admin calls the systemprompt MCP list_topics tool"
 echo "------------------------------------------"
 echo ""
 
-MCP_JSON=$("$CLI" --json plugins mcp call systemprompt systemprompt \
-  --args '{"command":"core skills list"}' --profile "$PROFILE" 2>/dev/null)
+MCP_JSON=$("$CLI" --json plugins mcp call systemprompt list_topics \
+  --args '{}' --profile "$PROFILE" 2>/dev/null)
 printf '%s\n' "$MCP_JSON" | jq -r '.sections[] | "  \(.heading): \(.content)"' 2>/dev/null \
   | grep -E 'server|tool|success' || true
 MCP_OK=$(printf '%s' "$MCP_JSON" | jq -r '.sections[] | select(.heading=="success") | .content' 2>/dev/null)
@@ -139,7 +139,7 @@ echo "  MCP access events:"
   --profile "$PROFILE" 2>&1 | grep -v "^\[profile"
 
 echo ""
-assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = 'demo-7'")" \
+assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-7'")" \
   2 "demo-7 governance decisions landed (allow + deny)"
 
 # ──────────────────────────────────────────────

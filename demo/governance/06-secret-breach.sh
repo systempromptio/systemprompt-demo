@@ -163,27 +163,27 @@ echo ""
 
 echo "  Decision counts (session=$SESSION):"
 "$CLI" infra db query \
-  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE session_id = '$SESSION' GROUP BY decision ORDER BY decision" \
+  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' GROUP BY decision ORDER BY decision" \
   2>&1 | grep -v "^\[profile"
 
 echo ""
 echo "  Expected: 3 deny (secret_scan) + 1 allow (clean) = 4 total"
 echo ""
-assert_eq "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = '$SESSION' AND decision = 'deny' AND policy = 'secret_scan'")" \
+assert_eq "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' AND decision = 'deny' AND policy = 'secret_scan'")" \
   "3" "3 secret_scan denials landed for this session"
-assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = '$SESSION' AND decision = 'allow'")" \
+assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' AND decision = 'allow'")" \
   1 "clean input allowed for this session"
 echo ""
 
 echo "  Detailed decisions (most recent first):"
 "$CLI" infra db query \
-  "SELECT decision, tool_name, policy, reason FROM governance_decisions WHERE session_id = '$SESSION' ORDER BY created_at DESC" \
+  "SELECT decision, tool_name, policy, reason FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' ORDER BY created_at DESC" \
   2>&1 | grep -v "^\[profile"
 
 echo ""
 echo "=========================================="
 echo "  AUDIT COMMANDS (run manually):"
-echo "  $CLI infra db query \"SELECT * FROM governance_decisions WHERE session_id = '$SESSION' ORDER BY created_at\""
+echo "  $CLI infra db query \"SELECT * FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' ORDER BY created_at\""
 echo ""
 echo "  Tests 1-3: DENIED (secret_scan)"
 echo "  Test 4:    ALLOWED (clean input)"

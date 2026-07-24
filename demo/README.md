@@ -10,7 +10,7 @@
 
 # Demo Suite
 
-**43 runnable demo scripts** organised into 9 categories, plus 2 setup scripts, plus 2 orchestrated multi-container scenarios that demonstrate the air-gap and horizontal-scaling claims in the factsheet.
+**44 runnable demo scripts** organised into 9 categories, plus 2 setup scripts, plus 2 orchestrated multi-container scenarios that demonstrate the air-gap and horizontal-scaling claims in the factsheet.
 
 Every demo is **self-testing**: it reads structured `--json` data from the CLI and asserts on it, so a script fails loudly (non-zero exit, red `✗ FAIL` line) the moment expected data is missing — it never narrates a result it didn't verify.
 
@@ -72,7 +72,7 @@ Organised by the three pillars of [systemprompt.io](https://systemprompt.io): **
 | Pillar | Category | Scripts | What it covers | Cost |
 |--------|----------|---------|----------------|------|
 | Infrastructure | [infrastructure/](infrastructure/) | 5 | Services, database, jobs, logs, configuration | Free |
-| Capabilities | [governance/](governance/) | 9 | Audit smoke, scope, secrets, blocklist, rate limit, hooks | Free |
+| Capabilities | [governance/](governance/) | 10 | Audit smoke, scope, secrets, blocklist, rate limit, hooks | Free |
 | Capabilities | [mcp/](mcp/) | 3 | MCP server management, access tracking, tool execution | Free |
 | Capabilities | [analytics/](analytics/) | 8 | Overview, agents, costs, requests, sessions, content/traffic, conversations, tools | Free |
 | Capabilities | [agents/](agents/) | 5 | Agent discovery, config, messaging, tracing, A2A registry | 1 × ~$0.01 |
@@ -81,7 +81,7 @@ Organised by the three pillars of [systemprompt.io](https://systemprompt.io): **
 | Integrations | [web/](web/) | 2 | Content types, templates, sitemaps, validation | Free |
 | Integrations | [performance/](performance/) | 2 | Request tracing, 2000-request load test | Free |
 
-**Total: 43 category scripts + 2 setup scripts. 42 free, 1 costs ~$0.01.** Plus two multi-container scenarios — see [Scenarios](#scenarios--factsheet-proofs).
+**Total: 44 category scripts + 2 setup scripts. 43 free, 1 costs ~$0.01.** Plus two multi-container scenarios — see [Scenarios](#scenarios--factsheet-proofs).
 
 ---
 
@@ -173,6 +173,11 @@ Every demo below is a single fenced command. Run them in any order once prefligh
 [`governance/08-hooks.sh`](governance/08-hooks.sh) — hook listing and validation.
 ```bash
 ./demo/governance/08-hooks.sh
+```
+
+[`governance/09-session-attestation.sh`](governance/09-session-attestation.sh) — the gateway rejects a session id it did not issue.
+```bash
+./demo/governance/09-session-attestation.sh
 ```
 
 ### MCP

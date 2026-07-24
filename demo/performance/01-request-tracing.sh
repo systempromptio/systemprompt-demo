@@ -166,7 +166,7 @@ echo ""
 echo "  Governance decisions (session=$SESSION_ID):"
 echo ""
 "$CLI" infra db query \
-  "SELECT id, user_id, session_id, agent_id, decision, plugin_id, created_at FROM governance_decisions WHERE session_id = '$SESSION_ID' ORDER BY created_at DESC LIMIT 3" \
+  "SELECT id, user_id, session_id, agent_id, decision, plugin_id, created_at FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION_ID' ORDER BY created_at DESC LIMIT 3" \
   --profile "$PROFILE" 2>&1 | grep -v "^\[profile"
 
 echo ""
@@ -183,7 +183,8 @@ echo "  │ ID               │ Source                                 │"
 echo "  ├──────────────────┼────────────────────────────────────────┤"
 echo "  │ decision_id      │ UUID v4 (server-generated primary key) │"
 echo "  │ user_id          │ JWT 'sub' claim (UserId newtype)       │"
-echo "  │ session_id       │ Client-provided (SessionId newtype)    │"
+echo "  │ session_id       │ JWT session claim, attested vs DB      │"
+echo "  │ agent_session    │ Hook payload label (in evaluated_rules) │"
 echo "  │ agent_id         │ Hook payload (AgentName newtype)       │"
 echo "  │ plugin_id        │ Query parameter (PluginId newtype)     │"
 echo "  │ trace_id         │ UUID v4 (TraceId newtype, per-request) │"
@@ -454,7 +455,7 @@ echo ""
 echo "  Governance decisions written:"
 echo ""
 "$CLI" infra db query \
-  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE session_id = '${BENCH_SESSION}-govern' GROUP BY decision" \
+  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '${BENCH_SESSION}-govern' GROUP BY decision" \
   --profile "$PROFILE" 2>&1 | grep -v "^\[profile"
 
 echo ""

@@ -15,10 +15,10 @@
 #   Part 1 — Scope restriction denial:
 #     1. Loads the user-scope token from demo/.token.user (set by 00-preflight.sh)
 #     2. POSTs directly to /api/public/hooks/govern with:
-#        - tool_name: mcp__systemprompt__list_agents (admin-only MCP tool)
+#        - tool_name: mcp__admin__list_agents (admin-only MCP tool)
 #        - agent_id: associate_agent (user scope)
 #     3. Captures the JSON response and asserts permissionDecision == deny
-#        - scope_check rule fails: user scope cannot access mcp__systemprompt__* tools
+#        - scope_check rule fails: user scope cannot access mcp__admin__* tools
 #
 #   Part 2 — Blocklist denial:
 #     1. POSTs directly to /api/public/hooks/govern with:
@@ -79,9 +79,9 @@ load_user_token "${1:-}"
 echo "------------------------------------------"
 echo "  PART 1: Scope restriction denial"
 echo "  identity: demo_user (user scope, token-derived from DB role)"
-echo "  tool: mcp__systemprompt__list_agents"
+echo "  tool: mcp__admin__list_agents"
 echo "  agent: associate_agent (user scope)"
-echo "  rule: scope_check — user scope cannot access mcp__systemprompt__* tools"
+echo "  rule: scope_check — user scope cannot access mcp__admin__* tools"
 echo "------------------------------------------"
 echo ""
 
@@ -90,7 +90,7 @@ RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=system
   -H "Content-Type: application/json" \
   -d '{
     "hook_event_name": "PreToolUse",
-    "tool_name": "mcp__systemprompt__list_agents",
+    "tool_name": "mcp__admin__list_agents",
     "agent_id": "associate_agent",
     "session_id": "demo-governance-denied",
     "cwd": "/var/www/html/systemprompt-template"
@@ -167,12 +167,12 @@ echo "  Most recent governance decisions:"
 
 echo ""
 echo "  Expected: two deny records"
-echo "    1. scope_check:    user scope cannot access mcp__systemprompt__list_agents"
+echo "    1. scope_check:    user scope cannot access mcp__admin__list_agents"
 echo "    2. tool_blocklist: destructive tool delete_records blocked for user scope"
 echo ""
-assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = 'demo-governance-denied' AND decision = 'deny'")" \
+assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-governance-denied' AND decision = 'deny'")" \
   1 "scope deny landed in audit (demo-governance-denied)"
-assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = 'demo-governance-denied-blocklist' AND decision = 'deny'")" \
+assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-governance-denied-blocklist' AND decision = 'deny'")" \
   1 "blocklist deny landed in audit (demo-governance-denied-blocklist)"
 
 echo ""

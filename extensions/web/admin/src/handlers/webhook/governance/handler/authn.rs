@@ -5,7 +5,7 @@
 
 use axum::http::HeaderMap;
 use axum::response::Response;
-use systemprompt::identifiers::UserId;
+use systemprompt::identifiers::{SessionId, UserId};
 use systemprompt::models::auth::JwtAudience;
 use systemprompt::oauth::OauthError;
 use systemprompt_security::authz::{Decision, DenyReason};
@@ -20,6 +20,10 @@ use super::{build_response, spawn_auth_denial};
 pub(super) struct Principal {
     pub user_id: UserId,
     pub token_scope: AccessScope,
+    /// The credential's own `session_id` claim — server-issued when the token
+    /// was minted. This, not the hook payload's `session_id`, is the id the
+    /// audit row can vouch for.
+    pub session_id: SessionId,
 }
 
 pub(super) fn deny_for_auth_failure(reason: &str) -> Decision {
@@ -74,9 +78,16 @@ pub(super) fn authenticate_request(
         Box::new(build_response(&deny_for_auth_failure(reason)))
     })?;
 
+    let Some(session_id) = claims.session_id.clone() else {
+        let reason = "Token carries no session claim — tool call blocked";
+        spawn_auth_denial(denial_params, reason);
+        return Err(Box::new(build_response(&deny_for_auth_failure(reason))));
+    };
+
     Ok(Principal {
         user_id: UserId::new(&claims.sub),
         token_scope: scope_from_permissions(claims.permissions()),
+        session_id,
     })
 }
 

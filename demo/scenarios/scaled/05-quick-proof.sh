@@ -93,7 +93,7 @@ echo ""
 
 # ── Baseline: prove the session is unique (audit row count starts at 0) ──
 BASELINE_ROWS=$(db_scalar \
-  "SELECT count(*) AS n FROM governance_decisions WHERE session_id = '$SESSION'")
+  "SELECT count(*) AS n FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION'")
 BASELINE_ROWS="${BASELINE_ROWS:-0}"
 echo "  Baseline audit rows for session: ${BASELINE_ROWS} (expected 0)"
 echo ""
@@ -174,15 +174,15 @@ echo "------------------------------------------"
 echo ""
 
 AUDIT_ROWS=$(db_scalar \
-  "SELECT count(*) AS n FROM governance_decisions WHERE session_id = '$SESSION'")
+  "SELECT count(*) AS n FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION'")
 AUDIT_ROWS="${AUDIT_ROWS:-0}"
 AUDIT_DELTA=$(( AUDIT_ROWS - BASELINE_ROWS ))
 
 # Server-side ingest span — derives true throughput independent of hey.
 SPAN_S=$(db_scalar \
-  "SELECT EXTRACT(EPOCH FROM (max(created_at) - min(created_at)))::float FROM governance_decisions WHERE session_id = '$SESSION'")
-FIRST_SEEN=$(db_scalar "SELECT min(created_at) FROM governance_decisions WHERE session_id = '$SESSION'")
-LAST_SEEN=$(db_scalar "SELECT max(created_at) FROM governance_decisions WHERE session_id = '$SESSION'")
+  "SELECT EXTRACT(EPOCH FROM (max(created_at) - min(created_at)))::float FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION'")
+FIRST_SEEN=$(db_scalar "SELECT min(created_at) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION'")
+LAST_SEEN=$(db_scalar "SELECT max(created_at) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION'")
 FIRST_SEEN="${FIRST_SEEN:-?}"; LAST_SEEN="${LAST_SEEN:-?}"; SPAN_S="${SPAN_S:-0}"
 SERVER_RPS="n/a"
 if [[ -n "$SPAN_S" && "$SPAN_S" != "0" && "${AUDIT_ROWS:-0}" -gt 0 ]]; then
@@ -192,7 +192,7 @@ fi
 # Decision / policy histogram — proves the four-stage pipeline actually ran.
 echo "  Decision histogram:"
 HIST=$(db_rows \
-  "SELECT count(*) AS n, decision, policy FROM governance_decisions WHERE session_id = '$SESSION' GROUP BY decision, policy ORDER BY n DESC")
+  "SELECT count(*) AS n, decision, policy FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' GROUP BY decision, policy ORDER BY n DESC")
 if [[ "$MODE" == "scaled" ]]; then
   echo "$HIST" | awk -F'|' 'NF>=3 { printf "    %s × decision=%s policy=%s\n", $1,$2,$3 }' || echo "    (no rows)"
   [[ -z "$HIST" ]] && echo "    (no rows)"
@@ -204,7 +204,7 @@ echo ""
 # Sample three audit rows so the user can eyeball real data, not a count.
 echo "  Sample audit rows (first 3 of ${AUDIT_ROWS}):"
 SAMPLE=$(db_rows \
-  "SELECT created_at, id, tool_name, decision, policy, plugin_id FROM governance_decisions WHERE session_id = '$SESSION' ORDER BY created_at LIMIT 3")
+  "SELECT created_at, id, tool_name, decision, policy, plugin_id FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' ORDER BY created_at LIMIT 3")
 if [[ "$MODE" == "scaled" ]]; then
   echo "$SAMPLE" | awk -F'|' 'NF>=6 { printf "    %s  id=%s  tool=%s  decision=%s  policy=%s  plugin=%s\n", $1,$2,$3,$4,$5,$6 }' || echo "    (none)"
   [[ -z "$SAMPLE" ]] && echo "    (none)"
@@ -252,9 +252,9 @@ echo ""
 echo "  See the rows yourself:"
 if [[ "$MODE" == "scaled" ]]; then
   echo "    docker compose -f $SCALED_COMPOSE exec -T postgres-primary \\"
-  echo "      psql -U systemprompt -d systemprompt -c \"SELECT * FROM governance_decisions WHERE session_id = '$SESSION' LIMIT 10\""
+  echo "      psql -U systemprompt -d systemprompt -c \"SELECT * FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' LIMIT 10\""
 else
-  echo "    $CLI infra db query \"SELECT * FROM governance_decisions WHERE session_id = '$SESSION' LIMIT 10\" --profile $PROFILE"
+  echo "    $CLI infra db query \"SELECT * FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SESSION' LIMIT 10\" --profile $PROFILE"
 fi
 echo "    $CLI infra logs trace list --limit 20"
 echo ""

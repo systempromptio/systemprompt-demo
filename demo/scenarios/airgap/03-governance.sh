@@ -151,7 +151,7 @@ assert_decision "GitHub PAT in Write content" deny \
 
 step "2d — audit trail: decisions persisted to governance_decisions"
 AUDIT_COUNT=$(app_cli --json infra db query \
-  "SELECT count(*) AS n FROM governance_decisions WHERE session_id LIKE 'airgap-gov-%';" 2>/dev/null \
+  "SELECT count(*) AS n FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' LIKE 'airgap-gov-%';" 2>/dev/null \
   | grep -oE '"n":[[:space:]]*"?[0-9]+' | grep -oE '[0-9]+' | head -1)
 if [[ -n "$AUDIT_COUNT" && "$AUDIT_COUNT" -ge 3 ]]; then
   pass "Audit trail intact: $AUDIT_COUNT governance_decisions rows recorded in isolation"
@@ -163,9 +163,9 @@ fi
 # Print the actual denied rows — counting is not evidence; the row itself is.
 # A military reviewer wants to see decision + rule + agent_id, not a count.
 step "2e — show the denied audit rows (decision, policy fired, tool, session, reason)"
-cmd "systemprompt infra db query \"SELECT decision, policy, tool_name, session_id, reason FROM governance_decisions WHERE session_id LIKE 'airgap-gov-%' AND decision = 'deny' ORDER BY created_at DESC\""
+cmd "systemprompt infra db query \"SELECT decision, policy, tool_name, session_id, reason FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' LIKE 'airgap-gov-%' AND decision = 'deny' ORDER BY created_at DESC\""
 DENY_ROWS=$(app_cli --json infra db query \
-  "SELECT decision, policy, tool_name, session_id, reason FROM governance_decisions WHERE session_id LIKE 'airgap-gov-%' AND decision = 'deny' ORDER BY created_at DESC LIMIT 10;" 2>/dev/null || true)
+  "SELECT decision, policy, tool_name, session_id, reason FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' LIKE 'airgap-gov-%' AND decision = 'deny' ORDER BY created_at DESC LIMIT 10;" 2>/dev/null || true)
 if printf '%s' "$DENY_ROWS" | grep -q '"decision"[[:space:]]*:[[:space:]]*"deny"'; then
   pass "Denied decisions audited with rule attribution:"
   printf '%s\n' "$DENY_ROWS" | sed 's/^/    /'

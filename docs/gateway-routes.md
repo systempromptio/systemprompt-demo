@@ -6,6 +6,23 @@
 - **Routes by `model_pattern`.** Built-in tags: `anthropic`, `openai`, `moonshot` (Kimi), `qwen`, `gemini`, `minimax`. Anthropic is a transparent byte proxy (extended thinking, cache-control headers, SSE events preserved verbatim). OpenAI-compatible providers get full Anthropic↔OpenAI request/response/SSE conversion. Upstream API keys resolve from the secrets file by name.
 - **Zero overhead when disabled.** The `/v1` router mounts only if `gateway.enabled: true` in the active profile.
 
+## Sessions are attested, not asserted
+
+Every `/v1/messages` call carries `x-session-id`, and the gateway only accepts an
+id it issued to the calling identity — an unknown, revoked, or someone else's
+session is a `401`, not a silently-audited row.
+
+| Caller | Where the session id comes from |
+|--------|--------------------------------|
+| JWT (bridge, browser, CLI token) | the token's own `session_id` claim; the header must equal it |
+| API key / PAT | `POST /api/public/gateway/sessions` with the key, which returns `{"session_id": "sess_…"}` |
+
+The mint endpoint is mounted alongside the gateway (so it exists only when
+`gateway.enabled: true`), authenticates the PAT itself, and refuses JWT callers —
+they already carry a session. See
+[documentation/gateway-api](../services/content/documentation/gateway-api.md)
+for the full request contract.
+
 ## Profile YAML
 
 ```yaml

@@ -287,7 +287,7 @@ echo "------------------------------------------"
 echo ""
 
 "$CLI" infra db query \
-  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE session_id LIKE '${BENCH_SESSION}%' GROUP BY decision" \
+  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' LIKE '${BENCH_SESSION}%' GROUP BY decision" \
   --profile "$PROFILE" 2>&1 | grep -v "^\[profile"
 
 echo ""

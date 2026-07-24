@@ -11,9 +11,9 @@ use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use sqlx::PgPool;
-use systemprompt::identifiers::SessionId;
-use systemprompt::oauth::SessionCreationService;
-use systemprompt::traits::SessionAnalytics;
+use systemprompt::api::services::middleware::attest_session;
+use systemprompt::identifiers::{SessionId, UserId};
+use systemprompt::traits::{AnalyticsProvider, SessionAnalytics};
 use systemprompt_security::authz::Decision;
 use systemprompt_security::policy::types::AccessScope;
 
@@ -21,7 +21,8 @@ use crate::types::webhook::{GovernQuery, HookEventPayload};
 
 use super::types::{
     AuditTarget, AuthDenialParams, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
-    GovernanceDecision, GovernanceResponse, HookSpecificOutput, PrincipalSnapshot,
+    GovernanceDecision, GovernanceDeps, GovernanceResponse, HookSpecificOutput,
+    PrincipalSnapshot,
 };
 use super::{audit, scope};
 
@@ -54,9 +55,42 @@ fn build_response(decision: &Decision) -> Response {
     (StatusCode::OK, Json(response)).into_response()
 }
 
+/// Prefix for a session the credential named but the server cannot vouch for.
+///
+/// The tool call is still governed and still audited — a hook that 401s reads
+/// as "hook unavailable" and lets the call through, which is worse. But the row
+/// must not be joinable with `ai_requests.session_id`, which the gateway
+/// attests, or the two halves of the audit spine would silently agree on an id
+/// nobody issued.
+const UNATTESTED_PREFIX: &str = "unattested_";
+
+/// Confirms the credential's own session claim, which is what the audit row is
+/// keyed on. The hook *payload* also carries a `session_id` — that one is the
+/// agent's local conversation label (Claude Code picks it), evidence of nothing,
+/// and it stays out of the principal snapshot.
+async fn attested_session_id(
+    analytics: &Arc<dyn AnalyticsProvider>,
+    claimed: &SessionId,
+    user_id: &UserId,
+) -> SessionId {
+    match attest_session(analytics, claimed, user_id, "hooks/govern").await {
+        Ok(()) => claimed.clone(),
+        Err(e) => {
+            tracing::warn!(
+                claimed_session_id = %claimed,
+                user_id = %user_id,
+                reason = %e,
+                "govern hook credential names a session the server cannot attest; \
+                 auditing under an unattested id"
+            );
+            SessionId::new(format!("{UNATTESTED_PREFIX}{claimed}"))
+        },
+    }
+}
+
 pub(crate) async fn govern_tool_use(
     State(pool): State<Arc<PgPool>>,
-    Extension(session_service): Extension<Arc<SessionCreationService>>,
+    Extension(deps): Extension<GovernanceDeps>,
     headers: HeaderMap,
     Query(query): Query<GovernQuery>,
     Json(raw): Json<serde_json::Value>,
@@ -64,15 +98,19 @@ pub(crate) async fn govern_tool_use(
     // lint-ok: http-error — a hook answers 200 with a decision; an error status
     // reads as "hook unavailable" and lets the call through
     let (payload, _warnings) = HookEventPayload::from_value(raw);
+    let GovernanceDeps {
+        session_service,
+        analytics,
+    } = deps;
 
     let tool_name = payload.tool_name().unwrap_or("unknown");
-    let session_id = SessionId::new(payload.session_id());
+    let agent_session = SessionId::new(payload.session_id());
     let agent_id = payload.common.agent_id.as_ref();
     let plugin_id = query.plugin_id.as_ref();
 
     let denial_params = AuthDenialParams {
         pool: &pool,
-        session_id: &session_id,
+        session_id: &agent_session,
         tool_name,
         agent_id,
         plugin_id,
@@ -85,6 +123,7 @@ pub(crate) async fn govern_tool_use(
         Err(e) => return e.into_response(),
     };
     let user_id = principal.user_id;
+    let session_id = attested_session_id(&analytics, &principal.session_id, &user_id).await;
 
     let db_scope = scope::scope_from_user_roles(&pool, &user_id).await;
     let principal_scope = scope::higher_privilege(principal.token_scope, db_scope);
@@ -92,9 +131,12 @@ pub(crate) async fn govern_tool_use(
         scope::higher_privilege(principal_scope, scope::resolve_agent_scope(id))
     });
 
+    // Why: the rate-limit policy keys on the *agent's* session, not the
+    // credential's — one long-lived plugin token drives many agent runs, and a
+    // per-credential bucket would let one runaway run throttle every other.
     let (decision, chain) = evaluate(&EvaluateInput {
         tool_name,
-        session_id: &session_id,
+        session_id: &agent_session,
         user_id: &user_id,
         access_scope,
         tool_input: payload.tool_input(),
@@ -105,6 +147,7 @@ pub(crate) async fn govern_tool_use(
         principal: PrincipalSnapshot {
             user_id,
             session_id: session_id.clone(),
+            agent_session: Some(agent_session),
             agent_id: agent_id.cloned(),
             agent_scope: access_scope,
         },
@@ -155,7 +198,12 @@ fn spawn_auth_denial(params: &AuthDenialParams<'_>, reason: &str) {
             decision: deny_for_auth_failure(&reason),
             principal: PrincipalSnapshot {
                 user_id,
-                session_id: session_id.clone(),
+                // Why: this path fires *because* authentication failed, so there
+                // is no credential to attest a session from. Prefixing keeps the
+                // invariant that an un-prefixed `session_id` in this table was
+                // always checked against `user_sessions`.
+                session_id: SessionId::new(format!("{UNATTESTED_PREFIX}{session_id}")),
+                agent_session: Some(session_id.clone()),
                 agent_id,
                 agent_scope: AccessScope::Unknown,
             },

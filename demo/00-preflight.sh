@@ -436,7 +436,7 @@ else
     echo ""
     decode_jwt "$USER_TOKEN"
     echo ""
-    echo "  DB role is now 'user' — scope_check denies mcp__systemprompt__* and"
+    echo "  DB role is now 'user' — scope_check denies mcp__admin__* and"
     echo "  tool_blocklist denies destructive tools for this token. Saved to"
     echo "  demo/.token.user (gitignored like demo/.token)."
     echo ""

@@ -49,6 +49,7 @@ pub mod test_support {
 pub fn hooks_webhook_router(
     pool: Arc<PgPool>,
     session_service: Arc<systemprompt::oauth::SessionCreationService>,
+    analytics_provider: Arc<dyn systemprompt::traits::AnalyticsProvider>,
 ) -> Router {
     Router::new()
         .route(
@@ -61,6 +62,10 @@ pub fn hooks_webhook_router(
         .route("/hooks/transcript", post(handlers::track_transcript_event))
         .layer(Extension(event_hub::EventHub::default()))
         .layer(Extension(None::<Arc<systemprompt::ai::AiService>>))
+        .layer(Extension(handlers::GovernanceDeps {
+            session_service: Arc::clone(&session_service),
+            analytics: analytics_provider,
+        }))
         .layer(Extension(session_service))
         .with_state(pool)
 }

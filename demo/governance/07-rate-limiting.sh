@@ -78,17 +78,17 @@ fi
 
 subheader "STEP 4: Audit trail — decisions for this session"
 "$CLI" infra db query \
-  "SELECT decision, policy, COUNT(*) AS count FROM governance_decisions WHERE session_id = '$SID' GROUP BY decision, policy ORDER BY decision, policy" \
+  "SELECT decision, policy, COUNT(*) AS count FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SID' GROUP BY decision, policy ORDER BY decision, policy" \
   --profile "$PROFILE" 2>&1 | grep -v "^\[profile" | sed 's/^/  /'
 
 echo ""
 echo "  Sample deny rows:"
 "$CLI" infra db query \
-  "SELECT decision, policy, reason FROM governance_decisions WHERE session_id = '$SID' AND decision = 'deny' LIMIT 3" \
+  "SELECT decision, policy, reason FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SID' AND decision = 'deny' LIMIT 3" \
   --profile "$PROFILE" 2>&1 | grep -v "^\[profile" | sed 's/^/  /'
 
 echo ""
-assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = '$SID' AND decision = 'deny' AND policy = 'rate_limit'")" \
+assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SID' AND decision = 'deny' AND policy = 'rate_limit'")" \
   1 "denies attributed to policy=rate_limit"
 
 header "RATE LIMITING DEMO COMPLETE"

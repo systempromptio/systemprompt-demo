@@ -22,7 +22,7 @@ curl -fsS -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=systemprompt" \
 sleep 1
 
 count=$("$CLI" --json --profile "$PROFILE" infra db query \
-  "SELECT COUNT(*)::int AS c FROM governance_decisions WHERE session_id = '$SID'" \
+  "SELECT COUNT(*)::int AS c FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = '$SID'" \
   2>/dev/null | sed -n 's/.*"c"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' | head -1)
 
 if [[ "${count:-0}" -lt 1 ]]; then

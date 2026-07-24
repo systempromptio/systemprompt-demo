@@ -11,7 +11,7 @@
 #   1. Loads auth token from demo/.token
 #   2. POSTs to /api/public/hooks/govern simulating a PreToolUse hook
 #      - agent_id=developer_agent (admin scope, allowed to use MCP tools)
-#      - tool_name=mcp__systemprompt__systemprompt (clean tool input)
+#      - tool_name=mcp__systemprompt__list_topics (clean tool input)
 #      - Governance evaluates all rules → ALLOW
 #   3. Calls the actual MCP tool via CLI to show what executes after ALLOW
 #   4. Audits the governance_decisions table for the allow record
@@ -54,7 +54,7 @@ echo "  PART 1: Governance check (PreToolUse)"
 echo ""
 echo "  Simulating Claude Code PreToolUse hook:"
 echo "    agent_id:   developer_agent"
-echo "    tool_name:  mcp__systemprompt__systemprompt"
+echo "    tool_name:  mcp__systemprompt__list_topics"
 echo "    tool_input: {}"
 echo ""
 echo "  developer_agent has admin scope — this"
@@ -67,7 +67,7 @@ RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=system
   -H "Content-Type: application/json" \
   -d '{
     "hook_event_name": "PreToolUse",
-    "tool_name": "mcp__systemprompt__systemprompt",
+    "tool_name": "mcp__systemprompt__list_topics",
     "agent_id": "developer_agent",
     "session_id": "demo-happy-path",
     "cwd": "/var/www/html/systemprompt-template",
@@ -87,12 +87,11 @@ echo "  PART 2: MCP tool execution"
 echo ""
 echo "  Governance returned ALLOW, so Claude Code"
 echo "  proceeds to execute the tool. Running:"
-echo "    plugins mcp call systemprompt systemprompt \\"
-echo "      -a '{\"command\":\"admin agents list\"}'"
+echo "    plugins mcp call systemprompt list_topics -a '{}'"
 echo "------------------------------------------"
 echo ""
 
-"$CLI" plugins mcp call systemprompt systemprompt -a '{"command":"admin agents list"}' 2>&1
+"$CLI" plugins mcp call systemprompt list_topics -a '{}' 2>&1
 
 # ──────────────────────────────────────────────
 #  AUDIT: Verify governance decision
@@ -105,23 +104,23 @@ echo ""
 
 echo "  Decision counts (session=demo-happy-path):"
 "$CLI" infra db query \
-  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE session_id = 'demo-happy-path' GROUP BY decision ORDER BY decision" \
+  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-happy-path' GROUP BY decision ORDER BY decision" \
   2>&1 | grep -v "^\[profile"
 
 echo ""
 echo "  Detailed decisions:"
 "$CLI" infra db query \
-  "SELECT decision, tool_name, policy, reason FROM governance_decisions WHERE session_id = 'demo-happy-path' ORDER BY created_at" \
+  "SELECT decision, tool_name, policy, reason FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-happy-path' ORDER BY created_at" \
   2>&1 | grep -v "^\[profile"
 
 echo ""
-assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = 'demo-happy-path' AND decision = 'allow'")" \
+assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-happy-path' AND decision = 'allow'")" \
   1 "allow decision recorded for demo-happy-path"
 
 echo ""
 echo "=========================================="
 echo "  AUDIT COMMANDS (run manually):"
-echo "  $CLI infra db query \"SELECT * FROM governance_decisions WHERE session_id = 'demo-happy-path' ORDER BY created_at\""
+echo "  $CLI infra db query \"SELECT * FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-happy-path' ORDER BY created_at\""
 echo ""
 echo "  Part 1: ALLOWED (admin scope, clean input)"
 echo "  Part 2: MCP tool returned real agent data"

@@ -92,3 +92,16 @@ steps:
       A validated hook inventory plus a fresh plugin_usage_events row keyed on
       a one-shot session_id — proof the hook-tracking path is wired into the
       audit store, not just the manifest.
+  - script: 09-session-attestation.sh
+    label: Prove the gateway only accepts sessions it issued
+    narrative: >
+      Issues a PAT, mints a session at POST /api/public/gateway/sessions, then
+      calls /v1/messages twice — once with a fabricated session id and once
+      with the minted one. The fabricated call is asserted to fail with 401;
+      the attested call gets past auth and is stopped by the model allow-list
+      instead, so no upstream tokens are spent (RUN_INFERENCE=1 sends a real
+      one). Closes with the user_sessions row the gateway attested against.
+    outcome: >
+      An asserted 401 for the invented session, an asserted pass through auth
+      for the minted one, and a user_sessions row with source=api — proof that
+      ai_requests.session_id is evidence the caller cannot fabricate.

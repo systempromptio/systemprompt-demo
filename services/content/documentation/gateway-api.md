@@ -1,6 +1,6 @@
 ---
 title: "Gateway API (/v1/messages)"
-description: "The governed inference gateway: the /v1/messages contract, the required x-session-id header, model allow-listing, and the three profile API URLs."
+description: "The governed inference gateway: the /v1/messages contract, the attested x-session-id header and how to mint one, model allow-listing, and the three profile API URLs."
 author: "systemprompt.io"
 slug: "gateway-api"
 keywords: "gateway, /v1/messages, x-session-id, inference, model allow-list, api url, governance"
@@ -8,10 +8,11 @@ kind: "guide"
 public: true
 tags: ["gateway", "api", "governance"]
 published_at: "2026-05-19"
-updated_at: "2026-05-19"
+updated_at: "2026-07-24"
 after_reading_this:
   - "Call the governed inference gateway at POST /v1/messages"
   - "Supply the required x-session-id header so a request is not rejected with HTTP 400"
+  - "Mint an attested session for an API-key caller at POST /api/public/gateway/sessions"
   - "Understand how the gateway model allow-list rejects un-listed models with HTTP 403"
   - "Pick the right profile api_*_url for in-container vs host callers"
 related_docs:
@@ -44,8 +45,46 @@ Required headers:
 
 Body: the Anthropic Messages shape — `model`, `max_tokens`, `messages[]`.
 
-The `x-session-id` header is **mandatory**. A request without it is rejected with
-`400`, not a clearer error — supply a session id minted by the session-login flow.
+## Where the session id comes from
+
+The `x-session-id` header is **mandatory**, and it must name a session the server
+issued to the calling identity. A value the server does not recognise — or one
+that belongs to another user — is rejected with `401`:
+
+```
+unknown or revoked session; mint one at POST /api/public/gateway/sessions
+```
+
+That is deliberate. `ai_requests.session_id` is evidence in the audit trail, so
+the gateway will not record an id the caller invented. There are two ways to get
+a real one:
+
+**JWT callers** already have one. The `session_id` claim inside the token was
+minted alongside the token itself, and the gateway requires
+`x-session-id` to equal that claim. Mismatch → `401 X-Session-ID does not match
+authenticated session`. The desktop bridge does this for you: it owns both the
+JWT and the matching header and refreshes them together, which is why local
+clients point at the bridge proxy rather than the gateway directly.
+
+**API-key (PAT) callers** mint one first:
+
+```bash
+SESSION_ID=$(curl -sS -X POST "$API_URL/api/public/gateway/sessions" \
+  -H "x-api-key: $SYSTEMPROMPT_API_KEY" \
+  | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+
+curl -sS -X POST "$API_URL/v1/messages" \
+  -H "x-api-key: $SYSTEMPROMPT_API_KEY" \
+  -H "x-session-id: $SESSION_ID" \
+  -H "content-type: application/json" \
+  -d '{"model":"claude-sonnet-5","max_tokens":64,"messages":[{"role":"user","content":"hello"}]}'
+```
+
+`POST /api/public/gateway/sessions` authenticates the PAT, writes a
+`user_sessions` row owned by that key's user (recording the calling IP and user
+agent), and returns `{"session_id": "sess_…"}`. Reuse it for the life of the
+agent's work; mint a new one when it expires. The endpoint accepts API keys
+only — a JWT caller is told to use its own claim instead.
 
 ## Model allow-listing
 

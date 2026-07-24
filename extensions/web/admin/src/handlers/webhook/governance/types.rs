@@ -82,7 +82,16 @@ pub(super) struct ChainEntryOutcome {
 #[derive(Debug, Serialize, Clone)]
 pub(super) struct PrincipalSnapshot {
     pub user_id: UserId,
+    /// The credential's session, attested against `user_sessions` — the same
+    /// class of evidence as `ai_requests.session_id`, so the inference and
+    /// tool-call halves of the audit spine join on comparable ids. Prefixed
+    /// `unattested_` when the lookup failed.
     pub session_id: SessionId,
+    /// The `session_id` the hook payload carried: the agent's own local
+    /// conversation label (Claude Code mints it). Useful for correlating one
+    /// agent run, but the server never issued it, so it is recorded here rather
+    /// than in the attested column.
+    pub agent_session: Option<SessionId>,
     pub agent_id: Option<AgentId>,
     pub agent_scope: AccessScope,
 }
@@ -103,6 +112,14 @@ pub(super) struct DecisionAudit {
     pub principal: PrincipalSnapshot,
     pub target: AuditTarget,
     pub chain: Vec<ChainEntryOutcome>,
+}
+
+/// The two services the governance webhook needs, layered as one extension so
+/// the handler stays inside the argument-count lint.
+#[derive(Clone)]
+pub(crate) struct GovernanceDeps {
+    pub session_service: Arc<SessionCreationService>,
+    pub analytics: Arc<dyn systemprompt::traits::AnalyticsProvider>,
 }
 
 pub(super) struct AuthDenialParams<'a> {

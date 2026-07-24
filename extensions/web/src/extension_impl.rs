@@ -12,7 +12,7 @@ use systemprompt::analytics::AnalyticsService;
 use systemprompt::database::Database;
 use systemprompt::extension::prelude::*;
 use systemprompt::oauth::SessionCreationService;
-use systemprompt::traits::Job;
+use systemprompt::traits::{AnalyticsProvider, Job};
 use systemprompt::users::UserService;
 
 use crate::assets::web_assets;
@@ -150,11 +150,14 @@ impl Extension for WebExtension {
             Arc::clone(&pool),
             Some(Arc::clone(&write_pool)),
         ));
-        let session_service = Self::build_session_service(&dbpool)?;
+        let (session_service, analytics_provider) = Self::build_session_service(&dbpool)?;
 
         let admin_api = admin::admin_router(Arc::clone(&pool));
-        let webhook_api =
-            admin::hooks_webhook_router(Arc::clone(&write_pool), Arc::clone(&session_service));
+        let webhook_api = admin::hooks_webhook_router(
+            Arc::clone(&write_pool),
+            Arc::clone(&session_service),
+            analytics_provider,
+        );
         let secrets_api = admin::secrets_router(Arc::clone(&write_pool));
         let share_api = admin::share_manifest_router(Arc::clone(&pool));
         let links_router = api::router(Arc::clone(&pool), self.validated_config.clone());
@@ -256,16 +259,25 @@ impl Extension for WebExtension {
 }
 
 impl WebExtension {
-    fn build_session_service(dbpool: &Arc<Database>) -> Option<Arc<SessionCreationService>> {
+    // Why: the governance webhook needs the analytics provider as well as the
+    // session service — it attests the session id its callers claim — so both
+    // come out of one construction rather than building the provider twice.
+    fn build_session_service(
+        dbpool: &Arc<Database>,
+    ) -> Option<(Arc<SessionCreationService>, Arc<dyn AnalyticsProvider>)> {
         let user = UserService::new(dbpool)
             .map_err(|e| tracing::error!(error = %e, "Failed to build user service"))
             .ok()?;
         let analytics = AnalyticsService::new(dbpool, None, None)
             .map_err(|e| tracing::error!(error = %e, "Failed to build analytics service"))
             .ok()?;
-        Some(Arc::new(SessionCreationService::new(
-            Arc::new(analytics),
-            Arc::new(user),
-        )))
+        let analytics: Arc<dyn AnalyticsProvider> = Arc::new(analytics);
+        Some((
+            Arc::new(SessionCreationService::new(
+                Arc::clone(&analytics),
+                Arc::new(user),
+            )),
+            analytics,
+        ))
     }
 }

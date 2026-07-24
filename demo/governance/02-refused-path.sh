@@ -9,13 +9,13 @@
 #   the agent_id in the payload. So we send the request with the user-scope
 #   plugin token from demo/.token.user (minted by 00-preflight.sh for
 #   demo_user@demo.local, whose DB role is `user`). That token resolves to User
-#   scope, so scope_check genuinely denies mcp__systemprompt__* tools.
+#   scope, so scope_check genuinely denies mcp__admin__* tools.
 #   (The admin demo/.token would be ALLOWED here — admins are exempt — which is
 #   why this demo must use the user-scope token.)
 #
 # What this does:
 #   1. POST /api/public/hooks/govern with the user-scope token, simulating a
-#      PreToolUse hook for associate_agent calling mcp__systemprompt__list_agents
+#      PreToolUse hook for associate_agent calling mcp__admin__list_agents
 #   2. Captures the JSON response and asserts permissionDecision == deny
 #      (fails loudly if the backend does not actually deny)
 #   3. Prints commentary on defense-in-depth (mapping + rules)
@@ -53,7 +53,7 @@ echo "------------------------------------------"
 echo "  Simulating PreToolUse hook:"
 echo "  identity=demo_user (user scope, token-derived from DB role)"
 echo "  agent=associate_agent (user scope)"
-echo "  tool=mcp__systemprompt__list_agents"
+echo "  tool=mcp__admin__list_agents"
 echo "------------------------------------------"
 echo ""
 
@@ -62,7 +62,7 @@ RESPONSE=$(curl -s -X POST "${BASE_URL}/api/public/hooks/govern?plugin_id=system
   -H "Content-Type: application/json" \
   -d '{
     "hook_event_name": "PreToolUse",
-    "tool_name": "mcp__systemprompt__list_agents",
+    "tool_name": "mcp__admin__list_agents",
     "agent_id": "associate_agent",
     "session_id": "demo-refused-path",
     "cwd": "/var/www/html/systemprompt-template",
@@ -107,28 +107,28 @@ echo ""
 
 echo "  Decision counts (session=demo-refused-path):"
 "$CLI" infra db query \
-  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE session_id = 'demo-refused-path' GROUP BY decision ORDER BY decision" \
+  "SELECT decision, COUNT(*) as count FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-refused-path' GROUP BY decision ORDER BY decision" \
   2>&1 | grep -v "^\[profile"
 
 echo ""
 echo "  Expected: 1 deny (scope_restriction)"
 echo ""
-assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE session_id = 'demo-refused-path' AND decision = 'deny'")" \
+assert_min "$(db_count "SELECT COUNT(*) FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-refused-path' AND decision = 'deny'")" \
   1 "deny decision landed in audit for demo-refused-path"
 echo ""
 
 echo "  Detailed decisions:"
 "$CLI" infra db query \
-  "SELECT decision, tool_name, policy, reason FROM governance_decisions WHERE session_id = 'demo-refused-path' ORDER BY created_at" \
+  "SELECT decision, tool_name, policy, reason FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-refused-path' ORDER BY created_at" \
   2>&1 | grep -v "^\[profile"
 
 echo ""
 echo "=========================================="
 echo "  AUDIT COMMANDS (run manually):"
-echo "  $CLI infra db query \"SELECT * FROM governance_decisions WHERE session_id = 'demo-refused-path' ORDER BY created_at\""
+echo "  $CLI infra db query \"SELECT * FROM governance_decisions WHERE evaluated_rules->'principal'->>'agent_session' = 'demo-refused-path' ORDER BY created_at\""
 echo ""
 echo "  associate_agent (user scope) was DENIED access to"
-echo "  mcp__systemprompt__list_agents by scope_restriction rule."
+echo "  mcp__admin__list_agents by scope_restriction rule."
 echo ""
 echo "  Now run: ./demo/governance/03-audit-trail.sh"
 echo "=========================================="

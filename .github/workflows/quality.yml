@@ -14,7 +14,7 @@ env:
   # Rev of systemprompt-core the [patch.crates-io] workspace builds against.
   # Keep in lockstep with the committed .sqlx cache: bump it, run `just prepare`,
   # and commit both together.
-  CORE_REV: "a6fc9b295cad984be864ba4158bf15f9b11a0125"
+  CORE_REV: "44dcbda3f21cbcb87e98bfafa4d20210b7574aee"
   CARGO_TERM_COLOR: always
   SQLX_OFFLINE: "true"
   # aws-lc-sys needs clang (GCC <10 bug #95189); ubuntu-latest ships it.

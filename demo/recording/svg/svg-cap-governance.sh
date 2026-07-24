@@ -6,7 +6,7 @@ source "$(dirname "$0")/_colors.sh"
 header "GOVERNANCE" "Tool access control for AI agents"
 sleep 0.8
 
-subheader "Admin agent requests tool access" "developer_agent → mcp__systemprompt__list_agents"
+subheader "Admin agent requests tool access" "developer_agent → mcp__admin__list_agents"
 sleep 0.3
 
 type_cmd "systemprompt hooks govern --agent developer_agent --tool list_agents"
@@ -14,7 +14,7 @@ type_cmd "systemprompt hooks govern --agent developer_agent --tool list_agents"
 RESPONSE=$(curl -s -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=svg-demo" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__list_agents","agent_id":"developer_agent","session_id":"svg-governance","cwd":"/var/www/html/systemprompt-template","tool_input":{}}' 2>/dev/null)
+  -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__admin__list_agents","agent_id":"developer_agent","session_id":"svg-governance","cwd":"/var/www/html/systemprompt-template","tool_input":{}}' 2>/dev/null)
 
 echo "$RESPONSE" | color_json
 echo ""
@@ -23,7 +23,7 @@ sleep 1
 
 divider
 
-subheader "User agent requests same tool" "associate_agent → mcp__systemprompt__list_agents"
+subheader "User agent requests same tool" "associate_agent → mcp__admin__list_agents"
 sleep 0.3
 
 type_cmd "systemprompt hooks govern --agent associate_agent --tool list_agents"
@@ -31,7 +31,7 @@ type_cmd "systemprompt hooks govern --agent associate_agent --tool list_agents"
 RESPONSE=$(curl -s -X POST "$BASE_URL/api/public/hooks/govern?plugin_id=svg-demo" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__list_agents","agent_id":"associate_agent","session_id":"svg-governance","cwd":"/var/www/html/systemprompt-template","tool_input":{}}' 2>/dev/null)
+  -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__admin__list_agents","agent_id":"associate_agent","session_id":"svg-governance","cwd":"/var/www/html/systemprompt-template","tool_input":{}}' 2>/dev/null)
 
 echo "$RESPONSE" | color_json
 echo ""
