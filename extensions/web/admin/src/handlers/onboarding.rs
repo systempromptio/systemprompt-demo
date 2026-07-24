@@ -74,9 +74,9 @@ pub(crate) async fn onboarding_submit(
     State(pool): State<Arc<PgPool>>,
     Form(form): Form<OnboardingForm>,
 ) -> AdminResult<Response> {
-    // Validate every required field before any side effect. The credit grant and
-    // welcome email fire from `onboarding_completed`, so a missing field must
-    // short-circuit here and never reach that hook.
+    // Why: validate every required field before any side effect. The credit
+    // grant and welcome email fire from `onboarding_completed`, so a missing
+    // field must short-circuit here and never reach that hook.
     let full_name = required_field(&form.full_name, "Full name")?;
     let company = required_field(&form.company, "Company name")?;
     let role = required_field(&form.role, "Role or title")?;

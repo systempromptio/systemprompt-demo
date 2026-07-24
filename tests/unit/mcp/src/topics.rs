@@ -34,13 +34,19 @@ fn search_ranks_the_most_relevant_topic_first() {
     );
     // scores are non-increasing
     for pair in hits.windows(2) {
-        assert!(pair[0].score >= pair[1].score, "hits must be sorted by score");
+        assert!(
+            pair[0].score >= pair[1].score,
+            "hits must be sorted by score"
+        );
     }
 }
 
 #[test]
 fn search_ignores_noise_and_returns_nothing_for_unrelated_queries() {
-    assert!(topics::search("a").is_empty(), "single-char tokens are ignored");
+    assert!(
+        topics::search("a").is_empty(),
+        "single-char tokens are ignored"
+    );
     assert!(
         topics::search("zzzzqqqq nonsense").is_empty(),
         "unrelated query should match no topics"

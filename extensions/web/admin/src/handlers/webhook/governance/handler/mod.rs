@@ -21,8 +21,7 @@ use crate::types::webhook::{GovernQuery, HookEventPayload};
 
 use super::types::{
     AuditTarget, AuthDenialParams, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
-    GovernanceDecision, GovernanceDeps, GovernanceResponse, HookSpecificOutput,
-    PrincipalSnapshot,
+    GovernanceDecision, GovernanceDeps, GovernanceResponse, HookSpecificOutput, PrincipalSnapshot,
 };
 use super::{audit, scope};
 
@@ -66,8 +65,8 @@ const UNATTESTED_PREFIX: &str = "unattested_";
 
 /// Confirms the credential's own session claim, which is what the audit row is
 /// keyed on. The hook *payload* also carries a `session_id` — that one is the
-/// agent's local conversation label (Claude Code picks it), evidence of nothing,
-/// and it stays out of the principal snapshot.
+/// agent's local conversation label (Claude Code picks it), evidence of
+/// nothing, and it stays out of the principal snapshot.
 async fn attested_session_id(
     analytics: &Arc<dyn AnalyticsProvider>,
     claimed: &SessionId,

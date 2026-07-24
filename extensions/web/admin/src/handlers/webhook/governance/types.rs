@@ -114,8 +114,8 @@ pub(super) struct DecisionAudit {
     pub chain: Vec<ChainEntryOutcome>,
 }
 
-/// The two services the governance webhook needs, layered as one extension so
-/// the handler stays inside the argument-count lint.
+// Why: the two services the governance webhook needs, layered as one
+// extension so the handler stays inside the argument-count lint.
 #[derive(Clone)]
 pub(crate) struct GovernanceDeps {
     pub session_service: Arc<SessionCreationService>,

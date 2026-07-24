@@ -10,8 +10,8 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Body;
-use http_body_util::BodyExt as _;
 use axum::http::{Request, StatusCode};
+use http_body_util::BodyExt as _;
 use sqlx::PgPool;
 use systemprompt_web_admin as admin;
 use tower::ServiceExt;
@@ -70,7 +70,9 @@ impl App {
     ) -> (StatusCode, Option<String>) {
         // HTTP methods are case-sensitive; the route source spells them
         // lowercase after axum's constructors.
-        let mut builder = Request::builder().method(method.to_uppercase().as_str()).uri(path);
+        let mut builder = Request::builder()
+            .method(method.to_uppercase().as_str())
+            .uri(path);
         if let Some(token) = self.credentials.token_for(principal) {
             builder = builder.header("authorization", format!("Bearer {token}"));
         }

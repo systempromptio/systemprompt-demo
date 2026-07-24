@@ -57,9 +57,9 @@ pub(crate) async fn device_link_page(
         return Ok(bad_redirect_response(&redirect));
     };
 
-    // Linking a device requires a completed company profile. Bounce to the
-    // onboarding form with this page (including the loopback callback) as the
-    // resume target; the form redirects back here once submitted.
+    // Why: linking a device requires a completed company profile. Bounce to
+    // the onboarding form with this page (including the loopback callback) as
+    // the resume target; the form redirects back here once submitted.
     if crate::repositories::users::registration::find_onboarding_profile(&pool, &user_ctx.user_id)
         .await
         .is_none()
@@ -68,7 +68,10 @@ pub(crate) async fn device_link_page(
             "/bridge-auth/device-link?redirect={}",
             urlencoding::encode(&redirect)
         );
-        let target = format!("/admin/onboarding?redirect={}", urlencoding::encode(&resume));
+        let target = format!(
+            "/admin/onboarding?redirect={}",
+            urlencoding::encode(&resume)
+        );
         return Ok(Redirect::to(&target).into_response());
     }
 
