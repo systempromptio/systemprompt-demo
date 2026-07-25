@@ -78,10 +78,12 @@ pub(super) async fn collect_user_detail_extras(
     // `roles` is fed to `compute_effective_permissions`, so an empty value
     // renders ALLOW/DENY rows under a caption promising they were computed
     // against this user's actual roles.
-    let (roles, department) =
-        repositories::users::queries::find_user_roles_department(pool, &d.user_id)
-            .await?
-            .unwrap_or_else(|| (Vec::new(), String::new()));
+    let (roles, department) = repositories::users::queries::find_user_access(pool, &d.user_id)
+        .await?
+        .map_or_else(
+            || (Vec::new(), String::new()),
+            |a| (a.roles, a.department),
+        );
 
     let mut assignments = UserAssignmentSummary::default();
     let devices_count = if let Ok(rows) =

@@ -59,9 +59,26 @@ const bindCreatePanel = () => {
   });
 };
 
+const bindApprovals = () => {
+  on('click', '[data-action="approve-user"]', async (event, target) => {
+    const userId = target.dataset.userId;
+    if (!userId) return;
+    target.disabled = true;
+    try {
+      await apiFetch(`/users/${encodeURIComponent(userId)}/approve`, { method: 'POST' });
+      showToast(`Approved ${target.dataset.userName || userId}`, 'success');
+      window.location.reload();
+    } catch (err) {
+      target.disabled = false;
+      showToast(err.message || 'Failed to approve user', 'error');
+    }
+  });
+};
+
 export const initUsersPage = () => {
   const page = document.querySelector('[data-page="users"]') || document.getElementById('users-table');
   if (page) {
+    bindApprovals();
     bindCreatePanel();
     bindActionsPopup();
     const createBtn = document.querySelector('[data-action="create-user"]');

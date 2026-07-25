@@ -47,7 +47,6 @@ struct DeviceLinkContext {
 pub(crate) async fn device_link_page(
     Extension(user_ctx): Extension<UserContext>,
     Extension(engine): Extension<AdminTemplateEngine>,
-    State(pool): State<Arc<PgPool>>,
     Query(query): Query<DeviceLinkQuery>,
 ) -> AdminHtmlResult<Response> {
     let Some(redirect) = query.redirect else {
@@ -57,22 +56,12 @@ pub(crate) async fn device_link_page(
         return Ok(bad_redirect_response(&redirect));
     };
 
-    // Why: linking a device requires a completed company profile. Bounce to
-    // the onboarding form with this page (including the loopback callback) as
-    // the resume target; the form redirects back here once submitted.
-    if crate::repositories::users::registration::find_onboarding_profile(&pool, &user_ctx.user_id)
-        .await
-        .is_none()
-    {
-        let resume = format!(
-            "/bridge-auth/device-link?redirect={}",
-            urlencoding::encode(&redirect)
-        );
-        let target = format!(
-            "/admin/onboarding?redirect={}",
-            urlencoding::encode(&resume)
-        );
-        return Ok(Redirect::to(&target).into_response());
+    // Why: linking a device is exactly the access an unreviewed account must
+    // not have. There is no resume target to carry any more — the applicant has
+    // already told us everything, and only an admin can move this forward — so
+    // the bounce is to the plain holding page.
+    if !user_ctx.is_approved && !user_ctx.is_admin {
+        return Ok(Redirect::to("/admin/pending").into_response());
     }
 
     let branding = branding_context(&engine)

@@ -56,10 +56,10 @@ pub(crate) async fn for_user_handler(
     let cfg = repositories::config::gateway::get_gateway_config(&profile_path)
         .map_err(AdminError::internal)?;
 
-    let (user_roles, _department) =
-        repositories::users::queries::find_user_roles_department(&pool, &user_id)
-            .await?
-            .ok_or_else(|| AdminError::NotFound("User not found".to_owned()))?;
+    let user_roles = repositories::users::queries::find_user_access(&pool, &user_id)
+        .await?
+        .ok_or_else(|| AdminError::NotFound("User not found".to_owned()))?
+        .roles;
 
     let routes = collect_allowed_routes(&pool, &cfg.routes, &user_id, &user_roles).await?;
     Ok(Json(CatalogResponse { user_id, routes }).into_response())
@@ -155,11 +155,12 @@ pub(crate) async fn detect_after_the_fact(
         else {
             continue;
         };
-        let Some((user_roles, _department)) =
-            repositories::users::queries::find_user_roles_department(pool, &row.user_id).await?
+        let Some(access) =
+            repositories::users::queries::find_user_access(pool, &row.user_id).await?
         else {
             continue;
         };
+        let user_roles = access.roles;
         let attributes = subject_attributes_for(pool, &UserId::new(&row.user_id)).await;
         let rules = gateway_acl::list_rules_for_route(pool, &route.id).await?;
         let default_included = gateway_acl::find_entity(pool, &route.id)

@@ -40,6 +40,7 @@ pub(crate) async fn users_page(
     let total_events: i64 = users.iter().map(|u| u.total_events).sum();
 
     let groups = data::load_user_groups(&pool, &users).await;
+    let pending = repositories::users::registration::list_pending_applicants(&pool).await;
 
     let page_stats = vec![
         PageStatView {
@@ -64,6 +65,8 @@ pub(crate) async fn users_page(
         active_users,
         total_events,
         page_stats,
+        pending_count: pending.len(),
+        pending,
     };
 
     Ok(super::render_typed_page(

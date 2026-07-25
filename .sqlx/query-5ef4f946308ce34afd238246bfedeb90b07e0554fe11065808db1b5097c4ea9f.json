@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_approvals\n         SET status = $2, decided_at = NOW(), decided_by = $3\n         WHERE user_id = $1 AND status IS DISTINCT FROM $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5ef4f946308ce34afd238246bfedeb90b07e0554fe11065808db1b5097c4ea9f"
+}

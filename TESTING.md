@@ -48,7 +48,7 @@ Open **http://localhost:8080/**. You should see:
   2. Tell us about yourself (the form that releases the credit)
   3. Check your email — $5 of credit
   4. Download the Systemprompt Bridge (Mac / Windows badges, pinned to the
-     `bridge-v0.18.0` release tag)
+     `bridge-v0.18.4` release tag)
   5. Sign in on the Bridge — Claude Desktop / Cowork configured for you
 - The showreel lives at **/resources/** (linked from the header) as a YouTube
   embed.
@@ -112,8 +112,8 @@ send degrades to a logged no-op inside the spawned email task.
 The page shows, in order:
 
 1. **Download badges** —
-   - macOS (Apple Silicon): `https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-aarch64-apple-darwin`
-   - Windows: `https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-x86_64-pc-windows-msvc.exe`
+   - macOS (Apple Silicon): `https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip`
+   - Windows: `https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe`
 2. **Generate sign-in code** — POSTs to `/admin/devices/bridge-code` and
    displays `{code, expires_at}` (a one-time device-link code, short expiry —
    regenerate if it lapses).

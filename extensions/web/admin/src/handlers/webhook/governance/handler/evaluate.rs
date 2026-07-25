@@ -13,15 +13,15 @@ use systemprompt_security::policy::{AgentScope, McpToolInput, PolicyContext};
 use super::super::policy::{self, PolicyConfig};
 use super::super::types::{ChainEntryOutcome, ChainEntryResult};
 
-pub(super) struct EvaluateInput<'a> {
-    pub(super) tool_name: &'a str,
-    pub(super) session_id: &'a SessionId,
-    pub(super) user_id: &'a UserId,
-    pub(super) access_scope: AccessScope,
-    pub(super) tool_input: Option<&'a serde_json::Value>,
+pub(crate) struct EvaluateInput<'a> {
+    pub(crate) tool_name: &'a str,
+    pub(crate) session_id: &'a SessionId,
+    pub(crate) user_id: &'a UserId,
+    pub(crate) access_scope: AccessScope,
+    pub(crate) tool_input: Option<&'a serde_json::Value>,
 }
 
-pub(super) fn evaluate(input: &EvaluateInput<'_>) -> (Decision, Vec<ChainEntryOutcome>) {
+pub(crate) fn evaluate(input: &EvaluateInput<'_>) -> (Decision, Vec<ChainEntryOutcome>) {
     let tool_input = McpToolInput::new(
         input
             .tool_input

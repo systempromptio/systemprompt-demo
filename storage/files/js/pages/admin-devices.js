@@ -2,21 +2,26 @@ import { apiFetch } from '../services/api.js';
 import { showToast } from '../services/toast.js';
 import { on } from '../services/events.js';
 
-const RELEASES_BASE = 'https://github.com/systempromptio/systemprompt-demo/releases/latest';
+// The bridge ships under its own bridge-v* tag alongside the gateway's v* tags,
+// so `releases/latest` resolves to whichever published last. Pin the tag, and
+// bump it here on every bridge release.
+const RELEASE_TAG = 'bridge-v0.18.4';
+const RELEASES_BASE = `https://github.com/systempromptio/systemprompt-demo/releases/tag/${RELEASE_TAG}`;
+const DOWNLOAD_BASE = `https://github.com/systempromptio/systemprompt-demo/releases/download/${RELEASE_TAG}`;
 
 const INSTALL_TEMPLATES = {
   macos: {
     title: 'Install on macOS',
-    intro: 'Run the following on the target Mac. It downloads the Systemprompt Bridge binary from GitHub Releases and installs it onto your PATH; the login command registers this device against the gateway using the PAT above.',
-    downloadLabel: 'Download the macOS binary from GitHub Releases',
+    intro: 'Run the following on the target Mac. It downloads the Systemprompt Bridge app from GitHub Releases and installs it into /Applications; the login command registers this device against the gateway using the PAT above.',
+    downloadLabel: 'Download the macOS app from GitHub Releases',
     downloadHref: RELEASES_BASE,
     guideHref: '/docs/bridge/install-macos',
     snippet: ({ pat, origin }) => [
-      'curl -sSL -o systemprompt-bridge \\',
-      `  ${RELEASES_BASE}/download/systemprompt-bridge-aarch64-apple-darwin`,
-      'chmod +x systemprompt-bridge',
-      'sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge',
-      `systemprompt-bridge login ${pat} --gateway ${origin}`
+      `curl -sSL -O ${DOWNLOAD_BASE}/systemprompt-bridge-aarch64-apple-darwin-app.zip`,
+      'unzip -q systemprompt-bridge-aarch64-apple-darwin-app.zip',
+      'sudo mv SystempromptBridge.app /Applications/',
+      '"/Applications/SystempromptBridge.app/Contents/MacOS/systemprompt-bridge" \\',
+      `  login ${pat} --gateway ${origin}`
     ].join('\n'),
   },
   windows: {
@@ -26,7 +31,7 @@ const INSTALL_TEMPLATES = {
     downloadHref: RELEASES_BASE,
     guideHref: '/docs/bridge/install-windows',
     snippet: ({ pat, origin }) => [
-      `Invoke-WebRequest -Uri ${RELEASES_BASE}/download/systemprompt-bridge-x86_64-pc-windows-msvc.exe \``,
+      `Invoke-WebRequest -Uri ${DOWNLOAD_BASE}/systemprompt-bridge-x86_64-pc-windows-msvc.exe \``,
       '  -OutFile "$env:LOCALAPPDATA\\systemprompt-bridge.exe"',
       `& "$env:LOCALAPPDATA\\systemprompt-bridge.exe" login ${pat} --gateway ${origin}`
     ].join('\n'),
@@ -39,7 +44,7 @@ const INSTALL_TEMPLATES = {
     guideHref: '/docs/bridge/device-auth',
     snippet: ({ pat, origin }) => [
       'curl -sSL -o systemprompt-bridge \\',
-      `  ${RELEASES_BASE}/download/systemprompt-bridge-x86_64-unknown-linux-gnu`,
+      `  ${DOWNLOAD_BASE}/systemprompt-bridge-x86_64-unknown-linux-gnu`,
       'chmod +x systemprompt-bridge',
       'sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge',
       `systemprompt-bridge login ${pat} --gateway ${origin}`

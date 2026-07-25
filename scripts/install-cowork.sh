@@ -6,7 +6,7 @@
 # install-gateway.sh.
 #
 # Usage:   curl -sSL https://raw.githubusercontent.com/systempromptio/systemprompt-template/main/scripts/install-cowork.sh | sh
-#          ... | sh -s -- --version bridge-v0.9.0 --prefix /usr/local
+#          ... | sh -s -- --version bridge-v0.18.4 --prefix /usr/local
 
 set -euo pipefail
 

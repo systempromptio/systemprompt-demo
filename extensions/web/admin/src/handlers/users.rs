@@ -111,7 +111,12 @@ pub(crate) async fn create_user_handler(
     if !user_ctx.is_admin {
         return Err(AdminError::Forbidden("Admin access required".to_owned()));
     }
-    let user = repositories::users::mutations::create_user(&pool, &body).await?;
+    let user = repositories::users::mutations::create_user(&*pool, &body).await?;
+    // Why: an admin creating an account by hand has already made the decision
+    // the review gate exists to capture, so it is approved on the spot rather
+    // than landing in its creator's own queue.
+    repositories::users::registration::approve_on_create(&pool, &user.user_id, &user_ctx.user_id)
+        .await;
     let p = Arc::clone(&pool);
     let uid = user_ctx.user_id.clone();
     let new_user_id = user.user_id.clone();
@@ -127,6 +132,56 @@ pub(crate) async fn create_user_handler(
         .await;
     });
     Ok((StatusCode::CREATED, Json(user)).into_response())
+}
+
+/// Approve an account that is waiting on review.
+///
+/// This is the only path that grants the signup credit: `account_approved` is
+/// idempotent on both the grant and the welcome email, so a double-click costs
+/// nothing.
+pub(crate) async fn approve_user_handler(
+    State(pool): State<Arc<PgPool>>,
+    Extension(user_ctx): Extension<UserContext>,
+    Path(user_id_raw): Path<String>,
+) -> AdminResult<Response> {
+    let user_id = UserId::new(user_id_raw);
+    if !user_ctx.is_admin {
+        return Err(AdminError::Forbidden("Admin access required".to_owned()));
+    }
+
+    let applicant = repositories::users::registration::find_applicant(&pool, &user_id)
+        .await
+        .ok_or_else(|| AdminError::NotFound("No pending registration for user".to_owned()))?;
+
+    repositories::users::registration::set_approval_status(
+        &pool,
+        &user_id,
+        repositories::users::registration::APPROVAL_APPROVED,
+        user_ctx.user_id.as_str(),
+    )
+    .await?;
+
+    crate::services::onboarding::account_approved(
+        &pool,
+        &user_id,
+        &applicant.email,
+        &applicant.display_name,
+    )
+    .await;
+
+    let p = Arc::clone(&pool);
+    let uid = user_ctx.user_id.clone();
+    let name = applicant.display_name.clone();
+    let target = user_id.clone();
+    tokio::spawn(async move {
+        activity::record(
+            &p,
+            NewActivity::entity_updated(&uid, ActivityEntity::User, target.as_str(), &name),
+        )
+        .await;
+    });
+
+    Ok(Json(serde_json::json!({ "ok": true, "user_id": user_id })).into_response())
 }
 
 pub(crate) async fn update_user_handler(

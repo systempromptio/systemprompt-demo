@@ -26,6 +26,9 @@ pub fn admin_ssr_router(pool: Arc<PgPool>, engine: AdminTemplateEngine) -> Route
             middleware::non_admin_gate_middleware,
         ))
         .layer(axum_middleware::from_fn(
+            middleware::require_approved_middleware,
+        ))
+        .layer(axum_middleware::from_fn(
             middleware::require_user_middleware,
         ))
         .layer(axum_middleware::from_fn_with_state(
@@ -178,7 +181,10 @@ fn account_routes() -> Router<Arc<PgPool>> {
         .route("/profile", get(handlers::ssr::profile_page))
         .route("/settings", get(handlers::ssr::settings_page))
         .route("/setup", get(handlers::ssr::setup_page))
-        .route("/onboarding", get(handlers::onboarding::onboarding_page))
+        .route("/pending", get(handlers::ssr::pending_page))
+        // Kept for one release: in-flight sessions and the root /onboarding
+        // redirect still point here now that registration collects the profile.
+        .route("/onboarding", get(handlers::onboarding::onboarding_moved))
         .route("/continue", get(handlers::onboarding::post_login_redirect))
         .route("/demo-register", get(handlers::ssr::demo_register_page))
 }
@@ -192,8 +198,4 @@ fn api_routes() -> Router<Arc<PgPool>> {
         )
         .route("/api/chain/{id}", get(handlers::ssr::chain_envelope))
         .route("/api/search/resolve", get(handlers::ssr::search_resolve))
-        .route(
-            "/api/onboarding",
-            post(handlers::onboarding::onboarding_submit),
-        )
 }

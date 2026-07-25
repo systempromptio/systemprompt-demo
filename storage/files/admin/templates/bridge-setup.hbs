@@ -48,9 +48,11 @@
                     <details class="download-other">
                         <summary>Other platforms</summary>
                         <ul>
-                            <li><a href="{{download_base_url}}/systemprompt-bridge-macos.dmg">macOS (.dmg)</a></li>
-                            <li><a href="{{download_base_url}}/systemprompt-bridge-windows.exe">Windows (.exe)</a></li>
-                            <li><a href="{{download_base_url}}/systemprompt-bridge-linux.tar.gz">Linux (.tar.gz)</a></li>
+                            <li><a href="{{download_mac_arm_url}}">macOS, Apple Silicon (.app.zip)</a></li>
+                            <li><a href="{{download_mac_intel_url}}">macOS, Intel (.app.zip)</a></li>
+                            <li><a href="{{download_windows_url}}">Windows (.exe)</a></li>
+                            <li><a href="{{download_linux_url}}">Linux (binary)</a></li>
+                            <li><a href="{{release_page_url}}">All targets, checksums and signatures</a></li>
                         </ul>
                     </details>
                 </div>
@@ -131,20 +133,17 @@ enabled = true
     <script>
     (function () {
         const GATEWAY = {{{json gateway_url}}};
-        const DOWNLOAD_BASE = {{{json download_base_url}}};
-
         const ua = navigator.userAgent;
-        const platform = /Mac/i.test(ua) ? "macos"
-                       : /Win/i.test(ua) ? "windows"
-                       : /Linux/i.test(ua) ? "linux"
+        const platform = /Win/i.test(ua) ? "windows"
+                       : /Linux/i.test(ua) && !/Android/i.test(ua) ? "linux"
                        : "macos";
         const ARTIFACTS = {
-            macos:   { label: "Download for macOS",   file: "systemprompt-bridge-macos.dmg" },
-            windows: { label: "Download for Windows", file: "systemprompt-bridge-windows.exe" },
-            linux:   { label: "Download for Linux",   file: "systemprompt-bridge-linux.tar.gz" },
+            macos:   { label: "Download for macOS",   url: {{{json download_mac_arm_url}}} },
+            windows: { label: "Download for Windows", url: {{{json download_windows_url}}} },
+            linux:   { label: "Download for Linux",   url: {{{json download_linux_url}}} },
         };
         const cta = document.getElementById("download-cta");
-        cta.href = DOWNLOAD_BASE + "/" + ARTIFACTS[platform].file;
+        cta.href = ARTIFACTS[platform].url;
         cta.textContent = ARTIFACTS[platform].label;
 
         const pill = document.getElementById("gateway-pill");

@@ -1,12 +1,14 @@
 //! User create, update, and delete.
 
-use sqlx::PgPool;
+use sqlx::{PgExecutor, PgPool};
 use systemprompt::identifiers::UserId;
 
 use crate::types::{CreateUserRequest, UpdateUserRequest, UserSummary};
 
-pub async fn create_user(
-    pool: &PgPool,
+/// Takes an executor rather than the pool so self-registration can create the
+/// account, its company profile and its approval row in one transaction.
+pub async fn create_user<'e>(
+    executor: impl PgExecutor<'e>,
     req: &CreateUserRequest,
 ) -> Result<UserSummary, sqlx::Error> {
     let user_id_str = req.user_id.as_str().to_owned();
@@ -45,7 +47,7 @@ pub async fn create_user(
         &req.roles,
         &status,
     )
-    .fetch_one(pool)
+    .fetch_one(executor)
     .await?;
 
     Ok(summary)

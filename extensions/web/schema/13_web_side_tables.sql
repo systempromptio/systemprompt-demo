@@ -29,9 +29,7 @@ CREATE TABLE IF NOT EXISTS user_profile_ext (
 
 CREATE INDEX IF NOT EXISTS idx_user_profile_ext_department ON user_profile_ext(department);
 
--- Company profile captured by the onboarding form. A row here is the durable
--- "profile completed" marker: flows that require it (e.g. the bridge
--- device-link) gate on row presence, not on users.full_name.
+-- Company profile captured by the registration form.
 CREATE TABLE IF NOT EXISTS user_onboarding_profiles (
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     company TEXT NOT NULL,
@@ -41,3 +39,26 @@ CREATE TABLE IF NOT EXISTS user_onboarding_profiles (
     credit_plans TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Manual account review. Registration is open, but every new account lands here
+-- as 'pending' and an admin decides: only 'approved' unlocks the admin plane and
+-- releases the signup credit.
+--
+-- This is deliberately not a column on user_onboarding_profiles. Accounts that
+-- predate the review gate — the CLI-bootstrapped admin, anyone created through
+-- the admin API — have no profile row and no company details to invent, so a
+-- separate table is what lets 019 backfill them as approved. It also keeps what
+-- the applicant told us apart from what we decided about them.
+--
+-- A missing row reads as pending, so an account created down some path that
+-- forgets to write here fails closed rather than open.
+CREATE TABLE IF NOT EXISTS user_approvals (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending',
+    requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    decided_at TIMESTAMPTZ,
+    decided_by TEXT,
+    denial_reason TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_approvals_status ON user_approvals(status);

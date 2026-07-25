@@ -16,7 +16,6 @@ use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use base64::Engine;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use systemprompt::config::SecretsBootstrap;
 use systemprompt::identifiers::UserId;
@@ -31,39 +30,10 @@ use crate::types::UserContext;
 /// off the existing JWT signing secret. Reusing the JWT secret avoids
 /// introducing a second piece of bootstrap config.
 fn sign(secret: &[u8], user_id: &UserId, version: i32) -> String {
-    let payload = format!("{user_id}:{version}");
-    let mut padded = [0u8; 64];
-    if secret.len() > 64 {
-        let mut h = Sha256::new();
-        h.update(secret);
-        let digest = h.finalize();
-        padded[..32].copy_from_slice(&digest);
-    } else {
-        padded[..secret.len()].copy_from_slice(secret);
-    }
-    let mut ipad = [0x36u8; 64];
-    let mut opad = [0x5cu8; 64];
-    for i in 0..64 {
-        ipad[i] ^= padded[i];
-        opad[i] ^= padded[i];
-    }
-    let mut inner = Sha256::new();
-    inner.update(ipad);
-    inner.update(payload.as_bytes());
-    let inner_digest = inner.finalize();
-    let mut outer = Sha256::new();
-    outer.update(opad);
-    outer.update(inner_digest);
-    let mac = outer.finalize();
-
+    let mac_hex = crate::util::hmac::hex(secret, &format!("{user_id}:{version}"));
     let b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD;
     let uid_b64 = b64.encode(user_id.as_str().as_bytes());
     let ver_b64 = b64.encode(version.to_string().as_bytes());
-    let mut mac_hex = String::with_capacity(mac.len() * 2);
-    for b in mac {
-        use std::fmt::Write;
-        _ = write!(mac_hex, "{b:02x}");
-    }
     format!("{uid_b64}:{ver_b64}:{mac_hex}")
 }
 
@@ -77,14 +47,7 @@ fn verify(secret: &[u8], token: &str) -> Option<(UserId, i32)> {
     let ver_s = String::from_utf8(b64.decode(parts[1]).ok()?).ok()?;
     let version: i32 = ver_s.parse().ok()?;
     let expected = sign(secret, &user_id, version);
-    if expected.len() != token.len() {
-        return None;
-    }
-    let mut diff = 0u8;
-    for (a, b) in expected.bytes().zip(token.bytes()) {
-        diff |= a ^ b;
-    }
-    if diff == 0 {
+    if crate::util::hmac::eq(&expected, token) {
         Some((user_id, version))
     } else {
         None

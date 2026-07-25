@@ -85,6 +85,45 @@ pub(crate) async fn require_admin_middleware(request: Request, next: Next) -> Re
     }
 }
 
+/// Holds an account at the pending page until an admin has reviewed it.
+///
+/// Sits above `non_admin_gate_middleware` so an unapproved user is bounced
+/// before the role-based allowlist gets a say. Admins bypass unconditionally:
+/// accounts predating the review gate carry no approval row, and locking the
+/// only account that can approve people out of the approval queue is
+/// unrecoverable.
+pub(crate) async fn require_approved_middleware(request: Request, next: Next) -> Response {
+    let path = original_path(&request);
+    let Some(ctx) = request.extensions().get::<UserContext>().cloned() else {
+        return next.run(request).await;
+    };
+
+    if may_pass_pending_gate(ctx.is_admin, ctx.is_approved, path.as_str()) {
+        return next.run(request).await;
+    }
+
+    axum::response::Redirect::to("/admin/pending").into_response()
+}
+
+fn may_pass_pending_gate(is_admin: bool, is_approved: bool, path: &str) -> bool {
+    is_admin || is_approved || is_pending_allowed_path(path)
+}
+
+/// What an account under review may still reach: the pending page itself, the
+/// sign-in and sign-out round trip, and the JSON API the shared page chrome
+/// calls. Deliberately excludes `/admin/profile` and `/admin/settings` — the
+/// non-admin fallback targets — or the bounce would land on a denied page.
+fn is_pending_allowed_path(path: &str) -> bool {
+    path.starts_with("/admin/api/")
+        || path == "/admin/pending"
+        || path == "/admin/continue"
+        || path == "/admin/logout"
+        || path == "/admin/login"
+        || path == "/admin/register"
+        || path == "/admin/add-passkey"
+        || path == "/admin/verify-pending"
+}
+
 // Why: The path comes from `OriginalUri`, as it does in
 // `require_user_middleware`: this layer sits inside a `nest_service("/admin",
 // …)`, which strips the prefix, and every arm of `is_non_admin_allowed_path`
@@ -119,11 +158,64 @@ fn is_non_admin_allowed_path(path: &str) -> bool {
         || path == "/admin/add-passkey"
         || path == "/admin/verify-pending"
         || path == "/admin/setup"
-        || path == "/admin/onboarding"
+        || path == "/admin/pending"
         || path == "/admin/continue"
         || path == "/admin/devices/bridge-code"
         || path == "/admin/devices/pats"
         || path == "/admin/demo-register"
         || path == "/admin/"
         || path == "/admin"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_pending_allowed_path, may_pass_pending_gate};
+
+    #[test]
+    fn unapproved_user_is_held_at_the_pending_page() {
+        for path in [
+            "/admin/profile",
+            "/admin/settings",
+            "/admin/access/users",
+            "/admin/setup",
+            "/bridge-auth/device-link",
+        ] {
+            assert!(
+                !may_pass_pending_gate(false, false, path),
+                "{path} must bounce an unapproved user"
+            );
+        }
+    }
+
+    #[test]
+    fn sign_in_and_sign_out_survive_the_gate() {
+        // A bounce target that is itself bounced is an infinite redirect, and
+        // an account that cannot reach logout is stuck in the browser session.
+        for path in [
+            "/admin/pending",
+            "/admin/login",
+            "/admin/logout",
+            "/admin/continue",
+            "/admin/register",
+            "/admin/api/auth/me",
+        ] {
+            assert!(
+                is_pending_allowed_path(path),
+                "{path} must stay reachable while under review"
+            );
+            assert!(may_pass_pending_gate(false, false, path));
+        }
+    }
+
+    #[test]
+    fn admins_bypass_even_without_an_approval_row() {
+        // Accounts predating the review gate carry no approval row. Locking the
+        // only role that can approve anyone out of the queue is unrecoverable.
+        assert!(may_pass_pending_gate(true, false, "/admin/access/users"));
+    }
+
+    #[test]
+    fn approved_user_reaches_the_admin_plane() {
+        assert!(may_pass_pending_gate(false, true, "/admin/profile"));
+    }
 }

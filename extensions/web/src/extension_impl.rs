@@ -135,8 +135,7 @@ impl Extension for WebExtension {
     }
 
     fn router(&self, ctx: &dyn ExtensionContext) -> Option<ExtensionRouter> {
-        use axum::response::Redirect;
-        use axum::routing::{get, post};
+        use axum::routing::post;
 
         let db_handle = ctx.database();
         let db = db_handle.as_any().downcast_ref::<Database>()?;
@@ -154,6 +153,13 @@ impl Extension for WebExtension {
 
         let admin_api = admin::admin_router(Arc::clone(&pool));
         let webhook_api = admin::hooks_webhook_router(
+            Arc::clone(&write_pool),
+            Arc::clone(&session_service),
+            Arc::clone(&analytics_provider),
+        );
+        // Absent unless configured; its routes are absolute, so it merges at the
+        // site root rather than under /api/public.
+        let pi_api = admin::pi_terminal_router(
             Arc::clone(&write_pool),
             Arc::clone(&session_service),
             analytics_provider,
@@ -191,27 +197,14 @@ impl Extension for WebExtension {
         let bridge_auth_router = admin::bridge_auth_ssr_router(Arc::clone(&pool), engine.clone());
         let ssr_router = admin::admin_ssr_router(pool, engine);
 
-        let combined = Router::new()
-            .route(
-                "/login",
-                get(|| async { Redirect::temporary("/admin/login") }),
-            )
-            .route(
-                "/register",
-                get(|| async { Redirect::temporary("/admin/register") }),
-            )
-            .route(
-                "/onboarding",
-                get(|| async { Redirect::temporary("/admin/onboarding") }),
-            )
-            .route(
-                "/setup",
-                get(|| async { Redirect::temporary("/admin/setup") }),
-            )
+        let mut combined = Self::admin_redirects()
             .nest_service("/admin", ssr_router)
             .nest_service("/bridge-auth", bridge_auth_router)
             .merge(share_api)
             .nest("/api/public", api_router);
+        if let Some(pi) = pi_api {
+            combined = combined.merge(pi);
+        }
 
         Some(ExtensionRouter::public(combined, "/"))
     }
@@ -259,6 +252,31 @@ impl Extension for WebExtension {
 }
 
 impl WebExtension {
+    /// Bare-path aliases for the admin plane's entry pages, so `/login` works as
+    /// well as `/admin/login`. Static, so it lives apart from `router`.
+    fn admin_redirects() -> Router {
+        use axum::response::Redirect;
+        use axum::routing::get;
+
+        Router::new()
+            .route(
+                "/login",
+                get(|| async { Redirect::temporary("/admin/login") }),
+            )
+            .route(
+                "/register",
+                get(|| async { Redirect::temporary("/admin/register") }),
+            )
+            .route(
+                "/onboarding",
+                get(|| async { Redirect::temporary("/admin/continue") }),
+            )
+            .route(
+                "/setup",
+                get(|| async { Redirect::temporary("/admin/setup") }),
+            )
+    }
+
     // Why: the governance webhook needs the analytics provider as well as the
     // session service — it attests the session id its callers claim — so both
     // come out of one construction rather than building the provider twice.

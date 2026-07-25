@@ -24,6 +24,9 @@ pub fn bridge_auth_ssr_router(pool: Arc<PgPool>, engine: AdminTemplateEngine) ->
             middleware::marketplace_context_middleware,
         ))
         .layer(axum_middleware::from_fn(
+            middleware::require_approved_middleware,
+        ))
+        .layer(axum_middleware::from_fn(
             middleware::require_user_middleware,
         ))
         .layer(axum_middleware::from_fn_with_state(

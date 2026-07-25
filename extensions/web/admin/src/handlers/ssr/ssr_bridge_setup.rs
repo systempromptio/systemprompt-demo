@@ -11,14 +11,17 @@ use crate::types::{MarketplaceContext, UserContext};
 
 use super::ssr_helpers::render_typed_page;
 
-const DOWNLOAD_BASE_URL: &str =
-    "https://github.com/systempromptio/systemprompt-demo/releases/latest/download";
+use super::bridge_downloads;
 
 #[derive(Debug, Serialize)]
 struct SetupPageData {
     gateway_url: String,
     user_email: String,
-    download_base_url: &'static str,
+    download_mac_arm_url: &'static str,
+    download_mac_intel_url: &'static str,
+    download_windows_url: &'static str,
+    download_linux_url: &'static str,
+    release_page_url: &'static str,
 }
 
 pub(crate) async fn bridge_setup_page(
@@ -30,7 +33,11 @@ pub(crate) async fn bridge_setup_page(
     let data = SetupPageData {
         gateway_url: derive_gateway_url(&headers),
         user_email: user_ctx.email.to_string(),
-        download_base_url: DOWNLOAD_BASE_URL,
+        download_mac_arm_url: bridge_downloads::MAC_ARM,
+        download_mac_intel_url: bridge_downloads::MAC_INTEL,
+        download_windows_url: bridge_downloads::WINDOWS,
+        download_linux_url: bridge_downloads::LINUX,
+        release_page_url: bridge_downloads::RELEASE_PAGE,
     };
     Ok(render_typed_page(
         &engine,

@@ -2,7 +2,7 @@
 //! record an audit row before returning the `PreToolUse` decision.
 
 mod authn;
-mod evaluate;
+pub(super) mod evaluate;
 
 use std::sync::Arc;
 
@@ -67,7 +67,7 @@ const UNATTESTED_PREFIX: &str = "unattested_";
 /// keyed on. The hook *payload* also carries a `session_id` — that one is the
 /// agent's local conversation label (Claude Code picks it), evidence of
 /// nothing, and it stays out of the principal snapshot.
-async fn attested_session_id(
+pub(super) async fn attested_session_id(
     analytics: &Arc<dyn AnalyticsProvider>,
     claimed: &SessionId,
     user_id: &UserId,

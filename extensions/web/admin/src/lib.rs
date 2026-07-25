@@ -70,6 +70,27 @@ pub fn hooks_webhook_router(
         .with_state(pool)
 }
 
+/// Routes for the governed pi web terminal, or `None` when it is not configured.
+///
+/// Absent by default: without a gateway credential there is nothing to spawn
+/// against, and mounting a half-configured agent service is worse than not
+/// offering one. See [`handlers::pi`] for the sandboxing posture — the tool set
+/// is read-only unless deliberately widened.
+pub fn pi_terminal_router(
+    pool: Arc<PgPool>,
+    session_service: Arc<systemprompt::oauth::SessionCreationService>,
+    analytics_provider: Arc<dyn systemprompt::traits::AnalyticsProvider>,
+) -> Option<Router> {
+    let cfg = handlers::pi::PiConfig::from_env()?;
+    tracing::info!("pi web terminal enabled");
+    Some(handlers::pi::pi_router(
+        pool,
+        handlers::pi::PiRegistry::new(cfg),
+        session_service,
+        analytics_provider,
+    ))
+}
+
 pub fn share_manifest_router(pool: Arc<PgPool>) -> Router {
     Router::new()
         .route(

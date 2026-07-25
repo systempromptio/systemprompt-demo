@@ -39,7 +39,7 @@ The hosted demo lives at **[demo.systemprompt.io](https://demo.systemprompt.io)*
 1. **Create your account with a passkey.** Touch ID, Windows Hello, or a security key. No password to leak.
 2. **Tell us about yourself.** A 30-second form.
 3. **Check your email.** $5 of credit is waiting on your account.
-4. **Download the Systemprompt Bridge** for [macOS (Apple Silicon)](https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-aarch64-apple-darwin) or [Windows](https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-x86_64-pc-windows-msvc.exe).
+4. **Download the Systemprompt Bridge** for [macOS (Apple Silicon)](https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip) or [Windows](https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe).
 5. **Sign in with a one-time code** from your setup page. The Bridge writes the MCP configuration for Claude Cowork, Claude Desktop, and Claude Code. You are done.
 
 From that point, everything Claude does runs through your gateway. Prefer configuring a client by hand? The setup page also issues a personal access token, shown once.

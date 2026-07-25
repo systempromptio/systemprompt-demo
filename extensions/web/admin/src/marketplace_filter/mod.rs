@@ -32,7 +32,7 @@ use systemprompt_security::authz::{
 use keepsets::{CandidateEntityIds, KeepIdsQuery, KeepSets, apply_keep_sets};
 
 use crate::authz::{dimensions, subject_attributes_for};
-use crate::repositories::users::queries::find_user_roles_department;
+use crate::repositories::users::queries::find_user_access;
 
 #[derive(Debug)]
 pub struct TemplateMarketplaceFilter {
@@ -58,8 +58,8 @@ impl TemplateMarketplaceFilter {
         &self,
         user_id: &UserId,
     ) -> Result<(Vec<String>, String), MarketplaceFilterError> {
-        match find_user_roles_department(self.pool.as_ref(), user_id).await {
-            Ok(Some(pair)) => Ok(pair),
+        match find_user_access(self.pool.as_ref(), user_id).await {
+            Ok(Some(access)) => Ok((access.roles, access.department)),
             Ok(None) => Err(MarketplaceFilterError::UnknownUser(user_id.to_string())),
             Err(e) => Err(MarketplaceFilterError::Backend(e.to_string())),
         }

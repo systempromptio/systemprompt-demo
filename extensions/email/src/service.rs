@@ -8,7 +8,7 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Tokio1Executor};
 
 use crate::error::EmailError;
-use crate::templates;
+use crate::{notice, templates};
 
 pub(crate) fn read_secret(env_key: &str, secrets_key: &str) -> Option<String> {
     std::env::var(env_key).ok().or_else(|| {
@@ -107,6 +107,24 @@ impl EmailService {
             .map_err(|e| EmailError::BadRequest(format!("Invalid email address: {e}")))?;
 
         let email = templates::build_welcome_email(self.from.clone(), to, display_name, site_url)?;
+
+        self.transport.send(email).await?;
+        Ok(())
+    }
+
+    /// Send the internal review notice for a newly registered account.
+    pub async fn send_registration_notice(
+        &self,
+        reviewer_email: &str,
+        notice: &notice::RegistrationNotice<'_>,
+        site_url: &str,
+    ) -> Result<(), EmailError> {
+        let to: Mailbox = reviewer_email
+            .parse()
+            .map_err(|e| EmailError::BadRequest(format!("Invalid reviewer address: {e}")))?;
+
+        let email =
+            notice::build_registration_notice_email(self.from.clone(), to, notice, site_url)?;
 
         self.transport.send(email).await?;
         Ok(())

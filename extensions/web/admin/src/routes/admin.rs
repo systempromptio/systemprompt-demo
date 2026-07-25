@@ -78,6 +78,31 @@ fn build_admin_read_routes_inner(read_pool: &Arc<PgPool>) -> Router {
         .with_state(Arc::clone(read_pool))
 }
 
+/// Per-user admin mutations, including the two token-issuing routes.
+///
+/// Split out of [`build_admin_write_routes`] to keep that function inside the
+/// line budget; grouping by `/users/{user_id}` is the natural seam.
+fn build_admin_user_routes() -> Router<Arc<PgPool>> {
+    Router::new()
+        .route("/users", post(handlers::create_user_handler))
+        .route(
+            "/users/{user_id}",
+            put(handlers::update_user_handler).delete(handlers::delete_user_handler),
+        )
+        .route(
+            "/users/{user_id}/share-token",
+            post(handlers::share::issue_share_token_handler),
+        )
+        .route(
+            "/users/{user_id}/pi-embed-token",
+            post(handlers::pi::issue_embed_token_handler),
+        )
+        .route(
+            "/users/{user_id}/approve",
+            post(handlers::approve_user_handler),
+        )
+}
+
 fn build_admin_write_routes(write_pool: &Arc<PgPool>) -> Router {
     Router::new()
         .route("/gateway", patch(handlers::update_gateway_settings_handler))
@@ -94,15 +119,7 @@ fn build_admin_write_routes(write_pool: &Arc<PgPool>) -> Router {
             "/gateway/routes/reorder",
             post(handlers::reorder_gateway_routes_handler),
         )
-        .route("/users", post(handlers::create_user_handler))
-        .route(
-            "/users/{user_id}",
-            put(handlers::update_user_handler).delete(handlers::delete_user_handler),
-        )
-        .route(
-            "/users/{user_id}/share-token",
-            post(handlers::share::issue_share_token_handler),
-        )
+        .merge(build_admin_user_routes())
         .route(
             "/demo-register",
             post(handlers::demo_register::create_demo_user_handler),

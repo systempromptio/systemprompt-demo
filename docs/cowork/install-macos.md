@@ -23,11 +23,18 @@ The formula installs `systemprompt-bridge` onto your `PATH`. Launch the GUI with
 The `systemprompt-bridge` binaries ship under the `bridge-v*` tag series:
 
 ```bash
-curl -sSL -o systemprompt-bridge \
-  https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.0/systemprompt-bridge-aarch64-apple-darwin
-chmod +x systemprompt-bridge
-sudo install -m 0755 systemprompt-bridge /usr/local/bin/systemprompt-bridge
+curl -sSL -O \
+  https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip
+unzip systemprompt-bridge-aarch64-apple-darwin-app.zip
+mv SystempromptBridge.app /Applications/
 ```
+
+The app bundle is cosign-signed but not Apple-notarized, so the first launch is
+blocked as an unidentified developer. Right-click the app in Finder and choose
+**Open** (or approve it under System Settings → Privacy & Security); after that
+it opens normally. The CLI lives inside the bundle at
+`/Applications/SystempromptBridge.app/Contents/MacOS/systemprompt-bridge` —
+symlink it onto your `PATH` if you want the `systemprompt-bridge` command.
 
 Verify the SHA256:
 

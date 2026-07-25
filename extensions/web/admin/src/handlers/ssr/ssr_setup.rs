@@ -9,12 +9,7 @@ use axum::http::HeaderMap;
 use axum::response::Response;
 use serde::{Deserialize, Serialize};
 
-// Why: bump the bridge-v* tag in both URLs on every bridge release. The bridge
-// ships under its own `bridge-v*` tag, so `releases/latest` resolves to the
-// gateway release and 404s here.
-const DOWNLOAD_MAC_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin";
-const DOWNLOAD_WINDOWS_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe";
-const RELEASES_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/latest";
+use super::bridge_downloads;
 
 #[derive(Debug, Serialize)]
 struct SetupPageContext {
@@ -46,9 +41,9 @@ pub(crate) async fn setup_page(
         title: "Connect Claude",
         user_email: user_ctx.email.to_string(),
         gateway_url: derive_gateway_url(&headers),
-        download_mac_url: DOWNLOAD_MAC_URL,
-        download_windows_url: DOWNLOAD_WINDOWS_URL,
-        releases_url: RELEASES_URL,
+        download_mac_url: bridge_downloads::MAC_ARM,
+        download_windows_url: bridge_downloads::WINDOWS,
+        releases_url: bridge_downloads::RELEASE_PAGE,
         welcome: query.welcome.is_some(),
     };
 

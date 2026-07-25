@@ -11,6 +11,50 @@
     </div>
     {{> components/create-user-panel}}
 
+    {{#if pending}}
+    <section aria-label="Accounts awaiting approval" class="mb-4" data-page="pending-approvals">
+        <h2 class="text-base mb-2">Awaiting approval <span class="badge badge-orange">{{pending_count}}</span></h2>
+        <p class="text-sm text-tertiary mb-3">
+            These accounts can sign in but reach nothing until you approve them.
+            Approving grants the evaluation credit and sends the welcome email.
+        </p>
+        {{#> components/data-table}}
+            <thead><tr>
+                <th>Applicant</th>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Team</th>
+                <th>Evaluating</th>
+                <th class="col-date">Requested</th>
+                <th class="col-actions"></th>
+            </tr></thead>
+            <tbody>
+            {{#each pending}}
+                <tr data-pending-user="{{user_id}}">
+                    <td>
+                        <span class="user-cell-text">
+                            <span class="user-cell-name">{{display_name}}</span>
+                            <span class="user-cell-email">{{email}}</span>
+                        </span>
+                    </td>
+                    <td>{{company}}</td>
+                    <td>{{role}}</td>
+                    <td>{{team_size}}</td>
+                    <td class="text-sm">
+                        {{why_assessing}}
+                        {{#if credit_plans}}<span class="text-tertiary d-block">Credit: {{credit_plans}}</span>{{/if}}
+                    </td>
+                    <td class="col-date">{{requested_at}}</td>
+                    <td class="col-actions">
+                        <button type="button" class="btn btn-primary btn-sm" data-action="approve-user" data-user-id="{{user_id}}" data-user-name="{{display_name}}">Approve</button>
+                    </td>
+                </tr>
+            {{/each}}
+            </tbody>
+        {{/components/data-table}}
+    </section>
+    {{/if}}
+
     <section aria-label="Users list" data-page="users">
     {{#if groups}}
     {{#> components/data-table}}

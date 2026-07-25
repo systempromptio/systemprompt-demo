@@ -11,8 +11,8 @@
 mod gates;
 
 pub(crate) use gates::{
-    non_admin_gate_middleware, require_admin_middleware, require_auth_middleware,
-    require_user_middleware,
+    non_admin_gate_middleware, require_admin_middleware, require_approved_middleware,
+    require_auth_middleware, require_user_middleware,
 };
 
 use std::sync::{Arc, LazyLock};
@@ -30,6 +30,7 @@ use tokio::sync::RwLock;
 
 use super::handlers::extract_user_from_cookie;
 use super::repositories::marketplace::plugins::MarketplaceCounts;
+use super::repositories::users::queries::UserAccess;
 use super::types::{MarketplaceContext, UserContext};
 
 #[derive(Debug, Serialize)]
@@ -66,30 +67,34 @@ pub(crate) async fn user_context_middleware(
         },
     };
 
-    let (roles, department) = fetch_user_roles_department(&pool, &session.user_id)
+    // Why: an unreadable row falls back to unapproved, so a database blip
+    // downgrades the caller to the pending page rather than opening the plane.
+    let access = fetch_user_access(&pool, &session.user_id)
         .await
-        .unwrap_or_else(|| (vec!["user".to_owned()], String::new()));
+        .unwrap_or_else(|| UserAccess {
+            roles: vec!["user".to_owned()],
+            department: String::new(),
+            is_approved: false,
+        });
 
-    let is_admin = roles.contains(&"admin".to_owned());
+    let is_admin = access.roles.contains(&"admin".to_owned());
     let ctx = UserContext {
         user_id: session.user_id,
         username: session.username,
         email: session.email,
-        roles,
-        department,
+        roles: access.roles,
+        department: access.department,
         is_admin,
         email_verified: false,
+        is_approved: access.is_approved,
     };
 
     request.extensions_mut().insert(ctx);
     next.run(request).await
 }
 
-async fn fetch_user_roles_department(
-    pool: &PgPool,
-    user_id: &UserId,
-) -> Option<(Vec<String>, String)> {
-    super::repositories::users::queries::find_user_roles_department(pool, user_id)
+async fn fetch_user_access(pool: &PgPool, user_id: &UserId) -> Option<UserAccess> {
+    super::repositories::users::queries::find_user_access(pool, user_id)
         .await
         .inspect_err(
             |e| tracing::warn!(error = %e, user_id = %user_id, "Failed to fetch user roles"),

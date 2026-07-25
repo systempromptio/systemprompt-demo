@@ -29,19 +29,45 @@
                     <img src="/files/images/logo.svg" alt="{{branding.domain}}" height="36" class="logo-light">
                     <img src="/files/images/logo-white.svg" alt="{{branding.domain}}" height="36" class="logo-dark">
                 </div>
-                <h1 class="auth-title">Create your account</h1>
-                <p class="auth-subtitle">One passkey. No password to remember.</p>
+                <h1 class="auth-title">Request access</h1>
+                <p class="auth-subtitle">We review every account by hand. Tell us who you are and what you want to evaluate.</p>
 
                 <div id="error" class="login-error" role="alert" aria-live="polite"></div>
 
                 <form id="register-form">
                     <div class="form-group">
-                        <label for="reg-name">Name</label>
+                        <label for="reg-name">Full name</label>
                         <input class="form-input" type="text" id="reg-name" placeholder="Jane Smith" required autocomplete="name">
                     </div>
                     <div class="form-group">
-                        <label for="reg-email">Email</label>
+                        <label for="reg-email">Work email</label>
                         <input class="form-input" type="email" id="reg-email" placeholder="you@company.com" required autocomplete="email" aria-describedby="error">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-company">Company</label>
+                        <input class="form-input" type="text" id="reg-company" placeholder="Acme Ltd" required autocomplete="organization">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-role">Your role</label>
+                        <input class="form-input" type="text" id="reg-role" placeholder="Staff Engineer" required autocomplete="organization-title">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-team-size">Engineering team size</label>
+                        <select class="form-input" id="reg-team-size" required>
+                            <option value="">Select…</option>
+                            <option value="1-10">1-10</option>
+                            <option value="11-30">11-30</option>
+                            <option value="31-100">31-100</option>
+                            <option value="100+">100+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-why">What are you evaluating systemprompt for?</label>
+                        <textarea class="form-input" id="reg-why" rows="3" placeholder="Governing Claude Code across our platform team, with an audit trail for SOC 2." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-credit-plans">How would you spend the evaluation credit? <span class="text-tertiary">(optional)</span></label>
+                        <textarea class="form-input" id="reg-credit-plans" rows="2" placeholder="Run our existing agent workloads through the gateway for a week."></textarea>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary w-full">Continue with passkey</button>
@@ -81,9 +107,10 @@
         } from '/js/services/webauthn-passkey-helpers.js';
 
         const LOGIN_PATH = '/admin/login';
-        // Carry an incoming ?redirect= (e.g. the bridge device-link callback)
-        // through onboarding so the flow that started registration resumes.
-        const POST_REGISTER = '/admin/onboarding' + window.location.search;
+        // No ?redirect= passthrough: whatever started registration (the bridge
+        // device-link, say) is gated on approval too, so there is nothing to
+        // resume until a human has said yes.
+        const POST_REGISTER = '/admin/pending';
 
         const form = document.getElementById('register-form');
         const errorDiv = document.getElementById('error');
@@ -141,25 +168,43 @@
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const email = document.getElementById('reg-email').value.trim();
-            const displayName = document.getElementById('reg-name').value.trim();
+            const value = (id) => document.getElementById(id).value.trim();
+            const email = value('reg-email');
+            const displayName = value('reg-name');
+            const payload = {
+                name: displayName,
+                email: email,
+                company: value('reg-company'),
+                role: value('reg-role'),
+                team_size: value('reg-team-size'),
+                why_assessing: value('reg-why'),
+                credit_plans: value('reg-credit-plans'),
+            };
 
-            if (!email || !displayName) {
-                showError('Please fill in your name and email.');
+            if (!email || !displayName || !payload.company || !payload.role || !payload.team_size || !payload.why_assessing) {
+                showError('Please complete every field above.');
                 return;
             }
 
             try {
-                showLoading('Creating your account…');
+                showLoading('Submitting your request…');
 
                 const regResponse = await fetch('/admin/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: displayName, email: email }),
+                    body: JSON.stringify(payload),
                 });
                 const regData = await regResponse.json();
                 if (!regResponse.ok) {
                     throw new Error(regData.error || regData.message || 'Registration failed');
+                }
+
+                // This email already owns an account, so there is no passkey to
+                // create — send them to sign in with the one they have.
+                if (regData.already_registered) {
+                    showLoading('That email is already registered. Taking you to sign in…');
+                    setTimeout(function() { window.location.href = LOGIN_PATH; }, 2000);
+                    return;
                 }
 
                 showLoading('Creating your passkey…');

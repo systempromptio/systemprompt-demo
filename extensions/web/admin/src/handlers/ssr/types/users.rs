@@ -74,6 +74,14 @@ pub(crate) struct UsersPageData {
     pub total_events: i64,
     #[serde(default)]
     pub page_stats: Vec<PageStatView>,
+    /// Accounts awaiting a manual approval decision, with the details their
+    /// applicants gave. Rendered above the roster because nobody else is going
+    /// to chase them.
+    #[serde(default)]
+    pub pending: Vec<crate::repositories::users::registration::PendingApplicant>,
+    /// Precomputed because the template engine has no length helper.
+    #[serde(default)]
+    pub pending_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -16,6 +16,7 @@ pub(crate) mod hooks_track;
 mod jobs;
 pub(crate) mod magic_link;
 pub(crate) mod onboarding;
+pub(crate) mod pi;
 mod plugins;
 mod plugins_env;
 pub(crate) mod public_register;
@@ -42,7 +43,8 @@ pub(crate) use plugins_env::list_plugin_env_handler;
 pub use plugins_env::resolve_principal;
 pub(crate) use resources::{get_agent_handler, list_agents_handler};
 pub(crate) use users::{
-    create_user_handler, dashboard_handler, delete_user_handler, extract_user_from_cookie,
+    approve_user_handler, create_user_handler, dashboard_handler, delete_user_handler,
+    extract_user_from_cookie,
     list_events_handler, list_users_handler, update_user_handler, user_detail_handler,
     user_usage_handler,
 };

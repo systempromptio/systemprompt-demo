@@ -179,7 +179,7 @@ jobs:
 
             ### Install
 
-            - **macOS** — unzip and drag `Systemprompt Bridge.app` to Applications ([macOS guide](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/install-macos.md))
+            - **macOS** — unzip and drag `SystempromptBridge.app` to Applications ([macOS guide](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/install-macos.md))
             - **Windows** — run the `.exe` ([Windows guide](https://github.com/systempromptio/systemprompt-demo/blob/main/docs/cowork/install-windows.md))
             - **Linux / headless** — install the binary onto your `PATH` and register with `systemprompt-bridge login`
 
