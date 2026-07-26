@@ -44,7 +44,6 @@ pub use plugins_env::resolve_principal;
 pub(crate) use resources::{get_agent_handler, list_agents_handler};
 pub(crate) use users::{
     approve_user_handler, create_user_handler, dashboard_handler, delete_user_handler,
-    extract_user_from_cookie,
-    list_events_handler, list_users_handler, update_user_handler, user_detail_handler,
-    user_usage_handler,
+    extract_user_from_cookie, list_events_handler, list_users_handler, update_user_handler,
+    user_detail_handler, user_usage_handler,
 };

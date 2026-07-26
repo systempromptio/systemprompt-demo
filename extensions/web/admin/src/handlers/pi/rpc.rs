@@ -130,6 +130,7 @@ pub(super) fn parse_frame(line: &str) -> RpcFrame {
 }
 
 #[cfg(test)]
+#[expect(clippy::unwrap_used, clippy::panic, reason = "assertions in tests")]
 mod tests {
     use super::*;
 
@@ -169,7 +170,8 @@ mod tests {
 
     #[test]
     fn parses_a_failed_response() {
-        let line = r#"{"id":"1","type":"response","command":"prompt","success":false,"error":"boom"}"#;
+        let line =
+            r#"{"id":"1","type":"response","command":"prompt","success":false,"error":"boom"}"#;
         let RpcFrame::Response { success, error } = parse_frame(line) else {
             panic!("expected a Response");
         };

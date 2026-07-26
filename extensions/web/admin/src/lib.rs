@@ -70,7 +70,8 @@ pub fn hooks_webhook_router(
         .with_state(pool)
 }
 
-/// Routes for the governed pi web terminal, or `None` when it is not configured.
+/// Routes for the governed pi web terminal, or `None` when it is not
+/// configured.
 ///
 /// Absent by default: without a gateway credential there is nothing to spawn
 /// against, and mounting a half-configured agent service is worse than not

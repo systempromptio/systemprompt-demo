@@ -60,8 +60,8 @@ pub(crate) fn registration_submitted(
 }
 
 // Why: grants the $5 signup credit idempotently, then fires the welcome email
-// in a detached task. Only an approval reaches here, so this credit is the thing
-// the manual review is actually gating.
+// in a detached task. Only an approval reaches here, so this credit is the
+// thing the manual review is actually gating.
 pub(crate) async fn account_approved(pool: &PgPool, user_id: &UserId, email: &str, name: &str) {
     tracing::info!(user_id = %user_id, email, name, "account approved");
 

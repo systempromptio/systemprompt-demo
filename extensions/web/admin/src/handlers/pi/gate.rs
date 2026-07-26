@@ -1,8 +1,8 @@
 //! The governance gate: what happens between pi asking and pi being answered.
 //!
 //! pi's shim calls `ctx.ui.confirm`, which suspends the tool call and emits an
-//! `extension_ui_request`. Nothing runs until we write the matching response, so
-//! this module can take as long as it needs — including waiting on a person.
+//! `extension_ui_request`. Nothing runs until we write the matching response,
+//! so this module can take as long as it needs — including waiting on a person.
 //! There is no pi-side timeout to race (measured: an unanswered confirm waits
 //! indefinitely), so the only clock is ours.
 //!
@@ -102,7 +102,10 @@ pub(super) async fn decide(
     session.emit(PiEventBody::ToolStart {
         tool_use_id: payload.tool_use_id.clone(),
         tool_name: tool_name.clone(),
-        tool_input: payload.tool_input.clone().unwrap_or(serde_json::Value::Null),
+        tool_input: payload
+            .tool_input
+            .clone()
+            .unwrap_or(serde_json::Value::Null),
     });
     let outcome = ask_human(deps, session, approval_id, payload, &tool_name).await;
     inproc::record_human_decision(&deps.pool, &call, &verdict, outcome);
@@ -168,7 +171,10 @@ async fn ask_human(
     session.emit(PiEventBody::ApprovalRequest {
         approval_id: approval_id.to_owned(),
         tool_name: tool_name.to_owned(),
-        tool_input: payload.tool_input.clone().unwrap_or(serde_json::Value::Null),
+        tool_input: payload
+            .tool_input
+            .clone()
+            .unwrap_or(serde_json::Value::Null),
         policy_chain: vec!["scope_check", "secret_scan", "tool_blocklist", "rate_limit"]
             .into_iter()
             .map(ToOwned::to_owned)

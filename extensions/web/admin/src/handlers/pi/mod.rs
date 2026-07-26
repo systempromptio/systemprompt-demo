@@ -2,8 +2,8 @@
 //!
 //! One `pi --mode rpc` child per conversation, driven from a browser widget.
 //! Output streams down over SSE; prompts and approvals come up over POST. The
-//! child's stdin is held by the registry, not by a request, so the transport can
-//! be ordinary request/response while the process lives for minutes.
+//! child's stdin is held by the registry, not by a request, so the transport
+//! can be ordinary request/response while the process lives for minutes.
 //!
 //! # Where enforcement actually happens
 //!
@@ -11,16 +11,17 @@
 //! too late — `tool_execution_start` is emitted *before* the gate resolves, and
 //! the only external lever is `abort`, which kills a whole turn rather than
 //! denying one call. So the enforcement point is inside pi: a shim extension
-//! whose `tool_call` handler calls `ctx.ui.confirm`, which suspends the call and
-//! emits an `extension_ui_request`. The shim decides nothing; this module
+//! whose `tool_call` handler calls `ctx.ui.confirm`, which suspends the call
+//! and emits an `extension_ui_request`. The shim decides nothing; this module
 //! decides everything, and answers on the same stream.
 //!
 //! # Two hard-won constraints
 //!
 //! - **The RPC command surface is ungoverned.** `{"type":"bash"}` executes a
-//!   shell command with no `tool_call` hook firing at all. Only [`RpcCommand`]'s
-//!   variants are ever constructed here, and no client string reaches pi as a
-//!   command type — relaying raw RPC would hand every viewer a shell.
+//!   shell command with no `tool_call` hook firing at all. Only
+//!   [`RpcCommand`]'s variants are ever constructed here, and no client string
+//!   reaches pi as a command type — relaying raw RPC would hand every viewer a
+//!   shell.
 //! - **pi has no sandbox.** Tools run with this process's permissions, so the
 //!   default tool set is read-only (`--tools read`, enforced by pi itself) and
 //!   the child gets a scratch workspace, a cleared environment, and its own
@@ -209,12 +210,7 @@ async fn create_session(
 
     let conversation_id = uuid::Uuid::new_v4().to_string();
     match registry
-        .create(
-            conversation_id.clone(),
-            user_id,
-            attested,
-            SHIM_SOURCE,
-        )
+        .create(conversation_id.clone(), user_id, attested, SHIM_SOURCE)
         .await
     {
         Ok(parts) => {
@@ -229,7 +225,11 @@ async fn create_session(
             session.emit(events::PiEventBody::SessionReady {
                 conversation_id: conversation_id.clone(),
             });
-            (StatusCode::CREATED, Json(CreatedSession { conversation_id })).into_response()
+            (
+                StatusCode::CREATED,
+                Json(CreatedSession { conversation_id }),
+            )
+                .into_response()
         },
         Err(registry::SpawnError::PerUserCap(_) | registry::SpawnError::TotalCap(_)) => {
             problem(StatusCode::TOO_MANY_REQUESTS, "session limit reached")
@@ -367,7 +367,8 @@ async fn abort(
     Extension(registry): Extension<PiRegistry>,
     Json(body): Json<AbortBody>,
 ) -> Response {
-    let Some(session) = authorize_session(&pool, &registry, &body.token, &body.conversation_id).await
+    let Some(session) =
+        authorize_session(&pool, &registry, &body.token, &body.conversation_id).await
     else {
         return unauthorized();
     };
@@ -380,7 +381,8 @@ async fn approve(
     Extension(registry): Extension<PiRegistry>,
     Json(body): Json<ApproveBody>,
 ) -> Response {
-    let Some(session) = authorize_session(&pool, &registry, &body.token, &body.conversation_id).await
+    let Some(session) =
+        authorize_session(&pool, &registry, &body.token, &body.conversation_id).await
     else {
         return unauthorized();
     };
@@ -403,7 +405,10 @@ async fn approve(
 
 async fn send(session: &Arc<session::PiSession>, command: rpc::RpcCommand) -> Response {
     let Ok(line) = command.to_line() else {
-        return problem(StatusCode::INTERNAL_SERVER_ERROR, "could not encode command");
+        return problem(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "could not encode command",
+        );
     };
     match session.write_line(&line).await {
         Ok(()) => StatusCode::ACCEPTED.into_response(),
@@ -479,9 +484,9 @@ mod tests {
         // Block comments first, so a `//` inside one cannot confuse the line pass.
         while let Some(start) = rest.find("/*") {
             out.push_str(&rest[..start]);
-            rest = rest[start + 2..].find("*/").map_or("", |end| {
-                &rest[start + 2 + end + 2..]
-            });
+            rest = rest[start + 2..]
+                .find("*/")
+                .map_or("", |end| &rest[start + 2 + end + 2..]);
         }
         out.push_str(rest);
         out.lines()
@@ -490,12 +495,19 @@ mod tests {
             .join("\n")
     }
 
-    /// The shim must decide nothing. A policy name or an HTTP call in here would
-    /// mean a second place where a rule lives — and the one nobody reviews.
+    /// The shim must decide nothing. A policy name or an HTTP call in here
+    /// would mean a second place where a rule lives — and the one nobody
+    /// reviews.
     #[test]
     fn shim_holds_no_policy() {
         let code = shim_code();
-        for forbidden in ["FAIL_OPEN", "fetch(", "blocklist", "secret_scan", "XMLHttpRequest"] {
+        for forbidden in [
+            "FAIL_OPEN",
+            "fetch(",
+            "blocklist",
+            "secret_scan",
+            "XMLHttpRequest",
+        ] {
             assert!(
                 !code.contains(forbidden),
                 "shim code should not contain {forbidden}"

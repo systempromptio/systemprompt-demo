@@ -20,12 +20,18 @@ pub(super) struct PiEvent {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub(super) enum PiEventBody {
     /// The child is up and accepting prompts.
-    SessionReady { conversation_id: String },
+    SessionReady {
+        conversation_id: String,
+    },
     TurnStart,
     /// Streaming assistant prose.
-    TextDelta { text: String },
+    TextDelta {
+        text: String,
+    },
     /// Streaming chain-of-thought, rendered dimmed and collapsible.
-    ThinkingDelta { text: String },
+    ThinkingDelta {
+        text: String,
+    },
     /// A tool the model wants to run. Emitted from the governance gate, not
     /// from `tool_execution_start` — that frame fires before the gate resolves
     /// and also fires for blocked calls, so it is not a "running" signal.
@@ -48,7 +54,10 @@ pub(super) enum PiEventBody {
         policy: Option<String>,
     },
     /// The prompt itself was refused; no provider request was made.
-    PromptBlocked { reason: String, policy: Option<String> },
+    PromptBlocked {
+        reason: String,
+        policy: Option<String>,
+    },
     /// A call is waiting on a human. The widget renders a card per id.
     ApprovalRequest {
         approval_id: String,
@@ -67,10 +76,16 @@ pub(super) enum PiEventBody {
     TurnEnd,
     /// A line pi wrote to stderr. Surfaced because a provider misconfiguration
     /// shows up here and nowhere else.
-    Stderr { line: String },
-    Error { message: String },
+    Stderr {
+        line: String,
+    },
+    Error {
+        message: String,
+    },
     /// The child is gone; the widget stops accepting input.
-    Exit { code: Option<i32> },
+    Exit {
+        code: Option<i32>,
+    },
 }
 
 /// Translate one pi event frame into zero or one widget frames.
@@ -121,6 +136,7 @@ fn string_at(v: &serde_json::Value, key: &str) -> Option<String> {
 }
 
 #[cfg(test)]
+#[expect(clippy::panic, reason = "assertions in tests")]
 mod tests {
     use super::*;
 

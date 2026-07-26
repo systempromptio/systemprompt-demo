@@ -1,7 +1,8 @@
-//! Download URLs for the bridge desktop app, shared by every page that offers it.
+//! Download URLs for the bridge desktop app, shared by every page that offers
+//! it.
 //!
-//! Bump the `bridge-v*` tag in every URL below on each bridge release. The bridge
-//! ships under its own tag alongside the gateway's `v*` tags, so
+//! Bump the `bridge-v*` tag in every URL below on each bridge release. The
+//! bridge ships under its own tag alongside the gateway's `v*` tags, so
 //! `releases/latest/download/...` is not safe here — it resolves to whichever
 //! release published last and 404s.
 
@@ -15,10 +16,12 @@ pub(crate) const RELEASE_PAGE: &str =
     "https://github.com/systempromptio/systemprompt-demo/releases/tag/bridge-v0.18.4";
 
 #[cfg(test)]
+#[expect(clippy::panic, reason = "assertions in tests")]
 mod tests {
     use super::*;
 
-    /// A URL that lost its `bridge-v*` tag points at the gateway release and 404s.
+    /// A URL that lost its `bridge-v*` tag points at the gateway release and
+    /// 404s.
     #[test]
     fn every_url_is_pinned_to_one_bridge_tag() {
         let tags: Vec<&str> = [MAC_ARM, MAC_INTEL, WINDOWS, LINUX, RELEASE_PAGE]
@@ -29,6 +32,9 @@ mod tests {
                     .unwrap_or_else(|| panic!("{url} is not pinned to a bridge tag"))
             })
             .collect();
-        assert!(tags.windows(2).all(|w| w[0] == w[1]), "mixed tags: {tags:?}");
+        assert!(
+            tags.windows(2).all(|w| w[0] == w[1]),
+            "mixed tags: {tags:?}"
+        );
     }
 }

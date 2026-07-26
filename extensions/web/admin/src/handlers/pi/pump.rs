@@ -1,10 +1,10 @@
 //! The tasks that own a child's pipes.
 //!
-//! One reader per session owns stdout and is the only thing that ever answers an
-//! `extension_ui_request`. Each request is handled in its own task so several
-//! concurrent tool calls can be pending at once — the model can issue parallel
-//! calls, and serialising them here would deadlock the second behind the first's
-//! human.
+//! One reader per session owns stdout and is the only thing that ever answers
+//! an `extension_ui_request`. Each request is handled in its own task so
+//! several concurrent tool calls can be pending at once — the model can issue
+//! parallel calls, and serialising them here would deadlock the second behind
+//! the first's human.
 
 use std::sync::Arc;
 

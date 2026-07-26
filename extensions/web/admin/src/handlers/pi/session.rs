@@ -145,8 +145,9 @@ impl PiSession {
 
     /// Write one JSONL line to the child.
     ///
-    /// Serialised through a mutex because two concurrent writes would interleave
-    /// mid-line and desynchronise pi's parser for the rest of the session.
+    /// Serialised through a mutex because two concurrent writes would
+    /// interleave mid-line and desynchronise pi's parser for the rest of
+    /// the session.
     pub(super) async fn write_line(&self, line: &str) -> std::io::Result<()> {
         let mut guard = self.stdin.lock().await;
         let result = match guard.as_mut() {

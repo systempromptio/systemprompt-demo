@@ -1,9 +1,9 @@
 //! Email extension for systemprompt.io.
 //!
-//! Provides an SMTP-backed [`EmailService`] and the two transactional emails the
-//! signup funnel needs: the internal notice that an account is waiting to be
-//! reviewed, and the welcome / $5-credit message sent once it is approved. When
-//! SMTP is unconfigured every send degrades to a logged no-op, so neither
+//! Provides an SMTP-backed [`EmailService`] and the two transactional emails
+//! the signup funnel needs: the internal notice that an account is waiting to
+//! be reviewed, and the welcome / $5-credit message sent once it is approved.
+//! When SMTP is unconfigured every send degrades to a logged no-op, so neither
 //! registration nor approval can fail on account of email.
 pub mod error;
 pub mod notice;

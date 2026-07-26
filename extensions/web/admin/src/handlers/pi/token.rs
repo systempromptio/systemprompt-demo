@@ -3,8 +3,8 @@
 //! Why not the session cookie: the widget is meant to be dropped into a page on
 //! another origin, where a `SameSite` cookie will not be sent — and the site
 //! auth gate answers an unauthenticated hit on a protected prefix with a 302 to
-//! the login page, which an `EventSource` reports as an opaque error rather than
-//! a 401. Why not an API key: `EventSource` cannot set headers, so the
+//! the login page, which an `EventSource` reports as an opaque error rather
+//! than a 401. Why not an API key: `EventSource` cannot set headers, so the
 //! credential has to survive in a URL.
 //!
 //! So: the share-manifest token's construction (HMAC-SHA256 keyed off the JWT
@@ -75,7 +75,10 @@ pub(super) fn verify(secret: &[u8], token: &str, now: i64) -> Result<(UserId, i3
 
     // Signature before expiry, so a tampered `exp` cannot be probed by watching
     // which error comes back.
-    if !hmac::eq(&hmac::hex(secret, &payload(&user_id, version, exp)), parts[3]) {
+    if !hmac::eq(
+        &hmac::hex(secret, &payload(&user_id, version, exp)),
+        parts[3],
+    ) {
         return Err(Invalid::BadSignature);
     }
     if exp <= now {
@@ -85,6 +88,7 @@ pub(super) fn verify(secret: &[u8], token: &str, now: i64) -> Result<(UserId, i3
 }
 
 #[cfg(test)]
+#[expect(clippy::unwrap_used, reason = "assertions in tests")]
 mod tests {
     use super::*;
 

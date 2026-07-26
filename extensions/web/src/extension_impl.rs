@@ -252,8 +252,8 @@ impl Extension for WebExtension {
 }
 
 impl WebExtension {
-    /// Bare-path aliases for the admin plane's entry pages, so `/login` works as
-    /// well as `/admin/login`. Static, so it lives apart from `router`.
+    /// Bare-path aliases for the admin plane's entry pages, so `/login` works
+    /// as well as `/admin/login`. Static, so it lives apart from `router`.
     fn admin_redirects() -> Router {
         use axum::response::Redirect;
         use axum::routing::get;

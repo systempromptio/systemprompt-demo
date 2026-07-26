@@ -80,10 +80,7 @@ pub(super) async fn collect_user_detail_extras(
     // against this user's actual roles.
     let (roles, department) = repositories::users::queries::find_user_access(pool, &d.user_id)
         .await?
-        .map_or_else(
-            || (Vec::new(), String::new()),
-            |a| (a.roles, a.department),
-        );
+        .map_or_else(|| (Vec::new(), String::new()), |a| (a.roles, a.department));
 
     let mut assignments = UserAssignmentSummary::default();
     let devices_count = if let Ok(rows) =

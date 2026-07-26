@@ -10,10 +10,10 @@ use crate::error::SystempromptToolError;
 use crate::tools::{self, SERVER_NAME};
 use crate::topics;
 use rmcp::model::{
-    CallToolRequestParams, CallToolResult, Icon, Implementation, InitializeRequestParams,
+    CallToolRequestParams, CallToolResponse, Icon, Implementation, InitializeRequestParams,
     InitializeResult, ListResourcesResult, ListToolsResult, PaginatedRequestParams,
-    ProtocolVersion, ReadResourceRequestParams, ReadResourceResult, Resource, ResourceContents,
-    ServerCapabilities, ServerInfo,
+    ProtocolVersion, ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, Resource,
+    ResourceContents, ServerCapabilities, ServerInfo,
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{ErrorData as McpError, ServerHandler};
@@ -119,18 +119,14 @@ impl ServerHandler for SystempromptServer {
         _ctx: RequestContext<RoleServer>,
     ) -> impl Future<Output = Result<ListToolsResult, McpError>> + MaybeSendFuture + '_ {
         let tool_list = tools::list_tools();
-        std::future::ready(Ok(ListToolsResult {
-            tools: tool_list,
-            next_cursor: None,
-            meta: None,
-        }))
+        std::future::ready(Ok(ListToolsResult::with_all_items(tool_list)))
     }
 
     async fn call_tool(
         &self,
         request: CallToolRequestParams,
         ctx: RequestContext<RoleServer>,
-    ) -> Result<CallToolResult, McpError> {
+    ) -> Result<CallToolResponse, McpError> {
         let tool_name = request.name.to_string();
         let server_name = self.service_id.to_string();
 
@@ -152,7 +148,9 @@ impl ServerHandler for SystempromptServer {
         )
         .await;
 
-        dispatch_tool(&self.executor, &tool_name, &request, &request_context).await
+        dispatch_tool(&self.executor, &tool_name, &request, &request_context)
+            .await
+            .map(Into::into)
     }
 
     fn list_resources(
@@ -194,17 +192,20 @@ impl ServerHandler for SystempromptServer {
         &self,
         request: ReadResourceRequestParams,
         _ctx: RequestContext<RoleServer>,
-    ) -> impl Future<Output = Result<ReadResourceResult, McpError>> + MaybeSendFuture + '_ {
+    ) -> impl Future<Output = Result<ReadResourceResponse, McpError>> + MaybeSendFuture + '_ {
         if let Some(topic_id) = request.uri.strip_prefix(DOCS_URI_PREFIX) {
             let result = match topics::find(topic_id) {
-                Some(topic) => Ok(ReadResourceResult::new(vec![
-                    ResourceContents::TextResourceContents {
-                        uri: request.uri.clone(),
-                        mime_type: Some("text/markdown".to_owned()),
-                        text: topic.body.to_owned(),
-                        meta: None,
-                    },
-                ])),
+                Some(topic) => {
+                    Ok(
+                        ReadResourceResult::new(vec![ResourceContents::TextResourceContents {
+                            uri: request.uri.clone(),
+                            mime_type: Some("text/markdown".to_owned()),
+                            text: topic.body.to_owned(),
+                            meta: None,
+                        }])
+                        .into(),
+                    )
+                },
                 None => Err(McpError::invalid_params(
                     format!("Unknown documentation topic resource: {}", request.uri),
                     None,
@@ -213,10 +214,9 @@ impl ServerHandler for SystempromptServer {
             return std::future::ready(result);
         }
 
-        std::future::ready(read_artifact_viewer_resource(
-            &request,
-            SERVER_NAME,
-            ARTIFACT_VIEWER_TEMPLATE,
-        ))
+        std::future::ready(
+            read_artifact_viewer_resource(&request, SERVER_NAME, ARTIFACT_VIEWER_TEMPLATE)
+                .map(Into::into),
+        )
     }
 }

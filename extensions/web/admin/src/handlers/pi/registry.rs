@@ -162,8 +162,8 @@ impl PiRegistry {
         }
     }
 
-    /// Kill sessions that have gone idle, outlived their ceiling, or whose child
-    /// already exited.
+    /// Kill sessions that have gone idle, outlived their ceiling, or whose
+    /// child already exited.
     fn spawn_reaper(&self) {
         let registry = self.clone();
         tokio::spawn(async move {

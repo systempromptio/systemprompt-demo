@@ -140,8 +140,8 @@ pub(crate) async fn public_register_handler(
 ///
 /// An account that already has a passkey can be signed into, so issuing one
 /// would let anyone who knows the address bind their own credential to it — and
-/// once approval carries a credit, inherit that too. A denied account is refused
-/// for the obvious reason: re-registering must not reset the decision.
+/// once approval carries a credit, inherit that too. A denied account is
+/// refused for the obvious reason: re-registering must not reset the decision.
 fn may_issue_token(state: &RegistrationState) -> bool {
     !state.has_credential && state.approval_status.as_deref() != Some(APPROVAL_DENIED)
 }

@@ -127,7 +127,11 @@ async fn write_models_json(cfg: &PiConfig, home: &Path) -> std::io::Result<()> {
         }
     });
     let path = home.join(".pi").join("agent").join("models.json");
-    tokio::fs::write(&path, serde_json::to_vec_pretty(&models).unwrap_or_default()).await?;
+    tokio::fs::write(
+        &path,
+        serde_json::to_vec_pretty(&models).unwrap_or_default(),
+    )
+    .await?;
     restrict(&path).await
 }
 

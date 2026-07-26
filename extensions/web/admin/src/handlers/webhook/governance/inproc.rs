@@ -23,13 +23,12 @@ use systemprompt::traits::AnalyticsProvider;
 use systemprompt_security::authz::{Decision, MatchedBy};
 use systemprompt_security::policy::types::AccessScope;
 
-use super::audit;
+use super::handler::attested_session_id;
 use super::handler::evaluate::{EvaluateInput, evaluate};
 use super::types::{
     AuditTarget, ChainEntryOutcome, ChainEntryResult, DecisionAudit, PrincipalSnapshot,
 };
-use super::handler::attested_session_id;
-use super::scope;
+use super::{audit, scope};
 
 /// The agent id every pi run is audited under, on both the CLI and widget
 /// paths, so `/admin/demo/trace` shows one timeline per user rather than two.
