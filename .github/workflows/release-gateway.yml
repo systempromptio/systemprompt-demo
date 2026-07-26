@@ -136,6 +136,9 @@ jobs:
     name: Sign + Release (gateway)
     runs-on: ubuntu-latest
     needs: [build-gateway]
+    outputs:
+      tag: ${{ steps.tags.outputs.template_tag }}
+      version: ${{ steps.tags.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -290,6 +293,30 @@ jobs:
             gh release create "$tag" --title "$title" --notes-file notes.md
           fi
           gh release upload "$tag" --clobber dist/*
+
+  # Docker and the smoke suite are workflow_call targets; without these the
+  # release publishes binaries but never an image, and both must be dispatched
+  # by hand. Calling them keeps the whole release in one run.
+  publish-image:
+    name: Publish image
+    needs: [sign-and-release]
+    if: ${{ !inputs.dry_run }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # cosign keyless
+    uses: ./.github/workflows/docker.yml
+    with:
+      version: ${{ needs.sign-and-release.outputs.version }}
+
+  smoke:
+    name: Smoke tests
+    needs: [publish-image, sign-and-release]
+    if: ${{ !inputs.dry_run }}
+    uses: ./.github/workflows/smoke-tests.yml
+    with:
+      tag: ${{ needs.sign-and-release.outputs.tag }}
+    secrets: inherit
 
   bump-packagers:
     name: Bump Homebrew tap
