@@ -52,7 +52,8 @@ impl<'a> ExtensionUiResponse<'a> {
 ///
 /// Untagged rather than internally tagged: `extension_ui_request` is the only
 /// frame the proxy must never miss, so it is matched first and everything else
-/// degrades to [`Self::Other`] with the raw value preserved for the widget.
+/// degrades to [`Self::Event`] or [`Self::Unparseable`] with the raw value
+/// preserved for the widget.
 #[derive(Debug)]
 pub enum RpcFrame {
     UiRequest(UiRequest),

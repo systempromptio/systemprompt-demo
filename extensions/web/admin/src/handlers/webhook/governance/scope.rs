@@ -62,7 +62,7 @@ pub(super) const fn higher_privilege(a: AccessScope, b: AccessScope) -> AccessSc
 /// Caps a resolved scope at a per-surface ceiling, returning the lower of the
 /// two under `Admin > User > Unknown`.
 ///
-/// The dual of [`higher_privilege`], and the reason both exist: scope is
+/// The dual of `higher_privilege`, and the reason both exist: scope is
 /// resolved by taking the *most* privilege the caller can prove, then capped at
 /// the *most* the surface is willing to evaluate at. A sandboxed surface can
 /// hold every caller at `User` without touching how roles are read.

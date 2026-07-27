@@ -1,9 +1,10 @@
 //! Per-stage tallies for the four-policy pipeline.
 //!
 //! The `policy` column cannot answer "how many times did `scope_check` pass?".
-//! [`super::audit::record_decision`] writes `default_allow` on every allow and,
-//! on a deny, only the *first* policy that failed — so a column read reports
-//! three of the four stages as having never run. The full chain is in
+//! The canonical writer behind [`super::audit`] records `default_allow` on
+//! every allow and, on a deny, only the *first* policy that failed — so a
+//! column read reports three of the four stages as having never run. The full
+//! chain is in
 //! `evaluated_rules`, where `DecisionAudit` serializes one entry per stage:
 //!
 //! ```json

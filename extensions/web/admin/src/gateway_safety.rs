@@ -8,7 +8,7 @@
 //! `safety.scanners` lists it and blocks the request when `safety
 //! .block_categories` includes `secret`.
 //!
-//! It judges only the newest user turn — see [`newest_user_text`] for why a
+//! It judges only the newest user turn — see `newest_user_text` for why a
 //! blocking scanner must not read the whole conversation.
 
 use systemprompt::ai::{Finding, SafetyScanner, Severity, register_safety_scanner};

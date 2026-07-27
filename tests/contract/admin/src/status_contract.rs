@@ -56,8 +56,14 @@ async fn admin_routes_honour_their_http_contract() {
     let app = App::new(&db.pool, credentials);
 
     let routes = mounted_routes();
+    // A floor, not a count: it catches the parser silently reading nothing —
+    // a moved or renamed route module would otherwise turn this whole suite
+    // into a green no-op. It sits below the real total on purpose, so that
+    // deleting a route is a normal edit rather than a test failure. The admin
+    // SSR surface shrank when the homepage became the governed terminal, which
+    // is what took the previous floor of 80 out of reach.
     assert!(
-        routes.len() >= 80,
+        routes.len() >= 60,
         "only {} routes discovered — the route-source parser is missing declarations",
         routes.len()
     );

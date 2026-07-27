@@ -106,7 +106,7 @@ pub fn hooks_webhook_router(
 /// nothing to opt into. `services/config/pi.yaml` bounds a session rather than
 /// deciding whether one exists, and a broken one is reported at ERROR and
 /// replaced by the shipped defaults rather than taking the surface away. See
-/// [`handlers::pi`] for the sandboxing posture — the tool set is read-only
+/// `handlers::pi` for the sandboxing posture — the tool set is read-only
 /// unless deliberately widened.
 pub fn pi_terminal_router(
     pool: Arc<PgPool>,
