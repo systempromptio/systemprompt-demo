@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use crate::types::departments::{Department, DepartmentInput};
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn find_department(pool: &PgPool, id: &str) -> Result<Option<Department>, sqlx::Error> {
     sqlx::query_as!(
         Department,

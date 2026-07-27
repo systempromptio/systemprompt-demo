@@ -19,8 +19,8 @@ use systemprompt::identifiers::SessionSource;
 
 use super::auth::{authenticate, problem, unauthorized};
 use super::gate::PiDeps;
-use super::registry::{self, PiRegistry};
-use super::{SHIM_SOURCE, events, pump};
+use super::registry::{self, CreateRequest, PiRegistry};
+use super::{MCP_CLIENT_SOURCE, SHIM_SOURCE, events, pump};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct TokenQuery {
@@ -29,6 +29,12 @@ pub(super) struct TokenQuery {
     /// query param for clients that cannot read the header.
     #[serde(default)]
     since: Option<u64>,
+}
+
+impl TokenQuery {
+    pub(super) fn token(&self) -> &str {
+        &self.token
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -76,10 +82,33 @@ pub(super) async fn create_session(
     };
 
     let conversation_id = uuid::Uuid::new_v4().to_string();
-    match registry
-        .create(conversation_id.clone(), user_id, attested, SHIM_SOURCE)
-        .await
-    {
+    // The caller's own embed token travels into the child, which authenticates
+    // its hub calls with it. It is the same credential the browser already
+    // holds, it resolves to this one user, and `mcp::call` rechecks it against
+    // the conversation on every request — so the child gains nothing the page
+    // that opened it did not already have. Its TTL matches the conversation
+    // lifetime ceiling, so it cannot lapse mid-session.
+    let result = registry
+        .create(CreateRequest {
+            conversation_id: conversation_id.clone(),
+            user_id,
+            attested_session: attested.clone(),
+            shim_source: SHIM_SOURCE,
+            mcp_client_source: MCP_CLIENT_SOURCE,
+            mcp_token: &body.token,
+        })
+        .await;
+    if result.is_err() {
+        // The session was attested before we knew whether a conversation could
+        // be had. Leaving it behind is not harmless: the gateway's lookup
+        // filters on `revoked_at` and ignores `expires_at`, so a refused
+        // conversation would strand a session row that stays valid forever —
+        // and a reload against a cap is exactly the case that repeats.
+        if let Err(e) = deps.analytics.revoke_session(&attested).await {
+            tracing::warn!(error = %e, "could not revoke the session of a refused pi conversation");
+        }
+    }
+    match result {
         Ok(parts) => {
             let session = Arc::clone(&parts.session);
             pump::start(
@@ -101,11 +130,36 @@ pub(super) async fn create_session(
         Err(registry::SpawnError::PerUserCap(_) | registry::SpawnError::TotalCap(_)) => {
             problem(StatusCode::TOO_MANY_REQUESTS, "session limit reached")
         },
+        Err(registry::SpawnError::Credential(e)) => {
+            tracing::error!(error = %e, "could not mint a gateway credential for a pi conversation");
+            problem(StatusCode::INTERNAL_SERVER_ERROR, "could not start pi") // lint-ok: http-error — logged above; the client is told nothing about why
+        },
         Err(registry::SpawnError::Io(e)) => {
             tracing::error!(error = %e, "could not spawn pi");
             problem(StatusCode::INTERNAL_SERVER_ERROR, "could not start pi") // lint-ok: http-error — logged above; the client is told nothing about why
         },
     }
+}
+
+/// The slash-commands a viewer may type, for the widget's `/` palette.
+///
+/// Authorized like every other conversation-scoped route, though what it
+/// returns is the same for everyone: the check is here so the endpoint cannot
+/// be used to discover whether a conversation id exists.
+pub(super) async fn commands(
+    State(pool): State<Arc<PgPool>>,
+    Extension(registry): Extension<PiRegistry>,
+    Path(conversation_id): Path<String>,
+    Query(q): Query<TokenQuery>,
+) -> Response {
+    // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
+    if super::auth::authorize_session(&pool, &registry, &q.token, &conversation_id)
+        .await
+        .is_none()
+    {
+        return unauthorized();
+    }
+    Json(super::skills::catalogue().await).into_response()
 }
 
 pub(super) async fn stream(

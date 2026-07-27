@@ -34,6 +34,7 @@ fn compute_totals(
 /// `id` may be a `decision_id`, `request_id`, `trace_id`, or `session_id`. An
 /// id that resolves to no session yields `Ok(None)`; only a query failure is
 /// an `Err`.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn find_decision_chain(
     pool: &PgPool,
     id: &str,

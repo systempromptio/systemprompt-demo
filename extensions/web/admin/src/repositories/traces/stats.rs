@@ -5,6 +5,7 @@ use sqlx::PgPool;
 use super::TraceStats;
 use crate::util::time_range::TimeRange;
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn get_trace_stats(pool: &PgPool, range: TimeRange) -> Result<TraceStats, sqlx::Error> {
     let row = sqlx::query!(
         r#"WITH trace_to_session AS (

@@ -10,8 +10,6 @@
 //!    policy is one new file + one `inventory::submit!`.
 //! 2. **Per-policy YAML config** from `services/governance/config.yaml`
 //!    (enabled flag, per-policy params).
-//! 3. **Hot reload** so the policy editor save handler can rebuild the chain
-//!    without restarting the server.
 //!
 //! Each entry carries the resolved [`PolicyConfig`] alongside the boxed
 //! `GovernancePolicy` impl. The pipeline driver in [`super::rules_runner`]
@@ -32,18 +30,9 @@ type PolicyFactory = fn(&YamlValue) -> Box<dyn GovernancePolicy>;
 pub(crate) struct PolicyRegistration {
     pub id: &'static str,
     pub factory: PolicyFactory,
-    /// Source file the policy is defined in (set with `file!()`). Surfaced on
-    /// the dashboard as the "as code" link.
-    pub source_path: &'static str,
 }
 
 inventory::collect!(PolicyRegistration);
-
-pub(crate) fn source_path_for(id: &str) -> &'static str {
-    inventory::iter::<PolicyRegistration>()
-        .find(|r| r.id == id)
-        .map_or("", |r| r.source_path)
-}
 
 #[derive(Debug, Clone)]
 pub(crate) struct PolicyConfig {
@@ -76,13 +65,6 @@ pub(crate) fn chain() -> std::sync::RwLockReadGuard<'static, PolicyChain> {
     CHAIN
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-}
-
-pub(crate) fn reload() {
-    let new_chain = load_chain();
-    if let Ok(mut guard) = CHAIN.write() {
-        *guard = new_chain;
-    }
 }
 
 fn load_chain() -> PolicyChain {

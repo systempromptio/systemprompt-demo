@@ -257,8 +257,8 @@ plugins:
       include: []
     skills:
       include:
-        - example_web_search
-        - use_dangerous_secret
+        - explain_systemprompt
+        - demonstrate_tool_rejection
     mcp_servers: []
     content_sources: []
 ```

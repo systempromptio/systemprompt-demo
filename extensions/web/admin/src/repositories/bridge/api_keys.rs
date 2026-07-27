@@ -173,6 +173,7 @@ pub async fn enroll_device(
     })
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_api_keys_for_user(pool: &PgPool, user_id: &UserId) -> Result<Vec<ApiKeyRow>> {
     let rows = sqlx::query_as!(
         ApiKeyRow,
@@ -202,6 +203,36 @@ pub async fn revoke_api_key(pool: &PgPool, user_id: &UserId, id: &str) -> Result
     .execute(pool)
     .await?;
     Ok(result.rows_affected() > 0)
+}
+
+/// Revoke every unrevoked key whose name starts with `name_prefix`, returning
+/// how many rows changed.
+///
+/// Written for the pi terminal's boot sweep: a hard kill leaves
+/// per-conversation keys live, and the session rows the gateway checks ignore
+/// `expires_at` entirely, so nothing else would ever retire them.
+pub async fn revoke_api_keys_by_name_prefix(pool: &PgPool, name_prefix: &str) -> Result<u64> {
+    // `LIKE` reads `%`, `_` and `\` in the caller's prefix as syntax; escaping
+    // them keeps this a plain prefix match whatever the prefix is.
+    let mut pattern = String::with_capacity(name_prefix.len() + 8);
+    for ch in name_prefix.chars() {
+        if matches!(ch, '%' | '_' | '\\') {
+            pattern.push('\\');
+        }
+        pattern.push(ch);
+    }
+    pattern.push('%');
+    let result = sqlx::query!(
+        r#"
+        UPDATE user_api_keys
+        SET revoked_at = CURRENT_TIMESTAMP
+        WHERE name LIKE $1 ESCAPE '\' AND revoked_at IS NULL
+        "#,
+        pattern,
+    )
+    .execute(pool)
+    .await?;
+    Ok(result.rows_affected())
 }
 
 fn generate_secret() -> (String, String, String) {

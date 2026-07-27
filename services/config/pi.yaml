@@ -1,0 +1,111 @@
+# pi web terminal — the live agent on the homepage.
+#
+# Read directly by extensions/web/admin/src/handlers/pi/config.rs, not through
+# services/config/config.yaml's `includes:` — same as blog.yaml and
+# web/config.yaml, which the extension owns rather than ServicesConfig.
+#
+# There is no enable flag. The terminal is the site's primary demo, so it is
+# always mounted; what this file controls is how a session is bounded. Every
+# key is optional and defaults to the value shown here, so deleting the file
+# leaves a working deployment. Unknown keys are a startup error, and a file
+# that fails to parse or validate is reported at ERROR and replaced by these
+# same defaults.
+#
+# Install pi first:
+#   npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+#
+# There is no gateway credential to configure: each conversation mints a
+# short-lived PAT for the signed-in user who opened it, and revokes it — along
+# with the session it attested — when the conversation ends.
+
+# pi is a `#!/usr/bin/env node` script and the child is spawned with a cleared
+# environment, so `binary` must be resolvable on `child_path` and nowhere else.
+# If pi lives under nvm, BOTH of these need the nvm bin directory or the child
+# dies at exec:
+#   binary: /home/you/.nvm/versions/node/v22.19.0/bin/pi
+#   child_path: /home/you/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin
+binary: /home/ejb503/.nvm/versions/node/v22.19.0/bin/pi
+child_path: /home/ejb503/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin
+
+# Put this on a size-capped tmpfs in production.
+workspace_root: /tmp/systemprompt-pi-sessions
+
+# base_url is omitted on purpose: it defaults to the profile's
+# server.api_internal_url, so sessions call back on whatever origin is serving
+# them. Set it only to point them somewhere else.
+
+provider: systemprompt
+model: claude-sonnet-4-6
+
+# ⚠ Enforced by pi itself. Do NOT widen to bash/write/edit on a
+# single-container deployment: the Landlock jail below confines paths and
+# ports, but it is not a namespace — the child still runs as this uid in this
+# pid namespace. The governance chain gates intent, not blast radius. Widening
+# needs a container per session.
+# The mcp__systemprompt__* entries are registered by the MCP-client extension
+# (handlers/pi/shim/mcp-client.ts), and pi's allowlist covers extension tools
+# too — a hub tool missing here is dropped before the model sees it, which is
+# indistinguishable from the extension having failed to load.
+tools:
+  - read
+  - mcp__systemprompt__list_topics
+  - mcp__systemprompt__get_topic
+  - mcp__systemprompt__search_docs
+  - mcp__systemprompt__governance_stats
+  # Registered on purpose so the tool_blocklist policy has something to refuse.
+  # Removing it removes the tool-rejection demonstration, not the risk.
+  - mcp__systemprompt__fetch_remote_docs
+
+# `required` means no child spawns unless sp-pi-jail reports a fully-enforced
+# Landlock ruleset — POST /session 500s rather than falling back to an
+# unconfined child. There is deliberately no best-effort value: pi's own `read`
+# applies no path containment, so without the jail one approved tool call reads
+# this file's real counterpart.
+#
+# Needs Linux 5.13+ for filesystem confinement and 6.7+ for the outbound-TCP
+# rule. Below 6.7 the child's network is unconfined and sp-pi-jail says so on
+# stderr. `off` is for older kernels and non-Linux dev hosts, logs one WARN at
+# startup, and is only safe where nobody untrusted can sign in.
+sandbox: required
+
+# Ask a human about every tool call, not just flagged ones. With a read-only
+# tool set nothing is flagged, so this is what makes the approval UI visible.
+approve_all: true
+
+timeouts:
+  approval_secs: 120       # how long a tool call waits on a human, then fails closed
+  idle_secs: 600
+  max_lifetime_secs: 3600
+
+sessions:
+  max_per_user: 1          # a request past this closes the account's oldest
+  max_total: 8
+
+# Child resource ceilings. Only fsize is on by default — see ChildLimits in
+# config.rs: RLIMIT_NPROC counts every process the *uid* owns rather than the
+# child's descendants, and needs bash (dash has no `ulimit -u`); RLIMIT_AS
+# kills V8 at startup unless measured. Both are worth setting once the child
+# has its own uid. Zero means unset.
+limits:
+  nproc: 0
+  fsize: 67108864          # 64 MiB per file
+  address_space: 0
+
+# Where the systemprompt MCP hub answers. Called server-side by the proxy in
+# handlers/pi/mcp.rs — never by the child, which cannot reach this port. The
+# hub trusts the identity headers it is handed, so this must stay an address
+# only this server can reach.
+mcp_url: http://127.0.0.1:5010/mcp
+
+# jail_binary defaults to sp-pi-jail beside the server binary, which is right
+# in both layouts (target/debug in dev, /app/bin in the image). Set it if you
+# install elsewhere:
+#   jail_binary: /app/bin/sp-pi-jail
+
+# jail_read_paths grants read+execute to the jailed child, REPLACING (not
+# extending) the built-in list: the interpreter, its shared libraries, the CA
+# bundle, /dev/null and /dev/urandom. pi's own package root is derived from
+# `binary` at spawn time and never needs listing. ⚠ Never add /proc —
+# /proc/<server-pid>/environ is readable by this uid and holds DATABASE_URL and
+# every provider key, which is precisely the hole the jail closes.
+#   jail_read_paths: [/usr/bin, /usr/lib, /bin, /lib, /lib64, /etc/ssl, /dev/null, /dev/urandom]

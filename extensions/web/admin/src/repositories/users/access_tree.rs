@@ -16,6 +16,7 @@ pub struct AccessTreeUserRow {
 /// Ordered by department, then display name.
 ///
 /// Anonymous accounts are excluded — they are never assignable principals.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_users_for_access_tree(
     pool: &PgPool,
 ) -> Result<Vec<AccessTreeUserRow>, sqlx::Error> {

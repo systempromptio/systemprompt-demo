@@ -15,39 +15,73 @@
 //! and emits an `extension_ui_request`. The shim decides nothing; this module
 //! decides everything, and answers on the same stream.
 //!
-//! # Two hard-won constraints
+//! # Three hard-won constraints
 //!
 //! - **The RPC command surface is ungoverned.** `{"type":"bash"}` executes a
 //!   shell command with no `tool_call` hook firing at all. Only
 //!   [`rpc::RpcCommand`]'s variants are ever constructed here, and no client
 //!   string reaches pi as a command type — relaying raw RPC would hand every
 //!   viewer a shell. See [`commands`].
-//! - **One shared gateway credential caps this to one user.** `SP_PI_GATEWAY_KEY`
-//!   is a single PAT, but every conversation sends the `x-session-id` this
-//!   server attested for *its own* user. The gateway rejects a session that
-//!   does not belong to the credential's owner — `401 unknown or revoked
-//!   session` — so in practice only that one account can drive the agent;
-//!   anyone else gets a turn that starts and ends with no output. Verified
-//!   against a live gateway. A PAT per conversation is the fix, and it is a
-//!   prerequisite for offering this to more than one signed-in user, not the
-//!   nice-to-have it was first filed as.
-//! - **pi has no sandbox.** Tools run with this process's permissions, so the
-//!   default tool set is read-only (`--tools read`, enforced by pi itself) and
-//!   the child gets a scratch workspace, a cleared environment, and its own
-//!   `HOME`. Enabling `bash` needs a container per session, which V1 does not
-//!   have.
+//! - **The gateway credential must belong to the conversation's own user.** The
+//!   gateway attests `x-session-id` against the identity that authenticated,
+//!   and answers a mismatch with the same opaque `401 unknown or revoked
+//!   session` it gives a session that does not exist. A single shared PAT
+//!   therefore works for exactly one account and leaves everyone else with a
+//!   turn that starts and ends with no output — measured against a live
+//!   gateway. So [`registry`] mints a PAT per conversation for that
+//!   conversation's user, and revokes it, along with the attested session, when
+//!   the conversation ends. That is also why teardown revokes rather than
+//!   waiting out an expiry: the gateway's session lookup filters on
+//!   `revoked_at` and ignores `expires_at` entirely.
+//! - **pi confines nothing itself, and `read` was the proof.** pi's tools run
+//!   with whatever permissions the process has, and its `read` applies no path
+//!   containment at all — an absolute path is passed through to `readFile`. As
+//!   the child runs the server's uid, one approved call could read the
+//!   deployment's provider keys, its database URL, its OAuth at-rest pepper,
+//!   and the child's own gateway credential. Nothing stopped it but a person
+//!   clicking Approve, and in this deployment that person is the untrusted
+//!   party. (What actually masked it was the credit guard: an unapproved
+//!   account 429s before the model runs, so it can never issue a tool call —
+//!   a billing control doing security work, one growth decision from
+//!   evaporating.)
+//!
+//!   Two independent layers close it. Every child now starts through
+//!   [`spawn`]'s `sp-pi-jail` wrapper, which applies a Landlock ruleset to
+//!   itself and `exec`s pi: read-write on the session workspace, read-execute
+//!   on the interpreter and its libraries, `connect()` on the gateway's port,
+//!   and nothing else — no `/proc`, so `/proc/<server-pid>/environ` stays
+//!   unreadable. And [`scope`] rejects out-of-workspace path arguments before
+//!   a human is ever asked, so a denial is a `workspace_scope` audit row and a
+//!   legible card rather than a bare `EACCES`.
+//!
+//!   The residual gaps are real and worth naming. Landlock is a path- and
+//!   port-based LSM, not a namespace: the child still shares the pid and
+//!   network namespaces, still runs the server's uid, and the granted port is
+//!   granted on *any* reachable host rather than loopback alone. Kernels below
+//!   6.7 get filesystem confinement only, leaving loopback services reachable
+//!   — harmless while the tool set is `read`, not harmless after. A container
+//!   per session remains the prerequisite for enabling `bash`: this makes
+//!   `read` safe, not arbitrary execution.
 
 mod api;
 mod auth;
 mod commands;
 mod config;
+mod credentials;
 mod events;
+mod format;
 mod gate;
+mod jail;
+mod mcp;
 mod pump;
 mod registry;
 mod rpc;
+mod scope;
 mod session;
+mod skills;
 mod spawn;
+mod stage;
+mod stats;
 mod token;
 
 use std::sync::Arc;
@@ -66,6 +100,12 @@ use gate::PiDeps;
 /// cannot drift into running a stale or edited enforcement point.
 const SHIM_SOURCE: &str = include_str!("shim/governance-shim.ts");
 
+/// The MCP-client extension pi loads alongside the shim, registering the
+/// documentation hub's tools. Compiled in for the same reason the shim is: it
+/// carries the conversation's proxy credential into the child, and a
+/// deployment must not be able to rewrite where that credential is sent.
+const MCP_CLIENT_SOURCE: &str = include_str!("shim/mcp-client.ts");
+
 /// Public routes for the widget.
 ///
 /// Public on purpose: the site auth gate 302-redirects unauthenticated hits on
@@ -78,6 +118,7 @@ pub(crate) fn pi_router(
     session_service: Arc<systemprompt::oauth::SessionCreationService>,
     analytics: Arc<dyn systemprompt::traits::AnalyticsProvider>,
 ) -> Router {
+    registry.config().warn_if_unsandboxed();
     let deps = Arc::new(PiDeps {
         pool: Arc::clone(&pool),
         analytics,
@@ -85,14 +126,20 @@ pub(crate) fn pi_router(
         cfg: registry.config().clone(),
     });
     Router::new()
-        .route("/api/public/pi/embed-token", post(auth::issue_own_embed_token))
+        .route(
+            "/api/public/pi/embed-token",
+            post(auth::issue_own_embed_token),
+        )
         .route("/api/public/pi/session", post(api::create_session))
         .route("/api/public/pi/stream/{conversation_id}", get(api::stream))
+        .route("/api/public/pi/stats/{conversation_id}", get(stats::stats))
         .route("/api/public/pi/prompt", post(commands::prompt))
         .route("/api/public/pi/steer", post(commands::steer))
         .route("/api/public/pi/follow-up", post(commands::follow_up))
         .route("/api/public/pi/abort", post(commands::abort))
         .route("/api/public/pi/approve", post(commands::approve))
+        .route("/api/public/pi/mcp", post(mcp::call))
+        .route("/api/public/pi/commands/{conversation_id}", get(api::commands))
         .layer(Extension(registry))
         .layer(Extension(deps))
         .with_state(pool)

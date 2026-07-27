@@ -51,6 +51,7 @@ pub struct TracePage {
     clippy::too_many_lines,
     reason = "body is one irreducible compile-time-checked query_as! SQL literal; see comment above"
 )]
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_traces(
     pool: &PgPool,
     filter: TraceFilter<'_>,

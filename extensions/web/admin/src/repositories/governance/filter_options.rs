@@ -28,6 +28,7 @@ pub struct FilterOptions {
 
 const PER_FACET_LIMIT: i64 = 100;
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn get_filter_options(
     pool: &PgPool,
     range: TimeRange,

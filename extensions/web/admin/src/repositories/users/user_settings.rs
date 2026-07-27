@@ -20,6 +20,7 @@ pub struct UserSettingsRow {
     pub updated_at: DateTime<Utc>,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn find_user_settings(
     pool: &PgPool,
     user_id: &UserId,

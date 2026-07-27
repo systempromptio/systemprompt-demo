@@ -8,7 +8,7 @@ lives in `services/governance/config.yaml`.
 |-------|-------|-----------|----------------|
 | 1 | Scope check | `scope_check` | A non-admin caller reaching for an admin-only tool prefix |
 | 2 | Secret scan | `secret_scan` | Plaintext credentials in any tool input (35+ patterns), for any scope |
-| 3 | Blocklist | `tool_blocklist` | Destructive tool names (`delete`, `drop`, `destroy`) for user scope |
+| 3 | Blocklist | `tool_blocklist` | Tool names matching a blocked pattern (`delete`, `drop`, `destroy`, `fetch_remote`) for user scope |
 | 4 | Rate limit | `rate_limit` | More than the configured calls per window for one identity |
 
 ## How scope is decided
@@ -31,13 +31,23 @@ systemprompt infra logs trace list --status failed
 systemprompt infra logs trace show <trace-id>
 ```
 
+From a client with no shell, the same rows come back through the hub's own
+`governance_stats` tool, scoped to the calling identity.
+
 ## Trying it live
 
-Ask the resource hub to search for a topic and it passes all four stages and
-records an `allow`. Ask it to search for a query that contains a plaintext
-credential and the client's PreToolUse governance hook denies it at the
-`secret_scan` stage before the tool ever runs — and that deny is audited too.
-The `explain_governance` skill walks through this end to end.
+Ask the resource hub to search for a topic: it passes all four stages and
+records an `allow`. Then two denies you can reproduce without a terminal:
+
+- **`secret_scan`** — search for a query containing a credential-shaped string.
+  The PreToolUse governance hook denies it before the tool runs, for any scope.
+- **`tool_blocklist`** — call `fetch_remote_docs`. This deployment does not
+  permit outbound egress, so `fetch_remote` is a blocked pattern and the call is
+  refused before any connection is attempted.
+
+Both denies are audited alongside the allow. The `demonstrate_governance` skill
+walks through this end to end, and `demonstrate_tool_rejection` takes the second
+one on its own.
 
 ## Where to go next
 

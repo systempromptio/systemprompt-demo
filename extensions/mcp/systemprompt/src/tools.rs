@@ -2,7 +2,15 @@
 //!
 //! The server is a **documentation hub**: it exposes the systemprompt.io
 //! reference topics through three read-only tools — `list_topics`, `get_topic`,
-//! and `search_docs` — all returning text artifacts.
+//! and `search_docs` — plus `governance_stats`, which reads the caller's own
+//! audit rows back so a client with no shell can still see the spine.
+//!
+//! `fetch_remote_docs` is the odd one out and is meant to be. It reaches the
+//! public internet, which this deployment does not permit, so `tool_blocklist`
+//! refuses it at the gate. It exists so that a refusal is something a viewer
+//! watches happen rather than something a page asserts. It is a real
+//! implementation, not a stub: the demonstration is worthless if the tool that
+//! "would have" leaked could not actually have done so.
 
 use rmcp::model::{Meta, Tool};
 use schemars::JsonSchema;
@@ -35,6 +43,26 @@ pub struct GetTopicInput {
 pub struct SearchDocsInput {
     /// A natural-language question or keywords, e.g. "how are secrets blocked".
     pub query: String,
+}
+
+/// Input for `governance_stats`: no parameters.
+///
+/// The caller is the subject. There is deliberately no user or session
+/// selector, because the identity comes from the authenticated request rather
+/// than from an argument anyone could set.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+#[expect(
+    clippy::empty_structs_with_brackets,
+    reason = "serde needs an empty object shape to deserialize a no-arg tool input from {}"
+)]
+pub struct GovernanceStatsInput {}
+
+/// Input for `fetch_remote_docs`: the upstream path to retrieve.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct FetchRemoteDocsInput {
+    /// Path under the public documentation site, e.g. "/docs/governance".
+    pub path: String,
 }
 
 #[must_use]
@@ -109,6 +137,33 @@ pub fn list_tools() -> Vec<Tool> {
                  best-matching topics ranked, with short excerpts, e.g. \
                  {\"query\": \"how are secrets blocked\"}.",
             input_schema: schemars::schema_for!(SearchDocsInput).to_value(),
+            output_schema: &output,
+        }),
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "governance_stats",
+            title: "Read Governance Statistics",
+            description: "Return the calling identity's own governance spine: every policy \
+                 verdict with its reason, provider spend and latency, and which tools \
+                 actually ran. Takes no arguments — the subject is whoever is calling.",
+            input_schema: schemars::schema_for!(GovernanceStatsInput).to_value(),
+            output_schema: &output,
+        }),
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "fetch_remote_docs",
+            title: "Fetch Upstream Documentation",
+            // The description says plainly that this is expected to be refused.
+            // Hiding that would make the model's attempt look like a mistake,
+            // when attempting it is exactly the demonstration.
+            description: &format!(
+                "Fetch a documentation page from the public {WEBSITE_URL} site, e.g. \
+                 {{\"path\": \"/docs/governance\"}}. This deployment does not permit \
+                 outbound egress, so the `tool_blocklist` policy is expected to refuse \
+                 this call before it runs. Call it to see a refusal happen; use \
+                 `search_docs` for documentation you can actually read."
+            ),
+            input_schema: schemars::schema_for!(FetchRemoteDocsInput).to_value(),
             output_schema: &output,
         }),
     ]

@@ -43,6 +43,7 @@ pub struct EffectivePermissions {
     pub mcp_servers: Vec<EntityDecision>,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn compute_effective_permissions(
     pool: &PgPool,
     user_id: &UserId,

@@ -8,9 +8,12 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use sqlx::PgPool;
 use systemprompt::identifiers::{SessionId, UserId};
+use systemprompt::traits::AnalyticsProvider;
 
 use super::config::PiConfig;
+use super::credentials;
 use super::session::PiSession;
 
 /// Why a session could not be created. Distinguished because the widget shows
@@ -19,6 +22,9 @@ use super::session::PiSession;
 pub(super) enum SpawnError {
     PerUserCap(usize),
     TotalCap(usize),
+    /// The per-conversation gateway credential could not be minted. Nothing was
+    /// spawned: pi with no credential would fail on the first turn instead.
+    Credential(String),
     Io(std::io::Error),
 }
 
@@ -27,6 +33,7 @@ impl std::fmt::Display for SpawnError {
         match self {
             Self::PerUserCap(n) => write!(f, "you already have {n} pi session(s) running"),
             Self::TotalCap(n) => write!(f, "the server is at its limit of {n} pi sessions"),
+            Self::Credential(e) => write!(f, "could not mint a gateway credential: {e}"),
             Self::Io(e) => write!(f, "could not start pi: {e}"),
         }
     }
@@ -37,14 +44,23 @@ pub(crate) struct PiRegistry(Arc<Inner>);
 
 struct Inner {
     cfg: PiConfig,
+    pool: Arc<PgPool>,
+    analytics: Arc<dyn AnalyticsProvider>,
     sessions: Mutex<HashMap<String, Arc<PiSession>>>,
 }
 
 impl PiRegistry {
-    /// Build the registry and start its reaper.
-    pub(crate) fn new(cfg: PiConfig) -> Self {
+    /// Build the registry, sweep any credentials a previous process leaked, and
+    /// start the reaper.
+    pub(crate) fn new(
+        cfg: PiConfig,
+        pool: Arc<PgPool>,
+        analytics: Arc<dyn AnalyticsProvider>,
+    ) -> Self {
         let registry = Self(Arc::new(Inner {
             cfg,
+            pool,
+            analytics,
             sessions: Mutex::new(HashMap::new()),
         }));
         registry.spawn_reaper();
@@ -71,19 +87,44 @@ impl PiRegistry {
     /// of one.
     pub(super) async fn create(
         &self,
-        conversation_id: String,
-        user_id: UserId,
-        attested_session: SessionId,
-        shim_source: &str,
+        req: CreateRequest<'_>,
     ) -> Result<SessionParts, SpawnError> {
+        let CreateRequest {
+            conversation_id,
+            user_id,
+            attested_session,
+            shim_source,
+            mcp_client_source,
+            mcp_token,
+        } = req;
+        self.make_room_for(&user_id).await;
         self.reserve(&user_id)?;
+
+        // Minted here rather than in the handler so a conversation refused by a
+        // cap never gets a credential at all. It is for this conversation's own
+        // user, because the gateway rejects a PAT whose owner is not the owner
+        // of the attested session it arrives with.
+        let key = match credentials::issue(
+            &self.0.pool,
+            &user_id,
+            &conversation_id,
+            self.0.cfg.max_lifetime,
+        )
+        .await
+        {
+            Ok(key) => key,
+            Err(e) => return Err(SpawnError::Credential(e)),
+        };
 
         let spawned = super::spawn::spawn(
             &self.0.cfg,
             &super::spawn::SpawnRequest {
                 conversation_id: &conversation_id,
                 attested_session: attested_session.as_str(),
+                gateway_key: &key.secret,
                 shim_source,
+                mcp_client_source,
+                mcp_token,
             },
         )
         .await;
@@ -92,12 +133,14 @@ impl PiRegistry {
             Ok(s) => s,
             Err(e) => {
                 self.release(&conversation_id);
+                credentials::revoke(&self.0.pool, &user_id, &key.id).await;
                 return Err(SpawnError::Io(e));
             },
         };
 
         let Some(stdin) = spawned.child.stdin.take() else {
             self.release(&conversation_id);
+            credentials::revoke(&self.0.pool, &user_id, &key.id).await;
             _ = spawned.child.kill().await;
             return Err(SpawnError::Io(std::io::Error::other(
                 "pi child has no stdin",
@@ -110,6 +153,7 @@ impl PiRegistry {
             conversation_id: conversation_id.clone(),
             user_id,
             attested_session,
+            api_key_id: key.id,
             workspace: spawned.workspace,
             child: spawned.child,
             stdin,
@@ -123,6 +167,48 @@ impl PiRegistry {
             stdout,
             stderr,
         })
+    }
+
+    /// Close whatever this user already holds, so a new conversation can start.
+    ///
+    /// A user asking for a conversation while already holding one has almost
+    /// always lost the tab that owns it — a reload is the ordinary way this
+    /// happens. Refusing them leaves that terminal stranded until the idle
+    /// timeout with no way to reclaim it, so the newest request wins and the
+    /// old conversation is closed. The cap is unchanged; only which session it
+    /// keeps.
+    async fn make_room_for(&self, user_id: &UserId) {
+        for stale in self.surplus_for(user_id) {
+            tracing::info!(
+                conversation_id = %stale,
+                "displacing a pi session for a new one from the same user"
+            );
+            self.remove(&stale, None).await;
+        }
+    }
+
+    /// This user's conversations beyond the number a new one may join, oldest
+    /// first. Empty when they are under the cap.
+    ///
+    /// Separate from [`Self::reserve`] because closing them is asynchronous and
+    /// the lock must not be held across the `await`.
+    fn surplus_for(&self, user_id: &UserId) -> Vec<String> {
+        let Ok(sessions) = self.0.sessions.lock() else {
+            return Vec::new();
+        };
+        let keep = self.0.cfg.max_sessions_per_user.saturating_sub(1);
+        let mut mine: Vec<&Arc<PiSession>> = sessions
+            .values()
+            .filter(|s| s.user_id == *user_id)
+            .collect();
+        // Oldest first, so a cap above one displaces the least recently started
+        // rather than an arbitrary member of a hash map.
+        mine.sort_by_key(|s| std::cmp::Reverse(s.age()));
+        let surplus = mine.len().saturating_sub(keep);
+        mine.into_iter()
+            .take(surplus)
+            .map(|s| s.conversation_id.clone())
+            .collect()
     }
 
     /// Check caps. Separate from [`Self::create`] so the lock is never held
@@ -159,6 +245,22 @@ impl PiRegistry {
         };
         if let Some(session) = session {
             session.close(code).await;
+            // After the child is dead, not before: a revoke that hangs or fails
+            // must not keep a process alive. Both are best-effort for the same
+            // reason, and both are logged so a leak is visible.
+            credentials::revoke(&self.0.pool, &session.user_id, &session.api_key_id).await;
+            if let Err(e) = self
+                .0
+                .analytics
+                .revoke_session(&session.attested_session)
+                .await
+            {
+                tracing::warn!(
+                    conversation_id = %session.conversation_id,
+                    error = %e,
+                    "could not revoke a pi conversation's attested session"
+                );
+            }
         }
     }
 
@@ -167,6 +269,7 @@ impl PiRegistry {
     fn spawn_reaper(&self) {
         let registry = self.clone();
         tokio::spawn(async move {
+            credentials::sweep_orphans(&registry.0.pool).await;
             let mut ticker = tokio::time::interval(std::time::Duration::from_secs(30));
             loop {
                 ticker.tick().await;
@@ -197,6 +300,21 @@ impl PiRegistry {
             }
         });
     }
+}
+
+/// Everything [`PiRegistry::create`] needs to start one conversation.
+///
+/// A struct rather than six positional arguments: four of them are strings,
+/// and swapping the shim for the MCP client — or the embed token for the
+/// gateway key — would compile and then fail somewhere far from here.
+pub(super) struct CreateRequest<'a> {
+    pub(super) conversation_id: String,
+    pub(super) user_id: UserId,
+    pub(super) attested_session: SessionId,
+    pub(super) shim_source: &'a str,
+    pub(super) mcp_client_source: &'a str,
+    /// The embed token the child's MCP-client extension authenticates with.
+    pub(super) mcp_token: &'a str,
 }
 
 /// The child's pipes, handed to the pump alongside the session.

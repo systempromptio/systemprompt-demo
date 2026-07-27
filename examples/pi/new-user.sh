@@ -11,8 +11,9 @@
 #
 # What this does:
 #   1. Resolves the user — picked from the database, or created on request.
-#   2. Issues a personal access token (sp-live-…) FOR that user via the
-#      admin API — the same credential the /admin/devices page self-issues.
+#   2. Issues a personal access token (sp-live-…) FOR that user via
+#      POST /api/v1/admin/api-keys with a target_user_id — the same credential
+#      the /admin/devices page self-issues, minted on someone else's behalf.
 #      The gateway accepts PATs directly (x-api-key or Bearer) and resolves
 #      the user's roles live from the DB on every request.
 #   3. Mints a plugin JWT for the governance extension — the PAT works on
@@ -93,10 +94,14 @@ ADMIN_TOKEN=$("$CLI" admin session login --token-only 2>/dev/null \
   | grep -oE '[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | head -1)
 [[ -n "$ADMIN_TOKEN" ]] || die "could not mint an admin session — is the server running? (just start)"
 
-PAT=$(curl -fsS -X POST "$BASE_URL/api/public/admin/users/$NEW_USER_ID/pats" \
+# `target_user_id` is what makes this mint for the chosen user rather than for
+# the admin whose token is signing the request; without it the PAT would belong
+# to the admin and the gateway would reject the session attested for anyone else.
+PAT=$(curl -fsS -X POST "$BASE_URL/api/v1/admin/api-keys" \
   -H "Authorization: Bearer $ADMIN_TOKEN" -H "content-type: application/json" \
-  -d "{\"name\":\"pi-demo $(date -u +%Y%m%dT%H%M%SZ)\"}" | sed -n 's/.*"secret":"\([^"]*\)".*/\1/p')
-[[ -n "$PAT" ]] || die "PAT issuance failed (needs the /users/{id}/pats admin endpoint — rebuild + restart?)"
+  -d "{\"name\":\"pi-demo $(date -u +%Y%m%dT%H%M%SZ)\",\"target_user_id\":\"$NEW_USER_ID\"}" \
+  | sed -n 's/.*"secret":"\([^"]*\)".*/\1/p')
+[[ -n "$PAT" ]] || die "PAT issuance failed against /api/v1/admin/api-keys (is the admin token valid?)"
 pass "API key issued (${PAT:0:12}…)"
 
 # ── 3. Issue the governance credential ──

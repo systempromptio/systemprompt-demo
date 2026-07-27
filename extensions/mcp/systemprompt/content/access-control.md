@@ -25,12 +25,16 @@ agent, and MCP server that lacks its own rule. This is why most shipped skills
 need no per-skill rule — they inherit the marketplace grant.
 
 Denies win. An explicit `access: deny` on an entity overrides any inherited
-allow (**deny-overrides**). The demo uses this deliberately: the
-`use_dangerous_secret` skill is catalogued by the marketplace but carries a
-`deny` rule for the `user` role, so a user-role attempt to run it is refused by
-policy before it can execute — independently of the runtime `secret_scan`
-governance hook. That is the access-control demonstration: a dangerous
-capability that exists in the catalog but is denied by policy.
+allow (**deny-overrides**), so a capability can be catalogued by the marketplace
+and still be unreachable for a given role.
+
+This demo currently ships no per-skill deny, and the reason is worth stating: an
+authz deny removes the skill from the catalog the caller sees, which in a chat
+window is indistinguishable from the skill never having existed. Refusal is more
+legible one layer down, where the call is issued and then visibly stopped — see
+`governance-pipeline` and the `demonstrate_tool_rejection` skill. The two layers
+are complementary, not alternatives: authz decides what you may hold, the policy
+chain decides what you may do with it.
 
 ## Scopes at the gateway and MCP layer
 

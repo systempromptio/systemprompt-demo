@@ -11,6 +11,7 @@ use systemprompt::identifiers::SessionId;
 use super::RawTurnBody;
 use super::transcript::extract_content_text;
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn find_raw_turns(
     pool: &PgPool,
     session_id: &SessionId,

@@ -16,8 +16,8 @@ use crate::types::UserContext;
 /// The request path as the client sent it.
 ///
 /// `nest_service` strips its prefix from `request.uri()`, so a layer inside
-/// the admin SSR router sees `/profile` where the caller asked for
-/// `/admin/profile`. Anything matching against user-facing paths has to read
+/// the admin SSR router sees `/pending` where the caller asked for
+/// `/admin/pending`. Anything matching against user-facing paths has to read
 /// through `OriginalUri` instead.
 fn original_path(request: &Request) -> String {
     request
@@ -87,11 +87,9 @@ pub(crate) async fn require_admin_middleware(request: Request, next: Next) -> Re
 
 /// Holds an account at the pending page until an admin has reviewed it.
 ///
-/// Sits above `non_admin_gate_middleware` so an unapproved user is bounced
-/// before the role-based allowlist gets a say. Admins bypass unconditionally:
-/// accounts predating the review gate carry no approval row, and locking the
-/// only account that can approve people out of the approval queue is
-/// unrecoverable.
+/// Admins bypass unconditionally: accounts predating the review gate carry no
+/// approval row, and locking the only account that can approve people out of
+/// the queue is unrecoverable.
 pub(crate) async fn require_approved_middleware(request: Request, next: Next) -> Response {
     let path = original_path(&request);
     let Some(ctx) = request.extensions().get::<UserContext>().cloned() else {
@@ -110,61 +108,23 @@ fn may_pass_pending_gate(is_admin: bool, is_approved: bool, path: &str) -> bool 
 }
 
 /// What an account under review may still reach: the pending page itself, the
-/// sign-in and sign-out round trip, and the JSON API the shared page chrome
-/// calls. Deliberately excludes `/admin/profile` and `/admin/settings` — the
-/// non-admin fallback targets — or the bounce would land on a denied page.
+/// sign-in and sign-out round trip, and the JSON API. The rest of `/admin` is
+/// the Bridge's device endpoints, which wait on approval by design.
+///
+/// `/admin/auth/` is here because the homepage pane's whoami lives there, not
+/// under `/admin/api/`. Without it a visitor who has just registered — and so
+/// is pending by definition — gets a redirect where they expect their identity,
+/// and the pane flips straight back to the sign-in form they just completed.
 fn is_pending_allowed_path(path: &str) -> bool {
     path.starts_with("/admin/api/")
-        || path == "/admin/pending"
-        || path == "/admin/continue"
-        || path == "/admin/logout"
-        || path == "/admin/login"
-        || path == "/admin/register"
-        || path == "/admin/add-passkey"
-        || path == "/admin/verify-pending"
-}
-
-// Why: The path comes from `OriginalUri`, as it does in
-// `require_user_middleware`: this layer sits inside a `nest_service("/admin",
-// …)`, which strips the prefix, and every arm of `is_non_admin_allowed_path`
-// matches on it.
-pub(crate) async fn non_admin_gate_middleware(request: Request, next: Next) -> Response {
-    let path = original_path(&request);
-    let path = path.as_str();
-    let user_ctx = request.extensions().get::<UserContext>().cloned();
-
-    let Some(ctx) = user_ctx else {
-        return next.run(request).await;
-    };
-    if ctx.is_admin || ctx.user_id.as_str().is_empty() {
-        return next.run(request).await;
-    }
-
-    if is_non_admin_allowed_path(path) {
-        next.run(request).await
-    } else {
-        axum::response::Redirect::to("/admin/profile").into_response()
-    }
-}
-
-fn is_non_admin_allowed_path(path: &str) -> bool {
-    path.starts_with("/admin/profile")
-        || path.starts_with("/admin/settings")
         || path.starts_with("/admin/auth/")
-        || path.starts_with("/admin/api/")
+        || path == "/admin/pending"
+        || path == "/admin/continue"
         || path == "/admin/logout"
         || path == "/admin/login"
         || path == "/admin/register"
         || path == "/admin/add-passkey"
         || path == "/admin/verify-pending"
-        || path == "/admin/setup"
-        || path == "/admin/pending"
-        || path == "/admin/continue"
-        || path == "/admin/devices/bridge-code"
-        || path == "/admin/devices/pats"
-        || path == "/admin/demo-register"
-        || path == "/admin/"
-        || path == "/admin"
 }
 
 #[cfg(test)]
@@ -173,13 +133,7 @@ mod tests {
 
     #[test]
     fn unapproved_user_is_held_at_the_pending_page() {
-        for path in [
-            "/admin/profile",
-            "/admin/settings",
-            "/admin/access/users",
-            "/admin/setup",
-            "/bridge-auth/device-link",
-        ] {
+        for path in ["/admin/devices/pats", "/bridge-auth/device-link"] {
             assert!(
                 !may_pass_pending_gate(false, false, path),
                 "{path} must bounce an unapproved user"
@@ -198,6 +152,7 @@ mod tests {
             "/admin/continue",
             "/admin/register",
             "/admin/api/auth/me",
+            "/admin/auth/me",
         ] {
             assert!(
                 is_pending_allowed_path(path),
@@ -211,11 +166,11 @@ mod tests {
     fn admins_bypass_even_without_an_approval_row() {
         // Accounts predating the review gate carry no approval row. Locking the
         // only role that can approve anyone out of the queue is unrecoverable.
-        assert!(may_pass_pending_gate(true, false, "/admin/access/users"));
+        assert!(may_pass_pending_gate(true, false, "/admin/devices/pats"));
     }
 
     #[test]
-    fn approved_user_reaches_the_admin_plane() {
-        assert!(may_pass_pending_gate(false, true, "/admin/profile"));
+    fn approved_user_reaches_the_bridge_endpoints() {
+        assert!(may_pass_pending_gate(false, true, "/admin/devices/pats"));
     }
 }

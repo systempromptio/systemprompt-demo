@@ -1,0 +1,17 @@
+[package]
+name = "systemprompt-pi-jail"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Landlock jail that confines a governed pi child to its workspace, then execs it."
+license = "MIT"
+
+[[bin]]
+name = "sp-pi-jail"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock = { workspace = true }

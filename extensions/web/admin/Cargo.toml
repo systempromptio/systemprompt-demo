@@ -31,6 +31,12 @@ tower-http = { workspace = true }
 # Async runtime
 tokio = { workspace = true }
 
+# Loopback HTTP to the systemprompt MCP hub (handlers/pi/mcp.rs). Pinned to the
+# 0.12 line already in the graph via the core CLI, with default features off:
+# the call is plain HTTP to an address only this server can reach, and the 0.13
+# workspace spec pulls an aws-lc TLS backend this crate has no use for.
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+
 # Serialization
 serde = { workspace = true }
 serde_json = { workspace = true }

@@ -100,7 +100,7 @@ export function initMagicLinkUI() {
       try {
         errorDiv.hidden = true;
         showLoading('Sending magic link...');
-        const response = await fetch('/api/public/auth/magic-link', {
+        const response = await fetch('/admin/api/magic-link/request', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),

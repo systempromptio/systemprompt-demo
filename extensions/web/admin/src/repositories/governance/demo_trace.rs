@@ -53,6 +53,7 @@ pub struct DemoTraceRow {
 /// Rows with an empty `session_id` are excluded: the gateway writes route
 /// decisions without one, and grouping them produced a phantom "session" that
 /// pooled every unrelated run into a single unreadable list.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_demo_sessions(
     pool: &PgPool,
     agent_id: &AgentId,

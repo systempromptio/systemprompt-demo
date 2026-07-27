@@ -45,7 +45,14 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
         svc_js!(p, "sidebar.js"),
         svc_js!(p, "table-sort.js"),
         svc_js!(p, "theme.js"),
+        svc_js!(p, "sp-auth-pane.js"),
         svc_js!(p, "sp-confirm-dialog.js"),
+        // Loaded before sp-pi-terminal.js in the template: it reads both off
+        // window at render time, and a missing one degrades to plain text rather
+        // than throwing, but the ordering keeps the first turn from looking
+        // unstyled.
+        svc_js!(p, "pi-render.js"),
+        svc_js!(p, "pi-gate-view.js"),
         svc_js!(p, "sp-pi-terminal.js"),
         svc_js!(p, "sp-toast.js"),
         svc_js!(p, "toast.js"),
@@ -87,17 +94,15 @@ fn service_utils_js(storage_js: &Path) -> Vec<AssetDefinition> {
     ]
 }
 
-pub(super) fn admin_assets(storage_css: &Path, storage_js: &Path) -> Vec<AssetDefinition> {
-    vec![
-        AssetDefinition::css(storage_css.join("admin-bundle.css"), "css/admin-bundle.css"),
-        AssetDefinition::js(storage_js.join("admin-bundle.js"), "js/admin-bundle.js"),
-        AssetDefinition::js(
-            storage_js.join("admin/sidebar-toggle.js"),
-            "js/admin/sidebar-toggle.js",
-        ),
-        AssetDefinition::js(
-            storage_js.join("admin/json-tree.js"),
-            "js/admin/json-tree.js",
-        ),
-    ]
+/// Only the stylesheet is left.
+///
+/// The admin JavaScript bundle went with the console it drove; the pages that
+/// survive — sign in, register, add a passkey, the pending notice, and the
+/// Bridge's device link — carry their own inline module scripts and load no
+/// bundle at all. The CSS bundle stays because all five still link it.
+pub(super) fn admin_assets(storage_css: &Path, _storage_js: &Path) -> Vec<AssetDefinition> {
+    vec![AssetDefinition::css(
+        storage_css.join("admin-bundle.css"),
+        "css/admin-bundle.css",
+    )]
 }

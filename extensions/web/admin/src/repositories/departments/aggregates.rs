@@ -24,6 +24,7 @@ pub struct UserMarketplaceOverride {
 
 /// A user receives overrides from rules matching either their own id or their
 /// department, so the same entity can appear under both scopes.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_user_marketplace_overrides(
     pool: &PgPool,
 ) -> Result<Vec<UserMarketplaceOverride>, sqlx::Error> {
@@ -48,6 +49,7 @@ pub async fn list_user_marketplace_overrides(
     .await
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_user_management_aggregates(
     pool: &PgPool,
 ) -> Result<Vec<UserManagementAggregate>, sqlx::Error> {

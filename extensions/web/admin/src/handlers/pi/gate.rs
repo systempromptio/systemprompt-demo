@@ -19,8 +19,10 @@ use systemprompt::traits::AnalyticsProvider;
 use super::super::webhook::governance::inproc::{
     self, GovernedCall, HumanOutcome, PROMPT_TOOL_NAME, PolicyVerdict,
 };
+use super::super::webhook::governance::stages::{StageOutcome, StageResult};
 use super::config::PiConfig;
 use super::events::PiEventBody;
+use super::stage::PolicyStage;
 use super::rpc::{GovernancePayload, PayloadKind};
 use super::session::{PiSession, Verdict};
 
@@ -33,6 +35,11 @@ const ABANDON_CHECK: std::time::Duration = std::time::Duration::from_secs(5);
 /// enough to ride out an SSE reconnect, short enough that a closed tab does not
 /// pin a turn.
 const ABANDON_GRACE: std::time::Duration = std::time::Duration::from_secs(15);
+
+/// The policy id for a path argument that leaves the session workspace. Named
+/// in the audit row, in the blocked card, and in the approval card's chain, so
+/// all three agree on what cleared or refused the call.
+const WORKSPACE_SCOPE: &str = "workspace_scope";
 
 /// Everything the pi surface needs, in one extension layer.
 ///
@@ -89,8 +96,31 @@ pub(super) async fn decide(
     )
     .await;
 
+    // Publish the chain before acting on it, so the browser sees the same
+    // evaluation the audit row is built from — including on a deny, where the
+    // interesting part is which stage stopped it and that the ones after it
+    // never ran.
+    let stages = verdict.stages();
+    emit_stages(session, payload, &tool_name, &stages);
+
     if !verdict.allowed {
         emit_denial(session, payload, &tool_name, &verdict);
+        return false;
+    }
+
+    // Confinement before consent. A human must never be shown an approval card
+    // for a call the deployment has already decided is out of bounds — the same
+    // rule that puts policy ahead of the human, one layer further in.
+    if payload.kind == PayloadKind::Tool
+        && let Some(detail) = super::scope::escape_reason(&session.workspace, governed_input.as_ref())
+    {
+        inproc::record_policy_denial(&deps.pool, &call, &verdict, WORKSPACE_SCOPE, &detail);
+        session.emit(PiEventBody::ToolBlocked {
+            tool_use_id: payload.tool_use_id.clone(),
+            tool_name,
+            reason: format!("[GOVERNANCE] {detail}"),
+            policy: Some(WORKSPACE_SCOPE.to_owned()),
+        });
         return false;
     }
 
@@ -99,32 +129,87 @@ pub(super) async fn decide(
     }
 
     // Policy cleared it; now ask a person.
+    human_gate(deps, session, ApprovalAsk {
+        approval_id,
+        payload,
+        tool_name: &tool_name,
+        cleared: cleared_policies(&stages),
+    }, &call, &verdict)
+    .await
+}
+
+/// Put a policy-cleared call to a person and record what they said.
+///
+/// Reached only after the chain allowed the call and confinement cleared it, so
+/// every path here is a human's judgement on top of policy — never instead of it.
+async fn human_gate(
+    deps: &PiDeps,
+    session: &Arc<PiSession>,
+    ask: ApprovalAsk<'_>,
+    call: &GovernedCall<'_>,
+    verdict: &PolicyVerdict,
+) -> bool {
+    let approval_id = ask.approval_id.to_owned();
+    let tool_use_id = ask.payload.tool_use_id.clone();
+    let tool_name = ask.tool_name.to_owned();
+
     session.emit(PiEventBody::ToolStart {
-        tool_use_id: payload.tool_use_id.clone(),
+        tool_use_id: tool_use_id.clone(),
         tool_name: tool_name.clone(),
-        tool_input: payload
+        tool_input: ask
+            .payload
             .tool_input
             .clone()
             .unwrap_or(serde_json::Value::Null),
     });
-    let outcome = ask_human(deps, session, approval_id, payload, &tool_name).await;
-    inproc::record_human_decision(&deps.pool, &call, &verdict, outcome);
+
+    let outcome = ask_human(deps, session, ask).await;
+    inproc::record_human_decision(&deps.pool, call, verdict, outcome);
     session.emit(PiEventBody::ApprovalResolved {
-        approval_id: approval_id.to_owned(),
+        approval_id,
         outcome: outcome_label(outcome),
     });
 
     if outcome.allowed() {
-        true
-    } else {
-        session.emit(PiEventBody::ToolBlocked {
-            tool_use_id: payload.tool_use_id.clone(),
-            tool_name,
-            reason: outcome.reason().to_owned(),
-            policy: Some("human_approval".to_owned()),
-        });
-        false
+        return true;
     }
+    session.emit(PiEventBody::ToolBlocked {
+        tool_use_id,
+        tool_name,
+        reason: outcome.reason().to_owned(),
+        policy: Some("human_approval".to_owned()),
+    });
+    false
+}
+
+fn emit_stages(
+    session: &Arc<PiSession>,
+    payload: &GovernancePayload,
+    tool_name: &str,
+    stages: &[StageOutcome],
+) {
+    session.emit(PiEventBody::PolicyStages {
+        tool_use_id: payload.tool_use_id.clone(),
+        tool_name: tool_name.to_owned(),
+        stages: stages.iter().map(PolicyStage::from_outcome).collect(),
+    });
+}
+
+/// The policies an operator can be told already cleared this call.
+///
+/// The passed stages, plus workspace confinement — which is not one of the
+/// chain's policies but has genuinely run by the time a human is asked, and is
+/// the refusal a reader of the card is most likely to have been saved by.
+/// Failed and skipped stages are excluded: on this path there are none, and if
+/// that ever stops being true the card must not start claiming otherwise.
+fn cleared_policies(stages: &[StageOutcome]) -> Vec<String> {
+    let mut cleared: Vec<String> = stages
+        .iter()
+        .filter(|s| s.result == StageResult::Pass)
+        .map(|s| s.policy.clone())
+        .collect();
+    cleared.push(WORKSPACE_SCOPE.to_owned());
+    cleared
 }
 
 /// V1 asks about everything by default. With a read-only tool set nothing is on
@@ -158,15 +243,34 @@ fn emit_denial(
     };
 }
 
+/// One call put to a person, and what policy already established about it.
+///
+/// Bundled for the same reason [`PiDeps`] is: the pieces are only ever needed
+/// together, and passing them separately puts the function over clippy's
+/// argument ceiling.
+struct ApprovalAsk<'a> {
+    approval_id: &'a str,
+    payload: &'a GovernancePayload,
+    tool_name: &'a str,
+    /// The real list of policies that passed. Carried in rather than rebuilt
+    /// here, so nothing on this path can assert that a check ran — it can only
+    /// relay what the evaluation reported.
+    cleared: Vec<String>,
+}
+
 /// Publish an approval card and wait for it to be answered, time out, or be
 /// abandoned. Every non-approval path denies.
 async fn ask_human(
     deps: &PiDeps,
     session: &Arc<PiSession>,
-    approval_id: &str,
-    payload: &GovernancePayload,
-    tool_name: &str,
+    ask: ApprovalAsk<'_>,
 ) -> HumanOutcome {
+    let ApprovalAsk {
+        approval_id,
+        payload,
+        tool_name,
+        cleared,
+    } = ask;
     let rx = session.park_approval(approval_id.to_owned());
     session.emit(PiEventBody::ApprovalRequest {
         approval_id: approval_id.to_owned(),
@@ -175,10 +279,7 @@ async fn ask_human(
             .tool_input
             .clone()
             .unwrap_or(serde_json::Value::Null),
-        policy_chain: vec!["scope_check", "secret_scan", "tool_blocklist", "rate_limit"]
-            .into_iter()
-            .map(ToOwned::to_owned)
-            .collect(),
+        policy_chain: cleared,
         timeout_secs: deps.cfg.approval_timeout.as_secs(),
     });
 

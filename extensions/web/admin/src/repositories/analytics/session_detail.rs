@@ -64,6 +64,7 @@ pub struct SessionRequestRow {
     pub created_at: DateTime<Utc>,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn find_session_header(
     pool: &PgPool,
     session_id: &SessionId,
@@ -138,6 +139,7 @@ pub async fn get_session_kpis(
     })
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_session_contexts(
     pool: &PgPool,
     session_id: &SessionId,
@@ -164,6 +166,7 @@ pub async fn list_session_contexts(
     .await
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_session_traces(
     pool: &PgPool,
     session_id: &SessionId,

@@ -28,7 +28,7 @@ for cfg in "$SKILLS_DIR"/*/config.yaml; do
 done
 echo ""
 
-subheader "STEP 3: Show use_dangerous_secret (full config + instructions)"
-run_cli_head 40 core skills show use_dangerous_secret
+subheader "STEP 3: Show demonstrate_tool_rejection (full config + instructions)"
+run_cli_head 40 core skills show demonstrate_tool_rejection
 
 header "SKILL LIFECYCLE DEMO COMPLETE" "Showed: list, nested config layout"

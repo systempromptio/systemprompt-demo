@@ -44,16 +44,13 @@ rules:
   # here only to DENY a specific skill — an entity-level deny overrides the
   # inherited marketplace allow (deny-overrides).
 
-  # use_dangerous_secret is intentionally refused at the authz layer. It is
-  # catalogued by the marketplace, but this deny rule overrides the inherited
-  # grant (deny-overrides), so a user-role attempt to use it is refused before it
-  # can run — independent of the runtime secret_scan governance hook. This is the
-  # access-control demonstration: a dangerous capability that exists in the
-  # catalog but is denied by policy.
-  - entity_type: skill
-    entity_id: use_dangerous_secret
-    access: deny
-    roles: [user]
+  # There is no per-skill deny rule at present. The refusal demonstration moved
+  # to the runtime policy chain — `demonstrate_tool_rejection` attempts an
+  # egress tool that `tool_blocklist` refuses — because an authz deny is
+  # invisible in the web terminal: the skill simply never appears, which reads
+  # as absence rather than as enforcement. Keeping the shape here for whoever
+  # wants the authz layer back: an `entity_type: skill` rule with `access: deny`
+  # overrides the inherited marketplace grant (deny-overrides).
 
   # agents shipped with systemprompt
   - entity_type: agent

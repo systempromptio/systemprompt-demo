@@ -22,14 +22,15 @@
 # route and never a string read from the request.
 #
 # What this script asserts:
-#   1. The surface is absent unless SP_PI_GATEWAY_KEY is configured
+#   1. The surface is always mounted, and rejects an unauthenticated caller
 #   2. An embed token is minted for a *registered* user (approval not required)
 #   3. A conversation opens, and the SSE stream replays from seq 0
 #   4. A tool call stops on a human, and denying it is audited
 #   5. A client cannot name the RPC command type (shell-escape regression)
-#   6. A second session for one user is refused
+#   6. A second session for one user displaces the first, never runs beside it
+#   7. A path outside the session workspace is refused before a human is asked
 #
-# Cost: Free unless --live. Case 3's prompt makes a real model call only with
+# Cost: Free unless --live. Cases 3 and 7 make a real model call only with
 # --live; without it the script asserts the transport and stops short of one.
 
 set -e
@@ -41,30 +42,30 @@ LIVE=false
 
 header "DEMO 11: The same gates, driven from a browser"
 
-# ── 1. Configured at all? ────────────────────────────────────────────────────
-# PiConfig::from_env returns None without a gateway key, pi_router returns
-# None, and the routes are never merged. A 404 here is the designed answer, not
-# a broken deployment — so the demo reports it and stops rather than failing.
-subheader "1. Is the pi web terminal configured?"
+# ── 1. Mounted, and closed to strangers ──────────────────────────────────────
+# There is no enable flag: the terminal is the site's primary demo, so
+# /api/public/pi/* always exists and services/config/pi.yaml only bounds what a
+# session may do. A 404 here means the routes are missing entirely — a broken
+# build, not a configuration choice. The designed answer is 401: the surface is
+# there and it refuses an unauthenticated caller.
+subheader "1. Is the pi web terminal mounted?"
 
 PROBE=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
   "${BASE_URL}/api/public/pi/session" \
   -H 'content-type: application/json' -d '{"token":"probe"}')
 
 if [[ "$PROBE" == "404" ]]; then
-  warn "SP_PI_GATEWAY_KEY is not set, so /api/public/pi/* does not exist."
-  info "That is the intended posture: no half-configured agent service."
-  info "To run this demo, add to .env and restart:"
-  echo ""
-  echo "    SP_PI_GATEWAY_KEY=<a gateway credential>"
-  echo "    SP_PI_BINARY=\$(command -v pi)"
-  echo "    SP_PI_CHILD_PATH=\$(dirname \$(command -v pi)):/usr/local/bin:/usr/bin:/bin"
-  echo ""
-  info "pi itself: npm install -g --ignore-scripts @earendil-works/pi-coding-agent"
+  warn "/api/public/pi/* does not exist. The terminal is always mounted, so"
+  warn "this is a broken build rather than a setting — check the startup log"
+  warn "for the 'pi web terminal mounted' line."
   divider
-  exit 0
+  exit 1
 fi
-assert_eq "$PROBE" "401" "unconfigured probe is rejected, not 404"
+assert_eq "$PROBE" "401" "an unauthenticated probe is rejected, not 404"
+
+# pi itself still has to be installed for a session to spawn:
+#   npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+# If it is not on `child_path` in services/config/pi.yaml, case 3 fails at spawn.
 
 # ── 2. Mint an embed token ───────────────────────────────────────────────────
 # EventSource cannot set headers, so the credential has to survive in a query
@@ -78,15 +79,14 @@ subheader "2. Mint an embed token"
 ADMIN_JWT=$("$CLI" admin session login --token-only --profile "$PROFILE" 2>/dev/null | tail -1)
 assert_nonempty "$ADMIN_JWT" "admin session"
 
-# ⚠ Must be the identity that owns SP_PI_GATEWAY_KEY, not just any real
-# account. pi authenticates to /v1/messages with that one shared credential
-# while sending the x-session-id this server attested for *this* user; the
-# gateway rejects a session that does not belong to the credential's owner
-# ("unknown or revoked session"). Until the deferred per-conversation PAT
-# lands, only the credential's own user can actually drive the agent.
+# Any real account will do: each conversation mints its own gateway PAT for
+# whichever user opened it, so the identity that authenticates to /v1/messages
+# is always the identity the attested x-session-id belongs to. That this step
+# no longer has to name one privileged account is itself the check that the
+# per-conversation credential works.
 USER_ID=$(cli_json admin users list 2>/dev/null \
   | jq -r '[.items[] | select(.roles | index("admin"))][0].id // empty')
-assert_nonempty "$USER_ID" "the gateway credential's account"
+assert_nonempty "$USER_ID" "an account to drive the terminal as"
 
 TOKEN_JSON=$(curl -fsS -X POST \
   "${BASE_URL}/api/public/admin/users/${USER_ID}/pi-embed-token" \
@@ -110,9 +110,9 @@ CONV=$(printf '%s' "$SESSION_BODY" | sed '$d' | jq -r '.conversation_id // empty
 # The cap is one session per user, and an abandoned one lives until the idle
 # reaper takes it. That is the designed behaviour, not a failure of this run.
 if [[ "$SESSION_CODE" == "429" ]]; then
-  warn "This account already has a live session (SP_PI_MAX_PER_USER=1)."
+  warn "This account already has a live session (sessions.max_per_user: 1)."
   info "An earlier run left one open; the idle reaper closes it after"
-  info "SP_PI_IDLE_SECS (default 600). Wait, or restart the server."
+  info "timeouts.idle_secs (default 600). Wait, or restart the server."
   divider
   exit 0
 fi
@@ -204,19 +204,91 @@ fi
 pass "no shell ran — the extra JSON fields were ignored by the route"
 
 # ── 6. One session per user ──────────────────────────────────────────────────
+# The cap is one, and it is enforced by displacement rather than by refusal:
+# asking for a second conversation closes the first. Refusing instead would
+# strand a terminal whose tab has gone — the common case is a reload — with no
+# way for its owner to reclaim it until the idle timeout.
 subheader "6. One session per user"
 
-SECOND=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+SECOND_BODY=$(curl -s -w '\n%{http_code}' -X POST \
   "${BASE_URL}/api/public/pi/session" \
   -H 'content-type: application/json' -d "{\"token\":\"$TOK\"}")
-assert_eq "$SECOND" "429" "a second concurrent session is refused"
+assert_eq "$(printf '%s' "$SECOND_BODY" | tail -1)" "201" "a second session is granted"
+
+SECOND_CONV=$(printf '%s' "$SECOND_BODY" | sed '$d' | jq -r '.conversation_id // empty')
+assert_nonempty "$SECOND_CONV" "the replacement conversation"
+if [[ "$SECOND_CONV" == "$CONV" ]]; then
+  fail "the second session reused the first conversation id"
+  exit 1
+fi
+
+# The point of the cap: the first is gone, not running beside it. A 404 here is
+# the registry having dropped it, which is also what revoked its PAT and session.
+FIRST_NOW=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "${BASE_URL}/api/public/pi/prompt" -H 'content-type: application/json' \
+  -d "{\"token\":\"$TOK\",\"conversation_id\":\"$CONV\",\"message\":\"still there?\"}")
+assert_eq "$FIRST_NOW" "404" "the displaced conversation is gone, not running beside it"
+
+# So the cleanup trap tears down the one that is actually live.
+CONV="$SECOND_CONV"
+
+# ── 7. A path outside the workspace never reaches a human ───────────────────
+# pi's own `read` applies no path containment: an absolute path goes straight
+# through to readFile. Two layers stop it, and this case exercises the one that
+# does not depend on the kernel — the gate rejects the path itself, so the
+# denial is a governance row with a policy name rather than a bare EACCES.
+#
+# The assertion that matters is the *absence* of an approval_request. A card
+# offered here would mean a human could approve reading the deployment's
+# secrets, which is the whole failure this closes: confinement comes before
+# consent, not after it.
+subheader "7. A read outside the workspace is refused before anyone is asked"
+
+if [[ "$LIVE" == true ]]; then
+  SCOPE_LOG=$(mktemp)
+  curl -sN "${BASE_URL}/api/public/pi/stream/${CONV}?token=${TOK}" > "$SCOPE_LOG" 2>/dev/null &
+  SCOPE_PID=$!
+  sleep 1
+
+  SECRETS="$(pwd)/.systemprompt/profiles/local/secrets.json"
+  curl -fsS -X POST "${BASE_URL}/api/public/pi/prompt" \
+    -H 'content-type: application/json' \
+    -d "{\"token\":\"$TOK\",\"conversation_id\":\"$CONV\",\"message\":\"read the file at ${SECRETS}\"}" \
+    >/dev/null
+  info "Asked the agent to read ${SECRETS}"
+
+  BLOCKED=""
+  for _ in $(seq 1 60); do
+    BLOCKED=$(sed -n 's/^data: //p' "$SCOPE_LOG" \
+      | jq -r 'select(.type=="tool_blocked") | .policy // empty' 2>/dev/null | head -1)
+    [[ -n "$BLOCKED" ]] && break
+    sleep 1
+  done
+  kill "$SCOPE_PID" 2>/dev/null || true
+
+  assert_eq "$BLOCKED" "workspace_scope" "the read was refused by workspace confinement"
+
+  ASKED=$(sed -n 's/^data: //p' "$SCOPE_LOG" \
+    | jq -r 'select(.type=="approval_request") | .approval_id' 2>/dev/null | head -1)
+  if [[ -n "$ASKED" ]]; then
+    fail "an approval card was offered for a path outside the workspace"
+    exit 1
+  fi
+  pass "no human was ever offered the chance to approve it"
+  rm -f "$SCOPE_LOG"
+else
+  info "Skipping — this needs a real model call to make pi issue the read."
+  info "The second layer is independent of this one: with the gate check"
+  info "removed, sp-pi-jail denies the same path with EACCES at the syscall."
+  cost_note "Part 7 with --live makes one real model call."
+fi
 
 # ── Audit ────────────────────────────────────────────────────────────────────
 subheader "The governance spine"
 
 info "Every decision above is queryable the same way a CLI tool call is:"
 cmd "systemprompt infra logs trace list --agent pi_agent"
-cmd "open ${BASE_URL}/admin/demo/trace"
+cmd "open ${BASE_URL}/  # the pane beside the terminal shows the same spine, live"
 
 divider
 pass "The browser drove a real agent, and never once named what it could run."

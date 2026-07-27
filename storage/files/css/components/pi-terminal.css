@@ -1,10 +1,34 @@
 /* Live pi terminal widget.
  *
- * Self-contained by necessity: it borrows the class vocabulary of the canned
- * homepage demo (.terminal-line, .prompt, .command, .cursor), but
- * homepage-demo-terminal.css is not registered in css.rs and never reaches the
- * browser. Every rule those classes need is therefore repeated here, scoped
- * under .pi-terminal so it cannot collide if that stylesheet is ever revived. */
+ * The one surface on the site where the product is running rather than being
+ * described, so it is styled as an instrument and not as a picture of a shell.
+ * No window dressing: there are no traffic-light dots, because the thing is
+ * live and a mac-window costume is the clearest possible signal that it is not.
+ *
+ * The governance chain is the subject. Everything else — chrome, meters,
+ * composer — is deliberately quiet so that the rail, the approval card, and a
+ * blocked call are what the eye lands on.
+ *
+ * Always dark, in both themes. --sp-color-terminal-* is intentionally not a
+ * light-dark() pair: a console that follows the page theme stops reading as a
+ * console. */
+
+.pi-terminal {
+  /* Local tokens. Scoped here rather than added to core/tokens.css — one
+     component's rail geometry is not a design-system concern. */
+  --pi-pip: 1.375rem;
+  --pi-rail-track: color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
+  --pi-ring-size: 2.25rem;
+  --pi-ring-width: 3px;
+  --pi-ring-fill: 1;
+  --pi-rim: color-mix(in oklch, var(--sp-color-primary) 32%, transparent);
+  --pi-pass: var(--sp-color-success);
+  --pi-fail: var(--sp-color-error);
+
+  display: block;
+  max-width: 860px;
+  margin: 0 auto;
+}
 
 .pi-demo {
   padding: var(--sp-space-4xl) 0 var(--sp-space-2xl);
@@ -19,24 +43,57 @@
   text-align: center;
 }
 
+/* Screen-reader-only text. Local because the public site has no utility layer;
+   the glyphs and colours in the rail all have a spoken equivalent and this is
+   what carries it. */
+.sp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── shell ──────────────────────────────────────────────────────────────── */
+
+.pi-terminal .terminal {
+  position: relative;
+  opacity: 1;
+  visibility: visible;
+  background: var(--sp-color-terminal-bg);
+  border: 1px solid var(--sp-color-terminal-border);
+  /* The brand's asymmetric corner, which the rest of the site uses and this
+     widget used to ignore. */
+  border-radius: var(--sp-corners-lg);
+  box-shadow: var(--sp-shadow-hero);
+  overflow: hidden;
+}
+
+/* A rim-light along the top edge, so the shell reads as lit rather than as a
+   flat rectangle sitting on the page. */
+.pi-terminal .terminal::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--pi-rim) 18%, var(--pi-rim) 82%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+
 .pi-terminal .terminal-header {
   display: flex;
   align-items: center;
   gap: var(--sp-space-3);
   padding: var(--sp-space-2) var(--sp-space-4);
-}
-
-.pi-terminal .terminal-dots {
-  display: flex;
-  gap: var(--sp-space-2);
-}
-
-.pi-terminal .terminal-dots span {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--sp-radius-full);
-  background: var(--sp-color-terminal-text-dim);
-  opacity: 0.35;
+  background: var(--sp-color-terminal-header);
+  border-bottom: 1px solid var(--sp-color-terminal-border);
 }
 
 .pi-terminal .terminal-title {
@@ -45,55 +102,26 @@
   color: var(--sp-color-terminal-text-dim);
 }
 
-.pi-terminal .prompt {
-  color: var(--sp-color-primary);
+.pi-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
 }
 
-.pi-terminal .command {
-  color: var(--sp-color-terminal-text);
+.pi-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--sp-radius-full);
+  background: var(--sp-color-terminal-text-dim);
+  flex: none;
 }
 
-.pi-terminal .output {
-  color: var(--sp-color-terminal-text);
-}
-
-.pi-terminal .output-dim {
-  color: var(--sp-color-terminal-text-dim);
-}
-
-.pi-terminal .cursor {
-  color: var(--sp-color-primary);
-  animation: pi-blink-caret 0.75s step-end infinite;
-}
-
-@keyframes pi-blink-caret {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.pi-terminal {
-  display: block;
-  max-width: 860px;
-  margin: 0 auto;
-}
-
-.pi-terminal .terminal {
-  position: static;
-  opacity: 1;
-  visibility: visible;
-  background: var(--sp-color-terminal-bg);
-  border: 1px solid var(--sp-color-terminal-border);
-  border-radius: var(--sp-radius-lg);
-  overflow: hidden;
-}
-
-.pi-terminal .terminal-header {
-  background: var(--sp-color-terminal-header);
-  border-bottom: 1px solid var(--sp-color-terminal-border);
-}
+.pi-live[data-state="live"] .pi-live-dot { background: var(--sp-color-success); }
+.pi-live[data-state="reconnecting"] .pi-live-dot,
+.pi-live[data-state="session in use"] .pi-live-dot { background: var(--sp-color-warning); }
+.pi-live[data-state="ended"] .pi-live-dot { background: var(--sp-color-error); }
 
 .pi-status {
-  margin-left: auto;
   font-family: var(--sp-font-mono);
   font-size: 0.75rem;
   color: var(--sp-color-terminal-text-dim);
@@ -113,15 +141,94 @@
   color: var(--sp-color-error);
 }
 
+/* Meters. The page claims governance is metered; a number that moves while you
+   watch is the cheapest available proof, so it lives in the chrome. */
+.pi-meters {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+  margin-left: auto;
+}
+
+.pi-meter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-meter b {
+  color: var(--sp-color-terminal-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-meter i {
+  font-style: normal;
+  opacity: 0.72;
+}
+
+/* A non-zero block count is the interesting number on this page. */
+.pi-meter[data-hot="1"] b {
+  color: var(--sp-color-error);
+}
+
+.pi-trace-link {
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  color: var(--sp-color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pi-trace-link:hover {
+  text-decoration: underline;
+}
+
+/* ── transcript ─────────────────────────────────────────────────────────── */
+
+.pi-body-wrap {
+  position: relative;
+}
+
 .pi-terminal .terminal-body {
   min-height: 260px;
   max-height: 420px;
   overflow-y: auto;
+  /* Growth must never shift what the reader is looking at; the widget decides
+     when to follow the output, and the browser must not second-guess it. */
+  overflow-anchor: none;
   padding: var(--sp-space-4);
   font-family: var(--sp-font-mono);
-  font-size: 0.85rem;
-  line-height: 1.6;
+  font-variant-ligatures: none;
+  font-size: 0.875rem;
+  line-height: 1.65;
   color: var(--sp-color-terminal-text);
+  box-shadow: var(--sp-shadow-inner-glow);
+  scrollbar-width: thin;
+  scrollbar-color: var(--sp-color-terminal-border) transparent;
+}
+
+.pi-terminal .terminal-body:focus-visible {
+  outline: 1px solid var(--pi-rim);
+  outline-offset: -2px;
+}
+
+.pi-terminal .terminal-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.pi-terminal .terminal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pi-terminal .terminal-body::-webkit-scrollbar-thumb {
+  background: var(--sp-color-terminal-border);
+  border-radius: var(--sp-radius-full);
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
 
 .pi-terminal .terminal-line {
@@ -129,16 +236,311 @@
   word-break: break-word;
 }
 
-.pi-tool-row {
-  color: var(--sp-color-accent-cyan);
+.pi-terminal .prompt {
+  color: var(--sp-color-primary);
 }
 
-.pi-tool-row--blocked {
-  color: var(--sp-color-error);
+.pi-terminal .command {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-terminal .output,
+.pi-terminal .pi-stream {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-terminal .output-dim {
+  color: var(--sp-color-terminal-text-dim);
 }
 
 .output-warn {
   color: var(--sp-color-warning);
+}
+
+.pi-trimmed {
+  color: var(--sp-color-terminal-text-dim);
+  opacity: 0.6;
+}
+
+.pi-terminal .cursor {
+  color: var(--sp-color-primary);
+}
+
+/* Jump-to-bottom. Only appears once the reader has scrolled away, because that
+   is the only time autoscroll is suppressed. */
+.pi-jump {
+  position: absolute;
+  right: var(--sp-space-4);
+  bottom: var(--sp-space-3);
+  padding: var(--sp-space-1) var(--sp-space-3);
+  background: var(--sp-color-terminal-header);
+  border: 1px solid var(--pi-rim);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  box-shadow: var(--sp-shadow-lift);
+  z-index: 2;
+}
+
+/* ── rendered prose ─────────────────────────────────────────────────────── */
+
+.pi-prose {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-prose > :first-child { margin-top: 0; }
+.pi-prose > :last-child { margin-bottom: 0; }
+
+.pi-prose p {
+  margin: 0 0 var(--sp-space-2);
+}
+
+.pi-heading {
+  margin: var(--sp-space-3) 0 var(--sp-space-2);
+  font-family: var(--sp-font-mono);
+  font-size: 0.9rem;
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-list {
+  margin: 0 0 var(--sp-space-2);
+  padding-left: var(--sp-space-5);
+}
+
+.pi-list li {
+  margin-bottom: 0.15rem;
+}
+
+.pi-code {
+  padding: 0.05rem 0.3rem;
+  background: color-mix(in oklch, var(--sp-color-terminal-header) 80%, var(--sp-color-primary) 8%);
+  border-radius: var(--sp-radius-xs);
+  font-size: 0.9em;
+}
+
+.pi-strong { color: var(--sp-color-terminal-text); font-weight: 650; }
+.pi-em { font-style: italic; }
+
+.pi-prose a {
+  color: var(--sp-color-primary);
+  text-underline-offset: 2px;
+}
+
+.pi-codeblock {
+  margin: var(--sp-space-2) 0;
+  background: var(--sp-color-terminal-header);
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-corners-inner-md);
+  overflow: hidden;
+}
+
+.pi-codeblock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem var(--sp-space-3);
+  border-bottom: 1px solid var(--sp-color-terminal-border);
+}
+
+.pi-codeblock-lang {
+  font-size: 0.68rem;
+  color: var(--sp-color-terminal-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pi-copy {
+  background: none;
+  border: none;
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.pi-copy:hover { color: var(--sp-color-primary); }
+
+.pi-codeblock pre {
+  margin: 0;
+  padding: var(--sp-space-3);
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+/* Reuses the palette the blog's code blocks use, so a snippet here looks like a
+   snippet there. */
+.pi-tok-comment { color: var(--sp-syntax-comment); font-style: italic; }
+.pi-tok-string { color: var(--sp-syntax-string); }
+.pi-tok-keyword { color: var(--sp-syntax-keyword); }
+.pi-tok-number { color: var(--sp-syntax-number); }
+
+/* ── thinking ───────────────────────────────────────────────────────────── */
+
+.pi-think {
+  margin: var(--sp-space-1) 0;
+  font-size: 0.8rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-think > summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-space-2);
+  cursor: pointer;
+  list-style: none;
+  opacity: 0.8;
+}
+
+.pi-think > summary::before {
+  content: '▸';
+  font-size: 0.7em;
+}
+
+.pi-think[open] > summary::before {
+  content: '▾';
+}
+
+.pi-think-count {
+  font-size: 0.68rem;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-think-body {
+  margin: var(--sp-space-1) 0 var(--sp-space-2) var(--sp-space-4);
+  padding-left: var(--sp-space-3);
+  border-left: 1px solid var(--sp-color-terminal-border);
+  white-space: pre-wrap;
+  opacity: 0.85;
+}
+
+/* ── the governance chain ───────────────────────────────────────────────── */
+
+.pi-rail-line {
+  margin: var(--sp-space-2) 0;
+}
+
+.pi-rail {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+/* One pip per policy, connected by the segment before it, so the row reads as a
+   pipeline rather than as a set of badges. */
+.pi-pip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.6rem 0.1rem 0.35rem;
+  font-family: var(--sp-font-mono);
+  font-size: 0.7rem;
+  color: var(--sp-color-terminal-text-dim);
+  cursor: default;
+}
+
+.pi-pip + .pi-pip::before {
+  content: '';
+  position: absolute;
+  left: -0.35rem;
+  width: 0.7rem;
+  height: 1px;
+  background: var(--pi-rail-track);
+}
+
+.pi-pip-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pi-pip);
+  height: var(--pi-pip);
+  border-radius: var(--sp-radius-full);
+  border: 1px solid var(--pi-rail-track);
+  font-size: 0.62rem;
+  line-height: 1;
+  flex: none;
+}
+
+.pi-pip[data-result="pass"] .pi-pip-dot {
+  border-color: var(--pi-pass);
+  background: color-mix(in oklch, var(--pi-pass) 18%, transparent);
+  color: var(--pi-pass);
+}
+
+.pi-pip[data-result="pass"] .pi-pip-name {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-pip[data-result="fail"] .pi-pip-dot {
+  border-color: var(--pi-fail);
+  background: color-mix(in oklch, var(--pi-fail) 22%, transparent);
+  color: var(--pi-fail);
+}
+
+.pi-pip[data-result="fail"] .pi-pip-name {
+  color: var(--pi-fail);
+  font-weight: 600;
+}
+
+/* The load-bearing state. A policy that never ran is dimmed, not ticked — so a
+   visitor watching a blocked call can see exactly where the chain stopped. */
+.pi-pip[data-result="skip"] {
+  opacity: 0.4;
+}
+
+.pi-pip[data-result="skip"] .pi-pip-dot {
+  border-style: dashed;
+}
+
+/* ── blocked ────────────────────────────────────────────────────────────── */
+
+.pi-blocked {
+  margin: var(--sp-space-2) 0;
+  padding: var(--sp-space-3);
+  background: color-mix(in oklch, var(--sp-color-error) 8%, var(--sp-color-terminal-header));
+  border: 1px solid color-mix(in oklch, var(--sp-color-error) 55%, transparent);
+  border-left: 3px solid var(--sp-color-error);
+  border-radius: var(--sp-corners-inner-md);
+  font-size: 0.8rem;
+}
+
+.pi-blocked-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-blocked-mark {
+  color: var(--sp-color-error);
+  font-weight: 700;
+}
+
+.pi-policy-chip {
+  padding: 0.05rem 0.45rem;
+  background: color-mix(in oklch, var(--sp-color-error) 20%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-error);
+  font-family: var(--sp-font-mono);
+  font-size: 0.68rem;
+}
+
+.pi-blocked-reason {
+  margin: var(--sp-space-2) 0 0;
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.75rem;
+}
+
+.pi-blocked-note {
+  margin: var(--sp-space-2) 0 0;
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.72rem;
 }
 
 /* ── approval queue ─────────────────────────────────────────────────────── */
@@ -155,29 +557,86 @@
 
 .pi-approval-card {
   padding: var(--sp-space-3);
-  background: var(--sp-color-terminal-header);
-  border: 1px solid var(--sp-color-warning);
-  border-radius: var(--sp-radius-md);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--sp-color-warning) 9%, var(--sp-color-terminal-header)),
+    var(--sp-color-terminal-header)
+  );
+  border: 1px solid color-mix(in oklch, var(--sp-color-warning) 65%, transparent);
+  border-radius: var(--sp-corners-inner-md);
+  box-shadow: var(--sp-shadow-lift);
   font-family: var(--sp-font-mono);
   font-size: 0.8rem;
   color: var(--sp-color-terminal-text);
 }
 
 .pi-approval-card--canned {
-  opacity: 0.6;
+  opacity: 0.62;
+}
+
+.pi-approval-card.is-settling {
+  opacity: 0.5;
 }
 
 .pi-approval-head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--sp-space-3);
+}
+
+.pi-approval-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.pi-approval-sub {
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.7rem;
+}
+
+/* The countdown as a ring around the glyph: a shape draining is legible at a
+   glance in a way a number is not, and the number stays for the exact value. */
+.pi-ring {
+  position: relative;
+  width: var(--pi-ring-size);
+  height: var(--pi-ring-size);
+  flex: none;
+  border-radius: var(--sp-radius-full);
+  background:
+    conic-gradient(
+      var(--sp-color-warning) calc(var(--pi-ring-fill) * 360deg),
+      var(--pi-rail-track) 0
+    );
+  display: grid;
+  place-items: center;
+  transition: background 1s linear;
+}
+
+.pi-ring::after {
+  content: '';
+  position: absolute;
+  inset: var(--pi-ring-width);
+  border-radius: var(--sp-radius-full);
+  background: var(--sp-color-terminal-header);
+}
+
+.pi-ring-glyph {
+  position: relative;
+  z-index: 1;
+  font-size: 0.85rem;
+  color: var(--sp-color-warning);
 }
 
 .pi-countdown {
   color: var(--sp-color-warning);
   font-variant-numeric: tabular-nums;
+  flex: none;
 }
+
+.pi-countdown[data-urgency="warn"] { color: var(--sp-color-warning); }
+.pi-countdown[data-urgency="critical"] { color: var(--sp-color-error); font-weight: 700; }
 
 .pi-approval-input {
   margin: var(--sp-space-2) 0 0;
@@ -189,10 +648,24 @@
   color: var(--sp-color-terminal-text-dim);
   font-size: 0.75rem;
   white-space: pre-wrap;
+  scrollbar-width: thin;
 }
 
 /* What already cleared, not a bare "allow this?" — the operator should see the
    chain that passed before being asked. */
+.pi-approval-cleared {
+  margin-top: var(--sp-space-2);
+}
+
+.pi-approval-cleared-label {
+  display: block;
+  color: var(--sp-color-success);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Kept for compatibility with any surface still rendering the flat chain text. */
 .pi-policy-chain {
   margin-top: var(--sp-space-2);
   color: var(--sp-color-success);
@@ -207,12 +680,66 @@
 
 /* ── composer ───────────────────────────────────────────────────────────── */
 
+/* Slash-command palette.
+   Discovery only: a leading `/` works whether or not this is open, so it never
+   sits between the viewer and the input. It shares the composer's top border
+   rather than floating, because a floating list over a streaming terminal
+   fights the output for attention. */
+.pi-palette {
+  display: flex;
+  flex-direction: column;
+  max-height: 11rem;
+  overflow-y: auto;
+  border-top: 1px solid var(--sp-color-terminal-border);
+  scrollbar-width: thin;
+}
+
+.pi-palette-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-space-3);
+  width: 100%;
+  padding: var(--sp-space-2) var(--sp-space-4);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--sp-font-mono);
+  font-size: 0.8rem;
+}
+
+.pi-palette-row:hover,
+.pi-palette-row:focus-visible {
+  background: var(--sp-color-terminal-border);
+  outline: none;
+}
+
+.pi-palette-cmd {
+  flex: none;
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-palette-desc {
+  flex: 1;
+  min-width: 0;
+  color: var(--sp-color-terminal-text-dim);
+  /* One line: these descriptions are a sentence long, and wrapping them turns
+     a four-row list into a wall. The full text is in the skill itself. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pi-composer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--sp-space-2);
   padding: var(--sp-space-3) var(--sp-space-4);
   border-top: 1px solid var(--sp-color-terminal-border);
+}
+
+.pi-composer .prompt {
+  padding-bottom: 0.2rem;
 }
 
 .pi-input {
@@ -221,9 +748,13 @@
   background: transparent;
   border: none;
   outline: none;
+  resize: none;
+  overflow-y: auto;
   color: var(--sp-color-terminal-text);
   font-family: var(--sp-font-mono);
   font-size: 0.85rem;
+  line-height: 1.45;
+  scrollbar-width: thin;
 }
 
 .pi-input::placeholder {
@@ -234,21 +765,40 @@
   color: var(--sp-color-text-disabled);
 }
 
+.pi-hint {
+  padding: 0 var(--sp-space-4) var(--sp-space-2);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  opacity: 0.6;
+}
+
+/* The hint is for someone with a keyboard; on a touch device it is noise. */
+@media (hover: none) {
+  .pi-hint { display: none; }
+}
+
 .pi-btn {
   padding: var(--sp-space-2) var(--sp-space-4);
   background: var(--sp-color-primary);
   border: 1px solid transparent;
-  border-radius: var(--sp-radius-md);
+  border-radius: var(--sp-corners-inner-sm);
   color: var(--sp-color-text-on-primary);
   font-family: var(--sp-font-body);
   font-size: 0.8rem;
   text-decoration: none;
   cursor: pointer;
+  flex: none;
   transition: opacity var(--sp-transition-fast);
 }
 
 .pi-btn:hover {
   opacity: 0.88;
+}
+
+.pi-btn:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 2px;
 }
 
 .pi-btn:disabled,
@@ -265,6 +815,97 @@
 
 .pi-btn--danger {
   background: var(--sp-color-error);
+}
+
+/* Approve is not the emphasised choice. Three of the four ways an approval can
+   end are denials, and a card that pushes toward allow would be arguing against
+   the thing this page exists to demonstrate. */
+.pi-btn--allow {
+  background: transparent;
+  border-color: var(--sp-color-success);
+  color: var(--sp-color-success);
+}
+
+.pi-btn--allow:hover {
+  background: color-mix(in oklch, var(--sp-color-success) 16%, transparent);
+  opacity: 1;
+}
+
+.pi-btn--deny {
+  background: var(--sp-color-error);
+  color: var(--sp-primitive-white);
+}
+
+/* ── tool rows ──────────────────────────────────────────────────────────── */
+
+.pi-tool {
+  margin: 0.1rem 0;
+  font-family: var(--sp-font-mono);
+}
+
+.pi-tool > summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-space-2);
+  cursor: pointer;
+  list-style: none;
+  color: var(--sp-color-accent-cyan, var(--sp-color-info));
+}
+
+.pi-tool > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pi-tool-icon {
+  flex: none;
+  width: 1ch;
+}
+
+.pi-tool-name {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-tool-arg {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-tool-state {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.68rem;
+  color: var(--sp-color-terminal-text-dim);
+  opacity: 0.8;
+}
+
+.pi-tool[data-state="ok"] > summary { color: var(--sp-color-success); }
+.pi-tool[data-state="failed"] > summary,
+.pi-tool[data-state="blocked"] > summary { color: var(--sp-color-error); }
+
+.pi-tool-body {
+  margin: var(--sp-space-1) 0 var(--sp-space-2) var(--sp-space-4);
+  padding: var(--sp-space-2) var(--sp-space-3);
+  overflow-x: auto;
+  background: var(--sp-color-terminal-header);
+  border-left: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-radius-sm);
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
+}
+
+/* Kept: the flat single-line tool row, still used when the gate view has not
+   loaded. */
+.pi-tool-row {
+  color: var(--sp-color-accent-cyan, var(--sp-color-info));
+}
+
+.pi-tool-row--blocked {
+  color: var(--sp-color-error);
 }
 
 /* ── degraded footer ────────────────────────────────────────────────────── */
@@ -330,7 +971,7 @@
   padding: var(--sp-space-2) var(--sp-space-3);
   background: var(--sp-color-terminal-bg);
   border: 1px solid var(--sp-color-terminal-border);
-  border-radius: var(--sp-radius-md);
+  border-radius: var(--sp-corners-inner-sm);
   color: var(--sp-color-terminal-text);
   font-family: var(--sp-font-body);
   font-size: 0.9rem;
@@ -347,13 +988,105 @@
   color: var(--sp-color-terminal-text-dim);
 }
 
+/* ── motion ─────────────────────────────────────────────────────────────── */
+
+/* All of it opt-out. Every state above is legible from colour, glyph, and text
+   alone, so switching motion off removes emphasis and never information. */
+@media (prefers-reduced-motion: no-preference) {
+  .pi-terminal .cursor {
+    animation: pi-blink-caret 0.75s step-end infinite;
+  }
+
+  .pi-live[data-state="live"] .pi-live-dot {
+    animation: pi-pulse 2.4s ease-in-out infinite;
+  }
+
+  /* Pips are revealed by JS removing .is-pending on a stagger, so the chain
+     resolves left to right at reading speed. */
+  .pi-pip {
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+
+  .pi-pip.is-pending {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  .pi-approval-card {
+    animation: pi-card-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .pi-blocked.is-arriving {
+    animation: pi-block-in 300ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  .pi-jump {
+    animation: pi-card-in 180ms ease-out;
+  }
+}
+
+@keyframes pi-blink-caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes pi-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--sp-color-success) 55%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--sp-color-success) 0%, transparent); }
+}
+
+@keyframes pi-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* A short, small shake. Enough to say "this stopped", not enough to be a toy. */
+@keyframes pi-block-in {
+  0% { opacity: 0; transform: translateX(0); }
+  30% { opacity: 1; transform: translateX(-3px); }
+  55% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: none; }
+}
+
+/* ── narrow ─────────────────────────────────────────────────────────────── */
+
 @media (max-width: 640px) {
   .pi-terminal .terminal-body {
     min-height: 200px;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
   }
 
+  .pi-terminal .terminal-header {
+    flex-wrap: wrap;
+    row-gap: var(--sp-space-1);
+  }
+
+  /* The meters scroll rather than wrapping into a second row that pushes the
+     transcript off the first screen. */
+  .pi-meters {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pi-meters::-webkit-scrollbar { display: none; }
+
+  /* The rail is the one thing that must never be truncated: a chain with a pip
+     hidden off-screen is a chain the viewer cannot verify. */
+  .pi-rail {
+    flex-wrap: wrap;
+    row-gap: 0.2rem;
+  }
+
+  .pi-approval-actions,
   .pi-gate-actions {
     flex-direction: column;
+  }
+
+  .pi-tool-state {
+    display: none;
   }
 }

@@ -31,6 +31,7 @@ struct EventSpanRaw<'a> {
 }
 
 /// Resolve `id` (a `session_id` or `trace_id`) to an absolute `session_id`.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn resolve_trace_session(
     pool: &PgPool,
     id: &str,
@@ -245,6 +246,7 @@ async fn list_event_spans(pool: &PgPool, session_id: &SessionId) -> Result<Vec<S
         .collect())
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_trace_spans(
     pool: &PgPool,
     session_id: &SessionId,

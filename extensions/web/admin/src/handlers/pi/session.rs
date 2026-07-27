@@ -36,6 +36,7 @@ pub(super) struct PiSessionInit {
     pub(super) conversation_id: String,
     pub(super) user_id: UserId,
     pub(super) attested_session: SessionId,
+    pub(super) api_key_id: String,
     pub(super) workspace: PathBuf,
     pub(super) child: Child,
     pub(super) stdin: ChildStdin,
@@ -46,6 +47,10 @@ pub(super) struct PiSession {
     pub(super) user_id: UserId,
     /// The server-issued session both spines key on.
     pub(super) attested_session: SessionId,
+    /// The PAT minted for this conversation, so teardown knows what to revoke.
+    /// The secret itself is never held here — it lives only in the child's
+    /// `models.json` — but the id is all revocation needs.
+    pub(super) api_key_id: String,
     pub(super) workspace: PathBuf,
 
     stdin: tokio::sync::Mutex<Option<ChildStdin>>,
@@ -65,6 +70,7 @@ impl PiSession {
             conversation_id,
             user_id,
             attested_session,
+            api_key_id,
             workspace,
             child,
             stdin,
@@ -74,6 +80,7 @@ impl PiSession {
             conversation_id,
             user_id,
             attested_session,
+            api_key_id,
             workspace,
             stdin: tokio::sync::Mutex::new(Some(stdin)),
             child: tokio::sync::Mutex::new(Some(child)),

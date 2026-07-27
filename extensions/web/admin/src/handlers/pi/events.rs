@@ -7,6 +7,8 @@
 
 use serde::Serialize;
 
+use super::stage::PolicyStage;
+
 /// One frame to one widget. `seq` is per-session and monotonic so a reconnect
 /// can resume with `Last-Event-ID`.
 #[derive(Debug, Clone, Serialize)]
@@ -57,6 +59,17 @@ pub(super) enum PiEventBody {
     PromptBlocked {
         reason: String,
         policy: Option<String>,
+    },
+    /// What the policy chain did, stage by stage, for the call named here.
+    ///
+    /// Emitted for every governed call — allow *and* deny — because a gate that
+    /// is only visible when it blocks something looks like an error path rather
+    /// than a pipeline. Always derived from the chain that ran, never from a
+    /// fixed list: the widget cannot show a check that did not happen.
+    PolicyStages {
+        tool_use_id: Option<String>,
+        tool_name: String,
+        stages: Vec<PolicyStage>,
     },
     /// A call is waiting on a human. The widget renders a card per id.
     ApprovalRequest {
@@ -125,6 +138,23 @@ fn translate_message_update(frame: &serde_json::Value) -> Option<PiEventBody> {
         "thinking_delta" => Some(PiEventBody::ThinkingDelta {
             text: string_at(ev, "delta").or_else(|| string_at(ev, "text"))?,
         }),
+        // The provider call failed. pi carries the reason on the partial
+        // assistant message rather than on the event, and emits nothing else —
+        // dropping this is what made a rejected credential look like a turn
+        // that started, ended, and said nothing.
+        "error" => {
+            if string_at(ev, "reason").as_deref() == Some("aborted") {
+                // Someone pressed stop. `ApprovalResolved` and `TurnEnd` already
+                // say so; an error card would be inventing a fault.
+                return None;
+            }
+            Some(PiEventBody::Error {
+                message: ev
+                    .get("error")
+                    .and_then(|e| string_at(e, "errorMessage"))
+                    .unwrap_or_else(|| "the provider request failed".to_owned()),
+            })
+        },
         _ => None,
     }
 }
@@ -167,6 +197,67 @@ mod tests {
             "assistantMessageEvent": { "type": "toolcall_delta", "delta": "{\"pa" }
         });
         assert!(translate(&frame).is_none());
+    }
+
+    #[test]
+    fn provider_failure_surfaces_as_an_error() {
+        // Shape taken from pi-ai's `AssistantMessageEvent`: the reason is on the
+        // event, the message is on the partial assistant message it carries.
+        let frame = serde_json::json!({
+            "type": "message_update",
+            "assistantMessageEvent": {
+                "type": "error",
+                "reason": "error",
+                "error": { "role": "assistant", "stopReason": "error",
+                           "errorMessage": "401 unknown or revoked session" }
+            }
+        });
+        let Some(PiEventBody::Error { message }) = translate(&frame) else {
+            panic!("expected Error");
+        };
+        assert_eq!(message, "401 unknown or revoked session");
+    }
+
+    #[test]
+    fn a_user_abort_is_not_an_error() {
+        let frame = serde_json::json!({
+            "type": "message_update",
+            "assistantMessageEvent": { "type": "error", "reason": "aborted", "error": {} }
+        });
+        assert!(translate(&frame).is_none());
+    }
+
+    #[test]
+    fn policy_stages_serialises_as_a_tagged_frame() {
+        let event = PiEvent {
+            seq: 7,
+            body: PiEventBody::PolicyStages {
+                tool_use_id: Some("tu_1".to_owned()),
+                tool_name: "read".to_owned(),
+                stages: vec![
+                    PolicyStage {
+                        policy: "scope_check".to_owned(),
+                        result: "pass",
+                        detail: "read is in scope".to_owned(),
+                    },
+                    PolicyStage {
+                        policy: "rate_limit".to_owned(),
+                        result: "skip",
+                        detail: "disabled".to_owned(),
+                    },
+                ],
+            },
+        };
+        let Ok(v) = serde_json::to_value(&event) else {
+            panic!("a frame of owned strings cannot fail to serialise");
+        };
+        assert_eq!(v["type"], "policy_stages");
+        assert_eq!(v["seq"], 7);
+        assert_eq!(v["stages"][0]["policy"], "scope_check");
+        assert_eq!(v["stages"][0]["result"], "pass");
+        // Skip must survive as itself. Collapsing it to a pass would tell the
+        // visitor a check cleared the call when it never ran.
+        assert_eq!(v["stages"][1]["result"], "skip");
     }
 
     #[test]

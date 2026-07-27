@@ -8,6 +8,7 @@ use systemprompt_web_shared::error::MarketplaceError;
 
 use crate::types::ConfiguredHook;
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub fn list_configured_hooks(
     services_path: &Path,
     roles: &[String],

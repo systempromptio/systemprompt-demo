@@ -100,7 +100,10 @@ impl ServerHandler for SystempromptServer {
             "The systemprompt.io documentation hub. Call `list_topics` to see every \
              reference topic, `get_topic {{\"topic_id\": \"<id>\"}}` to read one in full, and \
              `search_docs {{\"query\": \"...\"}}` to search. Topics are also available as \
-             resources under systemprompt://docs/<id>. Full documentation: {WEBSITE_URL}/docs"
+             resources under systemprompt://docs/<id>. `governance_stats` returns your own \
+             policy verdicts and spend. `fetch_remote_docs` reaches the public internet and \
+             is expected to be refused by policy — it exists to demonstrate a refusal, not \
+             to be a working fetch. Full documentation: {WEBSITE_URL}/docs"
         ))
     }
 
@@ -148,9 +151,15 @@ impl ServerHandler for SystempromptServer {
         )
         .await;
 
-        dispatch_tool(&self.executor, &tool_name, &request, &request_context)
-            .await
-            .map(Into::into)
+        dispatch_tool(
+            &self.executor,
+            &self.db_pool,
+            &tool_name,
+            &request,
+            &request_context,
+        )
+        .await
+        .map(Into::into)
     }
 
     fn list_resources(

@@ -25,6 +25,7 @@ pub async fn list_all_rules(pool: &PgPool) -> Result<Vec<AccessControlRule>, sql
 /// Count access-control grants per `entity_id` for one `entity_type`.
 ///
 /// Backs the catalog pages' per-row "assignment count" badge.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn count_assignments_by_entity_type(
     pool: &PgPool,
     entity_type: &str,

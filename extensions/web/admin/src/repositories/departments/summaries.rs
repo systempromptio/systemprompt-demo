@@ -6,6 +6,7 @@ use sqlx::PgPool;
 use crate::types::departments::{DepartmentMember, DepartmentSummary, DepartmentTopTool};
 
 /// List department names alphabetically — backs the department filter dropdown.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_department_names(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
     sqlx::query_scalar!("SELECT name FROM departments ORDER BY name")
         .fetch_all(pool)
@@ -60,6 +61,7 @@ pub async fn list_departments(pool: &PgPool) -> Result<Vec<DepartmentSummary>, s
     .await
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_department_members(
     pool: &PgPool,
     department_name: &str,
@@ -103,6 +105,7 @@ pub async fn list_department_members(
     .await
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_department_top_tools(
     pool: &PgPool,
     department_name: &str,

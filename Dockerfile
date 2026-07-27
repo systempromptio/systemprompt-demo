@@ -34,7 +34,10 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release --workspace \
     && mkdir -p /out/bin \
     && cp target/release/systemprompt /out/bin/ \
-    && cp target/release/systemprompt-mcp-agent /out/bin/
+    && cp target/release/systemprompt-mcp-agent /out/bin/ \
+    # The pi web terminal refuses to spawn a child without this beside the
+    # server binary — jail_binary defaults to a sibling of current_exe.
+    && cp target/release/sp-pi-jail /out/bin/
 
 # hey powers the demo/performance load tests; its upstream S3 binary host is
 # dead (403), so build it from source and ship it on PATH — demo/_common.sh's

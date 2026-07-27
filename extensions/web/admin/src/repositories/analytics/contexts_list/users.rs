@@ -44,6 +44,7 @@ impl From<ContextUserSummaryRow> for ContextUserSummary {
     clippy::too_many_lines,
     reason = "body is one irreducible compile-time-checked query_as! SQL literal"
 )]
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_context_user_summary(
     pool: &PgPool,
     filter: &ContextListFilter,

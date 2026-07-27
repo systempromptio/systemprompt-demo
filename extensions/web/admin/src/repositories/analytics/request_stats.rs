@@ -29,6 +29,7 @@ pub struct RequestStats {
     pub denied_session_rate: f64,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn get_request_stats(
     pool: &PgPool,
     range: TimeRange,
@@ -107,6 +108,7 @@ pub struct LatencyBucket {
     pub count: i64,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_latency_histogram(
     pool: &PgPool,
     range: TimeRange,
@@ -172,6 +174,7 @@ pub struct CostBucket {
 
 const COST_BUCKETS: i32 = 24;
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_cost_over_time(
     pool: &PgPool,
     range: TimeRange,

@@ -1,0 +1,112 @@
+/* The homepage: a governed agent on the left, your account and its telemetry
+ * on the right, and nothing else.
+ *
+ * The two halves are one argument — the terminal shows a tool call stopping for
+ * approval, the pane shows the audit row that decision wrote. Putting them on
+ * separate pages was the old design, and it meant nobody ever saw both. */
+
+.home-split-body {
+  /* The split owns the viewport, so the page itself must not scroll; each pane
+     scrolls its own overflow instead. */
+  overflow: hidden;
+}
+
+.home-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* The site header is `position: fixed`, so it reserves no space — the split
+     both offsets itself past it and takes whatever height is left. `dvh`
+     rather than `vh` because mobile browsers retract their chrome mid-scroll,
+     and `vh` measures the wrong one. */
+  margin-top: var(--sp-header-height);
+  height: calc(100dvh - var(--sp-header-height));
+  min-height: 0;
+  background: var(--sp-color-bg);
+}
+
+.home-split-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-3);
+  min-height: 0;
+  min-width: 0;
+  padding: var(--sp-space-6);
+  overflow-y: auto;
+}
+
+.home-split-pane--terminal {
+  background: var(--sp-color-surface);
+  border-right: 1px solid var(--sp-color-border);
+}
+
+.home-split-note {
+  flex: none;
+  margin: 0;
+  color: var(--sp-color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* ── the terminal, filling its half ─────────────────────────────────────── */
+
+/* pi-terminal.css sizes the widget for a centred band inside a marketing
+   section. Here it is the surface, so the width cap and the fixed body height
+   both have to go — the body takes the slack instead. */
+.home-split-pane--terminal .pi-terminal {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+}
+
+.home-split-pane--terminal .pi-terminal .terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.home-split-pane--terminal .pi-terminal .terminal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.home-split-pane--terminal .pi-approvals:not(:empty) {
+  flex: none;
+  max-height: 40%;
+  overflow-y: auto;
+}
+
+.home-split-pane--terminal .pi-gate {
+  flex: none;
+}
+
+/* ── narrow ─────────────────────────────────────────────────────────────── */
+
+/* Below the split threshold the two halves stack, terminal first: it is the
+   thing worth looking at, and the pane reads as its caption. Each keeps enough
+   height to be usable rather than each getting an unreadable sliver. */
+@media (max-width: 900px) {
+  .home-split-body {
+    overflow: auto;
+  }
+
+  .home-split {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .home-split-pane {
+    min-height: 70dvh;
+    overflow: visible;
+  }
+
+  .home-split-pane--terminal {
+    border-right: none;
+    border-bottom: 1px solid var(--sp-color-border);
+  }
+
+  .home-split-pane--terminal .pi-terminal .terminal-body {
+    min-height: 320px;
+  }
+}

@@ -28,6 +28,7 @@ use super::handler::evaluate::{EvaluateInput, evaluate};
 use super::types::{
     AuditTarget, ChainEntryOutcome, ChainEntryResult, DecisionAudit, PrincipalSnapshot,
 };
+use super::stages::{StageOutcome, StageResult};
 use super::{audit, scope};
 
 /// The agent id every pi run is audited under, on both the CLI and widget
@@ -64,6 +65,29 @@ pub(crate) struct PolicyVerdict {
     chain: Vec<ChainEntryOutcome>,
     access_scope: AccessScope,
     attested: SessionId,
+}
+
+impl PolicyVerdict {
+    /// The chain exactly as [`evaluate`] ran it.
+    ///
+    /// Guarantees the order, count, and results are the evaluation's own, so a
+    /// policy added, removed, or reordered in `policies/mod.rs` is reflected
+    /// without anything restating the list. Nothing can report a stage that did
+    /// not run.
+    pub(crate) fn stages(&self) -> Vec<StageOutcome> {
+        self.chain
+            .iter()
+            .map(|entry| StageOutcome {
+                policy: entry.policy_id.to_string(),
+                result: match entry.result {
+                    ChainEntryResult::Pass => StageResult::Pass,
+                    ChainEntryResult::Fail => StageResult::Fail,
+                    ChainEntryResult::Skip => StageResult::Skip,
+                },
+                detail: entry.detail.clone(),
+            })
+            .collect()
+    }
 }
 
 /// Run the four-stage chain and audit the outcome.
@@ -155,6 +179,50 @@ pub(crate) fn record_human_decision(
                 _ => ChainEntryResult::Fail,
             },
             detail: outcome.reason().to_owned(),
+        }],
+    };
+    spawn_write(pool, audit);
+}
+
+/// Audit a caller-side policy that refused a call the chain had allowed.
+///
+/// Some rules cannot live in [`evaluate`] because they need state only the
+/// caller holds — workspace confinement needs the session's own directory,
+/// which the policy chain has never heard of. They still have to land in the
+/// spine, or a denial the user sees has no record behind it.
+///
+/// A second row rather than a mutation of the first, for the same reason
+/// [`record_human_decision`] is: "policy allowed, the caller's own rule
+/// refused" is two facts.
+pub(crate) fn record_policy_denial(
+    pool: &Arc<PgPool>,
+    call: &GovernedCall<'_>,
+    verdict: &PolicyVerdict,
+    policy_id: &str,
+    detail: &str,
+) {
+    let audit = DecisionAudit {
+        decision: Decision::Deny {
+            reason: systemprompt_security::authz::DenyReason::PolicyViolation {
+                policy: policy_id.to_owned(),
+                detail: std::borrow::Cow::Owned(detail.to_owned()),
+            },
+        },
+        principal: PrincipalSnapshot {
+            user_id: call.user_id.clone(),
+            session_id: verdict.attested.clone(),
+            agent_session: Some(call.agent_session.clone()),
+            agent_id: Some(AgentId::new(PI_AGENT_ID)),
+            agent_scope: verdict.access_scope,
+        },
+        target: AuditTarget {
+            tool_name: call.tool_name.to_owned(),
+            plugin_id: Some(PluginId::new(PI_PLUGIN_ID)),
+        },
+        chain: vec![ChainEntryOutcome {
+            policy_id: systemprompt::identifiers::PolicyId::new(policy_id),
+            result: ChainEntryResult::Fail,
+            detail: detail.to_owned(),
         }],
     };
     spawn_write(pool, audit);

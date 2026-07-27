@@ -142,6 +142,7 @@ pub struct PendingApplicant {
     pub requested_at: String,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_pending_applicants(pool: &PgPool) -> Vec<PendingApplicant> {
     sqlx::query!(
         r#"

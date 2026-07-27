@@ -11,7 +11,7 @@
 mod gates;
 
 pub(crate) use gates::{
-    non_admin_gate_middleware, require_admin_middleware, require_approved_middleware,
+    require_admin_middleware, require_approved_middleware,
     require_auth_middleware, require_user_middleware,
 };
 
@@ -33,6 +33,13 @@ use super::repositories::marketplace::plugins::MarketplaceCounts;
 use super::repositories::users::queries::UserAccess;
 use super::types::{MarketplaceContext, UserContext};
 
+/// Whoami for the homepage pane.
+///
+/// No `is_admin`: the interactive site has no admin plane left to unlock, and
+/// telling a browser about a role it cannot act on is an invitation to build
+/// one client-side. Admin remains a CLI-only notion. `is_approved` is here
+/// instead, because the pane genuinely renders differently while an account is
+/// under review — the terminal runs, the signup credit does not.
 #[derive(Debug, Serialize)]
 struct AuthMeResponse {
     user_id: UserId,
@@ -40,7 +47,7 @@ struct AuthMeResponse {
     email: Email,
     roles: Vec<String>,
     department: String,
-    is_admin: bool,
+    is_approved: bool,
 }
 
 struct CachedMarketplace {
@@ -219,7 +226,7 @@ pub(crate) async fn auth_me_handler(Extension(user_ctx): Extension<UserContext>)
         email: user_ctx.email,
         roles: user_ctx.roles,
         department: user_ctx.department,
-        is_admin: user_ctx.is_admin,
+        is_approved: user_ctx.is_approved,
     })
     .into_response()
 }

@@ -44,6 +44,7 @@ pub struct DeviceAppLinkRow {
 }
 
 /// Load every enrolled device with owner + telemetry for the fleet view.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_devices(pool: &PgPool) -> Result<Vec<DeviceRowDb>, sqlx::Error> {
     sqlx::query_as!(
         DeviceRowDb,
@@ -77,6 +78,7 @@ pub async fn list_devices(pool: &PgPool) -> Result<Vec<DeviceRowDb>, sqlx::Error
 }
 
 /// List human users eligible as device owners in the assignment dropdown.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_device_user_options(pool: &PgPool) -> Result<Vec<DeviceUserRow>, sqlx::Error> {
     sqlx::query_as!(
         DeviceUserRow,
@@ -95,6 +97,7 @@ pub async fn list_device_user_options(pool: &PgPool) -> Result<Vec<DeviceUserRow
 }
 
 /// Load app-link telemetry for a single user's enrolled devices.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_device_app_links(
     pool: &PgPool,
     user_id: &UserId,

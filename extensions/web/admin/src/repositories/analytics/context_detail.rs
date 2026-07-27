@@ -62,6 +62,7 @@ pub struct ContextToolCallRow {
     pub created_at: DateTime<Utc>,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn find_context_header(
     pool: &PgPool,
     context_id: &ContextId,
@@ -98,6 +99,7 @@ pub async fn find_context_header(
     .await
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn get_context_kpis(
     pool: &PgPool,
     context_id: &ContextId,
@@ -134,6 +136,7 @@ pub async fn get_context_kpis(
     })
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_context_requests(
     pool: &PgPool,
     context_id: &ContextId,
@@ -160,6 +163,7 @@ pub async fn list_context_requests(
     .await
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_context_messages(
     pool: &PgPool,
     context_id: &ContextId,
@@ -185,6 +189,7 @@ pub async fn list_context_messages(
     .await
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_context_tool_calls(
     pool: &PgPool,
     context_id: &ContextId,

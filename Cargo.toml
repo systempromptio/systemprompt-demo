@@ -10,6 +10,7 @@ members = [
     "extensions/credits",
     "extensions/mcp/systemprompt",
     "extensions/mcp/shared",
+    "extensions/pi-jail",
 ]
 # The test workspace under tests/ is a separate workspace so it never compiles
 # when these extension crates are consumed as dependencies. Run it explicitly:
@@ -56,6 +57,11 @@ systemprompt-web-jobs = { path = "extensions/web/jobs" }
 systemprompt-email-extension = { path = "extensions/email" }
 systemprompt-credits-extension = { path = "extensions/credits" }
 systemprompt-mcp-shared = { path = "extensions/mcp/shared" }
+systemprompt-pi-jail = { path = "extensions/pi-jail" }
+
+# Landlock LSM bindings for the pi child's filesystem/network jail. Safe API —
+# every `unsafe` block is inside the crate, so `unsafe_code = "deny"` holds here.
+landlock = "0.4.6"
 
 # Core runtime dependencies
 tokio = { version = "1.49", features = ["rt-multi-thread", "net", "io-util", "time", "sync", "macros", "fs", "process", "signal"] }

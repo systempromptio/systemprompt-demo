@@ -21,6 +21,9 @@ anyhow.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 
+chrono.workspace = true
+sqlx.workspace = true
+
 rmcp.workspace = true
 
 axum.workspace = true

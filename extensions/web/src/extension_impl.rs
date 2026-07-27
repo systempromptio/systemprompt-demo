@@ -22,7 +22,7 @@ use crate::extenders::OrgUrlExtender;
 use crate::features::FeaturePagePrerenderer;
 use crate::homepage::{HomepagePageDataProvider, HomepagePrerenderer};
 use crate::jobs::{
-    BundleAdminCssJob, BundleAdminJsJob, ContentAnalyticsAggregationJob, ContentIngestionJob,
+    BundleAdminCssJob, ContentAnalyticsAggregationJob, ContentIngestionJob,
     ContentPrerenderJob, CopyExtensionAssetsJob, GovernanceBootstrapJob, LlmsTxtGenerationJob,
     PublishPipelineJob, RobotsTxtGenerationJob, SitemapGenerationJob,
 };
@@ -157,8 +157,9 @@ impl Extension for WebExtension {
             Arc::clone(&session_service),
             Arc::clone(&analytics_provider),
         );
-        // Absent unless configured; its routes are absolute, so it merges at the
-        // site root rather than under /api/public.
+        // Always present — a homepage whose terminal 404s is the failure the
+        // pi config path exists to remove. Its routes are absolute, so it
+        // merges at the site root rather than under /api/public.
         let pi_api = admin::pi_terminal_router(
             Arc::clone(&write_pool),
             Arc::clone(&session_service),
@@ -197,14 +198,12 @@ impl Extension for WebExtension {
         let bridge_auth_router = admin::bridge_auth_ssr_router(Arc::clone(&pool), engine.clone());
         let ssr_router = admin::admin_ssr_router(pool, engine);
 
-        let mut combined = Self::admin_redirects()
+        let combined = Self::admin_redirects()
             .nest_service("/admin", ssr_router)
             .nest_service("/bridge-auth", bridge_auth_router)
             .merge(share_api)
-            .nest("/api/public", api_router);
-        if let Some(pi) = pi_api {
-            combined = combined.merge(pi);
-        }
+            .nest("/api/public", api_router)
+            .merge(pi_api);
 
         Some(ExtensionRouter::public(combined, "/"))
     }
@@ -230,7 +229,6 @@ impl Extension for WebExtension {
             Arc::new(GovernanceBootstrapJob),
             Arc::new(ContentAnalyticsAggregationJob),
             Arc::new(BundleAdminCssJob),
-            Arc::new(BundleAdminJsJob),
         ]
     }
 
@@ -271,10 +269,9 @@ impl WebExtension {
                 "/onboarding",
                 get(|| async { Redirect::temporary("/admin/continue") }),
             )
-            .route(
-                "/setup",
-                get(|| async { Redirect::temporary("/admin/setup") }),
-            )
+        // No `/setup` alias: the page it pointed at went with the rest of the
+        // admin console, and `/admin/continue` now lands an approved account on
+        // `/`, which is the whole product.
     }
 
     // Why: the governance webhook needs the analytics provider as well as the

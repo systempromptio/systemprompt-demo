@@ -70,26 +70,24 @@ pub fn hooks_webhook_router(
         .with_state(pool)
 }
 
-/// Routes for the governed pi web terminal, or `None` when it is not
-/// configured.
+/// Routes for the governed pi web terminal.
 ///
-/// Absent by default: without a gateway credential there is nothing to spawn
-/// against, and mounting a half-configured agent service is worse than not
-/// offering one. See [`handlers::pi`] for the sandboxing posture — the tool set
-/// is read-only unless deliberately widened.
+/// Always mounted — the terminal is the site's primary demo, so there is
+/// nothing to opt into. `services/config/pi.yaml` bounds a session rather than
+/// deciding whether one exists, and a broken one is reported at ERROR and
+/// replaced by the shipped defaults rather than taking the surface away. See
+/// [`handlers::pi`] for the sandboxing posture — the tool set is read-only
+/// unless deliberately widened.
 pub fn pi_terminal_router(
     pool: Arc<PgPool>,
     session_service: Arc<systemprompt::oauth::SessionCreationService>,
     analytics_provider: Arc<dyn systemprompt::traits::AnalyticsProvider>,
-) -> Option<Router> {
-    let cfg = handlers::pi::PiConfig::from_env()?;
-    tracing::info!("pi web terminal enabled");
-    Some(handlers::pi::pi_router(
-        pool,
-        handlers::pi::PiRegistry::new(cfg),
-        session_service,
-        analytics_provider,
-    ))
+) -> Router {
+    let cfg = handlers::pi::PiConfig::load_or_defaults();
+    tracing::info!(model = %cfg.model_name(), "pi web terminal mounted");
+    let registry =
+        handlers::pi::PiRegistry::new(cfg, Arc::clone(&pool), Arc::clone(&analytics_provider));
+    handlers::pi::pi_router(pool, registry, session_service, analytics_provider)
 }
 
 pub fn share_manifest_router(pool: Arc<PgPool>) -> Router {

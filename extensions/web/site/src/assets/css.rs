@@ -37,15 +37,21 @@ fn core_css(p: &Path) -> Vec<AssetDefinition> {
     ]
 }
 
+/// The homepage is the split screen and nothing else: terminal, pane, and the
+/// shell that puts them side by side.
+///
+/// The hero-video and five-step stylesheets went with the sections they styled.
+/// The rest of this group stays because `resources.html` reuses the same hero,
+/// showreel, and section-title vocabulary.
 fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
         css!(p, "homepage-hero.css"),
-        css!(p, "homepage-hero-video.css"),
-        css!(p, "homepage-steps-upgrade.css"),
         css!(p, "homepage-showreel.css"),
         css!(p, "homepage-getting-started.css"),
         css!(p, "homepage-sections-titles.css"),
         css!(p, "components/pi-terminal.css"),
+        css!(p, "components/home-split.css"),
+        css!(p, "components/auth-pane.css"),
     ]
 }
 

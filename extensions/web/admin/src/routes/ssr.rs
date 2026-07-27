@@ -1,4 +1,15 @@
-//! Server-rendered admin page routes, grouped by dashboard section.
+//! What is left of the server-rendered `/admin` surface.
+//!
+//! There is no admin console any more. The interactive site is one page — a
+//! governed terminal and the visitor's own telemetry pane — and every analytics,
+//! governance, catalog, and access page that used to live here has been retired
+//! in favour of the CLI, which reads the same tables. The repositories those
+//! pages called are untouched and now feed `GET /api/public/pi/stats/{id}`.
+//!
+//! What survives is only what a browser still genuinely needs: the sign-in and
+//! registration pages (the passkey ceremony has to be served from somewhere),
+//! the holding page for an account under review, and the device endpoints the
+//! Bridge calls.
 
 use std::sync::Arc;
 
@@ -11,20 +22,10 @@ use super::super::templates::AdminTemplateEngine;
 use super::super::{handlers, middleware};
 
 pub fn admin_ssr_router(pool: Arc<PgPool>, engine: AdminTemplateEngine) -> Router {
-    let inner = root_routes()
-        .merge(access_routes())
-        .merge(catalog_routes())
-        .merge(governance_routes())
-        .merge(entity_routes())
-        .merge(account_routes())
+    let inner = account_routes()
+        .merge(device_routes())
         .merge(api_routes())
         .layer(Extension(engine.clone()))
-        .layer(axum_middleware::from_fn(
-            middleware::marketplace_context_middleware,
-        ))
-        .layer(axum_middleware::from_fn(
-            middleware::non_admin_gate_middleware,
-        ))
         .layer(axum_middleware::from_fn(
             middleware::require_approved_middleware,
         ))
@@ -49,6 +50,11 @@ pub fn admin_ssr_router(pool: Arc<PgPool>, engine: AdminTemplateEngine) -> Route
     )
 }
 
+/// Reachable before sign-in, and therefore outside the middleware stack.
+///
+/// The homepage pane runs the passkey ceremony itself and never navigates here,
+/// but these pages remain the ceremony's home for the magic-link return trip
+/// and for anyone who arrives at `/login` directly.
 fn public_routes() -> Router<Arc<PgPool>> {
     Router::new()
         .route("/login", get(handlers::ssr::login_page))
@@ -69,31 +75,16 @@ fn public_routes() -> Router<Arc<PgPool>> {
         )
 }
 
-fn root_routes() -> Router<Arc<PgPool>> {
-    Router::new().route(
-        "/",
-        get(|| async { axum::response::Redirect::to("/admin/profile") }),
-    )
+fn account_routes() -> Router<Arc<PgPool>> {
+    Router::new()
+        .route("/pending", get(handlers::ssr::pending_page))
+        .route("/continue", get(handlers::onboarding::post_login_redirect))
 }
 
-fn access_routes() -> Router<Arc<PgPool>> {
+/// The Bridge's half of device linking. `/bridge-auth` renders the pages; these
+/// are the endpoints its buttons post to.
+fn device_routes() -> Router<Arc<PgPool>> {
     Router::new()
-        .route("/access/users", get(handlers::ssr::users_page))
-        .route("/access/user", get(handlers::ssr::user_detail_page))
-        .route("/user", get(handlers::ssr::user_detail_page))
-        .route(
-            "/access/departments",
-            get(handlers::ssr::management_departments_page),
-        )
-        .route(
-            "/access/departments/{id}",
-            get(handlers::ssr::management_department_detail_page),
-        )
-        .route(
-            "/access/devices",
-            get(handlers::ssr::management_devices_page),
-        )
-        .route("/access/matrix", get(handlers::ssr::access_control_page))
         .route("/devices/pats", post(handlers::devices::issue_pat))
         .route(
             "/devices/bridge-code",
@@ -109,96 +100,6 @@ fn access_routes() -> Router<Arc<PgPool>> {
         )
 }
 
-fn catalog_routes() -> Router<Arc<PgPool>> {
-    Router::new()
-        .route(
-            "/catalog",
-            get(|| async { axum::response::Redirect::permanent("/admin/catalog/marketplace") }),
-        )
-        .route(
-            "/catalog/marketplace",
-            get(handlers::catalog::marketplace_page),
-        )
-        .route("/catalog/a2a", get(handlers::catalog::a2a_agents_page))
-        .route(
-            "/catalog/external",
-            get(handlers::catalog::external_agents_page),
-        )
-}
-
-fn governance_routes() -> Router<Arc<PgPool>> {
-    Router::new()
-        .route("/governance/policies", get(handlers::ssr::governance_page))
-        .route(
-            "/governance/policies/{policy_id}",
-            get(handlers::ssr::governance_policy_edit_page),
-        )
-        .route(
-            "/governance/policies/{policy_id}/toggle",
-            post(handlers::ssr::governance_policy_toggle),
-        )
-        .route(
-            "/governance/hooks",
-            get(handlers::ssr::governance_hooks_page),
-        )
-        // One agent session as a single timeline, so a denial and the provider
-        // call it prevented sit next to each other rather than in two tables.
-        .route("/demo/trace", get(handlers::ssr::demo_trace_page))
-}
-
-fn entity_routes() -> Router<Arc<PgPool>> {
-    Router::new()
-        .route(
-            "/entities/requests",
-            get(handlers::ssr::analytics_requests_page),
-        )
-        .route(
-            "/entities/requests/{request_id}",
-            get(handlers::ssr::governance_audit_detail_page),
-        )
-        .route(
-            "/entities/sessions",
-            get(handlers::ssr::users_sessions_page),
-        )
-        .route(
-            "/entities/sessions/{session_id}",
-            get(handlers::ssr::session_detail_page),
-        )
-        .route("/entities/traces", get(handlers::ssr::perf_traces_page))
-        .route(
-            "/entities/traces/{trace_id}",
-            get(handlers::ssr::perf_trace_detail_page),
-        )
-        .route(
-            "/entities/contexts",
-            get(handlers::ssr::skills_contexts_page),
-        )
-        .route(
-            "/entities/contexts/{context_id}",
-            get(handlers::ssr::context_detail_page),
-        )
-}
-
-fn account_routes() -> Router<Arc<PgPool>> {
-    Router::new()
-        .route("/profile", get(handlers::ssr::profile_page))
-        .route("/settings", get(handlers::ssr::settings_page))
-        .route("/setup", get(handlers::ssr::setup_page))
-        .route("/pending", get(handlers::ssr::pending_page))
-        // Kept for one release: in-flight sessions and the root /onboarding
-        // redirect still point here now that registration collects the profile.
-        .route("/onboarding", get(handlers::onboarding::onboarding_moved))
-        .route("/continue", get(handlers::onboarding::post_login_redirect))
-        .route("/demo-register", get(handlers::ssr::demo_register_page))
-}
-
 fn api_routes() -> Router<Arc<PgPool>> {
-    Router::new()
-        .route("/auth/me", get(middleware::auth_me_handler))
-        .route(
-            "/api/conversations/{session_id}/raw",
-            get(handlers::ssr::conversations_raw),
-        )
-        .route("/api/chain/{id}", get(handlers::ssr::chain_envelope))
-        .route("/api/search/resolve", get(handlers::ssr::search_resolve))
+    Router::new().route("/auth/me", get(middleware::auth_me_handler))
 }

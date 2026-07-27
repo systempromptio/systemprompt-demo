@@ -54,6 +54,7 @@ pub struct ConversationSummary {
 
 /// `window_days` is the trailing window; `previous` covers the equivalent prior
 /// window so the caller can compute a delta.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn get_usage_window(
     pool: &PgPool,
     user_id: &UserId,
@@ -95,6 +96,7 @@ pub async fn get_usage_window(
 
 /// `token_share` is computed against the 30-day total and may be 0.0 when the
 /// user has no activity.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_top_models(
     pool: &PgPool,
     user_id: &UserId,
@@ -150,6 +152,7 @@ pub async fn list_top_models(
 ///
 /// `ai_requests` has no agent column today; the existing analytics surface
 /// reads agent ids from `plugin_usage_events`, which is keyed differently.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn get_conversation_summary(
     pool: &PgPool,
     user_id: &UserId,

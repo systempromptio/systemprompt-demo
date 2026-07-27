@@ -46,13 +46,14 @@ From that point, everything Claude does runs through your gateway. Prefer config
 
 ## What you get inside Claude
 
-Enable the Bridge and every signed-in user gets the **systemprompt** MCP server: a documentation hub with three tools (`list_topics`, `get_topic`, `search_docs`) over seven topics, plus five marketplace skills that show the platform explaining and enforcing itself.
+Enable the Bridge and every signed-in user gets the **systemprompt** MCP server: a documentation hub with four read-only tools (`list_topics`, `get_topic`, `search_docs`, `governance_stats`) over seven topics — plus `fetch_remote_docs`, which policy refuses on purpose — and four marketplace skills that show the platform explaining and enforcing itself.
 
 Try these prompts in Claude Cowork or Claude Desktop:
 
 - **"What is systemprompt?"** The agent lists the topics and reads the answer from the hub.
 - **"How does governance work here?"** It pulls the governance-pipeline topic, then demonstrates a live policy denial.
-- **Run the `use_dangerous_secret` skill.** It gets denied by an access-control rule, on purpose. That refusal is the product working.
+- **Run the `demonstrate_tool_rejection` skill.** It reaches for an egress tool the blocklist refuses, and the call is stopped before any connection is made. That refusal is the product working.
+- **Run the `analyse_governance_stats` skill.** It reads back what the session just cost and how every call was judged.
 
 ## Why "private" is not a slogan here
 

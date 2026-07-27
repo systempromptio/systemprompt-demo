@@ -7,7 +7,7 @@ import {
 
 import {
   buildAuthCredentialPayload, buildCreationCredentialPayload,
-  initPkceAndRedirect, WEBAUTHN_BASE
+  establishSessionInline, WEBAUTHN_BASE
 } from '/js/services/webauthn-passkey-helpers.js';
 
 const LOGIN_PATH = '/admin/login';
@@ -54,7 +54,7 @@ const validateToken = async () => {
   } else {
     try {
       showLoading('Validating link...');
-      const response = await fetch('/api/public/auth/magic-link/validate', {
+      const response = await fetch('/admin/api/magic-link/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
@@ -86,7 +86,12 @@ const autoLogin = async () => {
       challenge_id: startResponse.data.challenge_id,
       credential: buildAuthCredentialPayload(credential),
     });
-    await initPkceAndRedirect(finishResponse.data.user_id, finishResponse.data.auth_token, showLoading);
+    // The session is established in place and this page then hands control back
+    // to wherever the user started — normally `/`, where the pane picks the
+    // identity up on its own whoami. Going through the login page instead would
+    // land them on a form they have already completed.
+    await establishSessionInline(finishResponse.data.user_id, finishResponse.data.auth_token, showLoading);
+    window.location.href = new URLSearchParams(window.location.search).get('return') || '/';
   } catch (_error) {
     showError('Passkey created successfully! Redirecting to sign in...');
     setTimeout(() => { window.location.href = LOGIN_PATH; }, 2000);

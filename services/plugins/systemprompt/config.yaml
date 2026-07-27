@@ -11,7 +11,7 @@
 plugin:
   id: systemprompt
   name: "systemprompt.io"
-  description: "Governance demo — a dangerous skill blocked by policy, plus skills that explain what the governance spine is doing"
+  description: "Governance demo — a tool call refused by policy, plus skills that explain and measure what the governance spine is doing"
   version: "2.0.0"
   enabled: true
   author:
@@ -27,11 +27,10 @@ plugin:
   skills:
     source: explicit
     include:
-      - demonstrate_governance
-      - explain_governance
       - explain_systemprompt
-      - explore_systemprompt_docs
-      - use_dangerous_secret
+      - demonstrate_governance
+      - demonstrate_tool_rejection
+      - analyse_governance_stats
     exclude: []
 
   agents:

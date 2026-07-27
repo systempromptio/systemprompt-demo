@@ -20,10 +20,9 @@ marketplace:
   skills:
     include:
       - explain_systemprompt
-      - explain_governance
-      - explore_systemprompt_docs
       - demonstrate_governance
-      - use_dangerous_secret
+      - demonstrate_tool_rejection
+      - analyse_governance_stats
   mcp_servers:
     source: explicit
     include:

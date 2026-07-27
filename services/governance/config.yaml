@@ -9,12 +9,18 @@ governance:
     enabled: true
     admin_only_prefixes:
     - mcp__admin__
+  # Substring match over the tool name. `fetch_remote` is not destructive like
+  # the other three — it is here because this deployment permits no outbound
+  # egress, and the hub's `fetch_remote_docs` tool exists precisely so that a
+  # refusal is something a viewer can watch happen. Removing this pattern turns
+  # that demonstration into a live fetch.
   - id: tool_blocklist
     enabled: true
     patterns:
     - delete
     - drop
     - destroy
+    - fetch_remote
   - id: rate_limit
     enabled: true
     requests_per_window: 300

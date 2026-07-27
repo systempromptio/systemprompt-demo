@@ -3,14 +3,14 @@
 //! Goes to the reviewer, not the applicant. Registration is open but every
 //! account is held until a human approves it, so this email carries everything
 //! the decision needs — who they say they are and what they want to evaluate —
-//! and a link straight to the review queue.
+//! and the statement that approves them.
 
 use lettre::Message;
 use lettre::message::Mailbox;
 use lettre::message::header::ContentType;
 
 use crate::error::EmailError;
-use crate::palette::{BG_PAGE, BG_SURFACE, BORDER, BRAND_ORANGE, TEXT_MUTED, TEXT_PRIMARY};
+use crate::palette::{BG_PAGE, BG_SURFACE, BORDER, TEXT_MUTED, TEXT_PRIMARY};
 
 const FONT: &str =
     "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
@@ -34,7 +34,13 @@ pub fn build_registration_notice_email(
     site_url: &str,
 ) -> Result<Message, EmailError> {
     let subject = format!("Access request: {} ({})", notice.company, notice.email);
-    let review_url = format!("{site_url}/admin/access/users");
+    // Approval is a direct write — there is no review page to link to — so the
+    // email carries the statement the reviewer runs.
+    let review_url = format!(
+        "{site_url} — approve with: UPDATE user_approvals SET status='approved', \
+         decided_at=NOW() WHERE user_id=(SELECT id FROM users WHERE email='{email}');",
+        email = notice.email,
+    );
 
     Message::builder()
         .from(from)
@@ -66,7 +72,7 @@ fn build_plain_body(notice: &RegistrationNotice<'_>, review_url: &str) -> String
          Team size:  {team_size}\n\n\
          What they are evaluating:\n{why}\n\n\
          How they plan to use the credit:\n{plans}\n\n\
-         Approve or ignore: {review_url}\n\n\
+         Approve or ignore:\n{review_url}\n\n\
          No credit is granted and no access is given until you approve.",
         name = notice.name,
         email = notice.email,
@@ -122,7 +128,7 @@ fn build_html_body(notice: &RegistrationNotice<'_>, review_url: &str) -> String 
 </tr>
 <tr>
 <td style="padding:28px 40px 36px 40px;font-family:{FONT};font-size:14px;line-height:1.7;">
-<a href="{review_url}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">Open the review queue &#8594;</a>
+<p style="margin:0;font-family:monospace;font-size:12px;line-height:1.6;color:{TEXT_PRIMARY};word-break:break-all;">{review_url}</p>
 <p style="margin:12px 0 0 0;color:{TEXT_MUTED};font-size:13px;">No credit is granted and no access is given until you approve.</p>
 </td>
 </tr>

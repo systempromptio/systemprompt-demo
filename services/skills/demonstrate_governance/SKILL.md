@@ -1,142 +1,109 @@
 # Demonstrate Governance
 
-Drive every stage of the governance pipeline end to end using the `systemprompt`
-MCP documentation hub, then prove that each decision was audited. This is the
-guided tour of the enforcement spine: the same four stages run on every tool
-call in the workspace, including the hub's own `list_topics`, `get_topic`, and
-`search_docs`.
+Explain the four-stage governance pipeline and **prove two of its stages live**,
+using only the `systemprompt` MCP documentation hub. Every tool call in this
+session — including each one below — passes through the same synchronous check
+before it executes.
 
 ## When to Use
 
-Use this skill to show, in one sitting, that the four governance policies
-actually fire and that every allow and deny lands an auditable row. The
-`explain_governance` skill is the narrated, single-deny walkthrough; this skill
-exercises all four stages and reconstructs the full audit trail behind them.
+Use this to show that governance is enforcement rather than description: that a
+call is stopped *before* it runs, that the reason is specific, and that the
+decision is written down.
 
 ## The pipeline
 
-Every tool call runs a synchronous four-stage check before it executes (config
-in `services/governance/config.yaml`):
+Four policies run in order on every tool call, configured in
+`services/governance/config.yaml`:
 
 | Stage | Policy id | What it blocks |
 |-------|-----------|----------------|
 | Scope check | `scope_check` | A non-admin caller reaching for an admin-only tool prefix (`mcp__admin__*`) |
 | Secret scan | `secret_scan` | Plaintext credentials in any tool input (35+ patterns), any scope |
-| Blocklist | `tool_blocklist` | Destructive tool names (`delete`, `drop`, `destroy`) for user/non-admin scope |
+| Blocklist | `tool_blocklist` | Tool names matching a blocked pattern, for non-admin scope |
 | Rate limit | `rate_limit` | More than 300 calls per 60s for one identity |
 
-Scope is derived from the **caller's live DB roles**, not the `agent_id` in the
-payload. `admin`-role callers are exempt from `scope_check` and `tool_blocklist`
-(they are the policies' admin escape hatch); `secret_scan` and `rate_limit`
-apply to every identity. To prove a real `scope_check` / `tool_blocklist` deny
-you therefore need a **user-scope** token, not the admin `demo/.token` (see the
-deny recipe below).
+Scope comes from the caller's live database roles, not from anything the agent
+says about itself. `admin` callers are exempt from `scope_check` and
+`tool_blocklist`; `secret_scan` and `rate_limit` apply to every identity.
 
-Each decision is written to the `governance_decisions` table with the tool, the
-agent, the policy, and the reason.
+Evaluation does not stop recording at the first failure — stages after a deny
+are recorded as skipped, so the audit row keeps the whole trace rather than a
+single line of it.
+
+**Be honest about what is demonstrable here.** In this terminal the agent's tool
+allowlist holds only the hub's own tools, so there is no admin-prefixed tool to
+reach for (`scope_check`), and no plausible way to make 300 calls in a minute
+(`rate_limit`). Those two are explained, not performed. The two below are real.
 
 ## How to Use
 
 ### 1. The allowed path
 
-A normal, in-scope hub call passes all four stages. The `systemprompt` MCP hub
-is open to every signed-in user, so any of its tools executes and records an
-`allow` row:
+A normal hub call clears all four stages and records an `allow`:
 
-```bash
-systemprompt plugins mcp call systemprompt list_topics --args '{}'
-systemprompt plugins mcp call systemprompt search_docs --args '{"query":"governance pipeline"}'
+```
+mcp__systemprompt__search_docs {"query": "governance pipeline"}
 ```
 
-### 2. The secret-scan deny
+Point out the approval card and the audited allow. Governance is not only about
+refusal — the same spine records what was permitted, by whom, and at what cost.
 
-Now put a plaintext credential inside a tool input. The `secret_scan` stage
-denies it before execution — even for an admin caller — because it scans the
-whole `tool_input` payload. The natural way to trigger it here is a
-`search_docs` query that contains a fake AWS key: the client's PreToolUse
-governance hook posts the query to the govern endpoint, which denies it.
+### 2. A live `secret_scan` deny
 
-The runnable recipe with real test credentials is
-`demo/governance/06-secret-breach.sh` (out-of-band `curl`, so the secret never
-enters this conversation — do **not** paste a live credential prefix into this
-skill body or any chat turn, or the gateway secret scanner will re-scan it on
-every turn and block the session). The shape of the call (live credential lives
-in the script):
+`secret_scan` reads the whole tool input. Call `search_docs` with a query
+carrying a credential-shaped string and the call is denied before it executes,
+for any caller, admin included.
 
-```bash
-# secret_scan deny: a plaintext AWS key inside a search_docs query, denied for any scope
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
-  -H "Authorization: Bearer $(cat demo/.token)" -H "Content-Type: application/json" \
-  -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__systemprompt__search_docs","agent_id":"developer_agent","session_id":"demo-secret","cwd":"/var/www/html/systemprompt-demo","tool_input":{"query":"find docs mentioning <AWS_ACCESS_KEY>"}}'
-# -> {"permissionDecision":"deny", "reason": "...secret detected: AWS Access Key..."}
+Construct that string **yourself at call time**; do not copy one from this
+document. Use a plainly fake AWS access key id: the literal characters `AKIA`
+followed by sixteen uppercase letters and digits of your own choosing. Then:
+
+```
+mcp__systemprompt__search_docs {"query": "find docs mentioning <the fake key you just built>"}
 ```
 
-### 3. The scope-check and blocklist denies
+Expect a deny naming `policy: secret_scan` and the pattern it matched. Nothing
+was searched — the tool never ran.
 
-These two policies exempt admins, so use the **user-scope** token
-(`demo/.token.user`, provisioned by `demo/00-preflight.sh`), not the
-admin `demo/.token`.
+> This skill body deliberately contains no credential-shaped literal. Invoking a
+> skill expands its text into the prompt, and the prompt is scanned by the same
+> policy — a literal here would deny the invocation itself rather than the call
+> it is meant to demonstrate.
 
-```bash
-# scope_check deny: a user-scope caller reaching for an admin-only tool prefix
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
-  -H "Authorization: Bearer $(cat demo/.token.user)" -H "Content-Type: application/json" \
-  -d '{"hook_event_name":"PreToolUse","tool_name":"mcp__admin__reset_tenant","agent_id":"associate_agent","session_id":"demo-scope","cwd":"/var/www/html/systemprompt-demo"}'
-# -> {"permissionDecision":"deny", ...}   (policy=scope_check, user scope, admin-only prefix)
+### 3. A live `tool_blocklist` deny
 
-# tool_blocklist deny: a destructive tool name blocked for user scope. Use a
-# NON-admin-prefixed name (delete_records) so scope_check passes and the deny
-# genuinely reads policy=tool_blocklist.
-curl -s -X POST "http://localhost:8080/api/public/hooks/govern?plugin_id=systemprompt" \
-  -H "Authorization: Bearer $(cat demo/.token.user)" -H "Content-Type: application/json" \
-  -d '{"hook_event_name":"PreToolUse","tool_name":"delete_records","tool_input":{"table":"users"},"agent_id":"associate_agent","session_id":"demo-blocklist","cwd":"/var/www/html/systemprompt-demo"}'
-# -> {"permissionDecision":"deny", "reason": "...blocked by list delete"}   (policy=tool_blocklist)
+The hub exposes `fetch_remote_docs`, which would reach the public internet for
+upstream documentation. This deployment does not permit outbound egress, so
+`fetch_remote` is a blocked pattern. Attempt it:
+
+```
+mcp__systemprompt__fetch_remote_docs {"path": "/docs/governance"}
 ```
 
-Sending the two scope/blocklist requests with the admin `demo/.token` returns
-`allow` — admins are exempt from those two policies (`secret_scan` still denies
-for any scope, as step 2 shows).
+Expect a deny naming `policy: tool_blocklist`. Two things are worth saying out
+loud. The deny happened at the policy gate, before any network call was
+attempted. And even with the policy absent, this session's sandbox permits
+outbound TCP to exactly one port, so the connection would have failed anyway —
+defence in depth, with the policy layer supplying the legible reason.
 
-### 4. Read back the audited decisions
+### 4. Read the decisions back
 
-Every outcome is now in the spine. Query it directly, or use the trace CLI:
-
-```bash
-systemprompt infra db query "SELECT decision, tool_name, agent_id, agent_scope, policy, reason FROM governance_decisions ORDER BY created_at DESC LIMIT 10"
-systemprompt infra logs trace list --limit 10
-systemprompt infra logs trace list --status failed
+```
+mcp__systemprompt__governance_stats {}
 ```
 
-### 5. Tie enforcement to spend per identity
+Every allow and every deny above is in the result, each with its policy and
+reason. Walk them in order and tie each row to the call that produced it.
 
-```bash
-systemprompt analytics costs breakdown --by agent
-```
+## Typical workflow
 
-#### Two distinct rate limiters (do not conflate them)
+1. Allowed hub call (step 1) — it runs, and is recorded.
+2. Credential-shaped query (step 2) — denied at `secret_scan`.
+3. Remote fetch (step 3) — denied at `tool_blocklist`.
+4. `governance_stats` (step 4) — all three, audited, with reasons.
 
-There are **two** independent limiters; only the first is the governance stage
-in the table above:
+## Related
 
-- **Governance `rate_limit` policy** — per-identity, 300 calls / 60s, configured
-  in `services/governance/config.yaml`. This is the pipeline stage; its evidence
-  lives in the audit table:
-
-  ```bash
-  systemprompt infra db query "SELECT decision, tool_name, reason, created_at FROM governance_decisions WHERE policy = 'rate_limit' ORDER BY created_at DESC LIMIT 10"
-  ```
-
-- **HTTP profile limiter** — a separate request limiter shown by
-  `systemprompt admin config rate-limits show`. It guards the HTTP surface, is
-  configured in the profile, and is **disabled in the local profile**. It is
-  *not* the governance `rate_limit` policy and writes no `governance_decisions`
-  rows.
-
-### Typical workflow
-
-1. Run the allowed hub calls (step 1) — confirm they execute and record `allow`.
-2. Attempt the secret (step 2) — confirm it is denied for any scope.
-3. Attempt the scope/blocklist denies with the user token (step 3).
-4. `infra db query` / `infra logs trace list` (step 4) — see every row with its
-   policy and reason.
-5. `analytics costs breakdown --by agent` (step 5) — tie enforcement to spend.
+- `demonstrate_tool_rejection` — the rejection path on its own, in more detail.
+- `analyse_governance_stats` — spend and latency alongside the verdicts.

@@ -50,6 +50,7 @@ impl From<ContextListRow> for ContextListItem {
     }
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_context_list(
     pool: &PgPool,
     filter: &ContextListFilter,

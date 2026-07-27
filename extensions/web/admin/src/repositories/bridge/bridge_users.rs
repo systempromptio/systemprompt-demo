@@ -12,6 +12,7 @@ pub struct BridgeUserRow {
     pub roles: Vec<String>,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn find_bridge_user(
     pool: &PgPool,
     user_id: &UserId,

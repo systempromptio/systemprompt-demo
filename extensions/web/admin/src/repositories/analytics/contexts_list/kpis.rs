@@ -16,6 +16,7 @@ pub struct ContextListKpis {
     pub total_cost_microdollars: i64,
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn get_context_list_kpis(
     pool: &PgPool,
     filter: &ContextListFilter,
@@ -97,6 +98,7 @@ pub async fn get_context_list_kpis(
     })
 }
 
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn list_distinct_models(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
     let rows = sqlx::query!(
         r#"

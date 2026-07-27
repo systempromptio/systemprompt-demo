@@ -50,7 +50,7 @@ const completePendingRegistration = async () => {
   const pendingReg = localStorage.getItem('pending_registration');
   if (pendingReg) {
     try {
-      const response = await fetch('/api/public/auth/register', {
+      const response = await fetch('/admin/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',

@@ -23,6 +23,7 @@ pub struct ResolvedId {
 
 /// `id` may be a request, decision, trace, context, or session identifier; the
 /// most specific match wins.
+// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
 pub async fn resolve_id(pool: &PgPool, id: &str) -> Result<Option<ResolvedId>, sqlx::Error> {
     if let Some(r) = lookup_request_by_id(pool, id).await? {
         return Ok(Some(r));

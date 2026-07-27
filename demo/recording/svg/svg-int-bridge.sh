@@ -44,10 +44,10 @@ divider
 subheader "Inspect a skill" "full config + instruction body"
 pause 0.3
 
-type_cmd "systemprompt core skills show use_dangerous_secret"
+type_cmd "systemprompt core skills show demonstrate_tool_rejection"
 pause 0.3
 
-"$CLI" core skills show use_dangerous_secret --profile "$PROFILE" 2>&1 \
+"$CLI" core skills show demonstrate_tool_rejection --profile "$PROFILE" 2>&1 \
   | grep -v "^\[profile" \
   | head -16 \
   | while IFS= read -r line; do echo "    $line"; done
