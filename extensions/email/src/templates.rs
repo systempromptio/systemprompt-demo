@@ -17,9 +17,7 @@ const FONT: &str =
 // Why: bump the bridge-v* tag in both URLs on every bridge release. The bridge
 // ships under its own `bridge-v*` tag, so `releases/latest` resolves to the
 // gateway release and 404s here.
-/// GitHub release download for the macOS (Apple silicon) bridge build.
 pub const BRIDGE_MAC_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip";
-/// GitHub release download for the Windows bridge build.
 pub const BRIDGE_WINDOWS_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe";
 
 const SUBJECT: &str = "Your $5 systemprompt credit is ready";

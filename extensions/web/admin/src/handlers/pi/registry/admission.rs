@@ -11,7 +11,7 @@ use systemprompt::identifiers::UserId;
 
 use super::super::credentials;
 use crate::handlers::pi::session::PiSession;
-use crate::handlers::pi::{session, spawn};
+use crate::handlers::pi::{persist, session, spawn};
 
 use super::{CreateRequest, PiRegistry, SessionParts};
 
@@ -21,8 +21,6 @@ use super::{CreateRequest, PiRegistry, SessionParts};
 pub(in crate::handlers::pi) enum SpawnError {
     PerUserCap(usize),
     TotalCap(usize),
-    /// The per-conversation gateway credential could not be minted. Nothing was
-    /// spawned: pi with no credential would fail on the first turn instead.
     Credential(String),
     Io(std::io::Error),
 }
@@ -54,14 +52,12 @@ impl PiRegistry {
             shim_source,
             mcp_client_source,
             mcp_token,
+            transcript,
+            start_seq,
         } = req;
         self.make_room_for(&user_id).await;
         self.reserve(&user_id)?;
 
-        // Minted here rather than in the handler so a conversation refused by a
-        // cap never gets a credential at all. It is for this conversation's own
-        // user, because the gateway rejects a PAT whose owner is not the owner
-        // of the attested session it arrives with.
         let key = match credentials::issue(
             &self.0.pool,
             &user_id,
@@ -83,6 +79,7 @@ impl PiRegistry {
                 shim_source,
                 mcp_client_source,
                 mcp_token,
+                transcript,
             },
         )
         .await;
@@ -107,6 +104,13 @@ impl PiRegistry {
         let stdout = spawned.child.stdout.take();
         let stderr = spawned.child.stderr.take();
 
+        let (persist_tx, persist_rx) = tokio::sync::mpsc::unbounded_channel();
+        persist::start(
+            Arc::clone(&self.0.pool),
+            conversation_id.clone(),
+            persist_rx,
+        );
+
         let session = Arc::new(PiSession::new(session::PiSessionInit {
             conversation_id: conversation_id.clone(),
             user_id,
@@ -115,6 +119,8 @@ impl PiRegistry {
             workspace: spawned.workspace,
             child: spawned.child,
             stdin,
+            persist: persist_tx,
+            start_seq,
         }));
 
         if let Ok(mut sessions) = self.0.sessions.lock() {
@@ -127,14 +133,6 @@ impl PiRegistry {
         })
     }
 
-    /// Close whatever this user already holds, so a new conversation can start.
-    ///
-    /// A user asking for a conversation while already holding one has almost
-    /// always lost the tab that owns it — a reload is the ordinary way this
-    /// happens. Refusing them leaves that terminal stranded until the idle
-    /// timeout with no way to reclaim it, so the newest request wins and the
-    /// old conversation is closed. The cap is unchanged; only which session it
-    /// keeps.
     async fn make_room_for(&self, user_id: &UserId) {
         for stale in self.surplus_for(user_id) {
             tracing::info!(
@@ -145,11 +143,6 @@ impl PiRegistry {
         }
     }
 
-    /// This user's conversations beyond the number a new one may join, oldest
-    /// first. Empty when they are under the cap.
-    ///
-    /// Separate from [`Self::reserve`] because closing them is asynchronous and
-    /// the lock must not be held across the `await`.
     fn surplus_for(&self, user_id: &UserId) -> Vec<String> {
         let Ok(sessions) = self.0.sessions.lock() else {
             return Vec::new();
@@ -159,8 +152,6 @@ impl PiRegistry {
             .values()
             .filter(|s| s.user_id == *user_id)
             .collect();
-        // Oldest first, so a cap above one displaces the least recently started
-        // rather than an arbitrary member of a hash map.
         mine.sort_by_key(|s| std::cmp::Reverse(s.age()));
         let surplus = mine.len().saturating_sub(keep);
         mine.into_iter()
@@ -169,8 +160,6 @@ impl PiRegistry {
             .collect()
     }
 
-    /// Check caps. Separate from [`Self::create`] so the lock is never held
-    /// across an `await`.
     fn reserve(&self, user_id: &UserId) -> Result<(), SpawnError> {
         let Ok(sessions) = self.0.sessions.lock() else {
             return Err(SpawnError::Io(std::io::Error::other(

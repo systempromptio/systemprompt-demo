@@ -24,7 +24,9 @@
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-split.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/auth-pane.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-stage.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene.css">
     <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
+    <script src="{{JS_BASE_PATH}}/home-scene.js" defer></script>
     <script src="{{JS_BASE_PATH}}/services/pi-render.js" defer></script>
     <script src="{{JS_BASE_PATH}}/services/pi-gate-view.js" defer></script>
     <script src="{{JS_BASE_PATH}}/services/sp-pi-terminal.js" defer></script>
@@ -49,7 +51,8 @@
 
     <main id="main" class="home-split">
         <section class="home-split-pane home-split-pane--terminal" aria-label="Governed agent terminal">
-            <sp-pi-terminal endpoint="/api/public/pi"></sp-pi-terminal>
+            <sp-conversation-list for="pi-terminal" endpoint="/api/public/pi"></sp-conversation-list>
+            <sp-pi-terminal id="pi-terminal" endpoint="/api/public/pi"></sp-pi-terminal>
             <p class="home-split-note">Read-only tools, one session per account, ten-minute idle
                 timeout. Every decision lands an audit row you can query.</p>
         </section>
@@ -62,30 +65,115 @@
     </main>
 
     <!--
-      Below the fold: the nav, the downloads, and the footer the homepage used
-      to omit. The links come from the same `site.header_nav` config the header
-      reads, so the two can never drift apart.
+      Below the fold: what the terminal above actually is, and the two other
+      places the same gateway runs. The hosts converge on one pipeline because
+      that is literally what happens — the governance stages do not know or care
+      which client called them.
     -->
-    <section id="home-below" class="home-below" aria-label="Downloads and resources">
-        <div class="home-below-inner">
-            {{#each site.header_nav.items}}
-            <a href="{{this.href}}"{{#if this.external}} target="_blank" rel="noopener noreferrer"{{/if}}>{{this.label}}</a>
-            {{/each}}
-            {{#if site.header_nav.cta}}
-            <a href="{{site.header_nav.cta.href}}" class="cta-button"{{#if site.header_nav.cta.external}} target="_blank" rel="noopener noreferrer"{{/if}}>{{site.header_nav.cta.label}}</a>
-            {{/if}}
-            <div class="home-below-downloads">
-                <!--
-                  One pinned URL to the release page rather than a fourth copy of
-                  the two binary URLs (header.html, bridge_downloads.rs, and the
-                  email templates already hold three).
-                -->
-                <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest" class="download-badge" target="_blank" rel="noopener noreferrer">
-                    <span class="download-badge-text">
-                        <span class="download-badge-prefix">Download the bridge</span>
-                        <span class="download-badge-platform">Mac &amp; Windows</span>
-                    </span>
-                </a>
+    <section id="home-below" class="home-scene" aria-labelledby="scene-title">
+        <div class="home-scene-inner">
+            <p class="scene-eyebrow">Governance for your AI infrastructure</p>
+            <h2 id="scene-title" class="scene-title">Your agents. Your infrastructure.<br>You own it.</h2>
+            <p class="scene-deck">systemprompt.io puts governance under the agents you already run. The
+                terminal above is our embedded web agent — a real session against the gateway, not a
+                recording. The bridge connects that same gateway to any first-class AI client,
+                proprietary or from the top labs, and every one of them answers to your policies.</p>
+
+            <ul class="scene-verbs">
+                <li>Brand them</li>
+                <li>Govern them</li>
+                <li>Control them</li>
+                <li>Analyse them</li>
+                <li>Improve them</li>
+                <li class="scene-verb--own">Own them</li>
+            </ul>
+
+            <ul class="scene-hosts">
+                <li class="scene-host" data-host="web">
+                    <div class="scene-host-head">
+                        <h3 class="scene-host-name">Embedded web agent</h3>
+                        <span class="scene-host-tag">This page</span>
+                    </div>
+                    <p class="scene-host-role">Runs in the browser with no install. Read-only tools,
+                        one session per account, ten-minute idle timeout.</p>
+                    <a class="scene-host-live" href="#main">Live above &#8593;</a>
+                </li>
+                <li class="scene-host" data-host="claude-code">
+                    <div class="scene-host-head">
+                        <h3 class="scene-host-name">Claude Code</h3>
+                        <span class="scene-host-tag">Bridge</span>
+                    </div>
+                    <p class="scene-host-role">Your terminal, your repo, our policies. The bridge signs
+                        it into the account you are already using here.</p>
+                    <span class="scene-host-via">Connected by the bridge</span>
+                </li>
+                <li class="scene-host" data-host="codex">
+                    <div class="scene-host-head">
+                        <h3 class="scene-host-name">OpenAI Codex</h3>
+                        <span class="scene-host-tag">Bridge</span>
+                    </div>
+                    <p class="scene-host-role">Nothing here is Claude-specific. The bridge speaks to any
+                        first-class client, whoever built it.</p>
+                    <span class="scene-host-via">Connected by the bridge</span>
+                </li>
+            </ul>
+
+            <!-- Decorative: the lanes restate the list above and the list below. -->
+            <div class="scene-lanes" aria-hidden="true">
+                <div class="scene-lane"><span class="scene-pip"></span></div>
+                <div class="scene-lane"><span class="scene-pip"></span></div>
+                <div class="scene-lane"><span class="scene-pip"></span></div>
+            </div>
+
+            <ol class="scene-pipeline" aria-label="What every tool call passes through">
+                <li class="scene-stage">
+                    <span class="scene-stage-name">Scope check</span>
+                    <span class="scene-stage-note">Is this identity allowed this tool?</span>
+                </li>
+                <li class="scene-stage">
+                    <span class="scene-stage-name">Secret scan</span>
+                    <span class="scene-stage-note">35+ patterns, before the call leaves.</span>
+                </li>
+                <li class="scene-stage">
+                    <span class="scene-stage-name">Blocklist</span>
+                    <span class="scene-stage-note">Denied arguments never reach the tool.</span>
+                </li>
+                <li class="scene-stage">
+                    <span class="scene-stage-name">Rate limit</span>
+                    <span class="scene-stage-note">Per identity, per tool, per window.</span>
+                </li>
+                <li class="scene-stage scene-stage--audit">
+                    <span class="scene-stage-name">Audit row</span>
+                    <span class="scene-stage-note">Identity &#8594; tool &#8594; result &#8594; cost, one trace_id.</span>
+                </li>
+            </ol>
+
+            <div class="scene-offer">
+                <p class="scene-offer-copy"><strong>One binary. One account.</strong> The bridge is a Mac
+                    and Windows app that signs Claude Code and Cowork into the same identity as the web
+                    agent above — same policies, same audit trail, no second login.</p>
+                <div class="scene-offer-actions">
+                    <!--
+                      Pinned to the bridge's own tag, not `releases/latest`, which
+                      resolves to whichever release published last. These URLs are
+                      copies — `extensions/web/admin/src/handlers/ssr/bridge_downloads.rs`
+                      is the source of truth and header.html holds the other copy.
+                      Bump all three together.
+                    -->
+                    <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                        <span class="download-badge-text">
+                            <span class="download-badge-prefix">Download the bridge</span>
+                            <span class="download-badge-platform">Mac</span>
+                        </span>
+                    </a>
+                    <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe" class="download-badge" download target="_blank" rel="noopener noreferrer">
+                        <span class="download-badge-text">
+                            <span class="download-badge-prefix">Download the bridge</span>
+                            <span class="download-badge-platform">Windows</span>
+                        </span>
+                    </a>
+                    <a class="cta-button" href="mailto:ed@systemprompt.io?subject=Live%20demo%20request&amp;body=Hi%20Ed%2C%0A%0AI%27d%20like%20a%20live%20demo%20of%20systemprompt.io.%0A%0AWhat%20we%20run%20today%3A%0AWhat%20we%27re%20trying%20to%20govern%3A%0A%0AThanks%2C%0A">Book a live demo</a>
+                </div>
             </div>
         </div>
     </section>

@@ -13,12 +13,6 @@ use axum::response::{IntoResponse, Response};
 use crate::handlers::shared::ErrorBody;
 use crate::types::UserContext;
 
-/// The request path as the client sent it.
-///
-/// `nest_service` strips its prefix from `request.uri()`, so a layer inside
-/// the admin SSR router sees `/pending` where the caller asked for
-/// `/admin/pending`. Anything matching against user-facing paths has to read
-/// through `OriginalUri` instead.
 fn original_path(request: &Request) -> String {
     request
         .extensions()
@@ -29,11 +23,6 @@ fn original_path(request: &Request) -> String {
         )
 }
 
-/// The request path and query as the client sent it.
-///
-/// The query string must survive the login bounce: the bridge device-link
-/// carries its loopback callback in `?redirect=...`, so dropping the query
-/// strands the post-login return on a page whose extractor then 400s.
 fn original_path_and_query(request: &Request) -> String {
     let from_uri = |uri: &axum::http::Uri| {
         uri.path_and_query()
@@ -85,11 +74,6 @@ pub(crate) async fn require_admin_middleware(request: Request, next: Next) -> Re
     }
 }
 
-/// Holds an account at the pending page until an admin has reviewed it.
-///
-/// Admins bypass unconditionally: accounts predating the review gate carry no
-/// approval row, and locking the only account that can approve people out of
-/// the queue is unrecoverable.
 pub(crate) async fn require_approved_middleware(request: Request, next: Next) -> Response {
     let path = original_path(&request);
     let Some(ctx) = request.extensions().get::<UserContext>().cloned() else {

@@ -24,10 +24,6 @@
 //! execution safe. A container per session is still the answer before `bash`
 //! is ever enabled.
 
-// stderr is this binary's only channel. It runs between `fork` and `exec` with
-// no runtime and no subscriber to install one into, and the server's pump
-// already surfaces a child's stderr to the widget as a `Stderr` frame — so a
-// refusal to sandbox is visible to the operator exactly where they are looking.
 #![expect(clippy::print_stderr, reason = "the pre-exec jail has no logger")]
 
 mod args;
@@ -35,8 +31,6 @@ mod jail;
 
 use std::process::ExitCode;
 
-/// Distinct codes so a spawn failure in the server's logs says which stage
-/// failed without needing the stderr text.
 const EXIT_USAGE: u8 = 2;
 const EXIT_NO_SANDBOX: u8 = 3;
 const EXIT_EXEC: u8 = 4;
@@ -48,7 +42,7 @@ fn main() -> ExitCode {
         Err(e) => {
             eprintln!("sp-pi-jail: {e}\n{}", args::USAGE);
             return ExitCode::from(EXIT_USAGE);
-        }
+        },
     };
 
     match jail::apply(&spec) {
@@ -59,12 +53,9 @@ fn main() -> ExitCode {
         Err(e) => {
             eprintln!("sp-pi-jail: refusing to run unconfined: {e}");
             return ExitCode::from(EXIT_NO_SANDBOX);
-        }
+        },
     }
 
-    // `exec` replaces this process, so it only ever returns an error. One
-    // process throughout means the parent's handle still refers to the child
-    // that matters and `kill_on_drop` still reaps it.
     let e = exec(&spec);
     eprintln!("sp-pi-jail: exec {}: {e}", spec.command.display());
     ExitCode::from(EXIT_EXEC)

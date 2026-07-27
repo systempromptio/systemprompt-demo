@@ -11,25 +11,15 @@ use crate::handlers::webhook::governance::inproc::{
     self, GovernedCall, HumanOutcome, PolicyVerdict,
 };
 
-use super::PiDeps;
 use super::super::events::PiEventBody;
 use super::super::rpc::GovernancePayload;
 use super::super::session::{PiSession, Verdict};
+use super::PiDeps;
 
-/// Poll interval while an approval is outstanding, used to notice that every
-/// viewer has gone rather than making the model wait out the full timeout for
-/// an answer nobody can give.
 const ABANDON_CHECK: std::time::Duration = std::time::Duration::from_secs(5);
 
-/// How long all viewers must be absent before an approval is abandoned. Long
-/// enough to ride out an SSE reconnect, short enough that a closed tab does not
-/// pin a turn.
 const ABANDON_GRACE: std::time::Duration = std::time::Duration::from_secs(15);
 
-/// Put a policy-cleared call to a person and record what they said.
-///
-/// Reached only after the chain allowed the call and confinement cleared it, so
-/// every path here is a human's judgement on top of policy — never instead of it.
 pub(super) async fn human_gate(
     deps: &PiDeps,
     session: &Arc<PiSession>,
@@ -70,28 +60,14 @@ pub(super) async fn human_gate(
     false
 }
 
-/// One call put to a person, and what policy already established about it.
-///
-/// Bundled for the same reason [`PiDeps`] is: the pieces are only ever needed
-/// together, and passing them separately puts the function over clippy's
-/// argument ceiling.
 pub(super) struct ApprovalAsk<'a> {
     pub(super) approval_id: &'a str,
     pub(super) payload: &'a GovernancePayload,
     pub(super) tool_name: &'a str,
-    /// The real list of policies that passed. Carried in rather than rebuilt
-    /// here, so nothing on this path can assert that a check ran — it can only
-    /// relay what the evaluation reported.
     pub(super) cleared: Vec<String>,
 }
 
-/// Publish an approval card and wait for it to be answered, time out, or be
-/// abandoned. Every non-approval path denies.
-async fn ask_human(
-    deps: &PiDeps,
-    session: &Arc<PiSession>,
-    ask: ApprovalAsk<'_>,
-) -> HumanOutcome {
+async fn ask_human(deps: &PiDeps, session: &Arc<PiSession>, ask: ApprovalAsk<'_>) -> HumanOutcome {
     let ApprovalAsk {
         approval_id,
         payload,
@@ -116,14 +92,11 @@ async fn ask_human(
 
     loop {
         tokio::select! {
-            // Biased so a verdict that arrives in the same tick as a timeout is
-            // honoured rather than discarded.
             biased;
             answer = &mut rx => {
                 return match answer {
                     Ok(Verdict::Allow) => HumanOutcome::Approved,
                     Ok(Verdict::Deny) => HumanOutcome::Denied,
-                    // Sender dropped: the session is being torn down. Fail closed.
                     Err(_) => HumanOutcome::Abandoned,
                 };
             }

@@ -13,9 +13,21 @@
 .home-split-body {
   --sp-stage-ink: oklch(0.16 0.012 55);
   --sp-stage-glow: oklch(0.62 0.19 47);
-  --sp-stage-glass: oklch(0.24 0.012 55 / 0.72);
+  --sp-stage-glass: oklch(0.24 0.012 55 / 0.58);
   --sp-stage-glass-border: oklch(1 0 0 / 0.09);
-  --sp-stage-blur: 16px;
+  --sp-stage-blur: 24px;
+
+  /* What separates glass from a translucent rectangle is the edge: real glass
+     catches light along its top rim and loses it toward the bottom. One
+     gradient, painted on a 1px inset ring, does the whole job — and it is a
+     token rather than a rule because both panes need the identical edge or
+     they read as two different materials. */
+  --sp-stage-specular:
+    linear-gradient(160deg,
+      oklch(1 0 0 / 0.34) 0%,
+      oklch(1 0 0 / 0.06) 26%,
+      oklch(1 0 0 / 0) 52%,
+      oklch(1 0 0 / 0.05) 100%);
   --sp-stage-rim: oklch(0.62 0.19 47 / 0.28);
   --sp-stage-text: oklch(0.96 0.004 60);
   --sp-stage-text-dim: oklch(0.82 0.008 60);
@@ -48,12 +60,10 @@
    scrolling. `z-index: -1` puts it under the page's own content without taking
    it out of the body's stacking context, so the orange glows above composite
    over it rather than being hidden by it. */
-/* The poster is set here as well as on the <video>, and this is the copy that
-   is load-bearing: it is the only .webp the site serves and core has no
-   `image/webp` mapping, so it arrives as application/octet-stream. A CSS
-   background is decoded by sniffing its content and does not care; a `poster`
-   attribute depends on the browser choosing to sniff. First paint is not the
-   place to find out which browsers do. */
+/* The poster is set here as well as on the <video> so that first paint has an
+   image whichever one the browser gets to first. Needs core >= 0.25.0, which is
+   where `resolve_mime_type` learned image/webp — these responses carry
+   `nosniff`, so an unmapped extension does not degrade, it fails to decode. */
 .stage-video-layer {
   position: fixed;
   inset: 0;
@@ -99,17 +109,55 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  backdrop-filter: blur(4px) saturate(1.05);
-  -webkit-backdrop-filter: blur(4px) saturate(1.05);
+  /* The middle of this gradient was tuned while the video was never actually
+     revealing itself, so it was really being tuned against the poster — and it
+     is opaque enough to hide footage. The top and bottom stay heavy, because
+     that is where the header and the band land; the middle lifts, because that
+     is the only part of the frame anyone sees move. */
+  backdrop-filter: blur(6px) saturate(1.08);
+  -webkit-backdrop-filter: blur(6px) saturate(1.08);
   background:
     linear-gradient(180deg,
-      oklch(0.12 0.012 55 / 0.82) 0%,
-      oklch(0.12 0.012 55 / 0.58) 32%,
-      oklch(0.12 0.012 55 / 0.58) 68%,
+      oklch(0.12 0.012 55 / 0.80) 0%,
+      oklch(0.12 0.012 55 / 0.42) 32%,
+      oklch(0.12 0.012 55 / 0.42) 68%,
       oklch(0.12 0.012 55 / 0.86) 100%),
     linear-gradient(90deg,
       oklch(0.12 0.012 55 / 0.42) 0%,
       transparent 55%);
+}
+
+/* ── the glass edge ─────────────────────────────────────────────────────── */
+
+/* Both panes get the same rim from here rather than each from its own file,
+   because the thing that makes two floating surfaces read as one sheet of
+   glass is that the light hits them identically. `mask-composite` paints the
+   gradient only in the 1px ring, so this is an edge and not a wash over the
+   content — and it sits on ::before at z-index 0 so the terminal's own
+   children, which set their own stacking, stay above it. */
+.home-split-body .pi-terminal .terminal,
+.home-split-body .auth-pane .pane {
+  position: relative;
+}
+
+.home-split-body .pi-terminal .terminal::before,
+.home-split-body .auth-pane .pane::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--sp-stage-specular);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 /* On a dark field the white wordmark is the right asset, and it is already in
@@ -184,48 +232,8 @@
 
 /* ── below the fold ─────────────────────────────────────────────────────── */
 
-.home-below {
-  border-top: 1px solid var(--sp-stage-glass-border);
-}
-
-.home-below-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-space-5);
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: var(--sp-space-8) var(--sp-space-6);
-}
-
-.home-below-inner > a {
-  color: var(--sp-stage-text-dim);
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.home-below-inner > a:hover {
-  color: var(--sp-stage-text);
-}
-
-.home-below-downloads {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-space-3);
-  margin-left: auto;
-}
-
-.home-below-downloads a.download-badge {
-  background: oklch(1 0 0 / 0.06);
-  border: 1px solid var(--sp-stage-glass-border);
-  color: var(--sp-stage-text);
-}
-
-.home-below-downloads a.download-badge:hover {
-  background: var(--sp-color-primary);
-  color: var(--sp-color-text-on-primary);
-}
+/* The band itself is `components/home-scene.css` — it needs the stage tokens
+   declared above, and nothing else here needs it. */
 
 /* ── footer ─────────────────────────────────────────────────────────────── */
 
@@ -248,18 +256,21 @@
   color: var(--sp-stage-text);
 }
 
+/* The footer markup carries only the two themed logos and neither has the ink
+   for this field — the white wordmark the header uses over the video is not in
+   the partial, and the partial is compiled into the binary. So the logo comes
+   in as a background image on the ::after: the real asset, at the real aspect
+   ratio, without a rebuild to add a third <img> the rest of the site would
+   never show. */
 .home-split-body .site-footer .logo-light,
 .home-split-body .site-footer .logo-dark { display: none; }
 
 .home-split-body .site-footer .footer-logo::after {
-  /* The footer markup carries only the two themed logos, and both are hidden
-     on the stage. A wordmark in text keeps the brand present without editing a
-     shared partial. */
-  content: 'systemprompt.io';
-  font-family: var(--sp-font-brand, inherit);
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--sp-stage-text);
+  content: '';
+  display: block;
+  width: 140px;
+  height: 32px;
+  background: url("/files/images/logo-white.svg") left center / contain no-repeat;
 }
 
 .home-split-body .theme-toggle-btn {
@@ -272,15 +283,6 @@
 @media (max-width: 900px) {
   /* With the hero stacked there is no fold to cue past. */
   .home-split-scroll-cue { display: none; }
-
-  .home-below-inner {
-    padding: var(--sp-space-6) var(--sp-space-4);
-  }
-
-  .home-below-downloads {
-    margin-left: 0;
-    width: 100%;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

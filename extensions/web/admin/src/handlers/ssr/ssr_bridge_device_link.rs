@@ -32,9 +32,6 @@ pub(crate) struct DeviceLinkApproveForm {
     pub redirect: String,
 }
 
-/// `branding` stays an untyped `Value` because the branding config shape is
-/// not fixed at compile time. Unconfigured branding must stay a *missing* key,
-/// not a null, so the template's `{{#if}}` guard behaves.
 #[derive(Debug, Serialize)]
 struct DeviceLinkContext {
     #[serde(skip_serializing_if = "Option::is_none")]

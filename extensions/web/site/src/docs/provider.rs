@@ -45,10 +45,6 @@ impl DocsPageDataProvider {
             }
             first = false;
 
-            // `write!` into a `String` is infallible — `fmt::Write for String`
-            // never returns `Err` — so there is genuinely no failure to handle.
-            // (`drop` does not work here: the `Result` is `Copy`, so dropping
-            // it is a no-op clippy rejects in turn.)
             #[expect(
                 clippy::let_underscore_must_use,
                 reason = "fmt::Write for String cannot fail"

@@ -2,15 +2,21 @@
 //!
 //! The server is a **documentation hub**: it exposes the systemprompt.io
 //! reference topics through three read-only tools — `list_topics`, `get_topic`,
-//! and `search_docs` — plus `governance_stats`, which reads the caller's own
-//! audit rows back so a client with no shell can still see the spine.
+//! and `search_docs` — plus two readbacks, `governance_stats` and
+//! `safety_findings`, which return the caller's own audit rows so a client with
+//! no shell can still see the spine. They read different layers:
+//! `governance_stats` reports the tool-call gate, `safety_findings` the
+//! gateway's scan of conversation content on the way to a provider.
 //!
-//! `fetch_remote_docs` is the odd one out and is meant to be. It reaches the
-//! public internet, which this deployment does not permit, so `tool_blocklist`
-//! refuses it at the gate. It exists so that a refusal is something a viewer
-//! watches happen rather than something a page asserts. It is a real
-//! implementation, not a stub: the demonstration is worthless if the tool that
-//! "would have" leaked could not actually have done so.
+//! `fetch_remote_docs` and `admin_audit_dump` are the odd ones out, and are
+//! meant to be. Each exists to be refused by a different policy —
+//! `tool_blocklist` for the first, which reaches an internet this deployment
+//! does not permit; `scope_check` for the second, whose `admin_` prefix holds
+//! it to a scope this terminal never grants. They exist so that a refusal is
+//! something a viewer watches happen rather than something a page asserts, and
+//! both are real implementations rather than stubs: the demonstration is
+//! worthless if the tool that "would have" leaked could not actually have done
+//! so.
 
 use rmcp::model::{Meta, Tool};
 use schemars::JsonSchema;
@@ -46,10 +52,6 @@ pub struct SearchDocsInput {
 }
 
 /// Input for `governance_stats`: no parameters.
-///
-/// The caller is the subject. There is deliberately no user or session
-/// selector, because the identity comes from the authenticated request rather
-/// than from an argument anyone could set.
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(default)]
 #[expect(
@@ -57,6 +59,22 @@ pub struct SearchDocsInput {
     reason = "serde needs an empty object shape to deserialize a no-arg tool input from {}"
 )]
 pub struct GovernanceStatsInput {}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+#[expect(
+    clippy::empty_structs_with_brackets,
+    reason = "serde needs an empty object shape to deserialize a no-arg tool input from {}"
+)]
+pub struct SafetyFindingsInput {}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+#[expect(
+    clippy::empty_structs_with_brackets,
+    reason = "serde needs an empty object shape to deserialize a no-arg tool input from {}"
+)]
+pub struct AdminAuditDumpInput {}
 
 /// Input for `fetch_remote_docs`: the upstream path to retrieve.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -107,6 +125,13 @@ fn create_tool(def: &ToolDef<'_>) -> Tool {
 #[must_use]
 pub fn list_tools() -> Vec<Tool> {
     let output = output_schema();
+    let mut tools = docs_tools(&output);
+    tools.append(&mut readback_tools(&output));
+    tools.append(&mut refusal_tools(&output));
+    tools
+}
+
+fn docs_tools(output: &serde_json::Value) -> Vec<Tool> {
     vec![
         create_tool(&ToolDef {
             server_name: SERVER_NAME,
@@ -118,7 +143,7 @@ pub fn list_tools() -> Vec<Tool> {
                  Full docs: {WEBSITE_URL}/docs"
             ),
             input_schema: schemars::schema_for!(ListTopicsInput).to_value(),
-            output_schema: &output,
+            output_schema: output,
         }),
         create_tool(&ToolDef {
             server_name: SERVER_NAME,
@@ -127,7 +152,7 @@ pub fn list_tools() -> Vec<Tool> {
             description: "Return the full Markdown of one documentation topic by its \
                  id (from `list_topics`), e.g. {\"topic_id\": \"governance-pipeline\"}.",
             input_schema: schemars::schema_for!(GetTopicInput).to_value(),
-            output_schema: &output,
+            output_schema: output,
         }),
         create_tool(&ToolDef {
             server_name: SERVER_NAME,
@@ -137,8 +162,13 @@ pub fn list_tools() -> Vec<Tool> {
                  best-matching topics ranked, with short excerpts, e.g. \
                  {\"query\": \"how are secrets blocked\"}.",
             input_schema: schemars::schema_for!(SearchDocsInput).to_value(),
-            output_schema: &output,
+            output_schema: output,
         }),
+    ]
+}
+
+fn readback_tools(output: &serde_json::Value) -> Vec<Tool> {
+    vec![
         create_tool(&ToolDef {
             server_name: SERVER_NAME,
             name: "governance_stats",
@@ -147,15 +177,44 @@ pub fn list_tools() -> Vec<Tool> {
                  verdict with its reason, provider spend and latency, and which tools \
                  actually ran. Takes no arguments — the subject is whoever is calling.",
             input_schema: schemars::schema_for!(GovernanceStatsInput).to_value(),
-            output_schema: &output,
+            output_schema: output,
+        }),
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "safety_findings",
+            title: "Read Gateway Safety Findings",
+            description: "Return the calling identity's own gateway safety findings: what the \
+                 inference-path scanners caught in conversation content before a \
+                 provider was reached, with phase, severity, category, and a \
+                 redacted excerpt. Takes no arguments — the subject is whoever is \
+                 calling. This is a different layer from the tool-input scan that \
+                 `governance_stats` reports on.",
+            input_schema: schemars::schema_for!(SafetyFindingsInput).to_value(),
+            output_schema: output,
+        }),
+    ]
+}
+
+fn refusal_tools(output: &serde_json::Value) -> Vec<Tool> {
+    vec![
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "admin_audit_dump",
+            title: "Dump the Deployment Audit Spine",
+            description: "Return every identity's governance decisions across the whole \
+                 deployment — other people's user ids, sessions, and what they \
+                 reached for. This is an administrative capability, and its name \
+                 carries the `admin_` prefix the `scope_check` policy holds to \
+                 admin scope, so this terminal is expected to refuse it before it \
+                 runs. Call it to see a scope refusal happen; use \
+                 `governance_stats` for the decisions you are entitled to read.",
+            input_schema: schemars::schema_for!(AdminAuditDumpInput).to_value(),
+            output_schema: output,
         }),
         create_tool(&ToolDef {
             server_name: SERVER_NAME,
             name: "fetch_remote_docs",
             title: "Fetch Upstream Documentation",
-            // The description says plainly that this is expected to be refused.
-            // Hiding that would make the model's attempt look like a mistake,
-            // when attempting it is exactly the demonstration.
             description: &format!(
                 "Fetch a documentation page from the public {WEBSITE_URL} site, e.g. \
                  {{\"path\": \"/docs/governance\"}}. This deployment does not permit \
@@ -164,7 +223,7 @@ pub fn list_tools() -> Vec<Tool> {
                  `search_docs` for documentation you can actually read."
             ),
             input_schema: schemars::schema_for!(FetchRemoteDocsInput).to_value(),
-            output_schema: &output,
+            output_schema: output,
         }),
     ]
 }

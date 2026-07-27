@@ -12,11 +12,9 @@ pub use guard::CreditBalanceGuard;
 
 use systemprompt::extension::prelude::*;
 
-/// The signup credit: $5, expressed in microdollars.
 pub const SIGNUP_CREDIT_MICRODOLLARS: i64 = 5_000_000;
 const SIGNUP_REASON: &str = "signup";
 
-/// Microdollars per US dollar.
 pub const MICRODOLLARS_PER_USD: i64 = 1_000_000;
 
 #[derive(Debug, thiserror::Error)]
@@ -25,8 +23,6 @@ pub enum CreditError {
     Database(#[from] sqlx::Error),
 }
 
-/// A user's credit position: what they have been granted, what their AI
-/// requests have cost, and the difference.
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 #[expect(
     clippy::struct_field_names,
@@ -40,7 +36,6 @@ pub struct CreditBalance {
     pub spent_microdollars: i64,
 }
 
-/// One row of the grant ledger.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct CreditGrant {
     pub microdollars: i64,
@@ -80,7 +75,6 @@ pub async fn grant_signup_credit(pool: &sqlx::PgPool, subject: &str) -> Result<b
     grant_credit(pool, subject, SIGNUP_CREDIT_MICRODOLLARS, SIGNUP_REASON).await
 }
 
-/// The user's full credit position.
 pub async fn get_balance(pool: &sqlx::PgPool, subject: &str) -> Result<CreditBalance, CreditError> {
     let row = sqlx::query!(
         r#"SELECT
@@ -99,9 +93,6 @@ pub async fn get_balance(pool: &sqlx::PgPool, subject: &str) -> Result<CreditBal
     })
 }
 
-/// The user's remaining balance in microdollars: total grants minus total AI
-/// request cost. May go negative if a request's cost is recorded after the
-/// balance is exhausted.
 pub async fn get_balance_microdollars(
     pool: &sqlx::PgPool,
     subject: &str,
@@ -109,7 +100,6 @@ pub async fn get_balance_microdollars(
     Ok(get_balance(pool, subject).await?.balance_microdollars)
 }
 
-/// Every grant made to `user_id`, newest first.
 pub async fn list_grants(
     pool: &sqlx::PgPool,
     subject: &str,

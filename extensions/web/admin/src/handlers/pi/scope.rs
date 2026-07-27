@@ -16,9 +16,6 @@
 
 use std::path::{Component, Path, PathBuf};
 
-/// Argument names pi's `read` schema uses for its target. The schema names
-/// `path`; `file_path` is a display-only fallback in pi's own `read.js`, and
-/// accepting both costs nothing against a tool set that may grow.
 const PATH_KEYS: &[&str] = &["path", "file_path"];
 
 /// Why a call was refused, or `None` when it stays inside the workspace.
@@ -44,9 +41,6 @@ pub fn escape_reason(workspace: &Path, tool_input: Option<&serde_json::Value>) -
             "path `{raw}` traverses out of the session workspace"
         ));
     }
-    // A symlink inside the workspace pointing out of it is still an escape,
-    // and only the filesystem can say so. Only checked when the target exists;
-    // a path that does not resolve cannot be a link to anywhere.
     if let Ok(real) = std::fs::canonicalize(if candidate.is_absolute() {
         candidate.to_path_buf()
     } else {
@@ -61,22 +55,14 @@ pub fn escape_reason(workspace: &Path, tool_input: Option<&serde_json::Value>) -
     None
 }
 
-/// Collapse `.` and `..` lexically, without touching the filesystem.
-///
-/// `canonicalize` is not usable on its own here: the argument frequently names
-/// a file that does not exist, and a check that silently passes every missing
-/// path would be no check at all.
 fn normalize(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for part in path.components() {
         match part {
-            Component::CurDir => {}
-            // Popping past the root leaves the root, which cannot start with
-            // the workspace — so an over-long `../` chain still reads as an
-            // escape rather than wrapping back inside.
+            Component::CurDir => {},
             Component::ParentDir => {
                 out.pop();
-            }
+            },
             other => out.push(other),
         }
     }

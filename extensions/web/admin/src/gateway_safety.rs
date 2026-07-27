@@ -50,24 +50,6 @@ impl SafetyScanner for SecretsScanner {
     }
 }
 
-/// The newest user turn, flattened — the only part of a request this scanner
-/// judges.
-///
-/// `CanonicalRequest::flatten_text` returns the whole conversation, and
-/// scanning that is a trap for a *blocking* scanner. A credential that appears
-/// once is re-found on every later turn, so a single hit does not block one
-/// request, it blocks the rest of the session: the same 403, forever, with no
-/// new offending input. The assistant's own turns are part of that history —
-/// `flatten_part` renders tool calls as `[tool_use:{name} {input}]`, so a call
-/// this deployment *correctly refused* is itself replayed into the scan surface
-/// and becomes the thing that bricks the conversation.
-///
-/// Judging only the newest user turn keeps the guarantee that matters — no
-/// request carrying a plaintext credential reaches a provider — while letting a
-/// refused turn be a refused turn rather than the end of the session.
-///
-/// `flatten_message_text(Role::User)` is not this: it concatenates *every* user
-/// message, which reintroduces the replay for anything the user typed.
 fn newest_user_text(req: &CanonicalRequest) -> String {
     let Some(msg) = req.messages.iter().rev().find(|m| m.role == Role::User) else {
         return String::new();

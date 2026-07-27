@@ -23,31 +23,55 @@ impl PiEvent {
         Self { seq, body }
     }
 
-    /// Monotonic per session, so a reconnect can resume with `Last-Event-ID`.
     pub(super) const fn seq(&self) -> u64 {
         self.seq
+    }
+
+    pub(super) const fn body(&self) -> &PiEventBody {
+        &self.body
+    }
+}
+
+impl PiEventBody {
+    pub(super) const fn kind(&self) -> &'static str {
+        match self {
+            Self::SessionReady { .. } => "session_ready",
+            Self::TurnStart => "turn_start",
+            Self::UserMessage { .. } => "user_message",
+            Self::TextDelta { .. } => "text_delta",
+            Self::ThinkingDelta { .. } => "thinking_delta",
+            Self::ToolStart { .. } => "tool_start",
+            Self::ToolEnd { .. } => "tool_end",
+            Self::ToolBlocked { .. } => "tool_blocked",
+            Self::PromptBlocked { .. } => "prompt_blocked",
+            Self::PolicyStages { .. } => "policy_stages",
+            Self::ApprovalRequest { .. } => "approval_request",
+            Self::ApprovalResolved { .. } => "approval_resolved",
+            Self::TurnEnd => "turn_end",
+            Self::Stderr { .. } => "stderr",
+            Self::Error { .. } => "error",
+            Self::Exit { .. } => "exit",
+        }
     }
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum PiEventBody {
-    /// The child is up and accepting prompts.
     SessionReady {
         conversation_id: String,
     },
     TurnStart,
-    /// Streaming assistant prose.
+    UserMessage {
+        text: String,
+        via: &'static str,
+    },
     TextDelta {
         text: String,
     },
-    /// Streaming chain-of-thought, rendered dimmed and collapsible.
     ThinkingDelta {
         text: String,
     },
-    /// A tool the model wants to run. Emitted from the governance gate, not
-    /// from `tool_execution_start` — that frame fires before the gate resolves
-    /// and also fires for blocked calls, so it is not a "running" signal.
     ToolStart {
         tool_use_id: Option<String>,
         tool_name: String,
@@ -58,55 +82,39 @@ pub enum PiEventBody {
         tool_name: String,
         ok: bool,
     },
-    /// Policy or a human refused it. Carries the real reason, which the model
-    /// never sees (`confirm` answers a bare boolean).
     ToolBlocked {
         tool_use_id: Option<String>,
         tool_name: String,
         reason: String,
         policy: Option<String>,
     },
-    /// The prompt itself was refused; no provider request was made.
     PromptBlocked {
         reason: String,
         policy: Option<String>,
     },
-    /// What the policy chain did, stage by stage, for the call named here.
-    ///
-    /// Emitted for every governed call — allow *and* deny — because a gate that
-    /// is only visible when it blocks something looks like an error path rather
-    /// than a pipeline. Always derived from the chain that ran, never from a
-    /// fixed list: the widget cannot show a check that did not happen.
     PolicyStages {
         tool_use_id: Option<String>,
         tool_name: String,
         stages: Vec<PolicyStage>,
     },
-    /// A call is waiting on a human. The widget renders a card per id.
     ApprovalRequest {
         approval_id: String,
         tool_name: String,
         tool_input: serde_json::Value,
-        /// Every policy that passed, so the operator sees what already cleared
-        /// it rather than being asked to trust a bare prompt.
         policy_chain: Vec<String>,
         timeout_secs: u64,
     },
-    /// Cleared — by this viewer, another viewer, or the timeout.
     ApprovalResolved {
         approval_id: String,
         outcome: &'static str,
     },
     TurnEnd,
-    /// A line pi wrote to stderr. Surfaced because a provider misconfiguration
-    /// shows up here and nowhere else.
     Stderr {
         line: String,
     },
     Error {
         message: String,
     },
-    /// The child is gone; the widget stops accepting input.
     Exit {
         code: Option<i32>,
     },
@@ -135,24 +143,10 @@ pub fn translate(frame: &serde_json::Value) -> Option<PiEventBody> {
                     .unwrap_or(false),
             })
         },
-        // Everything else — agent_start, message_start/end, tool_execution_start
-        // (fires before the gate, so not a "running" signal) — is dropped.
         _ => None,
     }
 }
 
-/// Surface a turn that failed at the provider.
-///
-/// Measured against pi 0.82.0, and the shape is not what the docs suggest: a
-/// rejected provider call emits **no** `error` event at all. The whole turn is
-/// `turn_start`, an assistant `message_end` carrying `stopReason: "error"` and
-/// an `errorMessage`, then `turn_end` — repeated once per automatic retry.
-///
-/// Dropping it is what made a credit-exhausted account look like four turns
-/// that each began, ended, and said nothing: the terminal sat there having
-/// silently swallowed the one sentence that explained itself. A turn that
-/// produced no output and no reason is the worst answer this widget can give,
-/// because the viewer's only conclusion is that the feature is broken.
 fn translate_failed_turn(frame: &serde_json::Value) -> Option<PiEventBody> {
     let message = frame.get("message")?;
     if string_at(message, "role").as_deref() != Some("assistant")
@@ -197,14 +191,8 @@ fn translate_message_update(frame: &serde_json::Value) -> Option<PiEventBody> {
         "thinking_delta" => Some(PiEventBody::ThinkingDelta {
             text: string_at(ev, "delta").or_else(|| string_at(ev, "text"))?,
         }),
-        // The provider call failed. pi carries the reason on the partial
-        // assistant message rather than on the event, and emits nothing else —
-        // dropping this is what made a rejected credential look like a turn
-        // that started, ended, and said nothing.
         "error" => {
             if string_at(ev, "reason").as_deref() == Some("aborted") {
-                // Someone pressed stop. `ApprovalResolved` and `TurnEnd` already
-                // say so; an error card would be inventing a fault.
                 return None;
             }
             Some(PiEventBody::Error {

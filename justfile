@@ -247,6 +247,7 @@ lint-gates:
     bash scripts/lint-raw-ids.sh
     bash scripts/check-glob-reexports.sh
     bash scripts/check-comments.sh
+    bash scripts/lint-inline-comments.sh
     bash scripts/check-duplicate-types.sh
     bash scripts/check-repository-naming.sh
     bash scripts/check-sqlx-cache.sh
@@ -285,6 +286,12 @@ check-bans:
 
 audit:
     cargo audit
+
+# Unused dependencies across all three workspaces (same script CI runs).
+# A bare `cargo machete` only covers the root — `tests` and `bridge` are
+# excluded from the root workspace and need entering separately.
+machete:
+    bash scripts/machete.sh
 
 # Structural guard: no string-literal `UserId::new("...")` in extension code.
 # String literals are how principal synthesis sneaks in — every legitimate

@@ -21,10 +21,21 @@ governance:
   # scope_check stays enabled and enforced; the systemprompt MCP hub is now open
   # to every signed-in user (oauth scope: user), so its tool prefix is no longer
   # admin-only. Any prefix listed here is still denied for non-admin callers.
+  #
+  # The second prefix is narrower than the server prefix on purpose. Matching is
+  # an anchored `starts_with`, so `mcp__systemprompt__admin_` catches the hub's
+  # `admin_audit_dump` tool and nothing else — the other four hub tools stay
+  # allowed. Listing `mcp__systemprompt__` instead would deny the whole hub and
+  # take the other three demonstrations with it.
+  #
+  # `demonstrate_scope_rejection` depends on this entry. Removing it does not
+  # make the tool safe; it makes a deployment-wide audit dump reachable by every
+  # visitor. There is a test pinning the prefix against the tool name.
   - id: scope_check
     enabled: true
     admin_only_prefixes:
     - mcp__admin__
+    - mcp__systemprompt__admin_
   # Substring match over the tool name. `fetch_remote` is not destructive like
   # the other three — it is here because this deployment permits no outbound
   # egress, and the hub's `fetch_remote_docs` tool exists precisely so that a

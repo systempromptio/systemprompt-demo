@@ -17,18 +17,13 @@ use systemprompt::identifiers::UserId;
 
 use crate::util::hmac;
 
-/// Ties a signature to this purpose, so a share-manifest token cannot be
-/// replayed as a terminal token or the reverse.
 const PURPOSE: &str = "pi-embed";
 
-/// Token lifetime. Short because it is a bearer credential living in a URL, and
-/// a widget only needs it long enough to open a stream.
 pub(super) const TTL_SECS: i64 = 3_600;
 
 pub const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
-/// `b64(user_id):b64(version):b64(exp):hex(mac)`
 #[must_use]
 pub fn sign(secret: &[u8], user_id: &UserId, version: i32, exp: i64) -> String {
     let mac = hmac::hex(secret, &payload(user_id, version, exp));
@@ -73,8 +68,6 @@ pub fn verify(secret: &[u8], token: &str, now: i64) -> Result<(UserId, i32), Inv
         .parse()
         .map_err(|_unparseable| Invalid::Malformed)?;
 
-    // Signature before expiry, so a tampered `exp` cannot be probed by watching
-    // which error comes back.
     if !hmac::eq(
         &hmac::hex(secret, &payload(&user_id, version, exp)),
         parts[3],

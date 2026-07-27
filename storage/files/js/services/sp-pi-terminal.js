@@ -47,29 +47,130 @@ const HISTORY_MAX = 50;
 const INPUT_MAX_ROWS = 6;
 const INPUT_ROW_PX = 22;
 
-/** What an anonymous visitor sees. Mirrors the shape of a real exchange. */
-const CANNED = [
-  { cls: 'prompt', text: '>', tail: 'read src/auth.rs and tell me how sessions are minted' },
-  { cls: 'output-dim', text: 'Reading the file…' },
-  { cls: 'stages' },
-  { cls: 'tool', name: 'read', arg: 'src/auth.rs', state: 'pending' },
-  { cls: 'approval' },
-  { cls: 'tool', name: 'read', arg: 'src/auth.rs', state: 'ok' },
-  { cls: 'output', text: 'Sessions are minted by `SessionCreationService` and attested with an id the server issues, so spend and governance rows join on it.' },
-];
-
-/** The chain as the replay shows it. The card it feeds is labelled a replay, so
- *  standing in for a real frame here is not a claim about a real evaluation. */
+/** The chain as the replay shows it. Every card and rail it feeds sits inside a
+ *  pane labelled a replay, so standing in for a real frame here is not a claim
+ *  about a real evaluation. Each set names what it actually judged rather than
+ *  being reused across acts, because a rail that says "tool: read" over a send
+ *  is the kind of detail a skeptical reader checks first. */
 const CANNED_STAGES = [
-  { policy: 'scope_check', result: 'pass', detail: 'user scope is allowed for tool: read' },
+  { policy: 'scope_check', result: 'pass', detail: 'token scope allows tool: read' },
   { policy: 'secret_scan', result: 'pass', detail: 'no credential pattern in the arguments' },
-  { policy: 'tool_blocklist', result: 'pass', detail: 'read is not blocked' },
+  { policy: 'tool_blocklist', result: 'pass', detail: 'read is not blocked here' },
   { policy: 'rate_limit', result: 'pass', detail: '1 of 60 calls this minute' },
 ];
 
-/** Step interval for the replay. Fast enough to finish before a visitor scrolls
- *  past, slow enough to read. */
+const CANNED_STAGES_SEND = [
+  { policy: 'scope_check', result: 'pass', detail: 'token scope allows tool: email.send' },
+  { policy: 'secret_scan', result: 'pass', detail: 'no credential pattern in the arguments' },
+  { policy: 'tool_blocklist', result: 'pass', detail: 'email.send is not blocked here' },
+  { policy: 'rate_limit', result: 'pass', detail: '2 of 60 calls this minute' },
+];
+
+/** A chain that stops. Stages after the failure are `skip` and their pips stay
+ *  unlit: the pipeline is synchronous, so the later ones genuinely never ran. */
+const CANNED_STAGES_DENY = [
+  { policy: 'scope_check', result: 'pass', detail: 'token scope allows tool: bash' },
+  { policy: 'secret_scan', result: 'fail', detail: 'a provider API key was found in the arguments' },
+  { policy: 'tool_blocklist', result: 'skip', detail: '' },
+  { policy: 'rate_limit', result: 'skip', detail: '' },
+];
+
+/**
+ * What an anonymous visitor sees.
+ *
+ * The visitor arrives knowing nothing, so this is an argument rather than a
+ * transcript: the waist every request passes through, then the four things that
+ * happen inside it (identity, policy, a person, the record). The prose carries
+ * the claim and the rows are the evidence for it, which is why the prose beats
+ * are the long ones.
+ *
+ * Every claim here is one the codebase can answer for. Keep it that way: an
+ * invented number on the homepage is the one thing a CTO checks and remembers.
+ *
+ * `ms` is the dwell *after* a step.
+ */
+const CANNED = [
+  // Act 1 — the waist. What the thing is, before any mechanism.
+  { cls: 'prompt', tail: 'what is systemprompt.io?', ms: 900 },
+  { cls: 'note', text: 'Thinking…', ms: 700 },
+  { cls: 'output', ms: 5400, text:
+      'The narrow waist between your organisation and AI. One control plane you '
+      + 'host and own, standing where every request has to pass: it issues the '
+      + 'identity, judges the call, meters the spend, and keeps the record. '
+      + 'Claude Code, Cowork, any Anthropic SDK client, any MCP server. Same '
+      + 'waist, same rules.' },
+  { cls: 'note', text: 'Four things happen in that waist. Here they are.', ms: 2000 },
+
+  // Act 2 — identity. The half nobody expects, and the half that makes the rest
+  // enforceable: policy has nothing to judge until the caller has a name.
+  { cls: 'prompt', tail: 'who is asking, and what are they allowed to do?', ms: 900 },
+  { cls: 'output', ms: 5600, text:
+      'systemprompt.io is the identity provider. It is a full OAuth 2.0 '
+      + 'authorization server: it registers the client, mints the token, signs it '
+      + 'RS256, and publishes the JWKS your services verify against. The agent '
+      + 'never holds your provider key. It holds a scoped token you can revoke.' },
+  { cls: 'note', ms: 2800, text:
+      'Which is what makes the next part enforceable. A policy needs a subject.' },
+
+  // Act 3 — policy. Four stages, synchronous, in the request path.
+  { cls: 'prompt', tail: 'pull last quarter\'s churn from data/accounts.csv', ms: 900 },
+  { cls: 'stages', stages: CANNED_STAGES, ms: 0 },
+  { cls: 'tool', name: 'read', arg: 'data/accounts.csv', state: 'pending', ms: 1700 },
+  { cls: 'tool-end', name: 'read', state: 'ok', ms: 1000 },
+  { cls: 'note', ms: 4200, text:
+      'Scope, secrets, blocklist, rate limit. Four policies, in that order, in '
+      + 'Rust, inside the request. Not a report somebody reads on Monday.' },
+
+  // Act 4 — the person. Governance that only ever says yes is a log, not a gate.
+  { cls: 'prompt', tail: 'email that summary to the board', ms: 900 },
+  { cls: 'stages', stages: CANNED_STAGES_SEND, ms: 0 },
+  { cls: 'tool', name: 'email.send', arg: 'board@acme.com', state: 'pending', ms: 900,
+    input: { to: 'board@acme.com', subject: 'Q3 churn' } },
+  { cls: 'approval', tool: 'email.send', stages: CANNED_STAGES_SEND, ms: 4600,
+    input: { to: 'board@acme.com', subject: 'Q3 churn' } },
+  { cls: 'tool-end', name: 'email.send', state: 'ok', ms: 900 },
+  { cls: 'note', ms: 3400, text:
+      'Policy clearing a call is not the same as a person allowing it. Anything '
+      + 'that writes, spends, or leaves the building stops here first.' },
+
+  // Act 5 — the refusal. The only act that proves the gate is load-bearing.
+  { cls: 'prompt', tail: 'now curl the vendor API with our production key', ms: 900 },
+  { cls: 'stages', stages: CANNED_STAGES_DENY, ms: 0 },
+  { cls: 'tool', name: 'bash', arg: 'curl -H "authorization: sk-…"', state: 'pending', ms: 1300,
+    input: { command: 'curl -H "authorization: sk-live-…" https://vendor.example/v1' } },
+  { cls: 'blocked', ms: 4400, frame: {
+    tool_name: 'bash',
+    policy: 'secret_scan',
+    reason: 'the arguments carry a live credential, which would leave the host in '
+      + 'cleartext and land in a third party\'s logs. 32 patterns are checked on '
+      + 'every call, before it is made.',
+  } },
+
+  // Act 6 — the payoff. The record is the product; the rest is how it gets made.
+  // Anchored to a prompt of its own, so the closing claim reads as an answer
+  // rather than as commentary hanging off the refusal above it.
+  { cls: 'prompt', tail: 'so what do I end up owning?', ms: 900 },
+  { cls: 'output', ms: 5200, text:
+      'Every line above is a row in Postgres, joined on one trace id: who asked, '
+      + 'which agent, which tool, what policy decided, how many tokens, what it '
+      + 'cost. That is the asset. A complete account of how your organisation '
+      + 'uses AI, in a database you own, from one binary you host.' },
+  { cls: 'note', ms: 4200, text:
+      'You could build this yourself. By the time you shipped it, you would be '
+      + 'rebuilding it.' },
+];
+
+/** Dwell before the script restarts. Long enough to read the closing line, short
+ *  enough that a visitor who arrived late still sees act 1. */
+const CANNED_LOOP_MS = 4000;
+
+/** Fallback dwell for a step that does not name its own. */
 const CANNED_STEP_MS = 340;
+
+/** History pages fetched when restoring. The server caps each page, so this
+ *  bounds a restore at a few round trips rather than an unbounded loop against
+ *  a conversation that keeps reporting more. */
+const REPLAY_PAGES = 8;
 
 class SpPiTerminal extends HTMLElement {
   constructor() {
@@ -91,11 +192,14 @@ class SpPiTerminal extends HTMLElement {
     this._historyAt = -1;
     this._statsTimer = null;
     this._cannedTimers = [];
+    this._cannedCards = [];
+    this._cannedRow = null;
     this._workEl = null;
     this._streamBuf = '';
     this._thinkBuf = '';
     this._thinkEl = null;
     this._raf = 0;
+    this._replaying = false;
   }
 
   connectedCallback() {
@@ -111,6 +215,7 @@ class SpPiTerminal extends HTMLElement {
     if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
     if (this._statsTimer) clearInterval(this._statsTimer);
     this._cannedTimers.forEach(clearTimeout);
+    this._cannedCards.forEach((c) => c.settle());
     this._approvals.forEach((a) => a.settle());
     this._approvals.clear();
   }
@@ -123,7 +228,16 @@ class SpPiTerminal extends HTMLElement {
       + '<div class="terminal active">'
       + '<div class="terminal-header">'
       + '<span class="pi-brand">'
-      + '<img class="pi-brand-mark" src="/files/images/icon.svg" alt="" width="18" height="18">'
+      // The mark itself, not a request for it. Same two paths as logo.svg, in
+      // the wordmark's coordinate space, so the hero's first paint owes nothing
+      // to the network and the glyph cannot drift from the brand.
+      + '<svg class="pi-brand-mark" viewBox="167 461 78.5 78" aria-hidden="true"'
+      + ' focusable="false">'
+      + '<path d="M 234.109375 461.253906 L 218.292969 516.605469 L 211.96875 538.746094'
+      + ' L 223.039063 538.746094 L 238.859375 483.394531 L 245.179688 461.253906"/>'
+      + '<path d="M 192.523438 474.636719 L 207.539063 474.636719 L 182.179688 500'
+      + ' L 207.539063 525.359375 L 192.523438 525.359375 L 167.15625 500.007813"/>'
+      + '</svg>'
       + '<span class="pi-brand-name">systemprompt<span class="pi-brand-tld">.io</span></span>'
       + '</span>'
       + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
@@ -347,12 +461,15 @@ class SpPiTerminal extends HTMLElement {
    * establishes the cookie without a navigation, so nothing reloads the page
    * and the terminal has to be told the visitor stopped being anonymous.
    */
-  async restart() {
+  async restart(resume) {
     this._teardownStream();
     if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
     if (this._statsTimer) clearInterval(this._statsTimer);
     this._cannedTimers.forEach(clearTimeout);
     this._cannedTimers = [];
+    this._cannedCards.forEach((c) => c.settle());
+    this._cannedCards = [];
+    this._cannedRow = null;
     this._approvals.forEach((a) => a.settle());
     this._approvals.clear();
     this._approvalsEl.innerHTML = '';
@@ -378,10 +495,17 @@ class SpPiTerminal extends HTMLElement {
     this._gateEl.hidden = true;
     this._gateEl.innerHTML = '';
     this.classList.remove('is-replay');
-    await this._start();
+    await this._start(resume);
   }
 
-  async _start() {
+  /**
+   * Start a conversation, continuing stored history unless told otherwise.
+   *
+   * `resume` is the conversation to reopen: `undefined` continues the most
+   * recent one, and `null` explicitly starts a new one. The distinction is the
+   * whole feature — a reload is `undefined` and gets its transcript back.
+   */
+  async _start(resume) {
     this._status('connecting');
     const token = this.getAttribute('token') || await this._mintToken();
     if (!token) {
@@ -390,22 +514,100 @@ class SpPiTerminal extends HTMLElement {
     }
     this._token = token;
 
-    const res = await this._fetch(this._endpoint + '/session', { token });
+    const wanted = resume === undefined ? await this._latestConversation() : resume;
+    const res = await this._fetch(this._endpoint + '/session',
+      wanted ? { token, resume: wanted } : { token });
     if (!res.ok) {
       // 429 is by far the likeliest and is not an error the visitor caused.
       return this._degrade(res.status === 429 ? 'busy' : 'anonymous');
     }
     const body = await res.json();
     this._conversationId = body.conversation_id;
+    // Replay before the stream attaches, so the live frames land after the
+    // history rather than interleaved with it.
+    if (body.resumed) await this._replay();
     // The stats pane polls per conversation and cannot mint its own token, so
     // the credential travels with the announcement. Same origin, same page.
     this._emit('pi-session', { conversation_id: this._conversationId, token: this._token });
+    this._emit('pi-conversations-changed', {});
     // Not awaited: the palette is discovery, and the stream is the thing the
     // viewer is waiting for.
     this._loadCommands();
     this._openStream();
     this._startStats();
     return undefined;
+  }
+
+  /**
+   * The conversation to reopen by default: the one touched most recently.
+   *
+   * A failure here is not fatal — the caller falls through to a new
+   * conversation, which is what a visitor with no history gets anyway.
+   */
+  async _latestConversation() {
+    const list = await this._conversations();
+    return list.length ? list[0].id : null;
+  }
+
+  /** This viewer's conversations, newest first. Never throws. */
+  async _conversations() {
+    if (!this._token) return [];
+    try {
+      const res = await fetch(this._endpoint + '/conversations?token='
+        + encodeURIComponent(this._token), { credentials: 'same-origin' });
+      if (!res.ok) return [];
+      const body = await res.json();
+      return Array.isArray(body) ? body : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /**
+   * Draw the stored transcript into the body before the live stream starts.
+   *
+   * Stored frames are the same shape the stream sends, so they go through the
+   * one dispatcher rather than through a second set of renderers that could
+   * drift from it. `_replaying` is what keeps the viewer's own messages
+   * visible here while staying suppressed live, where `_echo` already drew
+   * them the moment they were typed.
+   */
+  async _replay() {
+    let after = 0;
+    this._replaying = true;
+    try {
+      // Paged, because a long conversation is more frames than one response
+      // should carry. `more` is the server saying it stopped at its own cap.
+      for (let page = 0; page < REPLAY_PAGES; page += 1) {
+        const url = this._endpoint + '/conversations/'
+          + encodeURIComponent(this._conversationId) + '/history'
+          + '?token=' + encodeURIComponent(this._token)
+          + '&after_seq=' + after;
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) break;
+        const body = await res.json();
+        (body.events || []).forEach((f) => this._onFrame(JSON.stringify(f)));
+        after = body.last_seq || after;
+        if (!body.more) break;
+      }
+    } catch (_) {
+      this._line('output-dim', '── earlier messages could not be loaded ──');
+    }
+    this._replaying = false;
+    if (this._lastSeq) {
+      this._flushStream();
+      this._line('output-dim', '── restored; continuing this conversation ──');
+    }
+  }
+
+  /** Abandon the current conversation and open an empty one. */
+  async newConversation() {
+    await this.restart(null);
+  }
+
+  /** Reopen a stored conversation of this viewer's. */
+  async openConversation(conversationId) {
+    await this.restart(conversationId);
   }
 
   /**
@@ -558,6 +760,10 @@ class SpPiTerminal extends HTMLElement {
 
     switch (f.type) {
       case 'session_ready': return this._enable();
+      // Live, `_echo` already drew this the moment it was typed — rendering the
+      // server's copy too would double every prompt. On replay it is the only
+      // record of the viewer's half of the conversation.
+      case 'user_message': return this._replaying ? this._echo(f.text) : undefined;
       case 'turn_start': return this._turnStart();
       case 'text_delta': return this._delta(f.text, false);
       case 'thinking_delta': return this._delta(f.text, true);
@@ -1067,17 +1273,7 @@ class SpPiTerminal extends HTMLElement {
     this._input.disabled = true;
     this._sendBtn.disabled = true;
 
-    // Played on a timeline rather than dumped. An anonymous visitor is the one
-    // being asked to sign up, so they should see the chain resolve the way a
-    // real one does — the pacing is the argument.
-    const step = window.SpPiGate && window.SpPiGate.motionOk() ? CANNED_STEP_MS : 0;
-    CANNED.forEach((s, n) => {
-      if (!step) {
-        this._cannedStep(s);
-        return;
-      }
-      this._cannedTimers.push(setTimeout(() => this._cannedStep(s), n * step));
-    });
+    this._cannedPlay();
 
     this._gateEl.hidden = false;
     if (reason === 'busy') {
@@ -1104,26 +1300,99 @@ class SpPiTerminal extends HTMLElement {
       + 'for your approval.</p>';
   }
 
+  /**
+   * Play the script, then play it again.
+   *
+   * Scheduled on a running clock rather than a fixed cadence: a paragraph and a
+   * tool row do not deserve the same dwell, and the whole point of the replay is
+   * that a visitor can read it. An anonymous visitor is the one being asked to
+   * sign up, so they should see the chain resolve the way a real one does — the
+   * pacing is the argument.
+   *
+   * Looping matters for the same reason: the visitor who arrives during act 3
+   * would otherwise never be told what any of it is.
+   */
+  _cannedPlay() {
+    // Reduced motion gets the whole script at once, and no loop — a transcript
+    // that rewrites itself on a timer is exactly what was asked to stop.
+    if (!window.SpPiGate || !window.SpPiGate.motionOk()) {
+      CANNED.forEach((s) => this._cannedStep(s));
+      return;
+    }
+    let at = 0;
+    CANNED.forEach((s) => {
+      this._cannedTimers.push(setTimeout(() => this._cannedStep(s), at));
+      at += typeof s.ms === 'number' ? s.ms : CANNED_STEP_MS;
+    });
+    this._cannedTimers.push(setTimeout(() => {
+      // A disconnected or since-credentialled element must not keep looping.
+      if (!this.isConnected || !this.classList.contains('is-replay')) return;
+      this._cannedReset();
+      this._cannedPlay();
+    }, at + CANNED_LOOP_MS));
+  }
+
+  /** Wipe what the last pass drew, leaving the chrome and the gate blurb. */
+  _cannedReset() {
+    this._cannedTimers.forEach(clearTimeout);
+    this._cannedTimers = [];
+    this._cannedCards.forEach((c) => c.settle());
+    this._cannedCards = [];
+    this._approvals.forEach((a) => a.settle());
+    this._approvals.clear();
+    this._approvalsEl.innerHTML = '';
+    this._body.innerHTML = '';
+    this._toolRows.clear();
+    this._cannedRow = null;
+    this._railFor = null;
+    this._lines = 0;
+    this._pinned = true;
+  }
+
   _cannedStep(step) {
     if (step.cls === 'stages') {
-      this._policyStages({ stages: CANNED_STAGES });
+      this._policyStages({ stages: step.stages });
       return;
     }
     if (step.cls === 'tool') {
-      const row = this._toolRow(step.name, step.arg, { path: step.arg });
-      if (step.state === 'ok') {
-        row.details.dataset.state = 'ok';
-        row.icon.textContent = TOOL_ICON.ok;
-        row.state.textContent = 'ran';
+      // Held so the matching tool-end can flip it. The live path keys rows by
+      // tool_use_id; a scripted one has no ids and no concurrency, so the last
+      // row drawn is unambiguously the one being ended.
+      this._cannedRow = this._toolRow(
+        step.name, step.arg, step.input || { path: step.arg },
+      );
+      return;
+    }
+    if (step.cls === 'tool-end') {
+      const row = this._cannedRow;
+      this._cannedRow = null;
+      if (!row) return;
+      row.details.dataset.state = step.state;
+      row.icon.textContent = TOOL_ICON[step.state] || TOOL_ICON.ok;
+      row.state.textContent = step.state === 'ok' ? 'ran' : step.state;
+      return;
+    }
+    if (step.cls === 'blocked') {
+      const row = this._cannedRow;
+      this._cannedRow = null;
+      if (row) {
+        row.details.dataset.state = 'blocked';
+        row.icon.textContent = TOOL_ICON.blocked;
+        row.state.textContent = 'blocked';
       }
+      if (window.SpPiGate) this._append(window.SpPiGate.blockedRow(step.frame));
+      return;
+    }
+    if (step.cls === 'note') {
+      this._line('output-dim', step.text);
       return;
     }
     if (step.cls === 'approval') {
       if (!window.SpPiGate) return;
       const handle = window.SpPiGate.approvalCard({
-        tool_name: 'read',
-        tool_input: { path: 'src/auth.rs' },
-        policy_chain: CANNED_STAGES.map((s) => s.policy),
+        tool_name: step.tool,
+        tool_input: step.input || { path: step.arg },
+        policy_chain: step.stages.map((s) => s.policy),
         timeout_secs: 120,
       }, () => {});
       handle.el.classList.add('pi-approval-card--canned');
@@ -1131,6 +1400,9 @@ class SpPiTerminal extends HTMLElement {
       // what the real thing does, not an offer to do it.
       handle.lock();
       handle.el.setAttribute('aria-label', 'Example approval card (replay)');
+      // Held so its countdown interval dies with the loop rather than outliving
+      // the card the next pass replaces.
+      this._cannedCards.push(handle);
       this._approvalsEl.append(handle.el);
       return;
     }

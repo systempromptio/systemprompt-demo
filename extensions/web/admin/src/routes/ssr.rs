@@ -1,10 +1,11 @@
 //! What is left of the server-rendered `/admin` surface.
 //!
 //! There is no admin console any more. The interactive site is one page — a
-//! governed terminal and the visitor's own telemetry pane — and every analytics,
-//! governance, catalog, and access page that used to live here has been retired
-//! in favour of the CLI, which reads the same tables. The repositories those
-//! pages called are untouched and now feed `GET /api/public/pi/stats/{id}`.
+//! governed terminal and the visitor's own telemetry pane — and every
+//! analytics, governance, catalog, and access page that used to live here has
+//! been retired in favour of the CLI, which reads the same tables. The
+//! repositories those pages called are untouched and now feed `GET
+//! /api/public/pi/stats/{id}`.
 //!
 //! What survives is only what a browser still genuinely needs: the sign-in and
 //! registration pages (the passkey ceremony has to be served from somewhere),
@@ -50,11 +51,6 @@ pub fn admin_ssr_router(pool: Arc<PgPool>, engine: AdminTemplateEngine) -> Route
     )
 }
 
-/// Reachable before sign-in, and therefore outside the middleware stack.
-///
-/// The homepage pane runs the passkey ceremony itself and never navigates here,
-/// but these pages remain the ceremony's home for the magic-link return trip
-/// and for anyone who arrives at `/login` directly.
 fn public_routes() -> Router<Arc<PgPool>> {
     Router::new()
         .route("/login", get(handlers::ssr::login_page))
@@ -81,8 +77,6 @@ fn account_routes() -> Router<Arc<PgPool>> {
         .route("/continue", get(handlers::onboarding::post_login_redirect))
 }
 
-/// The Bridge's half of device linking. `/bridge-auth` renders the pages; these
-/// are the endpoints its buttons post to.
 fn device_routes() -> Router<Arc<PgPool>> {
     Router::new()
         .route("/devices/pats", post(handlers::devices::issue_pat))

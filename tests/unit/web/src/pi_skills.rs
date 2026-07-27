@@ -7,6 +7,9 @@ use systemprompt_web_admin::test_support::{escape, scalar, scan_str_for_secret};
 /// `secret_scan` deny. It matches an operator `extra_pattern`, never a built-in.
 const DEMO_CREDENTIAL: &str = "SPDEMOKEY-0000000000000000";
 
+/// The governed name of the tool `demonstrate_scope_rejection` reaches for.
+const SCOPE_DEMO_TOOL: &str = "mcp__systemprompt__admin_audit_dump";
+
 fn skills_root() -> std::path::PathBuf {
     std::path::PathBuf::from(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -149,6 +152,99 @@ fn demo_credential_prefix_is_invisible_to_the_gateway_scanner() {
         "the demo credential is now a built-in pattern; \
          demonstrate_governance will brick its own session again"
     );
+}
+
+/// The seam `demonstrate_scope_rejection` rests on, pinned from both sides.
+///
+/// The demonstration is a deny, and it is a deny only because the tool's name
+/// starts with a prefix `scope_check` holds to admin scope. Rename the tool,
+/// drop the prefix from `services/governance/config.yaml`, and the skill keeps
+/// reading exactly as before while the call it makes starts *succeeding* — a
+/// visitor handed every identity's audit rows by a page still captioned
+/// "watch this be refused". Neither half is safe to edit alone.
+#[test]
+fn the_scope_demo_tool_matches_a_configured_admin_prefix() {
+    let body = std::fs::read_to_string(skills_root().join("demonstrate_scope_rejection/SKILL.md"))
+        .expect("demonstrate_scope_rejection/SKILL.md is readable");
+    assert!(
+        body.contains(SCOPE_DEMO_TOOL),
+        "demonstrate_scope_rejection no longer calls {SCOPE_DEMO_TOOL}; \
+         whatever it calls instead must still match an admin-only prefix"
+    );
+
+    let governance = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../services/governance/config.yaml"
+    ))
+    .expect("services/governance/config.yaml is readable");
+    let prefixes = admin_only_prefixes(&governance);
+    assert!(
+        !prefixes.is_empty(),
+        "scope_check has no admin_only_prefixes; nothing is admin-gated"
+    );
+    assert!(
+        prefixes.iter().any(|p| SCOPE_DEMO_TOOL.starts_with(p)),
+        "{SCOPE_DEMO_TOOL} matches no configured admin_only_prefix ({prefixes:?}); \
+         the scope demonstration would be allowed and would dump the audit spine"
+    );
+}
+
+/// The same prefix must not catch the tools the other demos depend on.
+///
+/// `mcp__systemprompt__` in `admin_only_prefixes` would deny the whole hub and
+/// silently take three working demonstrations with it.
+#[test]
+fn the_admin_prefix_does_not_catch_the_ordinary_hub_tools() {
+    let governance = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../services/governance/config.yaml"
+    ))
+    .expect("services/governance/config.yaml is readable");
+    let prefixes = admin_only_prefixes(&governance);
+    for tool in [
+        "mcp__systemprompt__list_topics",
+        "mcp__systemprompt__get_topic",
+        "mcp__systemprompt__search_docs",
+        "mcp__systemprompt__governance_stats",
+        "mcp__systemprompt__safety_findings",
+        "mcp__systemprompt__fetch_remote_docs",
+    ] {
+        assert!(
+            !prefixes.iter().any(|p| tool.starts_with(p)),
+            "{tool} is now admin-gated by {prefixes:?}; the demos that use it will \
+             deny at scope_check before reaching the policy they mean to show"
+        );
+    }
+}
+
+/// The `admin_only_prefixes` sequence under `policies[id=scope_check]`.
+///
+/// Hand-scanned rather than parsed, for the same reason `scalar` is: pulling a
+/// YAML dependency into a test that reads two keys is not worth it, and the
+/// shape here is fixed by the file it reads.
+fn admin_only_prefixes(raw: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut in_scope_check = false;
+    let mut in_prefixes = false;
+    for line in raw.lines() {
+        let t = line.trim();
+        if t.starts_with("- id:") {
+            in_scope_check = t.ends_with("scope_check");
+            in_prefixes = false;
+            continue;
+        }
+        if in_scope_check && t == "admin_only_prefixes:" {
+            in_prefixes = true;
+            continue;
+        }
+        if in_prefixes {
+            match t.strip_prefix("- ") {
+                Some(v) => out.push(v.trim_matches(['"', '\'']).to_owned()),
+                None => in_prefixes = false,
+            }
+        }
+    }
+    out
 }
 
 /// …and the skill must actually still be using that literal.

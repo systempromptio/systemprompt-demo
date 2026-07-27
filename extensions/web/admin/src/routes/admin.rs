@@ -78,10 +78,6 @@ fn build_admin_read_routes_inner(read_pool: &Arc<PgPool>) -> Router {
         .with_state(Arc::clone(read_pool))
 }
 
-/// Per-user admin mutations, including the two token-issuing routes.
-///
-/// Split out of [`build_admin_write_routes`] to keep that function inside the
-/// line budget; grouping by `/users/{user_id}` is the natural seam.
 fn build_admin_user_routes() -> Router<Arc<PgPool>> {
     Router::new()
         .route("/users", post(handlers::create_user_handler))

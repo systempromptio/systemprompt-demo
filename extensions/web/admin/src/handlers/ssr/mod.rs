@@ -35,11 +35,6 @@ pub(crate) async fn verify_pending_page(
     render_unauthenticated(&engine, "verify-pending")
 }
 
-/// The holding page for an account awaiting manual review.
-///
-/// Rendered without the admin chrome on purpose: every nav target is behind the
-/// approval gate, so a normal page render would fill the screen with links that
-/// bounce straight back here.
 pub(crate) async fn pending_page(
     Extension(user_ctx): Extension<crate::types::UserContext>,
     Extension(engine): Extension<AdminTemplateEngine>,
@@ -88,8 +83,6 @@ pub(crate) async fn register_page(
     render_unauthenticated(&engine, "register")
 }
 
-/// The pages reachable before sign-in, which therefore have no user or
-/// marketplace context to inject and cannot go through `render_page`.
 fn render_unauthenticated(
     engine: &AdminTemplateEngine,
     template: &str,

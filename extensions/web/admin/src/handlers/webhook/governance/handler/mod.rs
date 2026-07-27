@@ -28,8 +28,6 @@ use super::{audit, scope};
 use authn::{authenticate_request, deny_for_auth_failure};
 use evaluate::{EvaluateInput, evaluate};
 
-/// Reads one header as an owned `String`, dropping values that are not valid
-/// UTF-8 rather than failing the audit write over a malformed header.
 fn header_str(headers: &HeaderMap, name: header::HeaderName) -> Option<String> {
     headers
         .get(name)
@@ -54,19 +52,8 @@ fn build_response(decision: &Decision) -> Response {
     (StatusCode::OK, Json(response)).into_response()
 }
 
-/// Prefix for a session the credential named but the server cannot vouch for.
-///
-/// The tool call is still governed and still audited — a hook that 401s reads
-/// as "hook unavailable" and lets the call through, which is worse. But the row
-/// must not be joinable with `ai_requests.session_id`, which the gateway
-/// attests, or the two halves of the audit spine would silently agree on an id
-/// nobody issued.
 const UNATTESTED_PREFIX: &str = "unattested_";
 
-/// Confirms the credential's own session claim, which is what the audit row is
-/// keyed on. The hook *payload* also carries a `session_id` — that one is the
-/// agent's local conversation label (Claude Code picks it), evidence of
-/// nothing, and it stays out of the principal snapshot.
 pub(super) async fn attested_session_id(
     analytics: &Arc<dyn AnalyticsProvider>,
     claimed: &SessionId,

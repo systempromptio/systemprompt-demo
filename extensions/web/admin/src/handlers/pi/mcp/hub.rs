@@ -18,13 +18,6 @@ use super::render::{McpCallResult, first_frame, render};
 use super::{AGENT_NAME, PROTOCOL_VERSION, TOKEN_TTL_HOURS};
 use crate::handlers::pi::session::PiSession;
 
-/// Run one call against the hub: handshake, then `tools/call`.
-///
-/// The handshake is repeated per call rather than cached. The hub's session is
-/// cheap on loopback, and holding one per conversation would add a second
-/// lifetime to reason about beside the pi child's — with the failure mode that
-/// a stale hub session outlives the conversation whose identity it was opened
-/// under. Correctness over three saved round trips.
 pub(super) async fn forward(
     endpoint: &str,
     session: &Arc<PiSession>,
@@ -96,25 +89,13 @@ pub(super) async fn forward(
     Ok(render(&payload))
 }
 
-/// Identity headers the hub reads. Grouped so they cannot be passed in the
-/// wrong order — three `&str` arguments in a row is a bug waiting to be typed.
 struct Identity<'a> {
     user_id: &'a str,
     session_id: &'a str,
     trace_id: &'a str,
-    /// Bearer token carrying the `mcp` audience, which the hub's RBAC requires
-    /// on top of the headers above.
     token: &'a str,
 }
 
-/// Mint the short-lived `mcp`-audience token one hub call travels on.
-///
-/// Minted per call rather than held, and never handed to the child. The pi
-/// session already holds a gateway PAT, but that credential carries no audience
-/// and no roles — it is bearer-equivalent to the user for `/v1/*` and nothing
-/// else — so the hub rejects it. This is the narrower credential the hub
-/// actually asks for, scoped to one user, alive for the length of three
-/// loopback requests.
 fn mint_hub_token(session: &Arc<PiSession>) -> Result<String, String> {
     let issuer = Config::get()
         .map_err(|e| format!("no config: {e}"))?
@@ -122,14 +103,6 @@ fn mint_hub_token(session: &Arc<PiSession>) -> Result<String, String> {
         .clone();
     let id = uuid::Uuid::parse_str(session.user_id.as_str())
         .map_err(|e| format!("user id is not a uuid: {e}"))?;
-    // Username and email are not read by the hub's RBAC — it resolves roles
-    // from the database against `sub` — so they are set to something that names
-    // where the token came from rather than to a value we would have to fetch.
-    // `User` and nothing more. The hub's RBAC requires it, and the widget's
-    // whole tool surface is open to any signed-in identity — an admin claim
-    // here would silently exempt every terminal session from `scope_check` and
-    // `tool_blocklist`, which are two of the four policies the demo exists to
-    // show working.
     let permissions = vec![Permission::User];
     let user = AuthenticatedUser::new(
         id,
@@ -155,9 +128,6 @@ fn mint_hub_token(session: &Arc<PiSession>) -> Result<String, String> {
 }
 
 struct HubReply {
-    /// The hub's `mcp-session-id` response header — an MCP transport handle,
-    /// not a systemprompt session id. The two never mix: the governed session
-    /// travels separately, in `Identity::session_id`.
     mcp_session_id: Option<String>,
     payload: Option<serde_json::Value>,
 }
@@ -172,7 +142,6 @@ async fn post(
     let mut request = client
         .post(endpoint)
         .header("content-type", "application/json")
-        // The hub answers streamable-http, so it needs both offered.
         .header("accept", "application/json, text/event-stream")
         .header("authorization", format!("Bearer {}", identity.token))
         .header("x-user-id", identity.user_id)

@@ -195,8 +195,6 @@ pub async fn revoke_api_key(pool: &PgPool, user_id: &UserId, id: &str) -> Result
 /// per-conversation keys live, and the session rows the gateway checks ignore
 /// `expires_at` entirely, so nothing else would ever retire them.
 pub async fn revoke_api_keys_by_name_prefix(pool: &PgPool, name_prefix: &str) -> Result<u64> {
-    // `LIKE` reads `%`, `_` and `\` in the caller's prefix as syntax; escaping
-    // them keeps this a plain prefix match whatever the prefix is.
     let mut pattern = String::with_capacity(name_prefix.len() + 8);
     for ch in name_prefix.chars() {
         if matches!(ch, '%' | '_' | '\\') {

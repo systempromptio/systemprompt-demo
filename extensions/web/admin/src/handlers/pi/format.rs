@@ -5,7 +5,6 @@
 //! `$0.000000` for every early turn, so the scale of the number decides how
 //! many decimals it keeps.
 
-/// Microdollars as a dollar string.
 pub fn cost(microdollars: i64) -> String {
     let dollars = microdollars as f64 / 1_000_000.0;
     if dollars == 0.0 {
@@ -36,10 +35,15 @@ pub fn cost_round(microdollars: i64) -> String {
 ///
 /// The median rather than the mean: one cold start on the first turn drags an
 /// average far enough to misrepresent every turn after it.
-pub fn median(mut values: Vec<i32>) -> Option<i32> {
+pub fn median(values: Vec<i32>) -> Option<i32> {
+    percentile(values, 50)
+}
+
+pub(crate) fn percentile(mut values: Vec<i32>, p: u32) -> Option<i32> {
     if values.is_empty() {
         return None;
     }
     values.sort_unstable();
-    Some(values[values.len() / 2])
+    let rank = (values.len() * p as usize).div_ceil(100).max(1);
+    Some(values[rank.min(values.len()) - 1])
 }

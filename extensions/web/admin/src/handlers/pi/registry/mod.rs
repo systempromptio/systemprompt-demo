@@ -31,8 +31,6 @@ struct Inner {
 }
 
 impl PiRegistry {
-    /// Build the registry, sweep any credentials a previous process leaked, and
-    /// start the reaper.
     pub(crate) fn new(
         cfg: PiConfig,
         pool: Arc<PgPool>,
@@ -61,9 +59,6 @@ impl PiRegistry {
             .map(Arc::clone)
     }
 
-    /// Start a session, or explain why not.
-    ///
-    /// Close a session and drop it from the table.
     pub(super) async fn remove(&self, conversation_id: &str, code: Option<i32>) {
         let session = {
             let Ok(mut sessions) = self.0.sessions.lock() else {
@@ -73,9 +68,18 @@ impl PiRegistry {
         };
         if let Some(session) = session {
             session.close(code).await;
-            // After the child is dead, not before: a revoke that hangs or fails
-            // must not keep a process alive. Both are best-effort for the same
-            // reason, and both are logged so a leak is visible.
+            if let Err(e) = crate::repositories::pi::conversations::update_conversation_closed(
+                &self.0.pool,
+                conversation_id,
+            )
+            .await
+            {
+                tracing::warn!(
+                    conversation_id = %session.conversation_id,
+                    error = %e,
+                    "could not mark a pi conversation closed"
+                );
+            }
             credentials::revoke(&self.0.pool, &session.user_id, &session.api_key_id).await;
             if let Err(e) = self
                 .0
@@ -92,8 +96,6 @@ impl PiRegistry {
         }
     }
 
-    /// Kill sessions that have gone idle, outlived their ceiling, or whose
-    /// child already exited.
     fn spawn_reaper(&self) {
         let registry = self.clone();
         tokio::spawn(async move {
@@ -130,22 +132,17 @@ impl PiRegistry {
     }
 }
 
-/// Everything [`PiRegistry::create`] needs to start one conversation.
-///
-/// A struct rather than six positional arguments: four of them are strings,
-/// and swapping the shim for the MCP client — or the embed token for the
-/// gateway key — would compile and then fail somewhere far from here.
 pub(super) struct CreateRequest<'a> {
     pub(super) conversation_id: String,
     pub(super) user_id: UserId,
     pub(super) attested_session: SessionId,
     pub(super) shim_source: &'a str,
     pub(super) mcp_client_source: &'a str,
-    /// The embed token the child's MCP-client extension authenticates with.
     pub(super) mcp_token: &'a str,
+    pub(super) transcript: Option<&'a str>,
+    pub(super) start_seq: u64,
 }
 
-/// The child's pipes, handed to the pump alongside the session.
 pub(super) struct SessionParts {
     pub(super) session: Arc<PiSession>,
     pub(super) stdout: Option<tokio::process::ChildStdout>,

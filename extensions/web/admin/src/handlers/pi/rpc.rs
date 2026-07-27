@@ -21,17 +21,11 @@ pub enum RpcCommand {
 }
 
 impl RpcCommand {
-    /// Serialise as one JSONL line, newline included.
     pub fn to_line(&self) -> Result<String, serde_json::Error> {
         Ok(format!("{}\n", serde_json::to_string(self)?))
     }
 }
 
-/// The reply the proxy writes for an `extension_ui_request`.
-///
-/// `confirmed` is the whole vocabulary the shim can observe — `confirm()`
-/// resolves to a bare `bool` — so a denial's *reason* cannot ride back on this
-/// channel. The reason is audited and shown in the widget instead.
 #[derive(Debug, Serialize)]
 pub(super) struct ExtensionUiResponse<'a> {
     #[serde(rename = "type")]
@@ -61,20 +55,15 @@ impl<'a> ExtensionUiResponse<'a> {
 /// degrades to [`Self::Other`] with the raw value preserved for the widget.
 #[derive(Debug)]
 pub enum RpcFrame {
-    /// The shim asking for a verdict. The governance gate lives here.
     UiRequest(UiRequest),
-    /// A reply to a command we sent.
     Response {
         success: bool,
         error: Option<String>,
     },
-    /// Any event frame; forwarded to the widget after translation.
     Event(serde_json::Value),
-    /// Not JSON at all. Logged, never fatal.
     Unparseable(String),
 }
 
-/// An `extension_ui_request` frame.
 #[derive(Debug, Deserialize)]
 pub struct UiRequest {
     pub id: String,
@@ -107,7 +96,6 @@ pub enum PayloadKind {
     Tool,
 }
 
-/// Parse one stdout line.
 pub fn parse_frame(line: &str) -> RpcFrame {
     let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
         return RpcFrame::Unparseable(line.to_owned());

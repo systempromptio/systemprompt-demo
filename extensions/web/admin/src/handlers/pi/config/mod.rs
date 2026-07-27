@@ -23,12 +23,9 @@ use std::time::Duration;
 use systemprompt_web_shared::config_errors::ExtensionConfigErrors;
 
 use paths::{config_path, default_jail_binary, profile_base_url};
-use raw::{DEFAULT_JAIL_READ_PATHS, PiConfigRaw};
 pub use raw::SandboxMode;
+use raw::{DEFAULT_JAIL_READ_PATHS, PiConfigRaw};
 
-// ---------------------------------------------------------------------------
-// Validated config
-// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone)]
 pub struct PiConfig {
@@ -37,71 +34,30 @@ pub struct PiConfig {
     pub(super) base_url: String,
     pub(super) provider: String,
     pub(super) model: String,
+    pub(super) persona: String,
     pub(super) tools: Vec<String>,
     pub(super) child_path: String,
-    /// How long a tool call waits on a human before failing closed.
     pub(super) approval_timeout: Duration,
-    /// Ask a human about every tool call, not just flagged ones. With a
-    /// read-only tool set there is nothing on the flagged list, so this is what
-    /// makes the approval UI visible at all in V1.
     pub(super) approve_all: bool,
     pub(super) idle_timeout: Duration,
     pub(super) max_lifetime: Duration,
-    /// Conversations one account may have at once. A request past this closes
-    /// the account's oldest rather than being refused — see
-    /// [`super::registry::PiRegistry::create`].
     pub(super) max_sessions_per_user: usize,
     pub(super) max_sessions_total: usize,
     pub(super) limits: ChildLimits,
     pub(super) sandbox: SandboxMode,
-    /// `sp-pi-jail`. Defaults to a sibling of this executable, which is right
-    /// in both layouts: `target/debug/` in development, `/app/bin/` in the
-    /// image.
     pub(super) jail_binary: PathBuf,
     pub(super) jail_read_paths: Vec<PathBuf>,
-    /// The `systemprompt` MCP hub's endpoint, called server-side by the proxy
-    /// in [`super::mcp`]. Deliberately not reachable by the child: the jail
-    /// grants outbound TCP to the gateway's port alone, and the hub trusts
-    /// whatever identity headers it is handed.
     pub(super) mcp_url: String,
 }
 
-/// Resource ceilings the child starts under.
-///
-/// These bound the blast radius of a tool that gets through, which is a
-/// different job from deciding whether it should run. They are not a sandbox:
-/// with `--tools read` the thing they actually buy is that a runaway or
-/// hostile read cannot exhaust the host the server shares.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct ChildLimits {
-    /// Processes. **Zero means unset, and that is the default**, for two
-    /// measured reasons: `RLIMIT_NPROC` counts every process the *uid* owns,
-    /// not the child's descendants, so any value below the server user's
-    /// existing process count stops the child forking at all; and `/bin/sh` is
-    /// dash on Debian, whose `ulimit` has no `-u`. Useful once the child has a
-    /// dedicated uid — the same prerequisite as enabling `bash`.
     pub(super) nproc: u64,
-    /// Bytes any single file the child writes may reach. The one limit that is
-    /// on by default: per-file, per-process, and supported by every `ulimit`.
     pub(super) fsize: u64,
-    /// Virtual address space. **Zero means unset, and that is the default.**
-    /// V8 reserves address space far in excess of what it commits, so a figure
-    /// chosen to look prudent kills `pi` at startup rather than bounding it.
-    /// Set it deliberately, against a measured value, or leave it alone.
     pub(super) address_space: u64,
 }
-// A dedicated low-privilege uid is deliberately not here. Dropping privilege
-// in-process needs `setuid` between fork and exec, and this workspace denies
-// `unsafe_code`. It belongs to whatever supervises the server — `User=` in a
-// systemd unit, or the container's own user — where it also covers the parent.
 
 impl PiConfig {
-    /// Load and validate `services/config/pi.yaml`.
-    ///
-    /// A missing file is `Ok` on defaults — the terminal is always available,
-    /// and the shipped defaults are the ones the demo runs on. `Err` is
-    /// reserved for a file that exists but cannot be read, parsed, or
-    /// validated.
     pub(crate) fn load() -> Result<Self, ExtensionConfigErrors> {
         let path = config_path();
         if !path.exists() {
@@ -115,12 +71,6 @@ impl PiConfig {
         Self::parse(&content)
     }
 
-    /// Parse a config body and validate it.
-    ///
-    /// Split out of [`Self::load`] so the same path can be driven from a
-    /// string. A YAML error surfaces as a `_parse` entry rather than a
-    /// separate error type, which keeps one result shape for callers that
-    /// only need to know the config was rejected.
     pub fn parse(yaml: &str) -> Result<Self, ExtensionConfigErrors> {
         let raw: PiConfigRaw = serde_yaml::from_str(yaml).map_err(|e| {
             let mut errors = ExtensionConfigErrors::new("pi");
@@ -130,14 +80,6 @@ impl PiConfig {
         Self::validate(raw)
     }
 
-    /// [`Self::load`], reporting a broken file at ERROR and continuing on the
-    /// shipped defaults.
-    ///
-    /// The terminal stays mounted because it is the site's primary demo and a
-    /// dead one is the failure this config path exists to remove. Running on
-    /// defaults is the fail-*closed* direction on the key that matters:
-    /// `sandbox: required`, a read-only tool set, and every ceiling in place —
-    /// so a typo cannot widen the boundary, only lose a deliberate widening.
     pub(crate) fn load_or_defaults() -> Self {
         Self::load().unwrap_or_else(|errors| {
             tracing::error!(
@@ -148,8 +90,6 @@ impl PiConfig {
         })
     }
 
-    /// Reject the settings that are wrong rather than merely unusual, then
-    /// hand off to [`Self::from_raw`].
     fn validate(raw: PiConfigRaw) -> Result<Self, ExtensionConfigErrors> {
         let mut errors = ExtensionConfigErrors::new("pi");
 
@@ -169,7 +109,11 @@ impl PiConfig {
             );
         }
 
-        check_nonzero("timeouts.approval_secs", raw.timeouts.approval_secs, &mut errors);
+        check_nonzero(
+            "timeouts.approval_secs",
+            raw.timeouts.approval_secs,
+            &mut errors,
+        );
         check_nonzero("timeouts.idle_secs", raw.timeouts.idle_secs, &mut errors);
         check_nonzero(
             "timeouts.max_lifetime_secs",
@@ -198,13 +142,6 @@ impl PiConfig {
         }
     }
 
-    /// Freeze a raw config into the runtime types (`Duration`, `PathBuf`) the
-    /// rest of the module uses.
-    ///
-    /// Infallible on purpose: it is what makes `PiConfigRaw::default()` always
-    /// constructible, which is the guarantee [`Self::load_or_defaults`] rests
-    /// on. Rejection belongs in [`Self::validate`], which calls this once its
-    /// checks pass.
     fn from_raw(raw: PiConfigRaw) -> Self {
         Self {
             binary: raw.binary,
@@ -212,6 +149,7 @@ impl PiConfig {
             base_url: raw.base_url.unwrap_or_else(profile_base_url),
             provider: raw.provider,
             model: raw.model,
+            persona: raw.persona,
             tools: raw
                 .tools
                 .iter()
@@ -232,24 +170,21 @@ impl PiConfig {
             },
             sandbox: raw.sandbox,
             jail_binary: raw.jail_binary.unwrap_or_else(default_jail_binary),
-            jail_read_paths: raw.jail_read_paths.unwrap_or_else(|| {
-                DEFAULT_JAIL_READ_PATHS.iter().map(PathBuf::from).collect()
-            }),
+            jail_read_paths: raw
+                .jail_read_paths
+                .unwrap_or_else(|| DEFAULT_JAIL_READ_PATHS.iter().map(PathBuf::from).collect()),
             mcp_url: raw.mcp_url,
         }
     }
 
-    /// The model a session will run on, for the startup log.
     pub(crate) fn model_name(&self) -> &str {
         &self.model
     }
 
-    /// The origin sessions call back on.
     pub fn base_url(&self) -> &str {
         &self.base_url
     }
 
-    /// The tool set a session is bounded to.
     pub fn tools(&self) -> &[String] {
         &self.tools
     }
@@ -266,9 +201,6 @@ impl PiConfig {
         &self.jail_read_paths
     }
 
-    /// Say once, loudly, when the widget is serving unsandboxed children.
-    /// Called at router construction so it lands in the startup log rather
-    /// than being buried in a per-session line nobody greps for.
     pub(crate) fn warn_if_unsandboxed(&self) {
         if self.sandbox == SandboxMode::Off {
             tracing::warn!(

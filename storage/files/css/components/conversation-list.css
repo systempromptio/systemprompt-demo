@@ -1,0 +1,150 @@
+/* <sp-conversation-list> — the picker above the terminal.
+ *
+ * Light DOM, so everything is scoped under .conv-* rather than shadowed, and it
+ * borrows the same dark-glass tokens the stage gives <sp-pi-terminal> and
+ * <sp-auth-pane>. It sits inside the terminal pane, so a token it does not
+ * define is inherited from there rather than restated. */
+
+sp-conversation-list {
+  display: block;
+  min-width: 0;
+
+  --cv-glass: var(--sp-stage-glass, oklch(0.24 0.012 55 / 0.72));
+  --cv-border: var(--sp-stage-glass-border, oklch(1 0 0 / 0.09));
+  --cv-raise: oklch(1 0 0 / 0.08);
+  --cv-text: var(--sp-stage-text, oklch(0.96 0.004 60));
+  --cv-text-dim: var(--sp-stage-text-dim, oklch(0.82 0.008 60));
+  --cv-text-muted: var(--sp-stage-text-muted, oklch(0.68 0.01 60));
+
+  margin-block-end: 0.75rem;
+  color: var(--cv-text-dim);
+  font-size: 0.8125rem;
+}
+
+.conv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-end: 0.5rem;
+}
+
+.conv-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cv-text-muted);
+}
+
+.conv-new,
+.conv-action {
+  border: 1px solid var(--cv-border);
+  background: var(--cv-raise);
+  color: var(--cv-text-dim);
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  /* The branded asymmetric corner, matching the terminal's own controls. */
+  border-radius: 3px 3px 3px 8px;
+  cursor: pointer;
+}
+
+.conv-new:hover,
+.conv-action:hover {
+  color: var(--cv-text);
+  border-color: var(--cv-text-muted);
+}
+
+.conv-action-danger:hover {
+  color: oklch(0.78 0.15 25);
+  border-color: oklch(0.78 0.15 25 / 0.5);
+}
+
+.conv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Bounded so a long history scrolls inside the picker instead of pushing the
+     terminal off the stage. */
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.conv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 3px 3px 3px 8px;
+  min-width: 0;
+}
+
+.conv-item[data-current='true'] {
+  background: var(--cv-raise);
+}
+
+.conv-open {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--cv-text-dim);
+  font: inherit;
+  text-align: start;
+  padding: 0;
+  cursor: pointer;
+  /* The full title is on the `title` attribute, so clipping here loses nothing
+     a viewer cannot recover by hovering. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conv-item[data-current='true'] .conv-open {
+  color: var(--cv-text);
+  font-weight: 600;
+}
+
+.conv-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  /* Revealed on hover and on keyboard focus alike — actions reachable only by
+     pointer are actions half the viewers do not have. */
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.conv-item:hover .conv-actions,
+.conv-item:focus-within .conv-actions {
+  opacity: 1;
+}
+
+.conv-when {
+  color: var(--cv-text-muted);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.conv-empty {
+  margin: 0;
+  color: var(--cv-text-muted);
+  font-size: 0.75rem;
+}
+
+/* Touch has no hover, so the actions would otherwise never appear. */
+@media (hover: none) {
+  .conv-actions {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conv-actions {
+    transition: none;
+  }
+}

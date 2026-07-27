@@ -14,19 +14,13 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::SessionId;
 
-/// One event in the merged timeline.
 #[derive(Debug, Clone)]
 pub struct DemoTraceRow {
-    /// Source-row id, resolvable by `GET /admin/api/chain/{id}`.
     pub id: String,
     pub at: chrono::DateTime<chrono::Utc>,
-    /// `prompt` | `tool` | `route` | `request` | `fire`
     pub kind: String,
-    /// What was attempted: a tool name, a model id, or `user_prompt`.
     pub subject: String,
-    /// `allow` | `deny` | the request status | `ok`
     pub outcome: String,
-    /// Governing policy, where one applies.
     pub policy: String,
     pub detail: String,
     // JSON: governance audit payload; each policy stage writes its own shape.

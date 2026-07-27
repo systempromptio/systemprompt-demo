@@ -33,11 +33,6 @@ pub(super) async fn record_decision(
             (DecisionTag::Deny, reason.to_string(), policy_str)
         },
     };
-    // A governance row whose evaluation trace failed to serialise is still
-    // worth writing — the decision itself is the record that matters. But it
-    // must not go in silently: `null` here is indistinguishable from a call
-    // that was never evaluated, which is the one thing this table exists to
-    // rule out.
     let evaluated_rules = serde_json::to_value(audit).unwrap_or_else(|e| {
         tracing::error!(
             error = %e,

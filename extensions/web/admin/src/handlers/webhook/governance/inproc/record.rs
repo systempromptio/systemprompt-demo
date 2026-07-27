@@ -21,11 +21,6 @@ use crate::handlers::webhook::governance::types::{
 
 use super::{GovernedCall, PI_AGENT_ID, PI_PLUGIN_ID, PolicyVerdict};
 
-/// Audit a human's approve/deny on a call policy already permitted.
-///
-/// A second row rather than a mutation of the first: the spine is append-only,
-/// and "policy allowed, operator refused" is two facts, not a correction of
-/// one. `policy` is `human_approval` so the trace view can tell them apart.
 pub(crate) async fn record_human_decision(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
@@ -73,16 +68,6 @@ pub(crate) async fn record_human_decision(
     }
 }
 
-/// Audit a caller-side policy that refused a call the chain had allowed.
-///
-/// Some rules cannot live in [`evaluate`] because they need state only the
-/// caller holds — workspace confinement needs the session's own directory,
-/// which the policy chain has never heard of. They still have to land in the
-/// spine, or a denial the user sees has no record behind it.
-///
-/// A second row rather than a mutation of the first, for the same reason
-/// [`record_human_decision`] is: "policy allowed, the caller's own rule
-/// refused" is two facts.
 pub(crate) async fn record_policy_denial(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
@@ -117,15 +102,11 @@ pub(crate) async fn record_policy_denial(
     write_now(pool, audit).await;
 }
 
-/// How an approval ended. Three of the four are denials, which is the point:
-/// only an explicit approve lets a call through.
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum HumanOutcome {
     Approved,
     Denied,
-    /// Nobody answered inside the window.
     TimedOut,
-    /// Every viewer disconnected, so nobody was left to answer.
     Abandoned,
 }
 
@@ -172,10 +153,6 @@ pub(super) async fn record(
     }
 }
 
-/// Audit writes never block an *allow*: the tool call is already waiting on the
-/// verdict, and a slow `INSERT` must not become a slow gate.
-///
-/// Denials do not take this path — see [`write_now`].
 fn spawn_write(pool: &Arc<PgPool>, audit: DecisionAudit) {
     let pool = Arc::<PgPool>::clone(pool);
     tokio::spawn(async move {
@@ -183,13 +160,6 @@ fn spawn_write(pool: &Arc<PgPool>, audit: DecisionAudit) {
     });
 }
 
-/// Write the row before returning the verdict.
-///
-/// Denials are read back immediately — the caller is shown a refusal and then
-/// asks the spine to prove it happened, often within the same second. Spawning
-/// that write races the read, and the demonstration reports no denial for a
-/// call the user just watched be refused. An allow can afford to be eventually
-/// consistent; the row that proves enforcement cannot.
 async fn write_now(pool: &Arc<PgPool>, audit: DecisionAudit) {
     let session_id = audit.principal.session_id.clone();
     if let Err(e) = audit::record_decision(pool, &audit).await {

@@ -4,8 +4,8 @@
 //! touch the database and never leave the process. That is what makes them the
 //! tools a session can always use, whatever the deployment's egress posture.
 
-use crate::topics;
 use crate::tools::{GetTopicInput, ListTopicsInput, SearchDocsInput};
+use crate::topics;
 use rmcp::ErrorData as McpError;
 use std::future::{self, Future};
 use systemprompt::identifiers::McpExecutionId;

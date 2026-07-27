@@ -1,0 +1,11 @@
+id: demonstrate_scope_rejection
+name: Demonstrate Scope Rejection
+description: "Reach for an admin-only tool as a user-scoped caller and watch the scope_check policy refuse it, then read the denial back out of the audit spine"
+enabled: true
+file: SKILL.md
+tags:
+  - governance
+  - security
+  - scope
+  - mcp
+category: governance

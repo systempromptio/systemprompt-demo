@@ -12,9 +12,9 @@
 //! Note: `default_included` lives on `access_control_entities` post-migration
 //! 007, fetched via `get_entity` / `upsert_entity`.
 
-use systemprompt::identifiers::RouteId;
 use std::collections::HashMap;
 use std::sync::Arc;
+use systemprompt::identifiers::RouteId;
 
 use sqlx::PgPool;
 use systemprompt_security::authz::{
@@ -78,7 +78,10 @@ pub async fn delete_rule(pool: &PgPool, rule_id: &str) -> Result<bool, sqlx::Err
     repo(pool).delete_rule(&id).await.map_err(|e| map_err(&e))
 }
 
-pub async fn find_entity(pool: &PgPool, route_id: &RouteId) -> Result<Option<EntityRow>, sqlx::Error> {
+pub async fn find_entity(
+    pool: &PgPool,
+    route_id: &RouteId,
+) -> Result<Option<EntityRow>, sqlx::Error> {
     repo(pool)
         .get_entity(ENTITY_TYPE, route_id.as_str())
         .await

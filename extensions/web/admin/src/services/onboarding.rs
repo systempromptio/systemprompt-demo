@@ -22,7 +22,6 @@ pub(crate) struct OnboardingProfile {
     pub credit_plans: Option<String>,
 }
 
-/// Announce a new account awaiting review.
 pub(crate) fn registration_submitted(
     user_id: &UserId,
     email: &str,

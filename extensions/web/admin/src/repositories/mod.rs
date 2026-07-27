@@ -13,5 +13,6 @@ pub mod governance;
 pub mod jobs;
 pub mod marketplace;
 pub mod mcp;
+pub mod pi;
 pub mod secrets;
 pub mod users;

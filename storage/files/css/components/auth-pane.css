@@ -542,6 +542,100 @@
   color: var(--sp-color-error);
 }
 
+/* ── policy pipeline ────────────────────────────────────────────────────── */
+
+.auth-pane .pane-stages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: pane-stage;
+}
+
+.auth-pane .pane-stage {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-2) var(--sp-space-3);
+  background: var(--ap-well);
+  border-left: 2px solid var(--ap-border);
+  border-radius: 0 var(--sp-radius-sm) var(--sp-radius-sm) 0;
+  font-size: 0.78rem;
+}
+
+/* Numbered, because the order the checks run in is part of the claim. */
+.auth-pane .pane-stage-name::before {
+  counter-increment: pane-stage;
+  content: counter(pane-stage) ". ";
+  color: var(--ap-text-muted);
+  font-family: var(--sp-font-mono);
+}
+
+.auth-pane .pane-stage-name {
+  color: var(--ap-text);
+}
+
+.auth-pane .pane-stage-tally {
+  color: var(--ap-text-muted);
+  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A stage that has not evaluated anything yet reads as present but quiet —
+   dimmed rather than absent, so the pipeline never appears to grow. */
+.auth-pane .pane-stage[data-active="0"] {
+  opacity: 0.55;
+}
+
+.auth-pane .pane-stage[data-active="1"] {
+  border-left-color: var(--sp-color-success);
+}
+
+.auth-pane .pane-stage[data-hot="1"] {
+  border-left-color: var(--sp-color-error);
+  background: color-mix(in oklch, var(--sp-color-error) 12%, var(--ap-well));
+  opacity: 1;
+}
+
+.auth-pane .pane-stage[data-hot="1"] .pane-stage-tally {
+  color: var(--sp-color-error);
+}
+
+/* ── platform pulse ─────────────────────────────────────────────────────── */
+
+/* Muted throughout: this section is context about everyone else, and it must
+   not compete with the visitor's own numbers above it. */
+.auth-pane .pane-section--pulse {
+  padding-top: var(--sp-space-3);
+  border-top: 1px solid var(--ap-border);
+}
+
+.auth-pane .pane-stats--pulse {
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+}
+
+.auth-pane .pane-stats--pulse .pane-stat {
+  padding: var(--sp-space-2);
+  background: transparent;
+  border-style: dashed;
+}
+
+.auth-pane .pane-stats--pulse .pane-stat dd {
+  color: var(--ap-text-muted);
+  font-size: 0.85rem;
+}
+
+.auth-pane .pane-pulse-note {
+  margin: var(--sp-space-2) 0 0;
+  color: var(--ap-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auth-pane .pane-spinner,
   .auth-pane .pane-stat dd.is-changed {

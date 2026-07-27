@@ -7,76 +7,93 @@
 //! retired admin pages used rather than adding queries.
 //!
 //! It is deliberately *not* an admin route. The interactive site has no admin
-//! concept: authority here comes from the embed token, which resolves to exactly
-//! one user, and the conversation must belong to that user. A caller therefore
-//! reads their own session and nobody else's, with the same opaque 404 for "not
-//! yours" as for "does not exist".
+//! concept: authority here comes from the embed token, which resolves to
+//! exactly one user, and the conversation must belong to that user. A caller
+//! therefore reads their own session and nobody else's, with the same opaque
+//! 404 for "not yours" as for "does not exist".
+//!
+//! The ownership check reads `pi_conversations`, not the live-session registry.
+//! Every number below is a database query, and so is the attested session id
+//! they key on — which is what makes these stats survive a reload and a server
+//! restart. Resolving that id from memory instead would make a conversation
+//! uncostable the moment its child exited, with every row explaining it still
+//! sitting in Postgres.
 
 use std::sync::Arc;
 
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::{Extension, Json};
 use serde::Serialize;
 use sqlx::PgPool;
 use systemprompt::identifiers::SessionId;
 
 use super::api::TokenQuery;
-use super::auth::{authorize_session, problem};
+use super::auth::{authorize_conversation, problem};
 use super::format;
-use super::registry::PiRegistry;
 use crate::repositories::analytics::session_detail;
-use crate::repositories::governance::demo_trace;
+use crate::repositories::governance::{demo_trace, stages};
 
-/// Trace rows returned to the pane. Enough to render a feed, capped so a long
-/// session cannot turn a 3-second poll into a large response.
 const TRACE_LIMIT: i64 = 120;
 
 #[derive(Debug, Serialize)]
 struct PiStats {
     conversation_id: String,
-    /// Newest model the session actually reached, absent until the first call.
     model: Option<String>,
+    requested_model: Option<String>,
+    provider: Option<String>,
+    route_match: Option<String>,
     requests: i64,
     errors: i64,
     input_tokens: i64,
     output_tokens: i64,
+    cache_read_tokens: i64,
+    cache_creation_tokens: i64,
+    cache_hit_percent: i64,
     cost_microdollars: i64,
     cost_display: String,
+    cost_per_request_display: String,
     latency_p50_ms: Option<i32>,
+    latency_p95_ms: Option<i32>,
     latency_last_ms: Option<i32>,
     allowed: i64,
     denied: i64,
     prompts_blocked: i64,
     tools_blocked: i64,
     tool_calls: i64,
-    /// What this identity has left to spend, and of how much.
+    secrets_caught: i64,
+    policy_stages: Vec<PiPolicyStage>,
+    model_mix: Vec<PiModelShare>,
     credit: PiCredit,
     events: Vec<PiStatEvent>,
 }
 
-/// The visitor's credit position.
-///
-/// Lifetime, not per-session: `cost_*` above is what this conversation spent,
-/// and the two answer different questions. "This turn cost $0.004" is
-/// interesting; "you have $4.83 of your $5 left" is the one that tells someone
-/// whether to keep going, and it is the number the signup promise is about.
+#[derive(Debug, Serialize)]
+struct PiPolicyStage {
+    id: String,
+    label: String,
+    passed: i64,
+    failed: i64,
+    active: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct PiModelShare {
+    model: String,
+    requests: i64,
+    percent: i64,
+}
+
 #[derive(Debug, Serialize)]
 struct PiCredit {
     granted_microdollars: i64,
     spent_microdollars: i64,
-    /// Granted minus spent. Can go negative: a request's cost lands after the
-    /// guard has already refused the next one, so the last call overshoots.
     remaining_microdollars: i64,
     granted_display: String,
     spent_display: String,
     remaining_display: String,
-    /// Whole percent of the grant still unspent, clamped to 0–100 so a meter
-    /// can bind to it directly and an overshoot renders as empty, not inverted.
     remaining_percent: i64,
-    /// True once the balance is gone. The gateway refuses the next request at
-    /// this point, so the pane says so before the terminal has to.
     exhausted: bool,
 }
 
@@ -91,24 +108,21 @@ struct PiStatEvent {
     detail: String,
 }
 
-/// `GET /api/public/pi/stats/{conversation_id}?token=…`
 pub(super) async fn stats(
     State(pool): State<Arc<PgPool>>,
-    Extension(registry): Extension<PiRegistry>,
     Path(conversation_id): Path<String>,
     Query(q): Query<TokenQuery>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
-    let Some(session) = authorize_session(&pool, &registry, q.token(), &conversation_id).await
-    else {
+    let Some(row) = authorize_conversation(&pool, q.token(), &conversation_id).await else {
         return problem(StatusCode::NOT_FOUND, "no such conversation");
     };
 
     match collect(
         &pool,
         &conversation_id,
-        &session.attested_session,
-        &session.user_id,
+        &row.attested_session_id,
+        &row.user_id,
     )
     .await
     {
@@ -120,11 +134,6 @@ pub(super) async fn stats(
     }
 }
 
-/// Read the credit position, or fall back to a zeroed one.
-///
-/// A credit-ledger failure must not take the whole pane down: the governance
-/// feed beside it is the thing a visitor came to see, and it is still correct
-/// when the balance is not.
 async fn credit_position(pool: &PgPool, user_id: &systemprompt::identifiers::UserId) -> PiCredit {
     let balance = systemprompt_credits_extension::get_balance(pool, user_id.as_str())
         .await
@@ -150,13 +159,49 @@ async fn credit_position(pool: &PgPool, user_id: &systemprompt::identifiers::Use
         remaining_microdollars: balance.balance_microdollars,
         granted_display: format::cost_round(balance.granted_microdollars),
         spent_display: format::cost(balance.spent_microdollars),
-        // A negative remainder reads as debt the visitor owes, which is not
-        // what an overshot demo grant means. Floor the display at zero and let
-        // `exhausted` carry the fact.
         remaining_display: format::cost(balance.balance_microdollars.max(0)),
         remaining_percent,
         exhausted: balance.granted_microdollars > 0 && balance.balance_microdollars <= 0,
     }
+}
+
+fn policy_stages(rows: &[crate::repositories::governance::PerPolicyCounts]) -> Vec<PiPolicyStage> {
+    stages::STAGES
+        .iter()
+        .map(|(id, label)| {
+            let found = rows.iter().find(|r| r.policy == *id);
+            PiPolicyStage {
+                id: (*id).to_owned(),
+                label: (*label).to_owned(),
+                passed: found.map_or(0, |r| r.allowed),
+                failed: found.map_or(0, |r| r.denied),
+                active: found.is_some(),
+            }
+        })
+        .collect()
+}
+
+fn model_mix(requests: &[session_detail::SessionRequestRow]) -> Vec<PiModelShare> {
+    let total = requests.len() as i64;
+    if total == 0 {
+        return Vec::new();
+    }
+    let mut tally: Vec<(String, i64)> = Vec::new();
+    for row in requests {
+        match tally.iter_mut().find(|(m, _)| *m == row.model) {
+            Some((_, n)) => *n += 1,
+            None => tally.push((row.model.clone(), 1)),
+        }
+    }
+    tally.sort_by(|a, b| b.1.cmp(&a.1));
+    tally
+        .into_iter()
+        .map(|(model, requests)| PiModelShare {
+            model,
+            percent: requests.saturating_mul(100) / total,
+            requests,
+        })
+        .collect()
 }
 
 async fn collect(
@@ -169,11 +214,31 @@ async fn collect(
     let kpis = session_detail::get_session_kpis(pool, attested).await?;
     let requests = session_detail::list_session_requests(pool, attested).await?;
     let trace = demo_trace::list_demo_trace(pool, attested, TRACE_LIMIT).await?;
+    let counts = stages::get_session_governance_counts(pool, attested).await?;
+    let stage_rows = stages::list_session_policy_stages(pool, attested).await?;
 
-    // `list_session_requests` is newest-first, so the head is the latest turn.
-    let latency_last_ms = requests.first().and_then(|r| r.latency_ms);
-    let latency_p50_ms = format::median(requests.iter().filter_map(|r| r.latency_ms).collect());
-    let model = requests.first().map(|r| r.model.clone());
+    let latest = requests.first();
+    let latency_last_ms = latest.and_then(|r| r.latency_ms);
+    let latencies: Vec<i32> = requests.iter().filter_map(|r| r.latency_ms).collect();
+    let latency_p50_ms = format::median(latencies.clone());
+    let latency_p95_ms = format::percentile(latencies, 95);
+    let model = latest.map(|r| r.model.clone());
+    let provider = latest.map(|r| r.provider.clone());
+    let route_match = latest.and_then(|r| r.route_match.clone());
+    let requested_model = latest
+        .and_then(|r| r.requested_model.clone())
+        .filter(|asked| Some(asked) != model.as_ref());
+
+    let cache_hit_percent = if kpis.request_count > 0 {
+        kpis.cache_hit_count.saturating_mul(100) / kpis.request_count
+    } else {
+        0
+    };
+    let cost_per_request_display = if kpis.request_count > 0 {
+        format::cost(kpis.total_cost_microdollars / kpis.request_count)
+    } else {
+        format::cost(0)
+    };
 
     let counted = |kind: &str, outcome: &str| {
         trace
@@ -185,14 +250,25 @@ async fn collect(
     Ok(PiStats {
         conversation_id: conversation_id.to_owned(),
         model,
+        requested_model,
+        provider,
+        route_match,
         requests: kpis.request_count,
         errors: kpis.error_count,
         input_tokens: kpis.total_input_tokens,
         output_tokens: kpis.total_output_tokens,
+        cache_read_tokens: kpis.total_cache_read_tokens,
+        cache_creation_tokens: kpis.total_cache_creation_tokens,
+        cache_hit_percent,
         cost_microdollars: kpis.total_cost_microdollars,
         cost_display: format::cost(kpis.total_cost_microdollars),
+        cost_per_request_display,
         latency_p50_ms,
+        latency_p95_ms,
         latency_last_ms,
+        secrets_caught: counts.secret_breaches,
+        policy_stages: policy_stages(&stage_rows),
+        model_mix: model_mix(&requests),
         allowed: trace.iter().filter(|r| r.outcome == "allow").count() as i64,
         denied: trace.iter().filter(|r| r.outcome == "deny").count() as i64,
         prompts_blocked: counted("prompt", "deny"),

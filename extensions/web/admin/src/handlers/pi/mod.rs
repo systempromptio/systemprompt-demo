@@ -41,8 +41,8 @@
 //!   and the child's own gateway credential. Nothing stopped it but a person
 //!   clicking Approve, and in this deployment that person is the untrusted
 //!   party. (What actually masked it was the credit guard: an unapproved
-//!   account 429s before the model runs, so it can never issue a tool call —
-//!   a billing control doing security work, one growth decision from
+//!   account 429s before the model runs, so it can never issue a tool call — a
+//!   billing control doing security work, one growth decision from
 //!   evaporating.)
 //!
 //!   Two independent layers close it. Every child now starts through
@@ -67,12 +67,16 @@ mod api;
 mod auth;
 mod commands;
 pub(crate) mod config;
+mod conversations;
 mod credentials;
 pub(crate) mod events;
 pub(crate) mod format;
 mod gate;
 pub(crate) mod jail;
 pub(crate) mod mcp;
+mod normalize;
+pub(crate) mod persist;
+mod pulse;
 mod pump;
 mod registry;
 pub(crate) mod rpc;
@@ -82,11 +86,13 @@ pub(crate) mod skills;
 mod spawn;
 pub(crate) mod stage;
 mod stats;
+mod tier;
 pub(crate) mod token;
+mod transcript;
 
 use std::sync::Arc;
 
-use axum::routing::{get, post};
+use axum::routing::{get, patch, post};
 use axum::{Extension, Router};
 use sqlx::PgPool;
 
@@ -100,18 +106,8 @@ use gate::PiDeps;
 /// cannot drift into running a stale or edited enforcement point.
 pub const SHIM_SOURCE: &str = include_str!("shim/governance-shim.ts");
 
-/// The MCP-client extension pi loads alongside the shim, registering the
-/// documentation hub's tools. Compiled in for the same reason the shim is: it
-/// carries the conversation's proxy credential into the child, and a
-/// deployment must not be able to rewrite where that credential is sent.
 const MCP_CLIENT_SOURCE: &str = include_str!("shim/mcp-client.ts");
 
-/// Public routes for the widget.
-///
-/// Public on purpose: the site auth gate 302-redirects unauthenticated hits on
-/// protected prefixes, and an `EventSource` reports a redirect to HTML as an
-/// opaque error. Credentials are checked by hand in each handler — the embed
-/// token everywhere except `/embed-token`, which reads the session cookie.
 pub(crate) fn pi_router(
     pool: Arc<PgPool>,
     registry: PiRegistry,
@@ -133,13 +129,26 @@ pub(crate) fn pi_router(
         .route("/api/public/pi/session", post(api::create_session))
         .route("/api/public/pi/stream/{conversation_id}", get(api::stream))
         .route("/api/public/pi/stats/{conversation_id}", get(stats::stats))
+        .route("/api/public/pi/pulse", get(pulse::pulse))
         .route("/api/public/pi/prompt", post(commands::prompt))
         .route("/api/public/pi/steer", post(commands::steer))
         .route("/api/public/pi/follow-up", post(commands::follow_up))
         .route("/api/public/pi/abort", post(commands::abort))
         .route("/api/public/pi/approve", post(commands::approve))
         .route("/api/public/pi/mcp", post(mcp::call))
-        .route("/api/public/pi/commands/{conversation_id}", get(api::commands))
+        .route(
+            "/api/public/pi/commands/{conversation_id}",
+            get(api::commands),
+        )
+        .route("/api/public/pi/conversations", get(conversations::list))
+        .route(
+            "/api/public/pi/conversations/{conversation_id}",
+            patch(conversations::rename).delete(conversations::remove),
+        )
+        .route(
+            "/api/public/pi/conversations/{conversation_id}/history",
+            get(conversations::history),
+        )
         .layer(Extension(registry))
         .layer(Extension(deps))
         .with_state(pool)

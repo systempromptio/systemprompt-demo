@@ -27,7 +27,6 @@ pub async fn count_existing_summaries(
     Ok(count.unwrap_or(0))
 }
 
-/// Count plugin sessions recorded for a user on a given date.
 pub async fn count_sessions_for_date(
     pool: &PgPool,
     user_id: &UserId,
@@ -43,7 +42,6 @@ pub async fn count_sessions_for_date(
     Ok(count.unwrap_or(0))
 }
 
-/// Insert the computed daily summary row, ignoring an existing one.
 pub async fn insert_daily_summary(
     pool: &PgPool,
     user_id: &UserId,

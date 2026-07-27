@@ -21,8 +21,6 @@ use tokio::process::{Child, Command};
 
 use super::config::{ChildLimits, PiConfig, SandboxMode};
 
-/// Files a fresh workspace starts with, so a read-only agent has something to
-/// read. Deliberately tiny and inert: no credentials, no repo.
 const SEED_README: &str = "\
 # Scratch workspace
 
@@ -36,23 +34,24 @@ credentials, and other sessions' workspaces are not reachable from here. Its
 outbound network is confined to the governed gateway's port.
 ";
 
-/// Everything a spawned child needs, resolved before the process exists.
+const SEED_README_TRANSCRIPT: &str = "
+## TRANSCRIPT.md
+
+This conversation is a continuation of an earlier one. `TRANSCRIPT.md` in this
+directory holds what was already said. Read it when the user refers to something
+you have no record of; you do not need it to answer an ordinary follow-up.
+";
+
+const TRANSCRIPT_FILE: &str = "TRANSCRIPT.md";
+
 pub(super) struct SpawnRequest<'a> {
     pub(super) conversation_id: &'a str,
-    /// The server-issued session the gateway attests. Provider spend and
-    /// governance rows key on it, which is what ties the two spines together.
     pub(super) attested_session: &'a str,
-    /// The PAT pi authenticates to `/v1/messages` with, minted for this
-    /// conversation's own user. It has to be the same identity the gateway
-    /// attests the session against — a credential for anyone else is rejected.
     pub(super) gateway_key: &'a str,
     pub(super) shim_source: &'a str,
-    /// The MCP-client extension, compiled in beside the governance shim.
     pub(super) mcp_client_source: &'a str,
-    /// The embed token the MCP-client extension authenticates its proxy calls
-    /// with. Scoped to this conversation's own user and checked against the
-    /// conversation on every call, so it is worth no more than the session.
     pub(super) mcp_token: &'a str,
+    pub(super) transcript: Option<&'a str>,
 }
 
 pub(super) struct Spawned {
@@ -60,37 +59,34 @@ pub(super) struct Spawned {
     pub(super) workspace: PathBuf,
 }
 
-/// Create the workspace tree and start `pi --mode rpc` inside it.
 pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Result<Spawned> {
     let workspace = cfg.workspace_root.join(req.conversation_id);
     let home = workspace.join("home");
     let shim_dir = workspace.join(".pi");
 
-    // A leftover directory from a crashed session must not be inherited: it
-    // could carry a previous conversation's files into this one.
     if tokio::fs::try_exists(&workspace).await.unwrap_or(false) {
         tokio::fs::remove_dir_all(&workspace).await?;
     }
     tokio::fs::create_dir_all(home.join(".pi").join("agent")).await?;
     tokio::fs::create_dir_all(&shim_dir).await?;
-    tokio::fs::write(workspace.join("README.md"), SEED_README).await?;
+    let readme = match req.transcript {
+        Some(transcript) => {
+            tokio::fs::write(workspace.join(TRANSCRIPT_FILE), transcript).await?;
+            format!("{SEED_README}{SEED_README_TRANSCRIPT}")
+        },
+        None => SEED_README.to_owned(),
+    };
+    tokio::fs::write(workspace.join("README.md"), readme).await?;
 
     let shim_path = shim_dir.join("governance-shim.ts");
     tokio::fs::write(&shim_path, req.shim_source).await?;
 
-    // The hub reaches the session as a second extension rather than as MCP
-    // configuration: pi ships no MCP client. Compiled in beside the shim for
-    // the same reason — a deployment must not be able to edit either one.
     let mcp_client_path = shim_dir.join("mcp-client.ts");
     tokio::fs::write(&mcp_client_path, req.mcp_client_source).await?;
 
     let skills_dir = super::skills::materialise(&workspace).await;
 
     write_models_json(cfg, req.gateway_key, &home).await?;
-    // quietStartup keeps pi's banner off a stream the widget parses.
-    // enableSkillCommands is what makes `/skill:<name>` resolve at all — without
-    // it the skills load but the slash form is inert, and a viewer typing the
-    // command gets it forwarded to the model as plain text.
     tokio::fs::write(
         home.join(".pi").join("agent").join("settings.json"),
         "{\"quietStartup\":true,\"enableSkillCommands\":true}",
@@ -101,8 +97,6 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
     cmd.current_dir(&workspace)
         .arg("--mode")
         .arg("rpc")
-        // Only our shim loads. Without this, any extension on the host — or in
-        // a discovered project directory — would join the session.
         .arg("--no-extensions")
         .arg("-e")
         .arg(&shim_path)
@@ -112,15 +106,10 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
         .arg(&cfg.provider)
         .arg("--model")
         .arg(&cfg.model)
-        // pi enforces this itself, so a tool outside the set cannot run even if
-        // the governance gate were bypassed.
         .arg("--tools")
         .arg(cfg.tools.join(","))
         .arg("--no-session")
         .arg("--no-context-files")
-        // Discovery stays off; `--skill` is additive even alongside it, so the
-        // session gets exactly the skills written into its own workspace and
-        // nothing from the host or a project tree.
         .arg("--no-skills")
         .arg("--no-prompt-templates")
         .stdin(Stdio::piped())
@@ -132,8 +121,14 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
         cmd.arg("--skill").arg(dir);
     }
 
-    // Nothing is inherited: the server's environment holds provider keys and
-    // database URLs that a read tool would otherwise reach via /proc/self/environ.
+    // Why: `--system-prompt` would replace pi's own, whose tool-use half the
+    // RPC plumbing and approval flow depend on.
+    if !cfg.persona.trim().is_empty() {
+        cmd.arg("--append-system-prompt").arg(&cfg.persona);
+    }
+
+    // Why: the server's environment holds provider keys and database URLs a
+    // read tool would otherwise reach through /proc/self/environ.
     cmd.env_clear()
         .env("HOME", &home)
         .env("PATH", &cfg.child_path)
@@ -141,32 +136,16 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
         .env("SYSTEMPROMPT_PI_SESSION", req.attested_session)
         .env("SP_PI_CONVERSATION", req.conversation_id)
         .env("SP_PI_MCP_TOKEN", req.mcp_token)
-        // pi phones home for model catalogs on startup otherwise, which a
-        // network-restricted deployment would hang on.
         .env("PI_OFFLINE", "1")
-        // pi transpiles its TypeScript extensions through jiti, which caches
-        // the output to `/tmp/jiti/`. The Landlock ruleset grants write access
-        // to the session workspace and nothing else, so that open() is denied
-        // and *every* extension fails to load — including the governance shim,
-        // which takes the whole session down. jiti ignores JITI_CACHE as a
-        // path here (pi sets its own), so the cache is turned off outright.
-        // The cost is re-transpiling two small files per session; the
-        // alternative is granting a shared, writable, predictably-named
-        // directory to every jailed child, which is a worse trade.
+        // Why: jiti caches transpiled extensions to /tmp/jiti/, which Landlock
+        // denies; the failed open() takes down every extension including the
+        // governance shim, and jiti ignores JITI_CACHE as a path here.
         .env("JITI_CACHE", "false");
 
     let child = cmd.spawn()?;
     Ok(Spawned { child, workspace })
 }
 
-/// Build the child's argv: `sh` for the ulimits, `sp-pi-jail` for the Landlock
-/// ruleset, then pi.
-///
-/// When `sandbox` is `required` — the default — a missing jail binary is
-/// an error rather than a degraded spawn. There is no fallback path to an
-/// unsandboxed child, because a boundary with a fallback is not a boundary:
-/// this one was already, silently, doing nothing, masked by a credit guard
-/// that would have evaporated the day trial credit was auto-granted.
 fn limited_command(cfg: &PiConfig, workspace: &Path) -> std::io::Result<Command> {
     let mut argv: Vec<String> = Vec::new();
     if cfg.sandbox == SandboxMode::Required {
@@ -188,26 +167,11 @@ fn limited_command(cfg: &PiConfig, workspace: &Path) -> std::io::Result<Command>
     Ok(ulimit_command(cfg.limits, argv))
 }
 
-/// Rewrite the command so the child starts under `ulimit` ceilings.
-///
-/// The obvious implementation is `pre_exec` with `setrlimit`, but that needs
-/// `unsafe`, and this workspace denies `unsafe_code` outright with no existing
-/// exemption. A one-line `sh` preamble reaches the same syscall and keeps that
-/// property, at the cost of one `execve`.
-///
-/// `exec` matters: `sh` replaces itself with pi, so there is still exactly one
-/// process, the handle still refers to pi, and `kill_on_drop` still reaps the
-/// thing that matters. No argument is ever interpolated into the script text —
-/// the binary and its argv arrive positionally through `"$@"` — so this adds no
-/// quoting surface.
-///
-/// Failing to raise a limit is not fatal: it means the host's hard limit is
-/// already below what we asked for, which is stricter than we wanted.
+// Why: `setrlimit` via `pre_exec` needs `unsafe`, which this workspace denies.
+// `sh` must `exec` so the handle still refers to pi and `kill_on_drop` reaps
+// it.
 fn ulimit_command(limits: ChildLimits, argv: Vec<String>) -> Command {
     let mut script = String::new();
-    // dash has no `ulimit -u`, and dash is `/bin/sh` on Debian. Rather than
-    // emit a limit that silently does nothing, ask for a shell that supports
-    // it and say so plainly when there isn't one.
     let mut shell = "/bin/sh";
     if limits.nproc > 0 {
         if Path::new("/bin/bash").exists() {
@@ -221,7 +185,7 @@ fn ulimit_command(limits: ChildLimits, argv: Vec<String>) -> Command {
         }
     }
     if limits.fsize > 0 {
-        // ulimit counts 1KiB blocks; the config is in bytes.
+        // Why: ulimit counts 1KiB blocks; the config is in bytes.
         script.push_str(&format!("ulimit -f {} 2>/dev/null;", limits.fsize / 1024));
     }
     if limits.address_space > 0 {
@@ -231,8 +195,6 @@ fn ulimit_command(limits: ChildLimits, argv: Vec<String>) -> Command {
         ));
     }
     if script.is_empty() {
-        // No ceilings to set, so drop the shell layer entirely and run the
-        // argv directly. `limited_command` never builds an empty one.
         let mut parts = argv.into_iter();
         let mut cmd = Command::new(parts.next().unwrap_or_default());
         cmd.args(parts);
@@ -241,16 +203,11 @@ fn ulimit_command(limits: ChildLimits, argv: Vec<String>) -> Command {
     script.push_str(" exec \"$@\"");
 
     let mut cmd = Command::new(shell);
-    // The second `sh` is the child's $0; the real argv starts after it.
+    // Why: the second `sh` is the child's $0; the real argv starts after it.
     cmd.arg("-c").arg(script).arg("sh").args(&argv);
     cmd
 }
 
-/// Point pi at this deployment's Anthropic-compatible gateway.
-///
-/// Written per session under the session's own `HOME`, so one conversation
-/// cannot read or rewrite another's provider config — which matters more now
-/// that the credential in it belongs to one user rather than the deployment.
 async fn write_models_json(cfg: &PiConfig, gateway_key: &str, home: &Path) -> std::io::Result<()> {
     let models = serde_json::json!({
         "providers": {
@@ -278,8 +235,6 @@ async fn write_models_json(cfg: &PiConfig, gateway_key: &str, home: &Path) -> st
     restrict(&path).await
 }
 
-/// Owner-only, because the file holds the gateway credential and the agent
-/// running beside it has a `read` tool.
 #[cfg(unix)]
 async fn restrict(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt as _;
@@ -291,8 +246,6 @@ async fn restrict(_path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-/// Remove a finished session's workspace. Best-effort: a failure here is worth
-/// a warning but must not keep a dead session in the registry.
 pub(super) async fn cleanup(workspace: &Path) {
     if let Err(e) = tokio::fs::remove_dir_all(workspace).await
         && e.kind() != std::io::ErrorKind::NotFound

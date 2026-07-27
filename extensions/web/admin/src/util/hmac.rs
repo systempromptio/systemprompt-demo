@@ -8,12 +8,10 @@ use sha2::{Digest, Sha256};
 
 const BLOCK: usize = 64;
 
-/// Hex-encoded HMAC-SHA256 of `payload` under `secret`.
 #[must_use]
 pub fn hex(secret: &[u8], payload: &str) -> String {
     let mut key = [0u8; BLOCK];
     if secret.len() > BLOCK {
-        // A key longer than the block size is hashed first, per RFC 2104.
         let mut h = Sha256::new();
         h.update(secret);
         key[..32].copy_from_slice(&h.finalize());

@@ -53,7 +53,6 @@ const PILLARS: &[PillarMeta] = &[
     },
 ];
 
-/// Errors raised while scanning the `demo/` tree for the homepage showcase.
 #[derive(Debug, Error)]
 pub enum DemoScanError {
     #[error("demo root not found: {0}")]

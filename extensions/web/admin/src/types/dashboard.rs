@@ -8,9 +8,9 @@ use systemprompt::identifiers::{Email, PluginId, SessionId, UserId};
 use super::super::activity;
 
 pub use super::dashboard_enterprise::{
-    DepartmentActivity, DepartmentQuery, DepartmentScore, EventTypeBreakdown,
-    GovernanceEvent, IncidentGroup, McpAccessEvent, McpAccessSummary,
-    ModelUsage, ProjectActivity, TokenUsageRow, WindowedCounts,
+    DepartmentActivity, DepartmentQuery, DepartmentScore, EventTypeBreakdown, GovernanceEvent,
+    IncidentGroup, McpAccessEvent, McpAccessSummary, ModelUsage, ProjectActivity, TokenUsageRow,
+    WindowedCounts,
 };
 pub use super::traffic::{
     ContentPerformanceRow, RealtimePulse, RecentMcpError, TopPageDailyBucket, TrafficCountryBucket,
@@ -56,7 +56,7 @@ pub struct TopUser {
     pub last_active: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct SkillCount {
     pub tool_name: String,
     pub count: i64,
@@ -78,7 +78,7 @@ pub struct ActivityStats {
     pub total_logins: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ToolSuccessRate {
     pub tool_name: String,
     pub total: i64,

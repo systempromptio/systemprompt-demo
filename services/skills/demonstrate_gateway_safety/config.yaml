@@ -1,0 +1,11 @@
+id: demonstrate_gateway_safety
+name: Demonstrate Gateway Safety
+description: "Show the inference-path scanner refusing a request before it reaches a provider - a different layer from the tool-input scan - then read the finding back out"
+enabled: true
+file: SKILL.md
+tags:
+  - governance
+  - security
+  - gateway
+  - mcp
+category: governance

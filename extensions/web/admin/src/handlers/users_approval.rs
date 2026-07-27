@@ -18,11 +18,6 @@ use crate::error::{AdminError, AdminResult};
 use crate::repositories;
 use crate::types::UserContext;
 
-/// Approve an account that is waiting on review.
-///
-/// This is the only path that grants the signup credit: `account_approved` is
-/// idempotent on both the grant and the welcome email, so a double-click costs
-/// nothing.
 pub(crate) async fn approve_user_handler(
     State(pool): State<Arc<PgPool>>,
     Extension(user_ctx): Extension<UserContext>,
@@ -68,21 +63,13 @@ pub(crate) async fn approve_user_handler(
     Ok(Json(serde_json::json!({ "ok": true, "user_id": user_id })).into_response())
 }
 
-/// Body of `POST /users/{user_id}/credit`.
 #[derive(serde::Deserialize)]
 pub(crate) struct GrantCreditRequest {
-    /// Amount in US dollars.
     usd: f64,
-    /// Ledger reason. Must be unique per user — that uniqueness is what makes
-    /// grants idempotent. Defaults to a timestamped `manual-…`.
     #[serde(default)]
     reason: Option<String>,
 }
 
-/// Grant credit to a user.
-///
-/// Reports `granted: false` when the reason has already been used rather than
-/// reporting success for a write that did not happen.
 pub(crate) async fn grant_credit_handler(
     State(pool): State<Arc<PgPool>>,
     Extension(user_ctx): Extension<UserContext>,
@@ -99,20 +86,22 @@ pub(crate) async fn grant_credit_handler(
         ));
     }
 
-    let microdollars = (body.usd * systemprompt_credits_extension::MICRODOLLARS_PER_USD as f64)
-        .round() as i64;
+    let microdollars =
+        (body.usd * systemprompt_credits_extension::MICRODOLLARS_PER_USD as f64).round() as i64;
     let reason = body
         .reason
         .map(|r| r.trim().to_owned())
         .filter(|r| !r.is_empty())
-        .unwrap_or_else(|| {
-            format!("manual-{}", chrono::Utc::now().format("%Y%m%dT%H%M%SZ"))
-        });
+        .unwrap_or_else(|| format!("manual-{}", chrono::Utc::now().format("%Y%m%dT%H%M%SZ")));
 
-    let granted =
-        systemprompt_credits_extension::grant_credit(&pool, user_id.as_str(), microdollars, &reason)
-            .await
-            .map_err(AdminError::internal)?;
+    let granted = systemprompt_credits_extension::grant_credit(
+        &pool,
+        user_id.as_str(),
+        microdollars,
+        &reason,
+    )
+    .await
+    .map_err(AdminError::internal)?;
     let balance = systemprompt_credits_extension::get_balance(&pool, user_id.as_str())
         .await
         .map_err(AdminError::internal)?;

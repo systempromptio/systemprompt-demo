@@ -8,8 +8,6 @@ use serde::Serialize;
 use systemprompt::extension::prelude::*;
 use systemprompt::models::WebConfig;
 
-/// Template context for the prerendered resources page (`resources.html`): the
-/// site-wide web config under `site.*`, consumed for branding and meta tags.
 #[derive(Debug, Serialize)]
 struct ResourcesContext<'a> {
     site: &'a WebConfig,

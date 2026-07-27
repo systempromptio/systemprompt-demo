@@ -2,15 +2,22 @@
 //!
 //! The admin site has rich views over these tables, but they live in a
 //! different crate and are reached over an authenticated web session. A client
-//! connected to this hub has neither, so `governance_stats` asks the same three
+//! connected to this hub has neither, so the hub's read tools ask the same
 //! tables directly:
 //!
 //! * `governance_decisions` — what was asked for, and whether policy allowed it
 //! * `ai_requests` — what reached a provider, and what it cost
 //! * `user_activity` — which tool calls actually ran
+//! * `ai_safety_findings` — what the gateway's scanners caught before a
+//!   provider was reached, which nothing else in this deployment can read
 //!
-//! Every query is scoped by **both** `user_id` and `session_id`, and the two do
-//! different jobs. `user_id` is the security boundary: the tool takes no
+//! Two functions at the bottom break the scoping rule below, each on purpose
+//! and each documented at its definition: `list_safety_findings` reaches its
+//! `user_id` through a join rather than a column, and `list_all_decisions` is
+//! deliberately unscoped because it backs an admin-only tool.
+//!
+//! Every other query is scoped by **both** `user_id` and `session_id`, and the
+//! two do different jobs. `user_id` is the security boundary: the tool takes no
 //! arguments, so there is no selector a caller could widen to read somebody
 //! else's rows. `session_id` is the honesty boundary: the tool is presented as
 //! a readout of *this* session, and scoping by user alone made it a lifetime
@@ -25,12 +32,8 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::{SessionId, UserId};
 
-/// How many recent decisions the tool returns. A demo session produces a
-/// handful; a long-lived account produces thousands, and a tool result is read
-/// by a model with a context window.
 pub(crate) const DECISION_LIMIT: i64 = 40;
 
-/// One policy's tally over the caller's history.
 #[derive(Debug)]
 pub(crate) struct PolicyTally {
     pub(crate) policy: String,
@@ -38,7 +41,6 @@ pub(crate) struct PolicyTally {
     pub(crate) denied: i64,
 }
 
-/// One decision, newest first.
 #[derive(Debug)]
 pub(crate) struct DecisionRow {
     pub(crate) at: chrono::DateTime<chrono::Utc>,
@@ -48,24 +50,40 @@ pub(crate) struct DecisionRow {
     pub(crate) reason: String,
 }
 
-/// Provider spend for the caller.
 #[derive(Debug)]
 pub(crate) struct SpendRow {
     pub(crate) requests: i64,
     pub(crate) input_tokens: i64,
     pub(crate) output_tokens: i64,
     pub(crate) cost_microdollars: i64,
-    /// Mean latency in milliseconds, absent when no request has completed.
     pub(crate) mean_latency_ms: Option<f64>,
-    /// Newest model actually reached.
     pub(crate) model: Option<String>,
 }
 
-/// One tool that ran to completion, with how often.
 #[derive(Debug)]
 pub(crate) struct ToolFireRow {
     pub(crate) tool_name: String,
     pub(crate) fires: i64,
+}
+
+#[derive(Debug)]
+pub(crate) struct SafetyFindingRow {
+    pub(crate) at: chrono::DateTime<chrono::Utc>,
+    pub(crate) phase: String,
+    pub(crate) severity: String,
+    pub(crate) category: String,
+    pub(crate) scanner: String,
+    pub(crate) excerpt: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct GlobalDecisionRow {
+    pub(crate) at: chrono::DateTime<chrono::Utc>,
+    pub(crate) user_id: String,
+    pub(crate) session_id: String,
+    pub(crate) tool_name: String,
+    pub(crate) decision: String,
+    pub(crate) policy: String,
 }
 
 pub(crate) async fn list_policy_tallies(
@@ -113,9 +131,6 @@ pub(crate) async fn list_recent_decisions(
     .await
 }
 
-/// Spend is always one row: the aggregate collapses an empty history to zeros
-/// rather than to no row, so the caller never has to distinguish "no requests"
-/// from "query returned nothing".
 pub(crate) async fn get_spend(
     pool: &PgPool,
     user_id: &UserId,
@@ -140,12 +155,6 @@ pub(crate) async fn get_spend(
     .await
 }
 
-/// Tool calls that actually executed, from `user_activity`.
-///
-/// `record_mcp_access` stamps the session into `metadata` rather than a column:
-/// `user_activity` is core-owned, and an index is a safer thing for this repo to
-/// add to it than a column. Rows written before that stamp existed have no
-/// `session_id` and correctly fall outside every session's scope.
 pub(crate) async fn list_tool_fires(
     pool: &PgPool,
     user_id: &UserId,
@@ -166,6 +175,48 @@ pub(crate) async fn list_tool_fires(
            LIMIT $3"#,
         user_id.as_str(),
         session_id.as_str(),
+        limit,
+    )
+    .fetch_all(pool)
+    .await
+}
+
+pub(crate) async fn list_safety_findings(
+    pool: &PgPool,
+    user_id: &UserId,
+    limit: i64,
+) -> Result<Vec<SafetyFindingRow>, sqlx::Error> {
+    sqlx::query_as!(
+        SafetyFindingRow,
+        r#"SELECT f.created_at as "at!", f.phase as "phase!",
+                  f.severity as "severity!", f.category as "category!",
+                  f.scanner as "scanner!",
+                  COALESCE(f.excerpt, '') as "excerpt!"
+           FROM ai_safety_findings f
+           JOIN ai_requests r ON r.id = f.ai_request_id
+           WHERE r.user_id = $1
+           ORDER BY f.created_at DESC
+           LIMIT $2"#,
+        user_id.as_str(),
+        limit,
+    )
+    .fetch_all(pool)
+    .await
+}
+
+pub(crate) async fn list_all_decisions(
+    pool: &PgPool,
+    limit: i64,
+) -> Result<Vec<GlobalDecisionRow>, sqlx::Error> {
+    sqlx::query_as!(
+        GlobalDecisionRow,
+        r#"SELECT created_at as "at!", COALESCE(user_id, '') as "user_id!",
+                  COALESCE(session_id, '') as "session_id!",
+                  tool_name as "tool_name!", decision as "decision!",
+                  COALESCE(NULLIF(policy, ''), 'default_included') as "policy!"
+           FROM governance_decisions
+           ORDER BY created_at DESC
+           LIMIT $1"#,
         limit,
     )
     .fetch_all(pool)

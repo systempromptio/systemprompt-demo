@@ -10,12 +10,6 @@ use std::path::PathBuf;
 use systemprompt::config::ProfileBootstrap;
 use systemprompt::models::AppPaths;
 
-/// `services/config/pi.yaml` under the active profile.
-///
-/// The profile is loaded once at startup, so a failure here means the process
-/// has no profile at all — a condition the server would already have failed
-/// on. Falling back to the repo-relative path keeps a `cargo test` run that
-/// never bootstrapped a profile working.
 pub(super) fn config_path() -> PathBuf {
     ProfileBootstrap::get()
         .map_err(|e| e.to_string())
@@ -26,11 +20,6 @@ pub(super) fn config_path() -> PathBuf {
         )
 }
 
-/// The origin sessions call back on, taken from the profile so it follows the
-/// deployment rather than being restated per environment.
-///
-/// A process with no profile cannot serve the terminal anyway — this keeps
-/// `validate` total so the default config is always constructible.
 pub(super) fn profile_base_url() -> String {
     ProfileBootstrap::get().map_or_else(
         |e| {
@@ -41,9 +30,6 @@ pub(super) fn profile_base_url() -> String {
     )
 }
 
-/// `sp-pi-jail` beside our own executable. A failure to resolve `current_exe`
-/// leaves a bare name, which `SpawnError` will report as a missing binary —
-/// still fail-closed, and with a legible reason.
 pub(super) fn default_jail_binary() -> PathBuf {
     std::env::current_exe()
         .ok()

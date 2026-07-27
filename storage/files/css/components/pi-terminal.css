@@ -141,6 +141,7 @@
   width: 18px;
   height: 18px;
   flex: none;
+  fill: var(--sp-color-primary);
 }
 
 .pi-brand-name {

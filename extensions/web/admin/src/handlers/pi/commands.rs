@@ -17,7 +17,7 @@ use sqlx::PgPool;
 use super::auth::{authorize_session, problem, unauthorized};
 use super::registry::PiRegistry;
 use super::session::{self, Verdict};
-use super::rpc;
+use super::{events, rpc};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct PromptBody {
@@ -37,8 +37,6 @@ pub(super) struct ApproveBody {
     token: String,
     conversation_id: String,
     approval_id: String,
-    /// `"allow"` or anything else, which denies. Defaulting an unrecognised
-    /// value to deny keeps a typo from becoming an approval.
     decision: String,
 }
 
@@ -46,32 +44,29 @@ pub(super) async fn prompt(
     State(pool): State<Arc<PgPool>>,
     Extension(registry): Extension<PiRegistry>,
     Json(body): Json<PromptBody>,
-) -> Response { // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
+) -> Response {
+    // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
     say(&pool, &registry, body, Utterance::Prompt).await
 }
 
-/// Redirect the turn that is already running.
 pub(super) async fn steer(
     State(pool): State<Arc<PgPool>>,
     Extension(registry): Extension<PiRegistry>,
     Json(body): Json<PromptBody>,
-) -> Response { // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
+) -> Response {
+    // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
     say(&pool, &registry, body, Utterance::Steer).await
 }
 
-/// Queue a message for after the current turn finishes.
 pub(super) async fn follow_up(
     State(pool): State<Arc<PgPool>>,
     Extension(registry): Extension<PiRegistry>,
     Json(body): Json<PromptBody>,
-) -> Response { // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
+) -> Response {
+    // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
     say(&pool, &registry, body, Utterance::FollowUp).await
 }
 
-/// Which message-carrying command a route sends.
-///
-/// An enum chosen by the route rather than a string taken from the request: see
-/// the module docs for why that distinction is load-bearing.
 #[derive(Debug, Clone, Copy)]
 enum Utterance {
     Prompt,
@@ -87,9 +82,16 @@ impl Utterance {
             Self::FollowUp => rpc::RpcCommand::FollowUp { message },
         }
     }
+
+    const fn label(self) -> &'static str {
+        match self {
+            Self::Prompt => "prompt",
+            Self::Steer => "steer",
+            Self::FollowUp => "follow_up",
+        }
+    }
 }
 
-/// The shared path for every message-carrying command.
 async fn say(
     pool: &Arc<PgPool>,
     registry: &PiRegistry,
@@ -102,6 +104,10 @@ async fn say(
         return unauthorized();
     };
     session.touch();
+    session.emit(events::PiEventBody::UserMessage {
+        text: body.message.clone(),
+        via: utterance.label(),
+    });
     send(&session, utterance.command(body.message)).await
 }
 
@@ -140,8 +146,6 @@ pub(super) async fn approve(
     if session.resolve_approval(&body.approval_id, verdict) {
         StatusCode::NO_CONTENT.into_response()
     } else {
-        // Already answered, timed out, or never existed. The widget shows
-        // "expired" rather than pretending the click landed.
         problem(StatusCode::CONFLICT, "approval is no longer pending")
     }
 }

@@ -27,9 +27,9 @@ pub async fn find_share_token_version(
 ///
 /// `user_profile_ext` is written lazily — a user who has never been assigned a
 /// department or shared a manifest has no row at all. Reading through
-/// [`find_share_token_version`] would then report `None` and be indistinguishable
-/// from "no such user", which for the pi embed token would mean a freshly
-/// registered account could never be issued one.
+/// [`find_share_token_version`] would then report `None` and be
+/// indistinguishable from "no such user", which for the pi embed token would
+/// mean a freshly registered account could never be issued one.
 ///
 /// `None` here means no such user, never "no profile yet", so the caller's 404
 /// still means what it says. Idempotent: an existing row keeps its version, so

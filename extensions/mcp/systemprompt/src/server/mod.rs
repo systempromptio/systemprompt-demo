@@ -33,8 +33,6 @@ use tool::{authenticate_tool_request, dispatch_tool};
 
 const ARTIFACT_VIEWER_TEMPLATE: &str = include_str!("../../templates/artifact-viewer.html");
 
-/// URI prefix under which each documentation topic is exposed as an MCP
-/// `text/markdown` resource: `systemprompt://docs/<topic-id>`.
 const DOCS_URI_PREFIX: &str = "systemprompt://docs/";
 
 #[derive(Clone, Debug)]

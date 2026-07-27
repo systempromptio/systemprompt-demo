@@ -74,6 +74,17 @@ jobs:
         run: bash scripts/check-comments.sh
       - name: "No unlisted inline comments (// Why: and // JSON: only)"
         run: bash scripts/lint-inline-comments.sh
+      - name: Every pub type name is defined once
+        run: bash scripts/check-duplicate-types.sh
+      - name: Repository names match their return types
+        run: bash scripts/check-repository-naming.sh
+      - name: Every crate using query! macros has an offline cache
+        run: bash scripts/check-sqlx-cache.sh
+      # Skips cleanly without SIBLING_REPO, which this job does not set. Kept
+      # here so the CI set matches `just lint-gates` exactly; it becomes a real
+      # gate the moment a workflow supplies the sibling checkout.
+      - name: Shared sources that differ from the fork are recorded
+        run: bash scripts/check-fork-drift.sh
       # Downstream forks share these files but not their callers; a symbol is
       # only reported when it is dead here AND in the fork.
       - name: No dead repository code
@@ -161,4 +172,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-machete
-      - run: cargo machete
+      # Not a bare `cargo machete`: the root workspace excludes `tests` and
+      # `bridge`, so the script enters each workspace in turn. Same script as
+      # `just machete`.
+      - run: bash scripts/machete.sh

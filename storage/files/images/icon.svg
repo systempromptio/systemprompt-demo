@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="6" fill="#f79938"/>
-  <path d="M14 10 L8 16 L14 22" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M24 10 L18 22" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<!-- The systemprompt.io mark: the `/` and `<` glyphs lifted verbatim from
+     logo.svg, in the wordmark's own coordinate space so the two cannot drift. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="167 461 78.5 78">
+  <path fill="#fb9b34" d="M 234.109375 461.253906 L 218.292969 516.605469 L 211.96875 538.746094 L 223.039063 538.746094 L 238.859375 483.394531 L 245.179688 461.253906"/>
+  <path fill="#fb9b34" d="M 192.523438 474.636719 L 207.539063 474.636719 L 182.179688 500 L 207.539063 525.359375 L 192.523438 525.359375 L 167.15625 500.007813"/>
 </svg>

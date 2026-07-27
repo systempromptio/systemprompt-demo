@@ -22,21 +22,12 @@ use std::path::{Path, PathBuf};
 use systemprompt::config::ProfileBootstrap;
 use systemprompt::models::AppPaths;
 
-/// One entry in the `/` palette the widget renders.
 #[derive(Debug, serde::Serialize)]
 pub(super) struct SkillCommand {
-    /// What a viewer types, including the `/skill:` prefix pi expects.
     pub(super) command: String,
     pub(super) description: String,
 }
 
-/// The skills a session will have, for the widget's slash-command palette.
-///
-/// Read from the same source [`materialise`] writes from, rather than asking
-/// the child. pi does expose a `get_commands` RPC, but answering it here would
-/// mean correlating a response frame back to a waiting HTTP request — a
-/// mechanism the pump does not have and would exist solely for a dropdown.
-/// The server already knows what it wrote.
 pub(super) async fn catalogue() -> Vec<SkillCommand> {
     read_all(&skills_dir())
         .await
@@ -48,23 +39,12 @@ pub(super) async fn catalogue() -> Vec<SkillCommand> {
         .collect()
 }
 
-/// A skill as the two files on disk describe it.
 struct Skill {
-    /// Directory name and frontmatter `name`. pi validates this against
-    /// `a-z0-9-` and rejects anything else, so the underscored config id is
-    /// converted rather than passed through.
     slug: String,
     description: String,
     body: String,
 }
 
-/// Write every enabled skill under `<workspace>/.pi/skills/` and return that
-/// directory, or `None` when there is nothing to write.
-///
-/// Best-effort by design: a session with no skills is a working session, and
-/// failing the spawn because one `config.yaml` is malformed would take the
-/// terminal down for a content mistake. Every skipped skill is logged, because
-/// a silently missing skill looks to a viewer like the feature not existing.
 pub(super) async fn materialise(workspace: &Path) -> Option<PathBuf> {
     let source = skills_dir();
     let skills = read_all(&source).await;
@@ -92,9 +72,6 @@ pub(super) async fn materialise(workspace: &Path) -> Option<PathBuf> {
 
 async fn write_one(dir: &Path, skill: &Skill) -> std::io::Result<()> {
     tokio::fs::create_dir_all(dir).await?;
-    // A description is the one required field pi will not infer: a skill
-    // missing one is dropped silently, which is the failure mode this whole
-    // function exists to avoid.
     let front = format!(
         "---\nname: \"{}\"\ndescription: \"{}\"\n---\n\n",
         skill.slug,
@@ -120,11 +97,6 @@ async fn read_all(source: &Path) -> Vec<Skill> {
     skills
 }
 
-/// Read one `services/skills/<id>/` directory.
-///
-/// `Ok(None)` is "not a skill directory" — anything without a `config.yaml`,
-/// including a stray file. `Err` is a directory that looks like a skill and is
-/// not usable, which is worth a log line.
 async fn read_one(dir: &Path) -> Result<Option<Skill>, String> {
     let config = dir.join("config.yaml");
     if !tokio::fs::try_exists(&config).await.unwrap_or(false) {
@@ -165,13 +137,10 @@ pub fn scalar(raw: &str, key: &str) -> Option<String> {
         .filter(|value| !value.is_empty())
 }
 
-/// Make a description safe inside a double-quoted YAML scalar.
 pub fn escape(value: &str) -> String {
     value.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-/// `services/skills/` under the active profile, matching how
-/// [`super::config`] resolves `services/config/pi.yaml`.
 fn skills_dir() -> PathBuf {
     ProfileBootstrap::get()
         .map_err(|e| e.to_string())

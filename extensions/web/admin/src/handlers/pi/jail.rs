@@ -13,18 +13,8 @@ use std::path::{Path, PathBuf};
 
 use super::config::PiConfig;
 
-/// Assemble `sp-pi-jail --workspace … --allow-read … -- <pi> …`.
-///
-/// The trailing `--` and pi's own path are included, so whatever the caller
-/// appends lands as pi's arguments rather than as flags the jail would reject.
-/// The child's outbound TCP is confined to the gateway's port,
-/// which on a 6.7+ kernel is the only port it may reach — though Landlock is
-/// port-based, so that port is permitted on any host, not just loopback.
 pub(super) fn wrap_args(cfg: &PiConfig, workspace: &Path) -> Vec<String> {
-    let mut args = vec![
-        "--workspace".to_owned(),
-        workspace.display().to_string(),
-    ];
+    let mut args = vec!["--workspace".to_owned(), workspace.display().to_string()];
     for path in cfg
         .jail_read_paths
         .iter()
@@ -43,12 +33,6 @@ pub(super) fn wrap_args(cfg: &PiConfig, workspace: &Path) -> Vec<String> {
     args
 }
 
-/// Where pi actually lives: the directory holding the `pi` entry point (which
-/// is also node's, since the shebang is `#!/usr/bin/env node`) and the package
-/// root the entry point symlinks into.
-///
-/// Derived rather than configured so an nvm upgrade — which moves both paths —
-/// does not silently produce a jail that cannot start pi.
 fn pi_read_paths(binary: &str, child_path: &str) -> Vec<PathBuf> {
     let Some(entry) = locate(binary, child_path) else {
         return Vec::new();
@@ -57,9 +41,6 @@ fn pi_read_paths(binary: &str, child_path: &str) -> Vec<PathBuf> {
     if let Some(bin_dir) = entry.parent() {
         paths.push(bin_dir.to_path_buf());
     }
-    // `bin/pi` is a symlink into `lib/node_modules/@…/dist/cli.js`; the grant
-    // has to cover the package, not one file, because it loads its own
-    // `node_modules` at runtime.
     if let Ok(real) = std::fs::canonicalize(&entry)
         && let Some(root) = package_root(&real)
     {
@@ -68,8 +49,6 @@ fn pi_read_paths(binary: &str, child_path: &str) -> Vec<PathBuf> {
     paths
 }
 
-/// Resolve a possibly-bare binary name the way `execve` will: verbatim when it
-/// contains a separator, otherwise against the child's own `PATH`.
 fn locate(binary: &str, child_path: &str) -> Option<PathBuf> {
     if binary.contains('/') {
         let path = PathBuf::from(binary);
@@ -82,9 +61,6 @@ fn locate(binary: &str, child_path: &str) -> Option<PathBuf> {
         .find(|candidate| candidate.exists())
 }
 
-/// Walk up from the resolved entry point to the nearest directory holding a
-/// `package.json`. Falls back to the file's own directory, which grants less
-/// than the package and so fails visibly rather than silently over-granting.
 fn package_root(real: &Path) -> Option<PathBuf> {
     real.ancestors()
         .skip(1)
@@ -99,8 +75,6 @@ pub fn gateway_port(base_url: &str) -> Option<u16> {
     let (scheme, rest) = base_url.split_once("://")?;
     let authority = rest.split(['/', '?', '#']).next().unwrap_or(rest);
     let host_port = authority.rsplit_once('@').map_or(authority, |(_, hp)| hp);
-    // An IPv6 literal is full of colons, so its port is whatever follows the
-    // closing bracket — splitting on the last colon would read address digits.
     let explicit = host_port.rfind(']').map_or_else(
         || host_port.rsplit_once(':').map(|(_, port)| port),
         |close| host_port[close + 1..].strip_prefix(':'),

@@ -47,10 +47,10 @@ use sqlx::PgPool;
 use systemprompt::identifiers::SessionId;
 use systemprompt_security::policy::types::AccessScope;
 
-use crate::handlers::webhook::governance::inproc::{self, GovernedCall};
 use super::auth::{authorize_session, problem, unauthorized};
 use super::gate::PiDeps;
 use super::registry::PiRegistry;
+use crate::handlers::webhook::governance::inproc::{self, GovernedCall};
 use render::McpCallResult;
 
 /// Tools the proxy will forward.
@@ -64,26 +64,21 @@ pub const FORWARDABLE: &[&str] = &[
     "get_topic",
     "search_docs",
     "governance_stats",
+    "safety_findings",
+    "admin_audit_dump",
     "fetch_remote_docs",
 ];
 
-/// The MCP protocol revision the hub was built against.
 const PROTOCOL_VERSION: &str = "2024-11-05";
 
-/// What the hub records as the calling agent. The widget is one agent as far as
-/// the audit spine is concerned, distinct from the configured A2A agents.
 const AGENT_NAME: &str = "pi-widget";
 
-/// Lifetime of the token minted per call. One hour is the floor `generate_jwt`
-/// works in, and the token never leaves this process — it is created, used for
-/// three loopback requests, and dropped.
 const TOKEN_TTL_HOURS: i64 = 1;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct McpCallBody {
     token: String,
     conversation_id: String,
-    /// Hub tool name, checked against [`FORWARDABLE`].
     tool: String,
     #[serde(default)]
     arguments: serde_json::Value,
@@ -107,8 +102,6 @@ pub(super) async fn call(
         return problem(StatusCode::BAD_REQUEST, "unknown tool");
     }
 
-    // The governed name is the MCP name, so a verdict here is the same verdict
-    // the shim would produce for the same call, and lands one audit row shape.
     let tool_name = format!("mcp__systemprompt__{}", body.tool);
     let agent_session = SessionId::new(session.conversation_id.clone());
     let verdict = inproc::govern_call(
@@ -120,9 +113,6 @@ pub(super) async fn call(
             user_id: &session.user_id,
             agent_session: &agent_session,
             tool_input: Some(&body.arguments),
-            // Sandboxed demo surface: hold every caller at user scope so an
-            // admin does not silently skip `tool_blocklist` and reach the
-            // network through a tool the deployment blocks. See `pi/gate/mod.rs`.
             scope_ceiling: AccessScope::User,
         },
     )
@@ -137,9 +127,6 @@ pub(super) async fn call(
             reason: reason.clone(),
             policy: verdict.policy.clone(),
         });
-        // 200 with the refusal as the tool's own text, not an HTTP error: this
-        // is an answer the model must read and explain, and a 403 would reach
-        // it as "the tool broke" with the reason discarded.
         return Json(McpCallResult {
             text: reason,
             ok: false,
@@ -157,7 +144,10 @@ pub(super) async fn call(
                 error = %e,
                 "pi MCP proxy call failed"
             );
-            problem(StatusCode::BAD_GATEWAY, "the documentation hub is unreachable")
+            problem(
+                StatusCode::BAD_GATEWAY,
+                "the documentation hub is unreachable",
+            )
         },
     }
 }

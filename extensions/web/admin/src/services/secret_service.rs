@@ -23,13 +23,12 @@ pub(crate) async fn resolve_secrets(
     plugin_id: &PluginId,
     raw_token: &str,
 ) -> AdminResult<HashMap<String, String>> {
-    let (user_id, token_plugin_id) =
-        secret_resolve::validate_and_consume_token(pool, raw_token)
-            .await
-            .map_err(|e| {
-                tracing::warn!(error = %e, "Token validation failed");
-                AdminError::Unauthorized("Invalid or expired token".to_owned())
-            })?;
+    let (user_id, token_plugin_id) = secret_resolve::validate_and_consume_token(pool, raw_token)
+        .await
+        .map_err(|e| {
+            tracing::warn!(error = %e, "Token validation failed");
+            AdminError::Unauthorized("Invalid or expired token".to_owned())
+        })?;
 
     if &token_plugin_id != plugin_id {
         return Err(AdminError::Forbidden("Token plugin mismatch".to_owned()));

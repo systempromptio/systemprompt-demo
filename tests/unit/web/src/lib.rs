@@ -19,11 +19,15 @@ mod pi_events;
 #[cfg(test)]
 mod pi_mcp_render;
 #[cfg(test)]
+mod pi_persist;
+#[cfg(test)]
 mod seed_contract;
 #[cfg(test)]
 mod bridge_downloads;
 #[cfg(test)]
 mod governance_scope;
+#[cfg(test)]
+mod hub_tool_lists;
 #[cfg(test)]
 mod middleware_gates;
 #[cfg(test)]

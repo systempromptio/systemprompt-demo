@@ -136,12 +136,6 @@ pub(crate) async fn public_register_handler(
         .into_response())
 }
 
-/// Whether this email may still be handed a credential-link setup token.
-///
-/// An account that already has a passkey can be signed into, so issuing one
-/// would let anyone who knows the address bind their own credential to it — and
-/// once approval carries a credit, inherit that too. A denied account is
-/// refused for the obvious reason: re-registering must not reset the decision.
 fn may_issue_token(state: &RegistrationState) -> bool {
     !state.has_credential && state.approval_status.as_deref() != Some(APPROVAL_DENIED)
 }
@@ -170,9 +164,6 @@ struct RegistrationWrite<'a> {
     token_hash: &'a str,
 }
 
-/// Account, company profile, review request and setup token, or none of them.
-/// A torn write here would leave an account nobody can approve, or a passkey
-/// bound to a user with no application to review.
 async fn persist_registration(
     pool: &PgPool,
     user_id: &UserId,

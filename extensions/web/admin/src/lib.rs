@@ -48,28 +48,32 @@ pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary,
 /// so anything they touch needs a public name. Re-exporting here keeps that
 /// list explicit and reviewable instead of widening each item in place.
 pub mod test_support {
+    pub use crate::handlers::pi::SHIM_SOURCE;
     pub use crate::handlers::pi::config::{PiConfig, SandboxMode};
-    pub use crate::handlers::pi::events::{PiEvent, PiEventBody, readable_provider_error, translate};
-    pub use crate::handlers::pi::mcp::FORWARDABLE;
-    pub use crate::handlers::pi::stage::PolicyStage;
-    pub use crate::handlers::pi::mcp::render::{McpCallResult, first_frame, render};
+    pub use crate::handlers::pi::events::{
+        PiEvent, PiEventBody, readable_provider_error, translate,
+    };
     pub use crate::handlers::pi::format::{cost, cost_round, median};
+    pub use crate::handlers::pi::persist::Journal;
+    pub use crate::repositories::pi::events::NewPiEvent;
     pub use crate::handlers::pi::jail::gateway_port;
+    pub use crate::handlers::pi::mcp::FORWARDABLE;
+    pub use crate::handlers::pi::mcp::render::{McpCallResult, first_frame, render};
     pub use crate::handlers::pi::rpc::{
         GovernancePayload, PayloadKind, RpcCommand, RpcFrame, UiRequest, parse_frame,
     };
     pub use crate::handlers::pi::scope::escape_reason;
     pub use crate::handlers::pi::skills::{escape, scalar};
-    pub use crate::handlers::webhook::governance::secrets::scan_str_for_secret;
-    pub use crate::handlers::webhook::governance::scope::cap_at;
+    pub use crate::handlers::pi::stage::PolicyStage;
     pub use crate::handlers::pi::token::{B64, Invalid, sign, verify};
-    pub use crate::util::hmac;
-    pub use crate::handlers::pi::SHIM_SOURCE;
     pub use crate::handlers::resolve_principal;
     pub use crate::handlers::ssr::bridge_downloads::{
         LINUX, MAC_ARM, MAC_INTEL, RELEASE_PAGE, WINDOWS,
     };
+    pub use crate::handlers::webhook::governance::scope::cap_at;
+    pub use crate::handlers::webhook::governance::secrets::scan_str_for_secret;
     pub use crate::middleware::gates::{is_pending_allowed_path, may_pass_pending_gate};
+    pub use crate::util::hmac;
 }
 
 pub fn hooks_webhook_router(

@@ -25,56 +25,32 @@ use systemprompt_security::policy::types::AccessScope;
 
 use super::handler::attested_session_id;
 use super::handler::evaluate::{EvaluateInput, evaluate};
-use super::types::{
-    ChainEntryOutcome, ChainEntryResult,
-};
-use super::stages::{StageOutcome, StageResult};
 use super::scope;
+use super::stages::{StageOutcome, StageResult};
+use super::types::{ChainEntryOutcome, ChainEntryResult};
 
 mod record;
 
-pub(crate) use record::{HumanOutcome, record_human_decision, record_policy_denial};
 use record::record;
+pub(crate) use record::{HumanOutcome, record_human_decision, record_policy_denial};
 
-/// The agent id every pi run is audited under, on both the CLI and widget
-/// paths, so `/admin/demo/trace` shows one timeline per user rather than two.
 pub(crate) const PI_AGENT_ID: &str = "pi_agent";
 
-/// The plugin whose policy config governs pi runs.
 pub(crate) const PI_PLUGIN_ID: &str = "enterprise-demo";
 
-/// One thing to govern: a tool call, or the prompt that preceded it.
 pub(crate) struct GovernedCall<'a> {
-    /// For a prompt this is [`PROMPT_TOOL_NAME`]; the audit spine keys on a
-    /// tool name, and a prompt gate needs a stable synthetic one.
     pub(crate) tool_name: &'a str,
     pub(crate) user_id: &'a UserId,
-    /// The pi conversation. Rate limiting keys on this, not the credential, so
-    /// one runaway conversation cannot throttle a user's other sessions.
     pub(crate) agent_session: &'a SessionId,
     pub(crate) tool_input: Option<&'a serde_json::Value>,
-    /// The most privilege this surface may ever evaluate at, whatever the
-    /// caller's roles say. `Admin` means "no ceiling".
-    ///
-    /// Scope is otherwise resolved upwards — DB roles joined with the agent's
-    /// declared scope, taking the higher. That is right for the admin console
-    /// and for `/hooks/govern`, and wrong for a sandboxed surface, where an
-    /// operator signed in as admin would silently skip the policies that
-    /// surface exists to demonstrate. There is no `Default`: a new surface has
-    /// to say which it is.
     pub(crate) scope_ceiling: AccessScope,
 }
 
-/// The synthetic tool name a governed prompt is audited under, matching the
-/// HTTP hook path so both spines agree.
 pub(crate) const PROMPT_TOOL_NAME: &str = "user_prompt";
 
-/// What policy decided, plus everything needed to audit it or explain it.
 pub(crate) struct PolicyVerdict {
     pub(crate) allowed: bool,
-    /// Present only on a deny — the operator-facing explanation.
     pub(crate) reason: Option<String>,
-    /// The policy that denied, for the widget's blocked row.
     pub(crate) policy: Option<String>,
     decision: Decision,
     chain: Vec<ChainEntryOutcome>,
@@ -83,12 +59,6 @@ pub(crate) struct PolicyVerdict {
 }
 
 impl PolicyVerdict {
-    /// The chain exactly as [`evaluate`] ran it.
-    ///
-    /// Guarantees the order, count, and results are the evaluation's own, so a
-    /// policy added, removed, or reordered in `policies/mod.rs` is reflected
-    /// without anything restating the list. Nothing can report a stage that did
-    /// not run.
     pub(crate) fn stages(&self) -> Vec<StageOutcome> {
         self.chain
             .iter()
@@ -105,10 +75,6 @@ impl PolicyVerdict {
     }
 }
 
-/// Run the four-stage chain and audit the outcome.
-///
-/// Always writes an audit row, allow or deny — an unaudited allow is
-/// indistinguishable from an ungoverned call when someone reads the spine back.
 pub(crate) async fn govern_call(
     pool: &Arc<PgPool>,
     analytics: &Arc<dyn AnalyticsProvider>,
@@ -120,9 +86,6 @@ pub(crate) async fn govern_call(
 
     let db_scope = scope::scope_from_user_roles(pool, call.user_id).await;
     let resolved = scope::higher_privilege(db_scope, scope::resolve_agent_scope(&agent_id));
-    // The capped scope is what the chain evaluates at *and* what gets audited.
-    // Recording the uncapped one would make the trace disagree with the policy
-    // that ran.
     let access_scope = scope::cap_at(resolved, call.scope_ceiling);
 
     let (decision, chain) = evaluate(&EvaluateInput {

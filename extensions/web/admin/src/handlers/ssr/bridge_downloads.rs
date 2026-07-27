@@ -11,6 +11,5 @@ pub const MAC_INTEL: &str = "https://github.com/systempromptio/systemprompt-demo
 pub const WINDOWS: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe";
 pub const LINUX: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-unknown-linux-gnu";
 
-/// Release page for the pinned tag — checksums, signatures, every target.
 pub const RELEASE_PAGE: &str =
     "https://github.com/systempromptio/systemprompt-demo/releases/tag/bridge-v0.18.4";

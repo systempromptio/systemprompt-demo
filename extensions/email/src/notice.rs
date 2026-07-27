@@ -15,7 +15,6 @@ use crate::palette::{BG_PAGE, BG_SURFACE, BORDER, TEXT_MUTED, TEXT_PRIMARY};
 const FONT: &str =
     "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 
-/// What the applicant told us, verbatim.
 #[derive(Debug, Clone)]
 pub struct RegistrationNotice<'a> {
     pub name: &'a str,
@@ -34,8 +33,6 @@ pub fn build_registration_notice_email(
     site_url: &str,
 ) -> Result<Message, EmailError> {
     let subject = format!("Access request: {} ({})", notice.company, notice.email);
-    // Approval is a direct write — there is no review page to link to — so the
-    // email carries the statement the reviewer runs.
     let review_url = format!(
         "{site_url} — approve with: UPDATE user_approvals SET status='approved', \
          decided_at=NOW() WHERE user_id=(SELECT id FROM users WHERE email='{email}');",
@@ -151,8 +148,6 @@ fn detail_row(label: &str, value: &str) -> String {
     )
 }
 
-/// Why: every value here is attacker-supplied free text straight off the
-/// registration form, and it is being interpolated into an HTML document.
 fn escape_html(value: &str) -> String {
     value
         .replace('&', "&amp;")

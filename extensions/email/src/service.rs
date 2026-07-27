@@ -88,14 +88,11 @@ impl EmailService {
         })
     }
 
-    /// The configured public site URL (used to build links in emails).
     #[must_use]
     pub fn site_url(&self) -> &str {
         &self.site_url
     }
 
-    /// Send the welcome / $5-credit email. `site_url` overrides the configured
-    /// site URL for link building (pass the request's site URL when known).
     pub async fn send_welcome_email(
         &self,
         to_email: &str,
@@ -112,7 +109,6 @@ impl EmailService {
         Ok(())
     }
 
-    /// Send the internal review notice for a newly registered account.
     pub async fn send_registration_notice(
         &self,
         reviewer_email: &str,

@@ -51,8 +51,6 @@ pub(crate) async fn revoke_pat(pool: &PgPool, user_id: &UserId, id: &str) -> Adm
     Ok(())
 }
 
-/// Revoke every live PAT whose name starts with `name_prefix`, returning the
-/// count. Unlike [`revoke_pat`], an empty sweep is a success, not a `NotFound`.
 pub(crate) async fn revoke_pats_by_name_prefix(
     pool: &PgPool,
     name_prefix: &str,

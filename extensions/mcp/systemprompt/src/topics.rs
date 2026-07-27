@@ -19,7 +19,6 @@ pub struct Topic {
     pub body: &'static str,
 }
 
-/// Every topic, in the order `list_topics` presents them (introductory first).
 pub static TOPICS: &[Topic] = &[
     Topic {
         id: "what-is-systemprompt",
@@ -176,13 +175,11 @@ pub static TOPICS: &[Topic] = &[
     },
 ];
 
-/// Look up a topic by its exact id.
 #[must_use]
 pub fn find(topic_id: &str) -> Option<&'static Topic> {
     TOPICS.iter().find(|t| t.id == topic_id)
 }
 
-/// A search hit: the matched topic and the score it earned for the query.
 #[derive(Debug, Clone, Copy)]
 pub struct Hit {
     pub topic: &'static Topic,

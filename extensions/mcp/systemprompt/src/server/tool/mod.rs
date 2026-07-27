@@ -9,21 +9,15 @@ use rmcp::ErrorData as McpError;
 use rmcp::model::{CallToolRequestParams, CallToolResult};
 use rmcp::service::{RequestContext, RoleServer};
 use systemprompt::database::DbPool;
-use systemprompt::mcp::middleware::enforce_rbac_from_registry;
 use systemprompt::mcp::McpToolExecutor;
+use systemprompt::mcp::middleware::enforce_rbac_from_registry;
 use systemprompt::models::artifacts::{CliArtifact, TextArtifact};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 use systemprompt::security::authz::SharedAuthzHook;
 use systemprompt_mcp_shared::{McpAccess, record_mcp_access, record_mcp_access_rejected};
 
-/// How long `fetch_remote_docs` waits before giving up. Short on purpose: where
-/// the boundary is a firewall rather than a refusal the failure mode is a hang,
-/// and a demo tool that appears to freeze teaches the wrong lesson about what
-/// stopped it.
 const REMOTE_FETCH_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
-/// Host and port `fetch_remote_docs` dials. Deliberately the public docs site
-/// on 443 — the thing a deployment with no egress must not be able to reach.
 const REMOTE_FETCH_HOST: &str = "systemprompt.io";
 const REMOTE_FETCH_PORT: u16 = 443;
 
@@ -31,16 +25,20 @@ fn text_artifact(title: &str, body: impl Into<String>) -> CliArtifact {
     CliArtifact::text(TextArtifact::new(body).with_title(title))
 }
 
+mod admin_audit_dump;
 mod docs;
 mod egress;
 mod governance_stats;
+mod safety_findings;
 
+pub(super) use admin_audit_dump::AdminAuditDumpHandler;
 pub(super) use docs::{GetTopicHandler, ListTopicsHandler, SearchDocsHandler};
 pub(super) use egress::FetchRemoteDocsHandler;
 pub(super) use governance_stats::GovernanceStatsHandler;
+pub(super) use safety_findings::SafetyFindingsHandler;
 
 fn db_error(e: &sqlx::Error) -> McpError {
-    tracing::error!(error = %e, "governance_stats query failed");
+    tracing::error!(error = %e, "governance spine query failed");
     McpError::internal_error("Could not read the governance spine.", None)
 }
 
@@ -122,6 +120,28 @@ pub(super) async fn dispatch_tool(
                 )
                 .await
         },
+        "safety_findings" => {
+            executor
+                .execute(
+                    &SafetyFindingsHandler {
+                        db_pool: std::sync::Arc::<systemprompt::database::Database>::clone(db_pool),
+                    },
+                    request,
+                    request_context,
+                )
+                .await
+        },
+        "admin_audit_dump" => {
+            executor
+                .execute(
+                    &AdminAuditDumpHandler {
+                        db_pool: std::sync::Arc::<systemprompt::database::Database>::clone(db_pool),
+                    },
+                    request,
+                    request_context,
+                )
+                .await
+        },
         "fetch_remote_docs" => {
             executor
                 .execute(&FetchRemoteDocsHandler, request, request_context)
@@ -130,8 +150,9 @@ pub(super) async fn dispatch_tool(
         _ => Err(McpError::invalid_params(
             format!(
                 "Unknown tool: '{tool_name}'. Available tools: list_topics, get_topic, \
-                 search_docs, governance_stats, fetch_remote_docs. Call `list_topics` \
-                 first to see the documentation topics."
+                 search_docs, governance_stats, safety_findings, admin_audit_dump, \
+                 fetch_remote_docs. Call `list_topics` first to see the documentation \
+                 topics."
             ),
             None,
         )),

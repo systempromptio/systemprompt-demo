@@ -59,9 +59,11 @@ impl McpToolHandler for FetchRemoteDocsHandler {
                 "fetch_remote_docs executed: the tool_blocklist policy did not stop it"
             );
 
-            let attempt =
-                tokio::time::timeout(REMOTE_FETCH_TIMEOUT, tokio::net::TcpStream::connect(&target))
-                    .await;
+            let attempt = tokio::time::timeout(
+                REMOTE_FETCH_TIMEOUT,
+                tokio::net::TcpStream::connect(&target),
+            )
+            .await;
 
             let (body, summary) = match attempt {
                 Ok(Ok(stream)) => {

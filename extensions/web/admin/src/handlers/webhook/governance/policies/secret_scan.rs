@@ -16,10 +16,6 @@ use super::super::secrets::detect_secrets;
 
 const ID: &str = "secret_scan";
 
-/// Operator-defined extra pattern loaded from
-/// `services/governance/config.yaml`. `id` is derived from `name` at load
-/// time via [`slugify`] so the runtime referent stays stable; collisions are
-/// logged and the duplicate is dropped.
 #[derive(Debug, Clone)]
 struct ExtraPattern {
     id: String,

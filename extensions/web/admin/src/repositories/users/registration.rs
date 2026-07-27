@@ -31,11 +31,9 @@ pub async fn count_recent_setup_tokens(pool: &PgPool, email: &str) -> i64 {
     .unwrap_or(0)
 }
 
-/// What registration needs to know about an email before it writes anything.
 #[derive(Debug)]
 pub struct RegistrationState {
     pub user_id: UserId,
-    /// `None` when no `user_approvals` row exists, which reads as pending.
     pub approval_status: Option<String>,
     /// Whether a passkey is already bound to this account. This is the
     /// takeover guard: an account someone can already sign into must never be
@@ -69,7 +67,6 @@ pub async fn find_registration_state(pool: &PgPool, email: &str) -> Option<Regis
     })
 }
 
-/// Record the user's full name, and their preferred display name when given.
 pub async fn mark_onboarded<'e>(
     executor: impl PgExecutor<'e>,
     user_id: &UserId,

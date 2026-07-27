@@ -9,6 +9,7 @@
 
 pub mod audit;
 pub mod demo_trace;
+pub mod stages;
 
 pub use audit::{GovernanceDecisionRecord, insert_governance_decision};
 

@@ -17,7 +17,6 @@ use systemprompt::oauth::SessionCreationService;
 use systemprompt_security::authz::{Decision, DecisionTag};
 use systemprompt_security::policy::types::AccessScope;
 
-/// Anthropic-mandated wire enum for `permissionDecision`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GovernanceDecision {
@@ -67,7 +66,6 @@ pub(super) struct HookSpecificOutput {
 pub(super) enum ChainEntryResult {
     Pass,
     Fail,
-    /// Policy was disabled in config, or skipped after a prior deny.
     Skip,
 }
 

@@ -18,7 +18,7 @@ Four policies run in order on every tool call, configured in
 
 | Stage | Policy id | What it blocks |
 |-------|-----------|----------------|
-| Scope check | `scope_check` | A non-admin caller reaching for an admin-only tool prefix (`mcp__admin__*`) |
+| Scope check | `scope_check` | A non-admin caller reaching for an admin-only tool prefix (`mcp__admin__*`, `mcp__systemprompt__admin_*`) |
 | Secret scan | `secret_scan` | Plaintext credentials in any tool input (35+ patterns), any scope |
 | Blocklist | `tool_blocklist` | Tool names matching a blocked pattern, for non-admin scope |
 | Rate limit | `rate_limit` | More than 300 calls per 60s for one identity |
@@ -35,10 +35,12 @@ Evaluation does not stop recording at the first failure — stages after a deny
 are recorded as skipped, so the audit row keeps the whole trace rather than a
 single line of it.
 
-**Be honest about what is demonstrable here.** In this terminal the agent's tool
-allowlist holds only the hub's own tools, so there is no admin-prefixed tool to
-reach for (`scope_check`), and no plausible way to make 300 calls in a minute
-(`rate_limit`). Those two are explained, not performed. The two below are real.
+**Be honest about what is demonstrable here.** Three of the four stages can be
+fired live. `rate_limit` cannot: there is no plausible way to make 300 calls in
+a minute from a conversation, so it is explained rather than performed. The two
+steps below are real, and `scope_check` has a demonstration of its own —
+`demonstrate_scope_rejection`, which reaches for the hub's admin-only
+`admin_audit_dump` tool and is refused.
 
 ## How to Use
 
@@ -125,4 +127,6 @@ demonstration is complete at the moment the session is quietest.
 ## Related
 
 - `demonstrate_tool_rejection` — the rejection path on its own, in more detail.
+- `demonstrate_scope_rejection` — the fourth stage, `scope_check`, fired live.
+- `demonstrate_gateway_safety` — the other secret scanner, on the inference path.
 - `analyse_governance_stats` — spend and latency alongside the verdicts.

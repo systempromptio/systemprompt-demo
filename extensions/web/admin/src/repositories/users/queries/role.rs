@@ -3,7 +3,6 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::UserId;
 
-/// The per-request identity facts every admin page and gate reads.
 #[derive(Debug)]
 pub struct UserAccess {
     pub roles: Vec<String>,

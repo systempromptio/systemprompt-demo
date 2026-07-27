@@ -1,4 +1,5 @@
-//! The shape of `services/config/pi.yaml`, and the defaults a missing key takes.
+//! The shape of `services/config/pi.yaml`, and the defaults a missing key
+//! takes.
 //!
 //! Nothing here is reachable outside [`super`]: these types exist only long
 //! enough for [`super::PiConfig::validate`] to check them and freeze them into
@@ -8,29 +9,20 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-/// Tools a session may use. Read-only on purpose — see the sandboxing note in
-/// the module docs: with no container per session, `bash`/`write`/`edit` would
-/// make this a remote code execution service rather than a governed demo.
 pub(super) const DEFAULT_TOOLS: &[&str] = &[
     "read",
     "mcp__systemprompt__list_topics",
     "mcp__systemprompt__get_topic",
     "mcp__systemprompt__search_docs",
     "mcp__systemprompt__governance_stats",
+    "mcp__systemprompt__safety_findings",
+    "mcp__systemprompt__admin_audit_dump",
     "mcp__systemprompt__fetch_remote_docs",
 ];
 
-/// Directories the jailed child may read and execute from, derived by running
-/// `pi --version` under the jail and widening until it started: the interpreter
-/// and its shebang chain, the shared libraries `ldd` reports, the CA bundle,
-/// and the two device nodes node opens. pi's own package root is *not* here —
-/// it lives under `$HOME` on an nvm host and is derived from the configured
-/// `binary` at spawn time so it follows an upgrade instead of being pinned.
-///
-/// `/proc` is deliberately absent and must stay absent: `/proc/<server-pid>/`
-/// `environ` is readable by this uid and holds `DATABASE_URL` and the provider
-/// keys. Granting it would re-open the hole the jail closes. If a future node
-/// needs it, grant `/proc/self` alone.
+pub(super) const DEFAULT_PERSONA: &str =
+    include_str!("../../../../../../../services/config/pi-persona.md");
+
 pub(super) const DEFAULT_JAIL_READ_PATHS: &[&str] = &[
     "/usr/bin",
     "/usr/lib",
@@ -58,38 +50,28 @@ pub(super) const DEFAULT_JAIL_READ_PATHS: &[&str] = &[
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SandboxMode {
-    /// No child starts unless the jail confirms `FullyEnforced`.
     Required,
     Off,
 }
 
-/// `deny_unknown_fields` so a stale or misspelled key is a startup error
-/// rather than a setting that silently does nothing. Every field defaults, so
-/// the file only ever states what it changes.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub(super) struct PiConfigRaw {
     pub(super) binary: String,
     pub(super) child_path: String,
     pub(super) workspace_root: PathBuf,
-    /// Absent means "wherever this server answers", taken from the profile's
-    /// `server.api_internal_url`. Set it only to point sessions at a different
-    /// origin than the one serving them.
     pub(super) base_url: Option<String>,
     pub(super) provider: String,
     pub(super) model: String,
+    pub(super) persona: String,
     pub(super) tools: Vec<String>,
     pub(super) sandbox: SandboxMode,
     pub(super) approve_all: bool,
     pub(super) timeouts: TimeoutsRaw,
     pub(super) sessions: SessionsRaw,
     pub(super) limits: LimitsRaw,
-    /// Defaults to `sp-pi-jail` beside this executable.
     pub(super) jail_binary: Option<PathBuf>,
-    /// Replaces [`DEFAULT_JAIL_READ_PATHS`] wholesale — it does not extend it.
     pub(super) jail_read_paths: Option<Vec<PathBuf>>,
-    /// Where the `systemprompt` MCP hub answers. Called server-side by
-    /// [`super::super::mcp`], never by the child.
     pub(super) mcp_url: String,
 }
 
@@ -129,6 +111,7 @@ impl Default for PiConfigRaw {
             base_url: None,
             provider: "systemprompt".to_owned(),
             model: "claude-sonnet-4-6".to_owned(),
+            persona: DEFAULT_PERSONA.to_owned(),
             tools: DEFAULT_TOOLS.iter().map(|s| (*s).to_owned()).collect(),
             sandbox: SandboxMode::Required,
             approve_all: true,

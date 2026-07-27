@@ -6,18 +6,12 @@
 
 use std::path::PathBuf;
 
-/// A parsed invocation: what to confine to, and what to run inside it.
 #[derive(Debug)]
 pub(crate) struct Spec {
-    /// The one directory the child may read *and* write. Its cwd and `HOME`
-    /// live inside it.
     pub(crate) workspace: PathBuf,
-    /// Directories the child may read and execute from — the interpreter, its
-    /// libraries, CA bundles. Never `/proc`: `/proc/<server-pid>/environ` is
-    /// readable by this uid and holds the credentials this jail exists to hide.
+    // Why: never `/proc` — `/proc/<server-pid>/environ` is readable by this uid
+    // and holds the credentials this jail exists to hide.
     pub(crate) allow_read: Vec<PathBuf>,
-    /// TCP ports the child may `connect()` to. Landlock is port-based, not
-    /// host-based, so this permits the port on *any* reachable address.
     pub(crate) connect_tcp: Vec<u16>,
     pub(crate) command: PathBuf,
     pub(crate) command_args: Vec<String>,
@@ -27,8 +21,6 @@ pub(crate) const USAGE: &str = "usage: sp-pi-jail --workspace <dir> \
 [--allow-read <dir>]… [--allow-connect-tcp <port>]… -- <binary> [args…]";
 
 impl Spec {
-    /// Parse argv (without argv\[0\]). Every error is fatal: a jail that
-    /// guesses at a malformed allowlist is a jail with an unknown shape.
     pub(crate) fn parse(argv: &[String]) -> Result<Self, String> {
         let mut workspace: Option<PathBuf> = None;
         let mut allow_read = Vec::new();
@@ -42,9 +34,7 @@ impl Spec {
             if flag == "--" {
                 break rest.map(String::as_str).collect::<Vec<_>>();
             }
-            let value = rest
-                .next()
-                .ok_or_else(|| format!("{flag} needs a value"))?;
+            let value = rest.next().ok_or_else(|| format!("{flag} needs a value"))?;
             match flag.as_str() {
                 "--workspace" => workspace = Some(PathBuf::from(value)),
                 "--allow-read" => allow_read.push(PathBuf::from(value)),
@@ -53,6 +43,8 @@ impl Spec {
                         .parse::<u16>()
                         .map_err(|e| format!("--allow-connect-tcp {value}: {e}"))?,
                 ),
+                // Why: an ignored `--allow-read` would look like a working jail
+                // with a missing grant, so an unknown flag is fatal.
                 other => return Err(format!("unknown flag {other}")),
             }
         };
@@ -104,8 +96,6 @@ mod tests {
         assert_eq!(spec.command_args, vec!["--mode", "rpc"]);
     }
 
-    /// A flag the child controls must never be silently ignored — an ignored
-    /// `--allow-read` would look like a working jail with a missing grant.
     #[test]
     fn rejects_unknown_flags_and_missing_pieces() {
         assert!(Spec::parse(&argv(&["--nope", "x", "--", "/bin/true"])).is_err());

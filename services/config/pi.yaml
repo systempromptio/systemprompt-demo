@@ -37,6 +37,15 @@ workspace_root: /tmp/systemprompt-pi-sessions
 provider: systemprompt
 model: claude-sonnet-4-6
 
+# Who the agent says it is. Omitted here on purpose: it defaults to
+# services/config/pi-persona.md, which is compiled into the binary — the child
+# is jailed, so it could not read the file at spawn time anyway. Edit that file
+# and rebuild to change the identity; set `persona: ""` to drop it entirely and
+# run on pi's stock prompt, which introduces itself as pi.
+#
+# It is APPENDED to pi's built-in prompt, never a replacement: the tool-use half
+# of that prompt is what the RPC and approval flow depend on.
+
 # ⚠ Enforced by pi itself. Do NOT widen to bash/write/edit on a
 # single-container deployment: the Landlock jail below confines paths and
 # ports, but it is not a namespace — the child still runs as this uid in this
@@ -52,8 +61,18 @@ tools:
   - mcp__systemprompt__get_topic
   - mcp__systemprompt__search_docs
   - mcp__systemprompt__governance_stats
-  # Registered on purpose so the tool_blocklist policy has something to refuse.
-  # Removing it removes the tool-rejection demonstration, not the risk.
+  - mcp__systemprompt__safety_findings
+  # The next two are registered on purpose so that a policy has something to
+  # refuse. Removing either removes a demonstration, not the risk it stands for.
+  #
+  # `admin_audit_dump` really does read every identity's audit rows, and
+  # `scope_check` is the only thing standing between a visitor and that dump —
+  # its `admin_` prefix is matched by admin_only_prefixes in
+  # services/governance/config.yaml, and this terminal caps every caller at
+  # `user` scope. Both halves are load-bearing; a test pins the pair.
+  - mcp__systemprompt__admin_audit_dump
+  # Refused by tool_blocklist, which is what keeps this deployment's no-egress
+  # claim from being a matter of trust.
   - mcp__systemprompt__fetch_remote_docs
 
 # `required` means no child spawns unless sp-pi-jail reports a fully-enforced

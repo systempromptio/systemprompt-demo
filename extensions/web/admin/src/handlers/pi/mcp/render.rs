@@ -9,7 +9,6 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct McpCallResult {
-    /// Rendered text the extension hands back to the model.
     pub text: String,
     /// True when the hub answered with a result rather than an error. The
     /// extension surfaces both — a tool error is information, not a failure of
@@ -49,12 +48,6 @@ pub fn render(frame: &serde_json::Value) -> McpCallResult {
         };
     }
 
-    // `content` carries only the one-line summary — the artifact body lives in
-    // `structuredContent` (see core's `response.rs`, which pushes a single
-    // summary text block and attaches the artifact separately). Handing the
-    // model the summary alone would give it "7 documentation topics available"
-    // and none of the topics, so the body is preferred and the summary is the
-    // fallback.
     let summary = frame
         .pointer("/result/content")
         .and_then(|c| c.as_array())
@@ -92,12 +85,6 @@ pub fn render(frame: &serde_json::Value) -> McpCallResult {
     }
 }
 
-/// Find the artifact's rendered text inside a `ToolResponse` payload.
-///
-/// A recursive search for the first `content` string rather than a fixed
-/// pointer: the artifact is flattened into a response envelope whose exact
-/// nesting is core's to change, and a hardcoded path would fail silently — the
-/// model would get a summary and no one would notice until a demo went quiet.
 fn artifact_body(value: &serde_json::Value) -> Option<String> {
     match value {
         serde_json::Value::Object(map) => {

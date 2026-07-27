@@ -52,4 +52,3 @@ pub async fn list_departments(pool: &PgPool) -> Result<Vec<DepartmentSummary>, s
     .fetch_all(pool)
     .await
 }
-

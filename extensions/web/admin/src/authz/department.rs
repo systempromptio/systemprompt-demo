@@ -22,35 +22,23 @@ use systemprompt::identifiers::UserId;
 use systemprompt_security::authz::{RuleType, SubjectAttributeProvider, SubjectDimension};
 use tokio::sync::RwLock;
 
-/// Slug bound to `access_control_rules.rule_type`.
 const DEPARTMENT_SLUG: &str = "department";
 
-/// Between core's `USER` (0) and `ROLE` (200): a department rule outranks a
-/// role rule and yields to a rule naming the user directly. That is the
-/// precedence the access matrix has always displayed.
 const DEPARTMENT_PRECEDENCE: u16 = 100;
 
-/// Same shape as the marketplace-parent cache in the authz webhook: a short
-/// TTL that bounds staleness after a department change without turning every
-/// decision into a query.
 const DEPARTMENT_TTL: Duration = Duration::from_secs(60);
 
-/// User id to (values, fetched-at). Values is a `Vec` because the provider
-/// contract is multi-valued, even though a user has at most one department.
 type DepartmentCache = HashMap<String, (Vec<String>, Instant)>;
 
 static DEPARTMENT_CACHE: LazyLock<RwLock<DepartmentCache>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-/// The slug this dimension owns, as core's open rule-type vocabulary sees it.
 #[must_use]
 pub fn department_rule_type() -> RuleType {
     RuleType::extension(DEPARTMENT_SLUG)
         .unwrap_or_else(|e| unreachable!("`{DEPARTMENT_SLUG}` is a well-formed slug: {e}"))
 }
 
-/// The dimension's descriptor, also used by the access matrix to label the
-/// layer that decided a cell.
 #[must_use]
 pub fn department_dimension() -> SubjectDimension {
     SubjectDimension {
@@ -94,13 +82,6 @@ impl SubjectAttributeProvider for DepartmentAttributeProvider {
         department_dimension()
     }
 
-    /// A user has at most one department, so this yields zero or one value.
-    ///
-    /// Fails soft: a lookup error means "no department", which makes every
-    /// department rule unmatchable for this request and hands the decision to
-    /// the role band. Denying instead would turn a transient database blip
-    /// into a site-wide outage, and the resolver's own default already closes
-    /// the unmatched case.
     async fn values_for(&self, user_id: &UserId) -> Vec<String> {
         if let Some(values) = Self::cached(user_id).await {
             return values;

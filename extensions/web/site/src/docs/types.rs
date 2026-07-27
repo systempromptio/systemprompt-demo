@@ -33,9 +33,6 @@ pub struct RelatedLink {
     pub url: String,
 }
 
-/// Template context fragment for the docs-page learning aside. Empty lists and
-/// a `false` flag are omitted so the `{{#if}}` guards in `docs-page.html`
-/// behave exactly as when the keys were inserted conditionally.
 #[derive(Debug, Serialize)]
 struct DocsLearningTemplateData {
     #[serde(rename = "AFTER_READING_THIS", skip_serializing_if = "Vec::is_empty")]

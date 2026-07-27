@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO pi_conversations (id, user_id, attested_session_id)\n        VALUES ($1, $2, $3)\n        ON CONFLICT (id) DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "005056e44957013f77333103f2b356783066826c1aa2636f48d17e51a336262b"
+}

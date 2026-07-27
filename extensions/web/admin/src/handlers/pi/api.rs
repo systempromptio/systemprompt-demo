@@ -20,13 +20,12 @@ use systemprompt::identifiers::SessionSource;
 use super::auth::{authenticate, problem, unauthorized};
 use super::gate::PiDeps;
 use super::registry::{self, CreateRequest, PiRegistry};
-use super::{MCP_CLIENT_SOURCE, SHIM_SOURCE, events, pump};
+use super::{MCP_CLIENT_SOURCE, SHIM_SOURCE, events, pump, transcript};
+use crate::repositories::pi::conversations;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct TokenQuery {
     token: String,
-    /// Set by `EventSource` reconnects via `Last-Event-ID`; also accepted as a
-    /// query param for clients that cannot read the header.
     #[serde(default)]
     since: Option<u64>,
 }
@@ -40,11 +39,15 @@ impl TokenQuery {
 #[derive(Debug, Deserialize)]
 pub(super) struct CreateBody {
     token: String,
+    #[serde(default)]
+    resume: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 struct CreatedSession {
     conversation_id: String,
+    last_seq: i64,
+    resumed: bool,
 }
 
 pub(super) async fn create_session(
@@ -59,8 +62,6 @@ pub(super) async fn create_session(
         return unauthorized();
     };
 
-    // An attested session row, so provider spend in `ai_requests` and governance
-    // rows in `governance_decisions` can be joined on one id the server issued.
     let analytics_signals = systemprompt::traits::SessionAnalytics {
         user_agent: header_string(&headers, axum::http::header::USER_AGENT),
         preferred_locale: header_string(&headers, axum::http::header::ACCEPT_LANGUAGE),
@@ -75,19 +76,28 @@ pub(super) async fn create_session(
         Err(e) => {
             tracing::error!(error = %e, "could not mint a session for a pi conversation");
             return problem(
-                StatusCode::INTERNAL_SERVER_ERROR, // lint-ok: http-error — logged above; the client is told nothing about why
+                StatusCode::INTERNAL_SERVER_ERROR, /* lint-ok: http-error — logged above; the
+                                                    * client is told nothing about why */
                 "could not mint a governed session",
             );
         },
     };
 
-    let conversation_id = uuid::Uuid::new_v4().to_string();
-    // The caller's own embed token travels into the child, which authenticates
-    // its hub calls with it. It is the same credential the browser already
-    // holds, it resolves to this one user, and `mcp::call` rechecks it against
-    // the conversation on every request — so the child gains nothing the page
-    // that opened it did not already have. Its TTL matches the conversation
-    // lifetime ceiling, so it cannot lapse mid-session.
+    let Some(opening) = open_conversation(&pool, &user_id, body.resume.as_deref(), &attested).await
+    else {
+        return problem(
+            // lint-ok: http-error — logged inside; the client is told nothing about why
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "could not start a conversation",
+        );
+    };
+    let Opening {
+        conversation_id,
+        start_seq,
+        transcript,
+        resumed,
+    } = opening;
+
     let result = registry
         .create(CreateRequest {
             conversation_id: conversation_id.clone(),
@@ -96,14 +106,11 @@ pub(super) async fn create_session(
             shim_source: SHIM_SOURCE,
             mcp_client_source: MCP_CLIENT_SOURCE,
             mcp_token: &body.token,
+            transcript: transcript.as_deref(),
+            start_seq,
         })
         .await;
     if result.is_err() {
-        // The session was attested before we knew whether a conversation could
-        // be had. Leaving it behind is not harmless: the gateway's lookup
-        // filters on `revoked_at` and ignores `expires_at`, so a refused
-        // conversation would strand a session row that stays valid forever —
-        // and a reload against a cap is exactly the case that repeats.
         if let Err(e) = deps.analytics.revoke_session(&attested).await {
             tracing::warn!(error = %e, "could not revoke the session of a refused pi conversation");
         }
@@ -123,7 +130,11 @@ pub(super) async fn create_session(
             });
             (
                 StatusCode::CREATED,
-                Json(CreatedSession { conversation_id }),
+                Json(CreatedSession {
+                    conversation_id,
+                    last_seq: i64::try_from(start_seq).unwrap_or(i64::MAX),
+                    resumed,
+                }),
             )
                 .into_response()
         },
@@ -141,11 +152,57 @@ pub(super) async fn create_session(
     }
 }
 
-/// The slash-commands a viewer may type, for the widget's `/` palette.
-///
-/// Authorized like every other conversation-scoped route, though what it
-/// returns is the same for everyone: the check is here so the endpoint cannot
-/// be used to discover whether a conversation id exists.
+struct Opening {
+    conversation_id: String,
+    start_seq: u64,
+    transcript: Option<String>,
+    resumed: bool,
+}
+
+async fn open_conversation(
+    pool: &Arc<PgPool>,
+    user_id: &systemprompt::identifiers::UserId,
+    resume: Option<&str>,
+    attested: &systemprompt::identifiers::SessionId,
+) -> Option<Opening> {
+    let existing = match resume {
+        Some(id) => conversations::find_conversation(pool, id, user_id)
+            .await
+            .unwrap_or_else(|e| {
+                tracing::error!(error = %e, "could not read a pi conversation to resume");
+                None
+            }),
+        None => None,
+    };
+
+    let Some(row) = existing else {
+        let conversation_id = uuid::Uuid::new_v4().to_string();
+        if let Err(e) =
+            conversations::insert_conversation(pool, &conversation_id, user_id, attested).await
+        {
+            tracing::error!(error = %e, "could not record a pi conversation");
+            return None;
+        }
+        return Some(Opening {
+            conversation_id,
+            start_seq: 0,
+            transcript: None,
+            resumed: false,
+        });
+    };
+
+    if let Err(e) = conversations::update_conversation_session(pool, &row.id, attested).await {
+        tracing::error!(error = %e, "could not re-point a resumed pi conversation");
+        return None;
+    }
+    Some(Opening {
+        start_seq: u64::try_from(row.last_seq).unwrap_or(0),
+        transcript: transcript::render(pool, &row.id).await,
+        conversation_id: row.id,
+        resumed: true,
+    })
+}
+
 pub(super) async fn commands(
     State(pool): State<Arc<PgPool>>,
     Extension(registry): Extension<PiRegistry>,
@@ -177,8 +234,6 @@ pub(super) async fn stream(
         return problem(StatusCode::NOT_FOUND, "no such conversation");
     };
     if session.user_id != user_id {
-        // Deliberately the same answer as "no such conversation" would give a
-        // stranger: existence is not something to confirm.
         return problem(StatusCode::NOT_FOUND, "no such conversation");
     }
 
@@ -189,8 +244,6 @@ pub(super) async fn stream(
         .or(q.since)
         .unwrap_or(0);
 
-    // Subscribe before replaying, so a frame emitted between the two arrives
-    // twice rather than not at all. The widget dedupes on `seq`.
     let mut rx = session.subscribe();
     let backlog = session.replay_since(since);
 
@@ -201,8 +254,6 @@ pub(super) async fn stream(
         loop {
             match rx.recv().await {
                 Ok(event) => yield Ok(sse_event(&event)),
-                // Lagged: this viewer fell behind the broadcast buffer. Keep the
-                // stream open — reconnecting with Last-Event-ID repairs the gap.
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
                     tracing::debug!(skipped = n, "pi viewer lagged");
                 },
@@ -217,8 +268,6 @@ pub(super) async fn stream(
         .into_response()
 }
 
-/// The `seq` doubles as the SSE id, which is what makes `Last-Event-ID` resume
-/// exactly where the viewer left off.
 fn sse_event(event: &events::PiEvent) -> Event {
     let data = serde_json::to_string(event)
         .unwrap_or_else(|_| "{\"type\":\"error\",\"message\":\"unserialisable\"}".to_owned());

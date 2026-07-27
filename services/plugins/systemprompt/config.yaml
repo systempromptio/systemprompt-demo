@@ -30,6 +30,8 @@ plugin:
       - explain_systemprompt
       - demonstrate_governance
       - demonstrate_tool_rejection
+      - demonstrate_scope_rejection
+      - demonstrate_gateway_safety
       - analyse_governance_stats
     exclude: []
 

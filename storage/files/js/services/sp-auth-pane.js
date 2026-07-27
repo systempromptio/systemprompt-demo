@@ -25,6 +25,7 @@ import {
   buildAuthCredentialPayload, buildCreationCredentialPayload,
   establishSessionInline, WEBAUTHN_BASE,
 } from '/js/services/webauthn-passkey-helpers.js';
+import { renderAdminPulse } from '/js/services/sp-pulse-admin.js';
 
 /** How often the authoritative numbers are re-read while a session is live. */
 const POLL_MS = 3000;
@@ -35,6 +36,17 @@ const IDLE_POLL_MS = 15000;
 /** Nothing has happened for this long → treat the session as idle. */
 const IDLE_AFTER_MS = 60000;
 
+/** The platform pulse is cached server-side for a minute; match it. */
+const PULSE_POLL_MS = 60000;
+
+/** The pipeline, before any poll has told us what it did. */
+const IDLE_STAGES = [
+  { id: 'secret_scan', label: 'Secret scan', passed: 0, failed: 0, active: false },
+  { id: 'scope_check', label: 'Scope check', passed: 0, failed: 0, active: false },
+  { id: 'tool_blocklist', label: 'Tool blocklist', passed: 0, failed: 0, active: false },
+  { id: 'rate_limit', label: 'Rate limit', passed: 0, failed: 0, active: false },
+];
+
 const TEAM_SIZES = ['1–10', '11–50', '51–200', '201–1000', '1000+'];
 
 class SpAuthPane extends HTMLElement {
@@ -44,6 +56,7 @@ class SpAuthPane extends HTMLElement {
     this._conversation = null;
     this._token = null;
     this._pollTimer = null;
+    this._pulseTimer = null;
     this._lastFrameAt = 0;
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
   }
@@ -134,6 +147,15 @@ class SpAuthPane extends HTMLElement {
       + '<span data-role="busy-text"></span></div>'
       + this._signinFormHtml()
       + this._registerFormHtml()
+      // Lifetime totals only, and only once they arrive. A visitor who has not
+      // signed in is shown that the deployment has governed real traffic — the
+      // one claim worth making before they have any numbers of their own — and
+      // nothing narrow enough to be about a person.
+      + '<section class="pane-section pane-section--pulse" data-role="pulse" hidden>'
+      + '<h3 class="pane-h3">Across the platform '
+      + '<span class="pane-h3-sub" data-role="pulse-window"></span></h3>'
+      + '<p class="pane-pulse-note" data-role="pulse-all-time"></p>'
+      + '</section>'
       + '</div>';
 
     this._alert = this.querySelector('[data-role="alert"]');
@@ -383,16 +405,43 @@ class SpAuthPane extends HTMLElement {
       + '<p class="pane-credit-note" data-role="credit-note"></p>'
       + '</div>'
       + '</section>'
+      // Each group is one question. Splitting them is what turns a wall of
+      // numbers into an argument: which model, how much traffic, how fast,
+      // how many tokens, what it cost, and what policy did about it.
+      + sectionHtml('Model &amp; route', 'route', [
+        statHtml('model', 'Model', '—'),
+        statHtml('requested', 'Requested', 'as served'),
+        statHtml('provider', 'Provider', '—'),
+        statHtml('route', 'Gateway route', '—'),
+        statHtml('cache', 'Cache hits', '0%'),
+      ])
+      + sectionHtml('Traffic', 'traffic', [
+        statHtml('requests', 'Requests', '0'),
+        statHtml('tools', 'Tool calls', '0'),
+        statHtml('blocked', 'Blocked', '0'),
+        statHtml('errors', 'Errors', '0'),
+      ])
+      + sectionHtml('Latency', 'latency', [
+        statHtml('latency', 'p50', '—'),
+        statHtml('latency95', 'p95', '—'),
+        statHtml('latencyLast', 'Last turn', '—'),
+      ])
+      + sectionHtml('Tokens', 'tokens', [
+        statHtml('tokensIn', 'Input', '0'),
+        statHtml('tokensOut', 'Output', '0'),
+        statHtml('cacheRead', 'Cache read', '0'),
+        statHtml('cacheWrite', 'Cache written', '0'),
+      ])
+      + sectionHtml('Cost', 'cost-section', [
+        statHtml('cost', 'This session', '$0'),
+        statHtml('costPer', 'Per request', '$0'),
+      ])
+      // The stage list, not a tile grid: these are four sequential checks and
+      // the order they run in is part of what is being shown.
       + '<section class="pane-section">'
-      + '<h3 class="pane-h3">This session</h3>'
-      + '<dl class="pane-stats" data-role="stats">'
-      + statHtml('model', 'Model', '—')
-      + statHtml('tools', 'Tool calls', '0')
-      + statHtml('blocked', 'Blocked', '0')
-      + statHtml('latency', 'Latency p50', '—')
-      + statHtml('tokens', 'Tokens', '0')
-      + statHtml('cost', 'Cost', '$0')
-      + '</dl>'
+      + '<h3 class="pane-h3">Policy pipeline '
+      + '<span class="pane-h3-sub" data-role="stage-sub"></span></h3>'
+      + '<ol class="pane-stages" data-role="stages"></ol>'
       + '</section>'
       + '<section class="pane-section pane-section--feed">'
       + '<h3 class="pane-h3">Governance <span class="pane-h3-sub" data-role="feed-count"></span></h3>'
@@ -400,6 +449,15 @@ class SpAuthPane extends HTMLElement {
       + '<li class="pane-feed-empty">Ask the agent to read a file. Every decision it '
       + 'triggers is recorded here.</li>'
       + '</ol>'
+      + '</section>'
+      // Hidden until the pulse arrives. A visitor's own numbers prove we record
+      // them; this proves the machinery is not a diorama built for one person.
+      + '<section class="pane-section pane-section--pulse" data-role="pulse" hidden>'
+      + '<h3 class="pane-h3">Across the platform '
+      + '<span class="pane-h3-sub" data-role="pulse-window"></span></h3>'
+      + '<dl class="pane-stats pane-stats--pulse" data-role="pulse-stats"></dl>'
+      + '<p class="pane-pulse-note" data-role="pulse-models"></p>'
+      + '<p class="pane-pulse-note" data-role="pulse-all-time"></p>'
       + '</section>'
       + '<footer class="pane-foot">'
       + '<button type="button" class="pane-link" data-role="signout">Sign out</button>'
@@ -417,9 +475,20 @@ class SpAuthPane extends HTMLElement {
     this._feed = this.querySelector('[data-role="feed"]');
     this._feedCount = this.querySelector('[data-role="feed-count"]');
     this._credit = this.querySelector('[data-role="credit"]');
+    this._stages = this.querySelector('[data-role="stages"]');
+    this._stageSub = this.querySelector('[data-role="stage-sub"]');
+    this._pulse = this.querySelector('[data-role="pulse"]');
+    // Render the four stages at zero straight away. Waiting for the first poll
+    // would mean the pipeline appears to come into existence once something
+    // trips it, which is the opposite of the claim.
+    this._applyStages(IDLE_STAGES);
     this.querySelector('[data-role="signout"]').addEventListener('click', () => this._signOut());
 
+    // The admin block is rebuilt from scratch on each render, so drop the stale
+    // reference rather than pointing at a node that is no longer in the tree.
+    this._pulseAdmin = null;
     if (this._conversation) this._startPolling();
+    this._startPulsePolling();
   }
 
   _stat(key, value) {
@@ -485,9 +554,134 @@ class SpAuthPane extends HTMLElement {
     this._pollTimer = setInterval(() => this._poll(), POLL_MS);
   }
 
+  /**
+   * The platform pulse runs on its own timer, an order of magnitude slower than
+   * the session poll: the aggregate is cached server-side for a minute, so
+   * asking every three seconds would be twenty requests for one answer.
+   *
+   * Separate from [`_startPolling`] because the two have different
+   * preconditions. Session telemetry needs a conversation; the pulse needs
+   * nothing at all, and is the only thing on this pane an anonymous visitor
+   * ever sees.
+   */
+  _startPulsePolling() {
+    this._stopPulsePolling();
+    this._pollPulse();
+    this._pulseTimer = setInterval(() => this._pollPulse(), PULSE_POLL_MS);
+  }
+
+  _stopPulsePolling() {
+    if (this._pulseTimer) clearInterval(this._pulseTimer);
+    this._pulseTimer = null;
+  }
+
   _stopPolling() {
     if (this._pollTimer) clearInterval(this._pollTimer);
     this._pollTimer = null;
+    this._stopPulsePolling();
+  }
+
+  /**
+   * The token is sent when there is one and omitted when there is not.
+   *
+   * An anonymous visitor has no embed token — `/embed-token` reads the session
+   * cookie — and the endpoint treats its absence as the anonymous tier rather
+   * than as a failure. So this runs on the sign-in view too, where it fills in
+   * the lifetime totals under the form.
+   */
+  async _pollPulse() {
+    if (!this._pulse) return;
+    const url = this._token
+      ? '/api/public/pi/pulse?token=' + encodeURIComponent(this._token)
+      : '/api/public/pi/pulse';
+    try {
+      const res = await fetch(url, { credentials: 'same-origin', redirect: 'manual' });
+      if (!res.ok) return;
+      this._applyPulse(await res.json());
+    } catch (_) {
+      // Context, not the visitor's own numbers — a miss costs nothing and the
+      // section simply stays as it was.
+    }
+  }
+
+  /**
+   * Show the deployment counted across everyone, at whatever depth the server
+   * decided this caller is owed.
+   *
+   * There is no tier check here, and deliberately no way to ask for a richer
+   * one: the shape of the payload *is* the tier. A window arrives only if the
+   * caller is signed in and the window holds enough people to aggregate without
+   * identifying them, and `detail` arrives only for an operator. Suppression
+   * used to be decided in this file, which meant the sparse numbers were sent
+   * and then hidden — a privacy control enforced by the party it protects
+   * against. Now they never leave the server.
+   *
+   * Counts arrive pre-formatted as strings because the member tier rounds them
+   * ("1.2k") and the admin tier does not ("1,247"). One render path, two
+   * vocabularies, chosen server-side.
+   */
+  _applyPulse(p) {
+    if (!this._pulse || !p) return;
+    const w = p.window;
+    const all = p.all_time || {};
+
+    const stats = this.querySelector('[data-role="pulse-stats"]');
+    const models = this.querySelector('[data-role="pulse-models"]');
+    const heading = this.querySelector('[data-role="pulse-window"]');
+    if (heading) heading.textContent = w ? 'last ' + (p.window_hours || 24) + 'h' : 'all time';
+
+    if (w && stats) {
+      stats.hidden = false;
+      stats.innerHTML = ''
+        + statHtml('pPeople', 'People', w.people)
+        + statHtml('pSessions', 'Sessions', w.sessions)
+        + statHtml('pRequests', 'Requests', w.requests)
+        + statHtml('pTools', 'Tool calls', w.tool_calls)
+        + statHtml('pAllow', 'Allowed', w.allow_rate_percent === null
+          || w.allow_rate_percent === undefined ? '—' : pct(w.allow_rate_percent))
+        + statHtml('pLatency', 'Latency p50', ms(w.latency_p50_ms));
+
+      const mix = (w.model_mix || []).slice(0, 3)
+        .map((m) => m.model + ' ' + pct(m.percent)).join(' · ');
+      const blocked = (w.blocked_tools || [])[0];
+      const worst = blocked
+        ? ' Most refused: ' + blocked.tool_name + ' ×' + blocked.denials + '.'
+        : '';
+      models.textContent = (mix ? 'Models: ' + mix + '.' : '') + worst;
+      models.hidden = !mix && !worst;
+    } else if (stats) {
+      stats.hidden = true;
+      if (models) models.hidden = true;
+    }
+
+    this.querySelector('[data-role="pulse-all-time"]').textContent = 'All time — '
+      + all.sessions + ' sessions, ' + all.requests + ' requests, '
+      + all.tool_calls + ' governed tool calls, '
+      + all.secrets_caught + ' secrets caught.';
+
+    this._applyAdminPulse(p.detail);
+    this._pulse.hidden = false;
+  }
+
+  /**
+   * The operator block, when the server sent one.
+   *
+   * Created on first use rather than rendered empty and filled: for two of the
+   * three tiers it never arrives, and an empty container that only ever gets
+   * hidden is markup every visitor pays for so one does not have to.
+   */
+  _applyAdminPulse(detail) {
+    if (!detail) {
+      if (this._pulseAdmin) this._pulseAdmin.hidden = true;
+      return;
+    }
+    if (!this._pulseAdmin) {
+      this._pulseAdmin = document.createElement('div');
+      this._pulseAdmin.className = 'pulse-admin';
+      this._pulse.append(this._pulseAdmin);
+    }
+    this._pulseAdmin.hidden = false;
+    renderAdminPulse(this._pulseAdmin, detail);
   }
 
   async _poll() {
@@ -512,16 +706,77 @@ class SpAuthPane extends HTMLElement {
     }
   }
 
+  /**
+   * Every field is guarded. The pane is served from `web/dist` and the API
+   * from the binary, so a deploy can land one without the other; an older
+   * server simply omits the new keys, and every new tile falls back to a dash
+   * rather than printing `undefined` next to real numbers.
+   */
   _applyStats(s) {
     this._stat('model', s.model || '—');
-    this._stat('tools', String(Math.max(s.tool_calls, this._live.tools)));
-    this._stat('blocked', String(Math.max(s.denied, this._live.blocked)));
-    this._stat('latency', s.latency_p50_ms === null || s.latency_p50_ms === undefined
-      ? '—' : s.latency_p50_ms + 'ms');
-    this._stat('tokens', compact(s.input_tokens) + ' in / ' + compact(s.output_tokens) + ' out');
+    // The server sends this only when a route actually rewrote the model, so
+    // the usual reading is the reassuring one: you got what you asked for.
+    this._stat('requested', s.requested_model || 'as served');
+    this._stat('provider', s.provider || '—');
+    this._stat('route', s.route_match || 'default');
+    this._stat('cache', pct(s.cache_hit_percent));
+
+    this._stat('requests', String(s.requests || 0));
+    this._stat('tools', String(Math.max(s.tool_calls || 0, this._live.tools)));
+    this._stat('blocked', String(Math.max(s.denied || 0, this._live.blocked)));
+    this._stat('errors', String(s.errors || 0));
+
+    this._stat('latency', ms(s.latency_p50_ms));
+    this._stat('latency95', ms(s.latency_p95_ms));
+    this._stat('latencyLast', ms(s.latency_last_ms));
+
+    this._stat('tokensIn', compact(s.input_tokens));
+    this._stat('tokensOut', compact(s.output_tokens));
+    this._stat('cacheRead', compact(s.cache_read_tokens));
+    this._stat('cacheWrite', compact(s.cache_creation_tokens));
+
     this._stat('cost', s.cost_display || '$0');
+    this._stat('costPer', s.cost_per_request_display || '$0');
+
+    if (s.policy_stages && s.policy_stages.length) this._applyStages(s.policy_stages);
     this._applyCredit(s.credit);
     this._renderFeed(s.events || []);
+  }
+
+  /**
+   * The four checks, in the order they run.
+   *
+   * A stage that has never evaluated anything is dimmed rather than hidden:
+   * "four checks run on every call, none has tripped" is the claim, and a list
+   * that grows from one row to four as things happen argues the opposite.
+   */
+  _applyStages(stages) {
+    if (!this._stages) return;
+    const blocked = stages.reduce((n, st) => n + (st.failed || 0), 0);
+    this._stageSub.textContent = blocked
+      ? blocked + (blocked === 1 ? ' block' : ' blocks')
+      : stages.length + ' checks per call';
+
+    this._stages.innerHTML = '';
+    stages.forEach((st) => {
+      const li = document.createElement('li');
+      li.className = 'pane-stage';
+      li.dataset.hot = st.failed > 0 ? '1' : '0';
+      li.dataset.active = st.active ? '1' : '0';
+
+      const name = document.createElement('span');
+      name.className = 'pane-stage-name';
+      name.textContent = st.label || st.id;
+
+      const tally = document.createElement('span');
+      tally.className = 'pane-stage-tally';
+      tally.textContent = st.failed > 0
+        ? st.passed + ' passed · ' + st.failed + ' blocked'
+        : (st.active ? st.passed + ' passed' : 'idle');
+
+      li.append(name, tally);
+      this._stages.append(li);
+    });
   }
 
   /**
@@ -615,6 +870,34 @@ class SpAuthPane extends HTMLElement {
 function statHtml(key, label, initial) {
   return '<div class="pane-stat"><dt>' + label + '</dt>'
     + '<dd data-stat="' + key + '">' + initial + '</dd></div>';
+}
+
+/** One labelled group of tiles. */
+function sectionHtml(title, role, tiles) {
+  return '<section class="pane-section">'
+    + '<h3 class="pane-h3">' + title + '</h3>'
+    + '<dl class="pane-stats" data-role="' + role + '">' + tiles.join('') + '</dl>'
+    + '</section>';
+}
+
+/** Latencies are absent until a turn completes; say so rather than showing 0. */
+function ms(v) {
+  return (v === null || v === undefined) ? '—' : v + 'ms';
+}
+
+function pct(v) {
+  return String(Number(v) || 0) + '%';
+}
+
+/**
+ * Platform figures keep every digit, thousands-separated.
+ *
+ * Deliberately not `compact()`: "214,880 requests" is the claim, and rounding
+ * it to "215k" trades away the precision that makes it credible. Session
+ * numbers are the opposite case — they have one line and change every poll.
+ */
+function count(n) {
+  return (Number(n) || 0).toLocaleString('en-US');
 }
 
 function feedItem(e) {

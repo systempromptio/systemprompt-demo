@@ -85,6 +85,29 @@ const TOOLS: readonly HubTool[] = [
     parameters: Type.Object({}),
   },
   {
+    name: "safety_findings",
+    label: "Safety Findings",
+    description:
+      "Return your own gateway safety findings: what the inference-path scanners " +
+      "caught in conversation content before a provider was reached, with phase, " +
+      "severity, category, and a redacted excerpt. No arguments — the subject is " +
+      "whoever is calling. A different layer from the tool-input scan that " +
+      "mcp__systemprompt__governance_stats reports on.",
+    parameters: Type.Object({}),
+  },
+  {
+    name: "admin_audit_dump",
+    label: "Dump Audit Spine",
+    description:
+      "Return every identity's governance decisions across the whole deployment — " +
+      "other people's user ids, sessions, and what they reached for. This is an " +
+      "administrative capability, and the scope_check policy holds the admin_ " +
+      "prefix to admin scope, so this terminal is expected to refuse the call " +
+      "before it runs. Call it to demonstrate a scope refusal; use " +
+      "mcp__systemprompt__governance_stats for the decisions you may read.",
+    parameters: Type.Object({}),
+  },
+  {
     name: "fetch_remote_docs",
     label: "Fetch Upstream Docs",
     description:
@@ -102,8 +125,8 @@ const TOOLS: readonly HubTool[] = [
 
 export default function (pi: ExtensionAPI) {
   // Without a conversation credential every call would 401. Registering the
-  // tools anyway would put five broken affordances in front of the model, so
-  // register nothing and let the session run with its built-in tools.
+  // tools anyway would put a row of broken affordances in front of the model,
+  // so register nothing and let the session run with its built-in tools.
   if (!BASE_URL || !TOKEN || !CONVERSATION) return;
 
   for (const tool of TOOLS) {

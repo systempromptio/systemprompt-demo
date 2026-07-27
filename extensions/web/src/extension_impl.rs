@@ -22,9 +22,9 @@ use crate::extenders::OrgUrlExtender;
 use crate::features::FeaturePagePrerenderer;
 use crate::homepage::{HomepagePageDataProvider, HomepagePrerenderer};
 use crate::jobs::{
-    BundleAdminCssJob, ContentAnalyticsAggregationJob, ContentIngestionJob,
-    ContentPrerenderJob, CopyExtensionAssetsJob, GovernanceBootstrapJob, LlmsTxtGenerationJob,
-    PublishPipelineJob, RobotsTxtGenerationJob, SitemapGenerationJob,
+    BundleAdminCssJob, ContentAnalyticsAggregationJob, ContentIngestionJob, ContentPrerenderJob,
+    CopyExtensionAssetsJob, GovernanceBootstrapJob, LlmsTxtGenerationJob, PublishPipelineJob,
+    RobotsTxtGenerationJob, SitemapGenerationJob,
 };
 use crate::navigation::NavigationPageDataProvider;
 use crate::partials::{
@@ -157,9 +157,6 @@ impl Extension for WebExtension {
             Arc::clone(&session_service),
             Arc::clone(&analytics_provider),
         );
-        // Always present — a homepage whose terminal 404s is the failure the
-        // pi config path exists to remove. Its routes are absolute, so it
-        // merges at the site root rather than under /api/public.
         let pi_api = admin::pi_terminal_router(
             Arc::clone(&write_pool),
             Arc::clone(&session_service),
@@ -250,8 +247,6 @@ impl Extension for WebExtension {
 }
 
 impl WebExtension {
-    /// Bare-path aliases for the admin plane's entry pages, so `/login` works
-    /// as well as `/admin/login`. Static, so it lives apart from `router`.
     fn admin_redirects() -> Router {
         use axum::response::Redirect;
         use axum::routing::get;
@@ -269,9 +264,6 @@ impl WebExtension {
                 "/onboarding",
                 get(|| async { Redirect::temporary("/admin/continue") }),
             )
-        // No `/setup` alias: the page it pointed at went with the rest of the
-        // admin console, and `/admin/continue` now lands an approved account on
-        // `/`, which is the whole product.
     }
 
     // Why: the governance webhook needs the analytics provider as well as the

@@ -7,17 +7,15 @@
 
 use crate::repositories::{self, DECISION_LIMIT};
 use crate::tools::GovernanceStatsInput;
-use systemprompt::database::DbPool;
-use systemprompt::identifiers::SessionId;
 use rmcp::ErrorData as McpError;
 use std::future::Future;
-use systemprompt::identifiers::McpExecutionId;
+use systemprompt::database::DbPool;
+use systemprompt::identifiers::{McpExecutionId, SessionId};
 use systemprompt::mcp::McpToolHandler;
 use systemprompt::models::artifacts::CliArtifact;
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 
-use super::text_artifact;
-use super::db_error;
+use super::{db_error, text_artifact};
 
 /// `governance_stats` — read the caller's own audit rows back.
 ///
@@ -51,9 +49,6 @@ impl McpToolHandler for GovernanceStatsHandler {
         let user_id = ctx.user_id().clone();
         let session_id = ctx.session_id().clone();
         async move {
-            // No pool means the server started without a database. Reporting
-            // that plainly beats an empty table, which would read as "nothing
-            // was governed" rather than "nothing could be read".
             let Some(pool) = db_pool.pool() else {
                 return Err(McpError::internal_error(
                     "This server has no database connection, so the governance spine \
@@ -97,7 +92,6 @@ impl McpToolHandler for GovernanceStatsHandler {
     }
 }
 
-/// One session's spine, as the four queries return it.
 struct Spine {
     tallies: Vec<repositories::PolicyTally>,
     decisions: Vec<repositories::DecisionRow>,
@@ -115,22 +109,11 @@ impl Spine {
         self.tallies.iter().map(|t| t.denied).sum()
     }
 
-    /// Whether the caller presented a real session.
-    ///
-    /// `SysRequestContext::default()` carries the placeholder `"unknown"`. Every
-    /// query here is session-scoped, so that placeholder matches nothing and
-    /// renders as a spine full of zeros — which reads as "this deployment
-    /// governs nothing" rather than "you did not say which session to read".
     fn has_session(&self) -> bool {
         !self.session_id.as_str().is_empty() && self.session_id.as_str() != "unknown"
     }
 }
 
-/// Render the spine as Markdown for a model to read and summarise.
-///
-/// Every section says something explicit when it is empty. A blank section
-/// reads to a model as "nothing to report", and it would then tell the user
-/// that nothing was governed — the opposite of what an empty table means here.
 fn render_spine(stats: &Spine) -> String {
     if !stats.has_session() {
         return "# Governance statistics\n\nThis caller presented no session id, so no \
@@ -189,9 +172,6 @@ fn render_spine(stats: &Spine) -> String {
     } else {
         body.push_str("| When | Tool | Outcome | Policy | Reason |\n|---|---|---|---|---|\n");
         for row in &stats.decisions {
-            // A pipe in a policy reason would silently break the table, and the
-            // reason is the one field here written by something other than this
-            // crate.
             let reason = row.reason.replace('|', "\\|");
             body.push_str(&format!(
                 "| {} | `{}` | {} | `{}` | {} |\n",

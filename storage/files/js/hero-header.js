@@ -59,11 +59,24 @@
         source.type = pair[1];
         video.append(source);
       });
-      video.addEventListener('canplay', function () {
+      var reveal = function () {
         video.classList.add('is-ready');
         play();
-      }, { once: true });
+      };
+      // `canplay` on its own is a trap here: the element ships `preload="none"`
+      // so that first paint costs only the poster, and under that setting
+      // `load()` buffers nothing and no readiness event ever fires — the video
+      // would sit at `opacity: 0` forever. Lifting preload is what makes the
+      // fetch happen, and it happens here, on the idle callback, which is the
+      // whole point of attaching late.
+      video.preload = 'auto';
+      video.addEventListener('canplay', reveal, { once: true });
+      video.addEventListener('loadeddata', reveal, { once: true });
       video.load();
+      // Muted + playsinline is an allowed autoplay, and starting the playback
+      // is also what guarantees the buffer fills on browsers that treat
+      // `preload` as a hint rather than an instruction.
+      play();
     };
     if (window.requestIdleCallback) {
       window.requestIdleCallback(attach, { timeout: 2500 });

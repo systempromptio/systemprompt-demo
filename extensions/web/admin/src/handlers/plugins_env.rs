@@ -105,10 +105,6 @@ fn load_plugin_variable_defs(
     Ok(config.plugin.map(|p| p.variables).unwrap_or_default())
 }
 
-/// The `plugin.variables` block of `services/plugins/<id>/config.yaml`.
-///
-/// Only the one block is modelled; every other key in the file is a concern of
-/// whatever loads it, so the outer shapes stay deliberately permissive.
 #[derive(Debug, Deserialize)]
 struct PluginConfigFile {
     plugin: Option<PluginSection>,
@@ -129,7 +125,6 @@ pub(crate) struct PluginVariableDef {
     pub name: String,
     #[serde(default)]
     pub description: String,
-    /// A declared variable is required unless it says otherwise.
     #[serde(default = "required_by_default")]
     pub required: bool,
     #[serde(default)]

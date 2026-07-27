@@ -16,6 +16,12 @@ pub struct SessionKpis {
     pub total_input_tokens: i64,
     pub total_output_tokens: i64,
     pub total_cost_microdollars: i64,
+    /// Prompt tokens the provider served from its own cache rather than
+    /// re-reading. Billed at a fraction of a fresh input token, so a pane that
+    /// shows spend without showing this cannot explain why the two disagree.
+    pub total_cache_read_tokens: i64,
+    pub total_cache_creation_tokens: i64,
+    pub cache_hit_count: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -24,9 +30,15 @@ pub struct SessionRequestRow {
     pub context_id: Option<ContextId>,
     pub trace_id: Option<TraceId>,
     pub model: String,
+    /// What the client asked for. Differs from `model` whenever a gateway route
+    /// rewrote it, which is the moment worth showing.
+    pub requested_model: Option<String>,
+    pub provider: String,
+    pub route_match: Option<String>,
     pub status: String,
     pub latency_ms: Option<i32>,
     pub cost_microdollars: i64,
+    pub cache_hit: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -43,7 +55,10 @@ pub async fn get_session_kpis(
             COUNT(*) FILTER (WHERE status = 'failed')::bigint  AS "error_count!",
             COALESCE(SUM(input_tokens), 0)::bigint             AS "total_input_tokens!",
             COALESCE(SUM(output_tokens), 0)::bigint            AS "total_output_tokens!",
-            COALESCE(SUM(cost_microdollars), 0)::bigint        AS "total_cost_microdollars!"
+            COALESCE(SUM(cost_microdollars), 0)::bigint        AS "total_cost_microdollars!",
+            COALESCE(SUM(cache_read_tokens), 0)::bigint        AS "total_cache_read_tokens!",
+            COALESCE(SUM(cache_creation_tokens), 0)::bigint    AS "total_cache_creation_tokens!",
+            COUNT(*) FILTER (WHERE cache_hit)::bigint          AS "cache_hit_count!"
         FROM ai_requests
         WHERE session_id = $1
         "#,
@@ -59,6 +74,9 @@ pub async fn get_session_kpis(
         total_input_tokens: row.total_input_tokens,
         total_output_tokens: row.total_output_tokens,
         total_cost_microdollars: row.total_cost_microdollars,
+        total_cache_read_tokens: row.total_cache_read_tokens,
+        total_cache_creation_tokens: row.total_cache_creation_tokens,
+        cache_hit_count: row.cache_hit_count,
     })
 }
 
@@ -74,9 +92,13 @@ pub async fn list_session_requests(
             context_id                          AS "context_id?: ContextId",
             trace_id                            AS "trace_id?: TraceId",
             model                               AS "model!",
+            requested_model                     AS "requested_model?",
+            provider                            AS "provider!",
+            route_match                         AS "route_match?",
             status                              AS "status!",
             latency_ms                          AS "latency_ms?",
             cost_microdollars                   AS "cost_microdollars!",
+            cache_hit                           AS "cache_hit!",
             created_at                          AS "created_at!"
         FROM ai_requests
         WHERE session_id = $1

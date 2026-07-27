@@ -20,6 +20,7 @@ use super::{session, token};
 use crate::error::{AdminError, AdminResult};
 use crate::handlers::extract_user_from_cookie;
 use crate::repositories;
+use crate::repositories::pi::conversations;
 use crate::types::UserContext;
 
 #[derive(Debug, Serialize)]
@@ -28,8 +29,6 @@ struct IssuedToken {
     expires_at: i64,
 }
 
-/// Admin-only issuance for an arbitrary user, mounted on the authenticated
-/// admin router rather than on the public pi router.
 pub(crate) async fn issue_embed_token_handler(
     Extension(user_ctx): Extension<UserContext>,
     State(pool): State<Arc<PgPool>>,
@@ -42,20 +41,11 @@ pub(crate) async fn issue_embed_token_handler(
     mint_for(&pool, &target_user_id).await
 }
 
-/// Self-service issuance for whoever owns the session cookie.
-///
-/// Deliberately gated on *registration only*, not on approval: the human review
-/// and the signup credit gate the Bridge, and holding the terminal behind them
-/// too would mean a visitor who just signed up sees a dead widget. A pending
-/// account still cannot reach the admin plane — that gate is unchanged and
-/// lives in `middleware::gates`.
-///
-/// Mounted on the public pi router, so it must not assume any middleware has
-/// run: the cookie is read and validated here.
 pub(super) async fn issue_own_embed_token(
     State(pool): State<Arc<PgPool>>,
     headers: axum::http::HeaderMap,
-) -> Response { // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
+) -> Response {
+    // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
     let Ok(session) = extract_user_from_cookie(&headers) else {
         return unauthorized();
     };
@@ -64,8 +54,6 @@ pub(super) async fn issue_own_embed_token(
         .unwrap_or_else(IntoResponse::into_response)
 }
 
-/// The shared mint. `find_share_token_version` returning `None` is what makes a
-/// deleted account's cookie useless even while the JWT is still in date.
 async fn mint_for(pool: &Arc<PgPool>, user_id: &UserId) -> AdminResult<Response> {
     let secret = SecretsBootstrap::manifest_signing_secret_seed().map_err(AdminError::internal)?;
     let version = repositories::users::find_or_create_share_token_version(pool, user_id)
@@ -80,7 +68,6 @@ async fn mint_for(pool: &Arc<PgPool>, user_id: &UserId) -> AdminResult<Response>
     .into_response())
 }
 
-/// Verify the embed token and recheck the revocation version against the DB.
 pub(super) async fn authenticate(pool: &Arc<PgPool>, raw: &str) -> Option<UserId> {
     let secret = SecretsBootstrap::manifest_signing_secret_seed().ok()?;
     let (user_id, version) = match token::verify(&secret, raw, now_secs()) {
@@ -90,12 +77,24 @@ pub(super) async fn authenticate(pool: &Arc<PgPool>, raw: &str) -> Option<UserId
             return None;
         },
     };
-    // Revocation: bumping `share_token_version` invalidates every token issued
-    // against the old one, so the signature alone is not sufficient.
     let current = repositories::users::find_share_token_version(pool, &user_id)
         .await
         .ok()??;
     (current == version).then_some(user_id)
+}
+
+pub(super) async fn authorize_conversation(
+    pool: &Arc<PgPool>,
+    raw_token: &str,
+    conversation_id: &str,
+) -> Option<conversations::PiConversationRow> {
+    let user_id = authenticate(pool, raw_token).await?;
+    conversations::find_conversation(pool, conversation_id, &user_id)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!(error = %e, "could not read a pi conversation");
+            None
+        })
 }
 
 pub(super) async fn authorize_session(

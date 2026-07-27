@@ -1,9 +1,9 @@
 //! One policy stage, as the browser sees it.
 //!
-//! A distinct type from the governance chain's own [`StageOutcome`]: that one is
-//! shaped for Rust callers, and this one is a wire contract for a UI. Keeping
-//! them apart means a rendering tweak stays a rendering tweak rather than
-//! reaching into the module that decides whether calls are allowed.
+//! A distinct type from the governance chain's own [`StageOutcome`]: that one
+//! is shaped for Rust callers, and this one is a wire contract for a UI.
+//! Keeping them apart means a rendering tweak stays a rendering tweak rather
+//! than reaching into the module that decides whether calls are allowed.
 
 use serde::Serialize;
 
