@@ -61,11 +61,14 @@ async fn attributes_row_to_anonymous_principal_when_present() {
 
     let rows = db.mcp_rows(SERVER).await;
     assert_eq!(rows.len(), 1, "expected one attributed rejection row");
-    let (user_id, action, entity_type, description) = &rows[0];
+    let (user_id, action, entity_type, description, session_id) = &rows[0];
     assert_eq!(user_id, "anon-1", "attributed to the anonymous principal");
     assert_eq!(action, "rejected");
     assert_eq!(entity_type.as_deref(), Some("mcp_server"));
     assert_eq!(description, "Access rejected on systemprompt: scope denied");
+    // A rejection happens before authentication, so there is no session to
+    // stamp. Recording one would be inventing it.
+    assert_eq!(session_id.as_deref(), None);
 
     db.cleanup().await;
 }
