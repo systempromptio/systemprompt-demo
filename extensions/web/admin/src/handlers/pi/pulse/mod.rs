@@ -48,9 +48,8 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::PgPool;
-use systemprompt::identifiers::{AgentId, UserId};
 
 mod wire;
 
@@ -64,9 +63,6 @@ use super::tier::{Tier, resolve};
 use super::{format, normalize};
 use crate::repositories::analytics::pulse as repo;
 use crate::repositories::{analytics, dashboard};
-use crate::types::{
-    ActivityStats, HourlyActivity, RealtimePulse, SkillCount, ToolSuccessRate, TopUser, TrafficData,
-};
 
 const CACHE_TTL: Duration = Duration::from_secs(60);
 
@@ -134,21 +130,27 @@ const fn ttl(tier: Tier) -> Duration {
     }
 }
 
-fn fresh_snapshot(tier: Tier) -> Option<PulseResponse> {
+fn snapshot_at(tier: Tier) -> Option<(Duration, PulseResponse)> {
     let guard = CACHE.lock().ok()?;
-    let (at, snapshot) = guard[tier.index()].as_ref()?;
-    let age = at.elapsed();
-    (age < ttl(tier)).then(|| snapshot.clone().aged(age.as_secs()))
+    let taken = guard[tier.index()]
+        .as_ref()
+        .map(|(at, snapshot)| (at.elapsed(), snapshot.clone()));
+    drop(guard);
+    taken
+}
+
+fn fresh_snapshot(tier: Tier) -> Option<PulseResponse> {
+    let (age, snapshot) = snapshot_at(tier)?;
+    (age < ttl(tier)).then(|| snapshot.aged(age.as_secs()))
 }
 
 fn stale_snapshot(tier: Tier) -> Option<PulseResponse> {
-    let guard = CACHE.lock().ok()?;
-    let (at, snapshot) = guard[tier.index()].as_ref()?;
-    Some(snapshot.clone().aged(at.elapsed().as_secs()))
+    let (age, snapshot) = snapshot_at(tier)?;
+    Some(snapshot.aged(age.as_secs()))
 }
 
 impl PulseResponse {
-    fn aged(mut self, seconds: u64) -> Self {
+    const fn aged(mut self, seconds: u64) -> Self {
         self.age_seconds = seconds;
         self
     }

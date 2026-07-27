@@ -60,8 +60,7 @@ pub(super) async fn resolve(pool: &Arc<PgPool>, raw: &str) -> Tier {
 
     match repositories::users::queries::find_user_access(pool, &user_id).await {
         Ok(Some(access)) if access.roles.iter().any(|r| r == "admin") => Tier::Admin,
-        Ok(Some(_)) => Tier::Member,
-        Ok(None) => Tier::Member,
+        Ok(_) => Tier::Member,
         Err(e) => {
             tracing::warn!(error = %e, user_id = %user_id, "could not read roles for the pulse tier");
             Tier::Member

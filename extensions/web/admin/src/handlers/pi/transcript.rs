@@ -128,7 +128,7 @@ mod tests {
             "tool_name": "read",
             "reason": "workspace_scope: /etc/passwd is outside the workspace",
         });
-        let rendered = section("tool_blocked", &body).expect("a blocked call renders");
+        let rendered = section("tool_blocked", &body).unwrap_or_default();
         assert!(rendered.contains("read"));
         assert!(!rendered.contains("workspace_scope"));
     }

@@ -29,11 +29,16 @@ pub struct SessionRequestRow {
     pub id: String,
     pub context_id: Option<ContextId>,
     pub trace_id: Option<TraceId>,
-    pub model: String,
+    /// Absent when the request was refused before routing resolved a model —
+    /// the `rejected` status. That row is the whole point of a governance
+    /// pane, so it must survive the read rather than be asserted away.
+    pub model: Option<String>,
     /// What the client asked for. Differs from `model` whenever a gateway route
-    /// rewrote it, which is the moment worth showing.
+    /// rewrote it, which is the moment worth showing. Outlives `model`: a
+    /// rejected request still records what was asked for.
     pub requested_model: Option<String>,
-    pub provider: String,
+    /// Absent for the same reason as `model`.
+    pub provider: Option<String>,
     pub route_match: Option<String>,
     pub status: String,
     pub latency_ms: Option<i32>,
@@ -91,9 +96,9 @@ pub async fn list_session_requests(
             id                                  AS "id!",
             context_id                          AS "context_id?: ContextId",
             trace_id                            AS "trace_id?: TraceId",
-            model                               AS "model!",
+            model                               AS "model?",
             requested_model                     AS "requested_model?",
-            provider                            AS "provider!",
+            provider                            AS "provider?",
             route_match                         AS "route_match?",
             status                              AS "status!",
             latency_ms                          AS "latency_ms?",

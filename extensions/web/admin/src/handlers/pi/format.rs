@@ -39,11 +39,16 @@ pub fn median(values: Vec<i32>) -> Option<i32> {
     percentile(values, 50)
 }
 
+// Why: nearest rank rather than interpolation — a demo session is a handful of
+// turns, and an interpolated p95 over four samples reports a latency no request
+// actually had. The index is `len * p / 100` so p50 lands on the upper of the
+// two middle values in an even set, which is what `median` promised before it
+// was expressed in terms of this function, and what its test pins.
 pub(crate) fn percentile(mut values: Vec<i32>, p: u32) -> Option<i32> {
     if values.is_empty() {
         return None;
     }
     values.sort_unstable();
-    let rank = (values.len() * p as usize).div_ceil(100).max(1);
-    Some(values[rank.min(values.len()) - 1])
+    let index = (values.len() * p as usize / 100).min(values.len() - 1);
+    Some(values[index])
 }

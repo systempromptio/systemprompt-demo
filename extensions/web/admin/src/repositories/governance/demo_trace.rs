@@ -60,7 +60,11 @@ pub async fn list_demo_trace(
              SELECT id,
                     created_at,
                     'request' as kind,
-                    COALESCE(requested_model, model) as subject,
+                    -- A request refused before routing carries neither model,
+                    -- and `subject` is asserted non-null by the outer select.
+                    -- The row is precisely the one this feed exists to show, so
+                    -- it gets a label rather than being dropped.
+                    COALESCE(requested_model, model, 'unrouted') as subject,
                     status as outcome,
                     '' as policy,
                     COALESCE(NULLIF(error_message, ''),

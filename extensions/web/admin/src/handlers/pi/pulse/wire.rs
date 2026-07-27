@@ -4,98 +4,104 @@
 //! reasons: these are the browser's contract, the queries beside them are how
 //! the numbers are found.
 
+use std::sync::Arc;
+
+use chrono::Utc;
 use serde::Serialize;
+use systemprompt::identifiers::{AgentId, UserId};
 
 use super::super::normalize;
-use crate::types::TopUser;
+use crate::types::{
+    ActivityStats, HourlyActivity, RealtimePulse, SkillCount, ToolSuccessRate, TopUser, TrafficData,
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub(super) struct PulseResponse {
-    age_seconds: u64,
-    window_hours: i64,
+    pub(super) age_seconds: u64,
+    pub(super) window_hours: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    window: Option<PulseWindowOut>,
-    all_time: PulseTotalsOut,
+    pub(super) window: Option<PulseWindowOut>,
+    pub(super) all_time: PulseTotalsOut,
     #[serde(skip_serializing_if = "Option::is_none")]
-    detail: Option<Box<AdminDetailOut>>,
+    pub(super) detail: Option<Box<AdminDetailOut>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct PulseWindowOut {
-    people: String,
-    sessions: String,
-    requests: String,
-    tool_calls: String,
-    allowed: String,
-    denied: String,
-    allow_rate_percent: Option<i64>,
-    latency_p50_ms: Option<i32>,
-    input_tokens: String,
-    output_tokens: String,
-    cost_display: String,
-    model_mix: Vec<ModelShareOut>,
-    blocked_tools: Vec<BlockedToolOut>,
+pub(super) struct PulseWindowOut {
+    pub(super) people: String,
+    pub(super) sessions: String,
+    pub(super) requests: String,
+    pub(super) tool_calls: String,
+    pub(super) allowed: String,
+    pub(super) denied: String,
+    pub(super) allow_rate_percent: Option<i64>,
+    pub(super) latency_p50_ms: Option<i32>,
+    pub(super) input_tokens: String,
+    pub(super) output_tokens: String,
+    pub(super) cost_display: String,
+    pub(super) model_mix: Vec<ModelShareOut>,
+    pub(super) blocked_tools: Vec<BlockedToolOut>,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct ModelShareOut {
-    model: String,
-    requests: String,
-    percent: i64,
+pub(super) struct ModelShareOut {
+    pub(super) model: String,
+    pub(super) requests: String,
+    pub(super) percent: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct BlockedToolOut {
-    tool_name: String,
-    denials: String,
+pub(super) struct BlockedToolOut {
+    pub(super) tool_name: String,
+    pub(super) denials: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct PulseTotalsOut {
-    sessions: String,
-    requests: String,
-    tool_calls: String,
-    secrets_caught: String,
+pub(super) struct PulseTotalsOut {
+    pub(super) sessions: String,
+    pub(super) requests: String,
+    pub(super) tool_calls: String,
+    pub(super) secrets_caught: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct AdminDetailOut {
-    traffic: Arc<TrafficData>,
-    realtime: RealtimePulse,
-    activity: ActivityStats,
-    active_users_24h: i64,
-    top_users: Vec<TopUserOut>,
-    popular_skills: Vec<SkillCount>,
-    hourly_activity: Vec<HourlyActivity>,
-    tool_success: Vec<ToolSuccessRate>,
-    tools: Vec<ToolRollupOut>,
-    agents: Vec<AgentRollupOut>,
+pub(super) struct AdminDetailOut {
+    pub(super) traffic: Arc<TrafficData>,
+    pub(super) realtime: RealtimePulse,
+    pub(super) activity: ActivityStats,
+    pub(super) active_users_24h: i64,
+    pub(super) top_users: Vec<TopUserOut>,
+    pub(super) popular_skills: Vec<SkillCount>,
+    pub(super) hourly_activity: Vec<HourlyActivity>,
+    pub(super) tool_success: Vec<ToolSuccessRate>,
+    pub(super) tools: Vec<ToolRollupOut>,
+    pub(super) agents: Vec<AgentRollupOut>,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct TopUserOut {
-    user_id: UserId,
-    display_name: String,
-    logins: i64,
-    edits: i64,
-    mcp_calls: i64,
-    last_active: chrono::DateTime<Utc>,
+pub(super) struct TopUserOut {
+    pub(super) user_id: UserId,
+    pub(super) display_name: String,
+    pub(super) logins: i64,
+    pub(super) edits: i64,
+    pub(super) mcp_calls: i64,
+    pub(super) last_active: chrono::DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct ToolRollupOut {
-    tool_name: String,
-    calls: i64,
-    errors: i64,
-    sessions: i64,
+pub(super) struct ToolRollupOut {
+    pub(super) tool_name: String,
+    pub(super) calls: i64,
+    pub(super) errors: i64,
+    pub(super) sessions: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct AgentRollupOut {
-    agent_id: AgentId,
-    calls: i64,
-    errors: i64,
-    sessions: i64,
+pub(super) struct AgentRollupOut {
+    pub(super) agent_id: AgentId,
+    pub(super) calls: i64,
+    pub(super) errors: i64,
+    pub(super) sessions: i64,
 }
 
 impl From<TopUser> for TopUserOut {
@@ -111,7 +117,7 @@ impl From<TopUser> for TopUserOut {
     }
 }
 
-fn count(n: i64, exact: bool) -> String {
+pub(super) fn count(n: i64, exact: bool) -> String {
     if exact {
         n.to_string()
     } else {
@@ -119,7 +125,7 @@ fn count(n: i64, exact: bool) -> String {
     }
 }
 
-fn tokens(n: i64, exact: bool) -> String {
+pub(super) fn tokens(n: i64, exact: bool) -> String {
     if exact {
         n.to_string()
     } else {

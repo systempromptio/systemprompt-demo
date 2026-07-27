@@ -77,7 +77,7 @@ async fn run(pool: Arc<PgPool>, conversation_id: String, mut rx: mpsc::Unbounded
 ///
 /// All the shaping lives here so the writer loop is only batching and I/O, and
 /// so the rules can be exercised without a database.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Journal {
     run: DeltaRun,
 }
@@ -101,7 +101,7 @@ impl Journal {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct DeltaRun {
     seq: i64,
     kind: &'static str,

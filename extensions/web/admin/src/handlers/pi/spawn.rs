@@ -64,7 +64,7 @@ struct Materialised {
     home: PathBuf,
     shim_path: PathBuf,
     mcp_client_path: PathBuf,
-    skills_dir: Option<String>,
+    skills_dir: Option<PathBuf>,
 }
 
 async fn materialise(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Result<Materialised> {

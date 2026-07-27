@@ -110,13 +110,22 @@ pub(super) async fn create_session(
             start_seq,
         })
         .await;
-    if result.is_err() {
-        if let Err(e) = deps.analytics.revoke_session(&attested).await {
-            tracing::warn!(error = %e, "could not revoke the session of a refused pi conversation");
-        }
+    if result.is_err()
+        && let Err(e) = deps.analytics.revoke_session(&attested).await
+    {
+        tracing::warn!(error = %e, "could not revoke the session of a refused pi conversation");
     }
     match result {
-        Ok(parts) => started_response(&registry, &deps, parts, conversation_id, start_seq, resumed),
+        Ok(parts) => started_response(
+            &registry,
+            &deps,
+            parts,
+            CreatedSession {
+                conversation_id,
+                last_seq: i64::try_from(start_seq).unwrap_or(i64::MAX),
+                resumed,
+            },
+        ),
         Err(e) => spawn_error_response(&e),
     }
 }
@@ -125,9 +134,7 @@ fn started_response(
     registry: &PiRegistry,
     deps: &Arc<PiDeps>,
     parts: registry::SessionParts,
-    conversation_id: String,
-    start_seq: u64,
-    resumed: bool,
+    created: CreatedSession,
 ) -> Response {
     // lint-ok: http-error — renders the 201 success body, not an error
     let session = Arc::clone(&parts.session);
@@ -139,17 +146,9 @@ fn started_response(
         parts.stderr,
     );
     session.emit(events::PiEventBody::SessionReady {
-        conversation_id: conversation_id.clone(),
+        conversation_id: created.conversation_id.clone(),
     });
-    (
-        StatusCode::CREATED,
-        Json(CreatedSession {
-            conversation_id,
-            last_seq: i64::try_from(start_seq).unwrap_or(i64::MAX),
-            resumed,
-        }),
-    )
-        .into_response()
+    (StatusCode::CREATED, Json(created)).into_response()
 }
 
 fn spawn_error_response(e: &registry::SpawnError) -> Response {

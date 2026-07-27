@@ -141,6 +141,7 @@ pub async fn list_pulse_model_mix(
            FROM ai_requests r
            JOIN users u ON u.id = r.user_id
            WHERE r.created_at >= $1
+             AND r.model IS NOT NULL
              AND NOT ('anonymous' = ANY(u.roles))
              AND u.email NOT LIKE '%@anonymous.local'
            GROUP BY r.model

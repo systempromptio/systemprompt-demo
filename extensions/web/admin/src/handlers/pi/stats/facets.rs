@@ -66,18 +66,22 @@ pub(super) fn policy_stages(
 
 
 pub(super) fn model_mix(requests: &[session_detail::SessionRequestRow]) -> Vec<PiModelShare> {
-    let total = requests.len() as i64;
+    // Why: a request rejected before routing has no model, and counting it in
+    // the denominator would make the shares of the models that did run add up
+    // to less than 100% with nothing on screen to explain the shortfall.
+    let mut tally: Vec<(String, i64)> = Vec::new();
+    let mut total = 0i64;
+    for model in requests.iter().filter_map(|r| r.model.as_ref()) {
+        total += 1;
+        match tally.iter_mut().find(|(m, _)| m == model) {
+            Some((_, n)) => *n += 1,
+            None => tally.push((model.clone(), 1)),
+        }
+    }
     if total == 0 {
         return Vec::new();
     }
-    let mut tally: Vec<(String, i64)> = Vec::new();
-    for row in requests {
-        match tally.iter_mut().find(|(m, _)| *m == row.model) {
-            Some((_, n)) => *n += 1,
-            None => tally.push((row.model.clone(), 1)),
-        }
-    }
-    tally.sort_by(|a, b| b.1.cmp(&a.1));
+    tally.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
     tally
         .into_iter()
         .map(|(model, requests)| PiModelShare {
@@ -126,12 +130,12 @@ pub(super) struct Facets {
 pub(super) fn facets(requests: &[session_detail::SessionRequestRow]) -> Facets {
     let latest = requests.first();
     let latencies: Vec<i32> = requests.iter().filter_map(|r| r.latency_ms).collect();
-    let model = latest.map(|r| r.model.clone());
+    let model = latest.and_then(|r| r.model.clone());
     Facets {
         latency_last_ms: latest.and_then(|r| r.latency_ms),
         latency_p50_ms: format::median(latencies.clone()),
         latency_p95_ms: format::percentile(latencies, 95),
-        provider: latest.map(|r| r.provider.clone()),
+        provider: latest.and_then(|r| r.provider.clone()),
         route_match: latest.and_then(|r| r.route_match.clone()),
         requested_model: latest
             .and_then(|r| r.requested_model.clone())
