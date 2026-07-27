@@ -15,6 +15,12 @@ name: Docker
 # workspace is too slow to be practical.
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Semver (X.Y.Z) to tag this build with — set by release-gateway.yml"
+        required: true
+        type: string
   release:
     types: [published]
   push:

@@ -7,6 +7,12 @@ name: Smoke tests (post-publish)
 # own pipelines).
 
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag to smoke-test (e.g. v0.5.0) — set by release-gateway.yml"
+        required: true
+        type: string
   release:
     types: [published]
   workflow_dispatch:
