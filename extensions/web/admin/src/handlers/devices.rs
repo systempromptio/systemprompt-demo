@@ -31,6 +31,8 @@ pub(crate) async fn issue_bridge_code(
     let db = Arc::new(Database::from_pools(Arc::clone(&pool), None));
     let issued = issue_bridge_exchange_code(&db, &user_ctx.user_id)
         .await
+        // lint-ok: http-error — `From<OauthError>` maps every variant to
+        // Unauthenticated, which would answer an infrastructure failure with 401.
         .map_err(|e| AdminError::internal(format!("failed to issue bridge code: {e}")))?;
     Ok(Json(BridgeCodeResponse {
         code: issued.code,

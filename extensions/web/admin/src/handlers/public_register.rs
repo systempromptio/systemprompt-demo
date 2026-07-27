@@ -68,6 +68,7 @@ pub(crate) async fn public_register_handler(
         return Err(AdminError::BadRequest("Invalid email address".to_owned()));
     }
     let email = Email::try_new(email_str.clone())
+        // lint-ok: http-error — adapting a foreign, variant-less parse error.
         .map_err(|e| AdminError::BadRequest(format!("Invalid email address: {e}")))?;
 
     let profile = OnboardingProfile {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reject inline `map_err(|e| ApiError::ctor(...))` at HTTP call sites.
+# Reject inline `map_err(|e| <HttpError>::ctor(format!(...)))` at HTTP call sites.
 #
 # HTTP status mapping belongs in an entry-local error type's `From` impls
 # (see each crate error.rs / error/ module);
@@ -12,26 +12,10 @@
 set -uo pipefail
 
 SEARCH_DIR="extensions"
-PATTERN='map_err\(\s*\|[^|]*\|\s*ApiError::'
-
-if ! command -v rg >/dev/null 2>&1; then
-    echo "check-http-errors: ripgrep (rg) is required" >&2
-    exit 2
-fi
-
-RAW=$(rg -Un --multiline-dotall --no-heading --color=never \
-    -g '*.rs' \
-    "$PATTERN" "$SEARCH_DIR" 2>/dev/null || true)
-
-HITS=$(printf '%s\n' "$RAW" | grep -v 'lint-ok: http-error' | grep -v '^[[:space:]]*$' || true)
-
-if [ -n "$HITS" ]; then
-    echo "check-http-errors: inline map_err into ApiError at an HTTP call site."
-    echo "Map domain -> HTTP via an entry-local error type's From impls and propagate"
-    echo "with bare ?, or annotate a deliberate re-classification with '// lint-ok: http-error':"
-    echo "$HITS"
-    exit 1
-fi
+# Every entry-local HTTP error type, not just `ApiError`. Scoping the ban to one
+# type let the identical defect through under `AdminError` / `AdminHtmlError`,
+# which is where most of this crate's handlers actually build their statuses.
+PATTERN='map_err\(.*\|.*\|[[:space:]]*(ApiError|AdminError|AdminHtmlError)::[A-Za-z_]+\([[:space:]]*format!'
 
 # The same defect, one level up: a handler that returns a bare `Response` has
 # no error channel at all, so it must build every failure by hand — which is
@@ -47,6 +31,7 @@ HANDLER_DIR="extensions/web/admin/src/handlers"
 # then fail the next time anyone ran `cargo fmt`.
 scan() {
     local pattern="$1"
+    local dir="${2:-$HANDLER_DIR}"
     local f
     while IFS= read -r f; do
         awk -v pat="$pattern" -v fname="$f" '
@@ -62,8 +47,18 @@ scan() {
                     if (!ok) printf "%s:%d:%s\n", fname, i, line[i]
                 }
             }' "$f"
-    done < <(find "$HANDLER_DIR" -name '*.rs')
+    done < <(find "$dir" -name '*.rs')
 }
+
+HITS=$(scan "$PATTERN" "$SEARCH_DIR")
+
+if [ -n "$HITS" ]; then
+    echo "check-http-errors: inline map_err into an HTTP error type at a call site."
+    echo "Map domain -> HTTP via an entry-local error type's From impls and propagate"
+    echo "with bare ?, or annotate a deliberate re-classification with '// lint-ok: http-error':"
+    echo "$HITS"
+    exit 1
+fi
 
 UNTYPED=$(scan '->[[:space:]]*(impl IntoResponse|Response)[[:space:]]*[{]')
 

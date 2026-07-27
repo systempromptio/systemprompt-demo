@@ -1,0 +1,168 @@
+/* ── the operator block of the platform pulse ────────────────────────────────
+ *
+ * Rendered by sp-pulse-admin.js, and only for a caller the server decided is an
+ * admin. It lives inside .pane-section--pulse, so it inherits the muted
+ * treatment that keeps the platform aggregate from competing with the visitor's
+ * own numbers — but it is denser than anything else in the pane, and the rules
+ * here are mostly about surviving that density in a column roughly 30rem wide.
+ *
+ * Tokens are the --ap-* set defined by auth-pane.css rather than raw colours,
+ * so this block follows the pane into dark mode without a second theme block.
+ */
+
+.auth-pane .pulse-admin {
+  margin-top: var(--sp-space-4);
+  padding-top: var(--sp-space-3);
+  border-top: 1px dashed var(--ap-border);
+}
+
+.auth-pane .pulse-admin-h {
+  margin: var(--sp-space-4) 0 var(--sp-space-2);
+  color: var(--ap-text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-pane .pulse-admin > .pulse-admin-h:first-child {
+  margin-top: 0;
+}
+
+.auth-pane .pulse-admin-block {
+  margin-bottom: var(--sp-space-3);
+}
+
+/* Two columns, collapsing to one at the same 900px where home-split.css stacks
+   the terminal above the pane — below that the pane is full-width but the
+   viewport is narrow, and two columns of figures would be unreadable in either
+   arrangement. Matching the split's own breakpoint rather than inventing a
+   second one keeps the two from disagreeing mid-resize. */
+.auth-pane .pulse-admin-cols {
+  display: grid;
+  gap: var(--sp-space-3);
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .auth-pane .pulse-admin-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── tiles ──────────────────────────────────────────────────────────────── */
+
+.auth-pane .pulse-admin-tiles {
+  display: grid;
+  gap: var(--sp-space-2);
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  margin: 0 0 var(--sp-space-3);
+}
+
+.auth-pane .pulse-admin-tile {
+  padding: var(--sp-space-2);
+  border: 1px dashed var(--ap-border);
+  border-radius: var(--sp-radius-sm, 4px);
+}
+
+.auth-pane .pulse-admin-tile dt {
+  color: var(--ap-text-muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-pane .pulse-admin-tile dd {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Direction carries a colour and a glyph, never colour alone — the arrow is
+   what makes the trend legible to a viewer who cannot distinguish the two. */
+.auth-pane .pulse-admin-up,
+.auth-pane .pulse-admin-down,
+.auth-pane .pulse-admin-flat {
+  font-size: 0.65rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.auth-pane .pulse-admin-up { color: var(--sp-color-success, #2e7d32); }
+.auth-pane .pulse-admin-down { color: var(--sp-color-error, #c62828); }
+.auth-pane .pulse-admin-flat { color: var(--ap-text-muted); }
+
+/* ── tables ─────────────────────────────────────────────────────────────── */
+
+/* Wide content scrolls inside its own box. Page-level horizontal scroll on the
+   homepage would be a regression caused by a block most visitors never see. */
+.auth-pane .pulse-admin-scroll {
+  overflow-x: auto;
+}
+
+.auth-pane .pulse-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.auth-pane .pulse-admin-table th {
+  padding: 0.25rem 0.4rem 0.25rem 0;
+  color: var(--ap-text-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--ap-border);
+}
+
+.auth-pane .pulse-admin-table td {
+  padding: 0.25rem 0.4rem 0.25rem 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--ap-border) 45%, transparent);
+}
+
+/* The first column is a name and may be long — a tool id, a URL. It truncates;
+   every other column is a figure and must stay readable. */
+.auth-pane .pulse-admin-table td:first-child {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-pane .pulse-admin-table td.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.auth-pane .pulse-admin-empty {
+  margin: 0;
+  color: var(--ap-text-muted);
+  font-size: 0.72rem;
+}
+
+/* ── sparkline ──────────────────────────────────────────────────────────── */
+
+/* Bars, not a line: the series is one count per day, and a line between two
+   days draws values at 3am that were never measured. */
+.auth-pane .pulse-admin-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 2.5rem;
+  padding: 0.15rem;
+  border: 1px dashed var(--ap-border);
+  border-radius: var(--sp-radius-sm, 4px);
+}
+
+.auth-pane .pulse-admin-spark span {
+  flex: 1 1 0;
+  min-width: 1px;
+  background: color-mix(in oklab, var(--ap-accent, currentColor) 55%, transparent);
+  border-radius: 1px 1px 0 0;
+}

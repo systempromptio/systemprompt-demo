@@ -217,6 +217,10 @@ class SpAuthPane extends HTMLElement {
         + 'Firefox, Safari, or Edge.', 'error');
       this.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; });
     }
+
+    this._pulse = this.querySelector('[data-role="pulse"]');
+    this._pulseAdmin = null;
+    this._startPulsePolling();
   }
 
   _signinFormHtml() {
@@ -887,17 +891,6 @@ function ms(v) {
 
 function pct(v) {
   return String(Number(v) || 0) + '%';
-}
-
-/**
- * Platform figures keep every digit, thousands-separated.
- *
- * Deliberately not `compact()`: "214,880 requests" is the claim, and rounding
- * it to "215k" trades away the precision that makes it credible. Session
- * numbers are the opposite case — they have one line and change every poll.
- */
-function count(n) {
-  return (Number(n) || 0).toLocaleString('en-US');
 }
 
 function feedItem(e) {

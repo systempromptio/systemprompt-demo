@@ -18,6 +18,7 @@ use crate::repositories::mcp::mcp_servers;
 pub(super) fn validate_entity_type(entity_type: &str) -> AdminResult<EntityKind> {
     use std::str::FromStr;
     EntityKind::from_str(entity_type)
+        // lint-ok: http-error — adapting a foreign, variant-less parse error.
         .map_err(|e| AdminError::BadRequest(format!("invalid entity_type: {e}")))
 }
 

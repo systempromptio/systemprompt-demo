@@ -64,6 +64,7 @@ pub(crate) async fn create_demo_user_handler(
     }
 
     let email = Email::try_new(email_str.clone())
+        // lint-ok: http-error — adapting a foreign, variant-less parse error.
         .map_err(|e| AdminError::BadRequest(format!("Invalid email address: {e}")))?;
 
     let user_id = derive_user_id(&email_str);

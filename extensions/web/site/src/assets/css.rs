@@ -48,6 +48,7 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/home-stage.css"),
         css!(p, "components/home-scene.css"),
         css!(p, "components/auth-pane.css"),
+        css!(p, "components/analytics-pane.css"),
         css!(p, "components/conversation-list.css"),
     ]
 }

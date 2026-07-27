@@ -54,6 +54,7 @@ fn extract_token_from_headers(headers: &HeaderMap) -> Result<String, AdminError>
         .get("cookie")
         .ok_or_else(|| AdminError::Unauthorized("No cookie or Authorization header".to_owned()))?
         .to_str()
+        // lint-ok: http-error — adapting `ToStrError`, which has no variants.
         .map_err(|e| AdminError::Unauthorized(format!("Invalid cookie header: {e}")))?;
 
     let token = cookie_header

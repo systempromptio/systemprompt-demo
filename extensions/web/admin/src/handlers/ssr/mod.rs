@@ -69,6 +69,7 @@ pub(crate) async fn pending_page(
 
     let html = engine
         .render("pending", &ctx)
+        // lint-ok: http-error — every template render failure is a 500.
         .map_err(|e| AdminHtmlError::internal(format!("pending page render failed: {e:?}")))?;
     Ok(Html(html).into_response())
 }
@@ -89,6 +90,7 @@ fn render_unauthenticated(
 ) -> AdminHtmlResult<Response> {
     let html = engine
         .render(template, &branding_context(engine))
+        // lint-ok: http-error — every template render failure is a 500.
         .map_err(|e| AdminHtmlError::internal(format!("{template} page render failed: {e:?}")))?;
     Ok(Html(html).into_response())
 }
