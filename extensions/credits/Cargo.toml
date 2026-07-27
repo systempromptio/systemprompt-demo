@@ -15,7 +15,6 @@ ignored = ["inventory"]
 
 [dependencies]
 systemprompt = { workspace = true, features = ["full"] }
-axum = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }
 sqlx = { workspace = true }

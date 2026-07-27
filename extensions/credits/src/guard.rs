@@ -66,8 +66,9 @@ impl GatewayRequestGuard for CreditBalanceGuard {
         if balance > 0 {
             Ok(())
         } else {
+            // Grants vary per user, so the message must not name an amount.
             Err(GatewayDenyReason::new(
-                "Credit exhausted. Your $5 systemprompt credit has been used up.",
+                "Credit exhausted. Your systemprompt credit has been used up — add credit to continue.",
             ))
         }
     }

@@ -6,7 +6,6 @@
 //! registered [gateway guard] denies further requests.
 //!
 //! [gateway guard]: systemprompt::extension::GatewayRequestGuard
-mod api;
 mod guard;
 
 pub use guard::CreditBalanceGuard;
@@ -29,6 +28,10 @@ pub enum CreditError {
 /// A user's credit position: what they have been granted, what their AI
 /// requests have cost, and the difference.
 #[derive(Debug, Clone, Copy, serde::Serialize)]
+#[expect(
+    clippy::struct_field_names,
+    reason = "the unit belongs at every call site: these are money"
+)]
 pub struct CreditBalance {
     /// `granted_microdollars - spent_microdollars`. Negative once a request's
     /// cost lands after the balance is already exhausted.
@@ -154,25 +157,6 @@ impl Extension for CreditsExtension {
             "credit_grants",
             include_str!("../schema/001_credit_grants.sql"),
         )]
-    }
-
-    fn router(&self, ctx: &dyn ExtensionContext) -> Option<ExtensionRouter> {
-        let handle = ctx.database();
-        let database = handle
-            .as_any()
-            .downcast_ref::<systemprompt::database::Database>()?;
-        let pool = database.pool()?;
-        let db = std::sync::Arc::new(systemprompt::database::Database::from_pools(
-            std::sync::Arc::clone(&pool),
-            database.write_pool_arc().ok(),
-        ));
-        // Public mount: the handler authenticates the bearer credential itself,
-        // because the bridge presents a PAT or gateway JWT rather than a
-        // site session cookie.
-        Some(ExtensionRouter::public(
-            api::router(api::CreditsApiState { pool, db }),
-            "/api/credits",
-        ))
     }
 }
 
