@@ -196,7 +196,7 @@ fn collect_strings(value: &serde_json::Value, out: &mut Vec<String>) {
 
 // Why: Shares [`SECRET_PATTERNS`] with the governance webhook so the gateway
 // safety scanner and the tool-use governor flag the same credentials.
-pub(crate) fn scan_str_for_secret(text: &str) -> Option<String> {
+pub fn scan_str_for_secret(text: &str) -> Option<String> {
     for pattern in SECRET_PATTERNS {
         if let Some(match_start) = text.find(pattern.prefix) {
             let snippet_end = (match_start + 12).min(text.len());

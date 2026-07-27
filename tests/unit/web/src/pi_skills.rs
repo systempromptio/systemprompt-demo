@@ -90,3 +90,78 @@ fn the_shipped_skills_all_have_what_pi_requires() {
     }
     assert!(seen > 0, "no skills found under {root}");
 }
+
+/// No shipped skill body may contain a string the gateway's scanner recognises.
+///
+/// Invoking a skill expands its whole body into the conversation, and the
+/// gateway scans requests before they reach a provider. A recognisable
+/// credential in a body does not demonstrate a deny — it denies the invocation
+/// itself, and the session reads as a broken terminal.
+#[test]
+fn shipped_skills_contain_no_gateway_scannable_secret() {
+    for (id, body) in shipped_skill_bodies() {
+        assert_eq!(
+            scan_str_for_secret(&body),
+            None,
+            "{id}'s body matches a built-in secret pattern; invoking it would 403 the session"
+        );
+    }
+}
+
+/// A skill must not tell the model to invent a credential either.
+///
+/// Keeping the *body* clean is not enough: whatever the model emits in a tool
+/// call lands in the transcript and is scanned on later turns just the same.
+/// This is the exact wording that shipped and bricked sessions, so it is worth
+/// pinning bluntly.
+#[test]
+fn shipped_skills_do_not_ask_the_model_to_invent_a_credential() {
+    const FORBIDDEN: [&str; 4] = [
+        "invent a fake",
+        "construct that string yourself",
+        "from your own knowledge of the format",
+        "you know the shape",
+    ];
+    for (id, body) in shipped_skill_bodies() {
+        let lower = body.to_lowercase();
+        for phrase in FORBIDDEN {
+            assert!(
+                !lower.contains(phrase),
+                "{id} tells the model to invent a credential (\"{phrase}\"); \
+                 the value it invents would poison the transcript"
+            );
+        }
+    }
+}
+
+/// The seam the whole `secret_scan` demonstration rests on.
+///
+/// `demonstrate_governance` gets its deny from an operator `extra_pattern` that
+/// the tool-input policy knows and the gateway's conversation scanner does not.
+/// If someone ever adds this prefix to the built-in `SECRET_PATTERNS`, the demo
+/// silently goes back to 403-ing every session after the deny. Better a red
+/// build than a terminal that looks broken.
+#[test]
+fn demo_credential_prefix_is_invisible_to_the_gateway_scanner() {
+    assert_eq!(
+        scan_str_for_secret(DEMO_CREDENTIAL),
+        None,
+        "the demo credential is now a built-in pattern; \
+         demonstrate_governance will brick its own session again"
+    );
+}
+
+/// …and the skill must actually still be using that literal.
+///
+/// The test above only proves the prefix is safe. This one proves the skill
+/// points at it, so the pair cannot drift apart.
+#[test]
+fn demonstrate_governance_uses_the_demo_credential() {
+    let body = std::fs::read_to_string(skills_root().join("demonstrate_governance/SKILL.md"))
+        .expect("demonstrate_governance/SKILL.md is readable");
+    assert!(
+        body.contains(DEMO_CREDENTIAL),
+        "demonstrate_governance no longer sends {DEMO_CREDENTIAL}; \
+         check what it sends instead is inert to the gateway scanner"
+    );
+}
