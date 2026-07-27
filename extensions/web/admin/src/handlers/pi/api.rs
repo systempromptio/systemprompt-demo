@@ -116,36 +116,53 @@ pub(super) async fn create_session(
         }
     }
     match result {
-        Ok(parts) => {
-            let session = Arc::clone(&parts.session);
-            pump::start(
-                registry.clone(),
-                Arc::clone(&deps),
-                Arc::clone(&parts.session),
-                parts.stdout,
-                parts.stderr,
-            );
-            session.emit(events::PiEventBody::SessionReady {
-                conversation_id: conversation_id.clone(),
-            });
-            (
-                StatusCode::CREATED,
-                Json(CreatedSession {
-                    conversation_id,
-                    last_seq: i64::try_from(start_seq).unwrap_or(i64::MAX),
-                    resumed,
-                }),
-            )
-                .into_response()
-        },
-        Err(registry::SpawnError::PerUserCap(_) | registry::SpawnError::TotalCap(_)) => {
+        Ok(parts) => started_response(&registry, &deps, parts, conversation_id, start_seq, resumed),
+        Err(e) => spawn_error_response(&e),
+    }
+}
+
+fn started_response(
+    registry: &PiRegistry,
+    deps: &Arc<PiDeps>,
+    parts: registry::SessionParts,
+    conversation_id: String,
+    start_seq: u64,
+    resumed: bool,
+) -> Response {
+    // lint-ok: http-error — renders the 201 success body, not an error
+    let session = Arc::clone(&parts.session);
+    pump::start(
+        registry.clone(),
+        Arc::clone(deps),
+        Arc::clone(&parts.session),
+        parts.stdout,
+        parts.stderr,
+    );
+    session.emit(events::PiEventBody::SessionReady {
+        conversation_id: conversation_id.clone(),
+    });
+    (
+        StatusCode::CREATED,
+        Json(CreatedSession {
+            conversation_id,
+            last_seq: i64::try_from(start_seq).unwrap_or(i64::MAX),
+            resumed,
+        }),
+    )
+        .into_response()
+}
+
+fn spawn_error_response(e: &registry::SpawnError) -> Response {
+    // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
+    match e {
+        registry::SpawnError::PerUserCap(_) | registry::SpawnError::TotalCap(_) => {
             problem(StatusCode::TOO_MANY_REQUESTS, "session limit reached")
         },
-        Err(registry::SpawnError::Credential(e)) => {
+        registry::SpawnError::Credential(e) => {
             tracing::error!(error = %e, "could not mint a gateway credential for a pi conversation");
             problem(StatusCode::INTERNAL_SERVER_ERROR, "could not start pi") // lint-ok: http-error — logged above; the client is told nothing about why
         },
-        Err(registry::SpawnError::Io(e)) => {
+        registry::SpawnError::Io(e) => {
             tracing::error!(error = %e, "could not spawn pi");
             problem(StatusCode::INTERNAL_SERVER_ERROR, "could not start pi") // lint-ok: http-error — logged above; the client is told nothing about why
         },

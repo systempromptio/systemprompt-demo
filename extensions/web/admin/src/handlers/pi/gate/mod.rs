@@ -44,14 +44,7 @@ pub(super) struct PiDeps {
     pub(super) cfg: PiConfig,
 }
 
-pub(super) async fn decide(
-    deps: &PiDeps,
-    session: &Arc<PiSession>,
-    approval_id: &str,
-    payload: &GovernancePayload,
-) -> bool {
-    session.touch();
-
+fn governed_parts(payload: &GovernancePayload) -> (String, Option<serde_json::Value>) {
     let tool_name = match payload.kind {
         PayloadKind::Prompt => PROMPT_TOOL_NAME.to_owned(),
         PayloadKind::Tool => payload
@@ -66,6 +59,18 @@ pub(super) async fn decide(
             .map(|p| serde_json::json!({ "prompt": p })),
         PayloadKind::Tool => payload.tool_input.clone(),
     };
+    (tool_name, governed_input)
+}
+
+pub(super) async fn decide(
+    deps: &PiDeps,
+    session: &Arc<PiSession>,
+    approval_id: &str,
+    payload: &GovernancePayload,
+) -> bool {
+    session.touch();
+
+    let (tool_name, governed_input) = governed_parts(payload);
 
     let agent_session = SessionId::new(session.conversation_id.clone());
     let call = GovernedCall {

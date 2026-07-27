@@ -92,7 +92,18 @@ pub fn scan_demos(demo_root: &Path) -> Result<DemosConfig, DemoScanError> {
     }
 
     let quick_start = scan_quick_start(demo_root);
+    let category_map = scan_categories(demo_root);
+    let pillars = assemble_pillars(&category_map);
 
+    Ok(DemosConfig {
+        title: Some(DEFAULT_TITLE.to_owned()),
+        subtitle: Some(DEFAULT_SUBTITLE.to_owned()),
+        quick_start,
+        pillars,
+    })
+}
+
+fn scan_categories(demo_root: &Path) -> Vec<(String, DemoCategory)> {
     let mut category_map: Vec<(String, DemoCategory)> = Vec::new();
     for meta in CAPABILITY_CATEGORIES
         .iter()
@@ -135,7 +146,10 @@ pub fn scan_demos(demo_root: &Path) -> Result<DemosConfig, DemoScanError> {
             },
         ));
     }
+    category_map
+}
 
+fn assemble_pillars(category_map: &[(String, DemoCategory)]) -> Vec<DemoPillar> {
     let mut pillars = Vec::new();
     for pillar in PILLARS {
         let categories: Vec<DemoCategory> = pillar
@@ -159,13 +173,7 @@ pub fn scan_demos(demo_root: &Path) -> Result<DemosConfig, DemoScanError> {
             categories,
         });
     }
-
-    Ok(DemosConfig {
-        title: Some(DEFAULT_TITLE.to_owned()),
-        subtitle: Some(DEFAULT_SUBTITLE.to_owned()),
-        quick_start,
-        pillars,
-    })
+    pillars
 }
 
 fn scan_quick_start(demo_root: &Path) -> Vec<QuickStartStep> {

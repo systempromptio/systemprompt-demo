@@ -59,11 +59,21 @@ pub(super) struct Spawned {
     pub(super) workspace: PathBuf,
 }
 
-pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Result<Spawned> {
+struct Materialised {
+    workspace: PathBuf,
+    home: PathBuf,
+    shim_path: PathBuf,
+    mcp_client_path: PathBuf,
+    skills_dir: Option<String>,
+}
+
+async fn materialise(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Result<Materialised> {
     let workspace = cfg.workspace_root.join(req.conversation_id);
     let home = workspace.join("home");
     let shim_dir = workspace.join(".pi");
 
+    // Why: a leftover directory from a crashed session would carry a previous
+    // conversation's files into this one.
     if tokio::fs::try_exists(&workspace).await.unwrap_or(false) {
         tokio::fs::remove_dir_all(&workspace).await?;
     }
@@ -92,6 +102,23 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
         "{\"quietStartup\":true,\"enableSkillCommands\":true}",
     )
     .await?;
+    Ok(Materialised {
+        workspace,
+        home,
+        shim_path,
+        mcp_client_path,
+        skills_dir,
+    })
+}
+
+pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Result<Spawned> {
+    let Materialised {
+        workspace,
+        home,
+        shim_path,
+        mcp_client_path,
+        skills_dir,
+    } = materialise(cfg, req).await?;
 
     let mut cmd = limited_command(cfg, &workspace)?;
     cmd.current_dir(&workspace)

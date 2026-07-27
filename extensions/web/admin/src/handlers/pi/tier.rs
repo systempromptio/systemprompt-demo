@@ -31,25 +31,14 @@ use sqlx::PgPool;
 
 use crate::repositories;
 
-/// How much of the pulse a caller sees.
-///
-/// Ordered least to most. Every resolution failure below degrades toward
-/// `Anonymous` rather than away from it, matching `user_context_middleware`'s
-/// rule that an unreadable row loses privileges instead of gaining them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Tier {
-    /// No usable credential. Lifetime totals only.
     Anonymous,
-    /// A signed-in account. Aggregates, rounded, and suppressed when the window
-    /// is too sparse to be anonymous.
     Member,
-    /// Holds the `admin` role. Exact figures plus the operator detail block.
     Admin,
 }
 
 impl Tier {
-    /// A stable index, so the per-tier snapshot cache can be a fixed array
-    /// rather than a map.
     pub(super) const COUNT: usize = 3;
 
     pub(super) const fn index(self) -> usize {
@@ -61,27 +50,17 @@ impl Tier {
     }
 }
 
-/// Resolve the caller's tier from an optional embed token.
-///
-/// `raw` is the query parameter exactly as it arrived, which for an anonymous
-/// visitor is the empty string.
 pub(super) async fn resolve(pool: &Arc<PgPool>, raw: &str) -> Tier {
     if raw.is_empty() {
         return Tier::Anonymous;
     }
     let Some(user_id) = super::auth::authenticate(pool, raw).await else {
-        // A token that does not verify is not a 401 here. The pulse is public
-        // context; refusing to render it because a token expired mid-session
-        // would blank the section for a signed-in visitor who did nothing
-        // wrong. They drop to the anonymous view until the next mint.
         return Tier::Anonymous;
     };
 
     match repositories::users::queries::find_user_access(pool, &user_id).await {
         Ok(Some(access)) if access.roles.iter().any(|r| r == "admin") => Tier::Admin,
         Ok(Some(_)) => Tier::Member,
-        // A verified token whose user row is unreadable or gone: still a real
-        // credential, so not anonymous, but nothing here justifies admin.
         Ok(None) => Tier::Member,
         Err(e) => {
             tracing::warn!(error = %e, user_id = %user_id, "could not read roles for the pulse tier");

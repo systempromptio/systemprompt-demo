@@ -164,34 +164,41 @@ fn render_spine(stats: &Spine) -> String {
         body.push('\n');
     }
 
-    body.push_str(&format!(
-        "## Recent decisions (newest {DECISION_LIMIT} max)\n\n"
-    ));
+    body.push_str(&render_decisions(stats));
+    body.push_str(&render_fires(stats));
+    body
+}
+
+fn render_decisions(stats: &Spine) -> String {
+    let mut body = format!("## Recent decisions (newest {DECISION_LIMIT} max)\n\n");
     if stats.decisions.is_empty() {
         body.push_str("None.\n\n");
-    } else {
-        body.push_str("| When | Tool | Outcome | Policy | Reason |\n|---|---|---|---|---|\n");
-        for row in &stats.decisions {
-            let reason = row.reason.replace('|', "\\|");
-            body.push_str(&format!(
-                "| {} | `{}` | {} | `{}` | {} |\n",
-                row.at.format("%Y-%m-%d %H:%M:%S"),
-                row.tool_name,
-                row.decision,
-                row.policy,
-                reason
-            ));
-        }
-        body.push('\n');
+        return body;
     }
+    body.push_str("| When | Tool | Outcome | Policy | Reason |\n|---|---|---|---|---|\n");
+    for row in &stats.decisions {
+        let reason = row.reason.replace('|', "\\|");
+        body.push_str(&format!(
+            "| {} | `{}` | {} | `{}` | {} |\n",
+            row.at.format("%Y-%m-%d %H:%M:%S"),
+            row.tool_name,
+            row.decision,
+            row.policy,
+            reason
+        ));
+    }
+    body.push('\n');
+    body
+}
 
-    body.push_str("## Tools that actually ran\n\n");
+fn render_fires(stats: &Spine) -> String {
+    let mut body = String::from("## Tools that actually ran\n\n");
     if stats.fires.is_empty() {
         body.push_str("None in this session.\n");
-    } else {
-        for row in &stats.fires {
-            body.push_str(&format!("- `{}` — {} fire(s)\n", row.tool_name, row.fires));
-        }
+        return body;
+    }
+    for row in &stats.fires {
+        body.push_str(&format!("- `{}` — {} fire(s)\n", row.tool_name, row.fires));
     }
     body
 }

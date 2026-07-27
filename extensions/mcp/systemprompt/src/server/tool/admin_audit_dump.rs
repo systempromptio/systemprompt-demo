@@ -50,10 +50,6 @@ impl McpToolHandler for AdminAuditDumpHandler {
         let db_pool = std::sync::Arc::<systemprompt::database::Database>::clone(&self.db_pool);
         let caller = ctx.user_id().clone();
         async move {
-            // Reaching this line from the pi terminal means `scope_check` did
-            // not match, and a visitor is about to be handed other people's
-            // audit rows. `egress.rs` warns for the same reason: the tools that
-            // are supposed to be unreachable should say so when they are not.
             tracing::warn!(
                 caller = %caller,
                 "admin_audit_dump executed — scope_check did not refuse an admin-only tool"

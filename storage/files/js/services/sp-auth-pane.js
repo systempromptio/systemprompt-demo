@@ -553,9 +553,17 @@ class SpAuthPane extends HTMLElement {
   }
 
   _startPolling() {
-    this._stopPolling();
+    // Clears only the session timer. Calling the full `_stopPolling` here would
+    // take the pulse down with it and never bring it back — the pulse is
+    // started once per render, not once per conversation.
+    this._stopSessionPolling();
     this._poll();
     this._pollTimer = setInterval(() => this._poll(), POLL_MS);
+  }
+
+  _stopSessionPolling() {
+    if (this._pollTimer) clearInterval(this._pollTimer);
+    this._pollTimer = null;
   }
 
   /**
@@ -579,9 +587,9 @@ class SpAuthPane extends HTMLElement {
     this._pulseTimer = null;
   }
 
+  /** Everything, for disconnect. */
   _stopPolling() {
-    if (this._pollTimer) clearInterval(this._pollTimer);
-    this._pollTimer = null;
+    this._stopSessionPolling();
     this._stopPulsePolling();
   }
 

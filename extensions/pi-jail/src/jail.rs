@@ -19,11 +19,41 @@
 use crate::args::Spec;
 
 #[cfg(target_os = "linux")]
-pub(crate) fn apply(spec: &Spec) -> Result<String, String> {
+#[cfg(target_os = "linux")]
+fn enforce(
+    spec: &Spec,
+    readable: &[std::path::PathBuf],
+    abi: landlock::ABI,
+    net: bool,
+) -> Result<landlock::RestrictionStatus, landlock::RulesetError> {
     use landlock::{
-        ABI, Access, AccessFs, AccessNet, CompatLevel, Compatible, NetPort, Ruleset, RulesetAttr,
-        RulesetCreatedAttr, RulesetStatus, path_beneath_rules,
+        Access, AccessFs, AccessNet, CompatLevel, Compatible, NetPort, Ruleset, RulesetAttr,
+        RulesetCreatedAttr, path_beneath_rules,
     };
+
+    let mut ruleset = Ruleset::default()
+        .set_compatibility(CompatLevel::HardRequirement)
+        .handle_access(AccessFs::from_all(abi))?;
+    if net {
+        ruleset = ruleset.handle_access(AccessNet::ConnectTcp)?;
+    }
+    let mut created = ruleset
+        .create()?
+        .add_rules(path_beneath_rules(
+            [&spec.workspace],
+            AccessFs::from_all(abi),
+        ))?
+        .add_rules(path_beneath_rules(readable, AccessFs::from_read(abi)))?;
+    if net {
+        for &port in &spec.connect_tcp {
+            created = created.add_rule(NetPort::new(port, AccessNet::ConnectTcp))?;
+        }
+    }
+    created.restrict_self()
+}
+
+pub(crate) fn apply(spec: &Spec) -> Result<String, String> {
+    use landlock::{ABI, RulesetStatus};
 
     const LEVELS: &[ABI] = &[
         ABI::V7,
@@ -52,29 +82,8 @@ pub(crate) fn apply(spec: &Spec) -> Result<String, String> {
     let mut last_err = "no Landlock ABI was attempted".to_owned();
     for &abi in LEVELS {
         let net = !spec.connect_tcp.is_empty() && abi >= ABI::V4;
-        let attempt = (|| {
-            let mut ruleset = Ruleset::default()
-                .set_compatibility(CompatLevel::HardRequirement)
-                .handle_access(AccessFs::from_all(abi))?;
-            if net {
-                ruleset = ruleset.handle_access(AccessNet::ConnectTcp)?;
-            }
-            let mut created = ruleset
-                .create()?
-                .add_rules(path_beneath_rules(
-                    [&spec.workspace],
-                    AccessFs::from_all(abi),
-                ))?
-                .add_rules(path_beneath_rules(&readable, AccessFs::from_read(abi)))?;
-            if net {
-                for &port in &spec.connect_tcp {
-                    created = created.add_rule(NetPort::new(port, AccessNet::ConnectTcp))?;
-                }
-            }
-            created.restrict_self()
-        })();
 
-        match attempt {
+        match enforce(spec, &readable, abi, net) {
             Ok(status) => {
                 if status.ruleset != RulesetStatus::FullyEnforced {
                     return Err(format!(

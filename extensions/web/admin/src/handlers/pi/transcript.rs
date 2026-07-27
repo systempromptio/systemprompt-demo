@@ -18,23 +18,10 @@ use sqlx::PgPool;
 
 use crate::repositories::pi::events as event_repo;
 
-/// How many stored frames the rendered file may draw from.
-///
-/// The tail, not the head: a resumed conversation's next turn is about what was
-/// said most recently, and an unbounded file would put the whole history in
-/// front of an agent that only needed the last exchange.
 const MAX_FRAMES: i64 = 400;
 
-/// Longest single message kept whole. Beyond this the middle is elided, so one
-/// pasted log cannot crowd out every other turn.
 const MAX_CHARS: usize = 4000;
 
-/// Build the `TRANSCRIPT.md` body for a conversation, or nothing when there is
-/// no history worth writing.
-///
-/// Failure is `None`, not an error: a resume whose transcript could not be read
-/// is still a working conversation, just one where the agent starts without the
-/// earlier context. Refusing to spawn over it would be the worse trade.
 pub(super) async fn render(pool: &PgPool, conversation_id: &str) -> Option<String> {
     let stored = match event_repo::list_conversation_events(pool, conversation_id, 0, MAX_FRAMES)
         .await
@@ -64,14 +51,10 @@ pub(super) async fn render(pool: &PgPool, conversation_id: &str) -> Option<Strin
     (out.len() > before).then_some(out)
 }
 
-/// One frame as Markdown, or nothing when it is not part of the conversation.
 fn section(kind: &str, body: &serde_json::Value) -> Option<String> {
     match kind {
         "user_message" => Some(format!("## User\n\n{}", clamp(text_of(body, "text")?))),
         "text_delta" => Some(format!("## Assistant\n\n{}", clamp(text_of(body, "text")?))),
-        // A tool that ran is a fact about the world the agent changed or read,
-        // so it belongs. Its *arguments* do not: they are frequently long, and
-        // the outcome is what the next turn depends on.
         "tool_end" => {
             let name = text_of(body, "tool_name")?;
             let ok = body
@@ -81,16 +64,10 @@ fn section(kind: &str, body: &serde_json::Value) -> Option<String> {
             let outcome = if ok { "succeeded" } else { "failed" };
             Some(format!("## Tool\n\n`{name}` {outcome}."))
         },
-        // A call policy refused is part of the conversation's shape — a turn
-        // that went nowhere is otherwise inexplicable — but the *reason* is
-        // deliberately withheld, here as everywhere else the model can see.
         "tool_blocked" => {
             let name = text_of(body, "tool_name")?;
             Some(format!("## Tool\n\n`{name}` was not permitted."))
         },
-        // Thinking is not re-fed: it was this agent's scratch reasoning for a
-        // turn that is over, and presenting it as prior context makes stale
-        // deliberation look like an established conclusion.
         _ => None,
     }
 }
@@ -100,10 +77,6 @@ fn text_of<'a>(body: &'a serde_json::Value, key: &str) -> Option<&'a str> {
     (!text.trim().is_empty()).then_some(text)
 }
 
-/// Keep both ends of an over-long message and say what was dropped.
-///
-/// Truncating the tail alone would hide the conclusion, which is usually the
-/// part the next turn refers back to.
 fn clamp(text: &str) -> String {
     if text.chars().count() <= MAX_CHARS {
         return text.to_owned();

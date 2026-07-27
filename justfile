@@ -259,6 +259,7 @@ lint-gates:
     bash scripts/check-dead-repository-code.sh
     bash scripts/check-file-headers.sh
     bash scripts/check-file-size.sh
+    bash scripts/check-function-size.sh
 
 # Shared sources that differ from the sibling fork must be recorded in
 # .fork-divergence. Needs SIBLING_REPO; skips cleanly without it.
@@ -276,6 +277,10 @@ audit-standards:
 # 300-line ceiling on extension sources (same script CI runs)
 file-size:
     bash scripts/check-file-size.sh
+
+# 75-line ceiling on function bodies (same script CI runs)
+function-size:
+    bash scripts/check-function-size.sh
 
 # Supply-chain gates: cargo-deny (licenses/bans/advisories) and cargo-audit
 deny:

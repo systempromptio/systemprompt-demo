@@ -12,8 +12,16 @@ use systemprompt::identifiers::UserId;
 use super::super::credentials;
 use crate::handlers::pi::session::PiSession;
 use crate::handlers::pi::{persist, session, spawn};
+use crate::repositories::bridge::IssuedApiKey;
 
 use super::{CreateRequest, PiRegistry, SessionParts};
+
+struct StartedChild {
+    spawned: spawn::Spawned,
+    stdin: tokio::process::ChildStdin,
+    stdout: Option<tokio::process::ChildStdout>,
+    stderr: Option<tokio::process::ChildStderr>,
+}
 
 /// Why a session could not be created. Distinguished because the widget shows
 /// each differently: a cap is "try later", a spawn failure is "misconfigured".
@@ -70,39 +78,28 @@ impl PiRegistry {
             Err(e) => return Err(SpawnError::Credential(e)),
         };
 
-        let spawned = spawn::spawn(
-            &self.0.cfg,
-            &spawn::SpawnRequest {
-                conversation_id: &conversation_id,
-                attested_session: attested_session.as_str(),
-                gateway_key: &key.secret,
-                shim_source,
-                mcp_client_source,
-                mcp_token,
-                transcript,
-            },
-        )
-        .await;
-
-        let mut spawned = match spawned {
-            Ok(s) => s,
-            Err(e) => {
-                self.release(&conversation_id);
-                credentials::revoke(&self.0.pool, &user_id, &key.id).await;
-                return Err(SpawnError::Io(e));
-            },
-        };
-
-        let Some(stdin) = spawned.child.stdin.take() else {
-            self.release(&conversation_id);
-            credentials::revoke(&self.0.pool, &user_id, &key.id).await;
-            _ = spawned.child.kill().await;
-            return Err(SpawnError::Io(std::io::Error::other(
-                "pi child has no stdin",
-            )));
-        };
-        let stdout = spawned.child.stdout.take();
-        let stderr = spawned.child.stderr.take();
+        let started = self
+            .start_child(
+                &conversation_id,
+                &user_id,
+                &key,
+                &spawn::SpawnRequest {
+                    conversation_id: &conversation_id,
+                    attested_session: attested_session.as_str(),
+                    gateway_key: &key.secret,
+                    shim_source,
+                    mcp_client_source,
+                    mcp_token,
+                    transcript,
+                },
+            )
+            .await?;
+        let StartedChild {
+            spawned,
+            stdin,
+            stdout,
+            stderr,
+        } = started;
 
         let (persist_tx, persist_rx) = tokio::sync::mpsc::unbounded_channel();
         persist::start(
@@ -131,6 +128,43 @@ impl PiRegistry {
             stdout,
             stderr,
         })
+    }
+
+    async fn start_child(
+        &self,
+        conversation_id: &str,
+        user_id: &UserId,
+        key: &IssuedApiKey,
+        req: &spawn::SpawnRequest<'_>,
+    ) -> Result<StartedChild, SpawnError> {
+        let mut spawned = match spawn::spawn(&self.0.cfg, req).await {
+            Ok(s) => s,
+            Err(e) => {
+                self.unwind(conversation_id, user_id, key).await;
+                return Err(SpawnError::Io(e));
+            },
+        };
+
+        let Some(stdin) = spawned.child.stdin.take() else {
+            self.unwind(conversation_id, user_id, key).await;
+            _ = spawned.child.kill().await;
+            return Err(SpawnError::Io(std::io::Error::other(
+                "pi child has no stdin",
+            )));
+        };
+        let stdout = spawned.child.stdout.take();
+        let stderr = spawned.child.stderr.take();
+        Ok(StartedChild {
+            spawned,
+            stdin,
+            stdout,
+            stderr,
+        })
+    }
+
+    async fn unwind(&self, conversation_id: &str, user_id: &UserId, key: &IssuedApiKey) {
+        self.release(conversation_id);
+        credentials::revoke(&self.0.pool, user_id, &key.id).await;
     }
 
     async fn make_room_for(&self, user_id: &UserId) {

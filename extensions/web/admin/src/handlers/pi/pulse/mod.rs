@@ -52,6 +52,13 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use systemprompt::identifiers::{AgentId, UserId};
 
+mod wire;
+
+use wire::{
+    AdminDetailOut, AgentRollupOut, BlockedToolOut, ModelShareOut, PulseResponse, PulseTotalsOut,
+    PulseWindowOut, ToolRollupOut, TopUserOut, count, tokens,
+};
+
 use super::auth::problem;
 use super::tier::{Tier, resolve};
 use super::{format, normalize};
@@ -61,178 +68,31 @@ use crate::types::{
     ActivityStats, HourlyActivity, RealtimePulse, SkillCount, ToolSuccessRate, TopUser, TrafficData,
 };
 
-/// How long a member or anonymous snapshot is served before recomputation.
 const CACHE_TTL: Duration = Duration::from_secs(60);
 
-/// The admin snapshot runs an order of magnitude more work — traffic KPIs alone
-/// scan `user_sessions` and `engagement_events` over two periods — so it is
-/// held longer. An operator watching a demo does not need sub-two-minute
-/// resolution on a weekly rollup.
 const ADMIN_CACHE_TTL: Duration = Duration::from_secs(120);
 
-/// The rolling window the headline figures cover.
 const WINDOW_HOURS: i64 = 24;
 
-/// Models listed in the mix. Beyond a handful the pane has no room and the tail
-/// is noise.
 const MODEL_LIMIT: i64 = 5;
 
-/// An admin has room for the tail, and the tail is where a misrouted model
-/// shows up.
 const ADMIN_MODEL_LIMIT: i64 = 12;
 
-/// Refused tools listed. The member tier sees the single worst offender as
-/// colour; an admin sees the distribution, which is the actionable form.
 const ADMIN_BLOCKED_LIMIT: i64 = 10;
 
-/// The range string `get_traffic_data` understands for the admin block.
 const ADMIN_TRAFFIC_RANGE: &str = "30d";
 
-/// The per-tier snapshot cache, and when each was taken.
-///
-/// In-process rather than in Redis for the same reason the rate-limit stage is:
-/// this deployment is one node, and a stale-by-a-minute counter is not worth a
-/// second piece of infrastructure. Keyed by tier because the tiers carry
-/// genuinely different payloads — one shared slot would hand a member the admin
-/// block whenever an admin polled first.
 type Snapshot = Option<(Instant, PulseResponse)>;
 
 static CACHE: LazyLock<Mutex<[Snapshot; Tier::COUNT]>> =
     LazyLock::new(|| Mutex::new([const { None }; Tier::COUNT]));
 
-/// The pulse's own query type rather than [`super::api::TokenQuery`], whose
-/// `token` is mandatory. Here its absence is the anonymous tier, not a 400.
 #[derive(Debug, Deserialize)]
 pub(super) struct PulseQuery {
     #[serde(default)]
     token: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub(super) struct PulseResponse {
-    /// Seconds since this snapshot was computed. The pane can say "as of a
-    /// moment ago" honestly instead of implying the number is live.
-    age_seconds: u64,
-    window_hours: i64,
-    /// Absent for an anonymous caller, and for a member whose window holds too
-    /// few people to aggregate without identifying them.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    window: Option<PulseWindowOut>,
-    all_time: PulseTotalsOut,
-    /// The operator block. Present only for [`Tier::Admin`].
-    #[serde(skip_serializing_if = "Option::is_none")]
-    detail: Option<Box<AdminDetailOut>>,
-}
-
-/// Counts are strings because the member tier rounds them and the admin tier
-/// does not, and one shape for both means one render path in the pane. Rates
-/// and latencies stay numeric: a percentage is already an aggregate and reveals
-/// nothing a bucket would hide.
-#[derive(Debug, Clone, Serialize)]
-struct PulseWindowOut {
-    people: String,
-    sessions: String,
-    requests: String,
-    tool_calls: String,
-    allowed: String,
-    denied: String,
-    /// Whole percent of governed calls that policy let through. `None` when
-    /// nothing was decided — 100% of nothing is not a reassuring claim, it is
-    /// a meaningless one.
-    allow_rate_percent: Option<i64>,
-    latency_p50_ms: Option<i32>,
-    input_tokens: String,
-    output_tokens: String,
-    cost_display: String,
-    model_mix: Vec<ModelShareOut>,
-    /// The most-refused tools, where anything was refused. One entry below the
-    /// admin tier.
-    blocked_tools: Vec<BlockedToolOut>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct ModelShareOut {
-    model: String,
-    requests: String,
-    percent: i64,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct BlockedToolOut {
-    tool_name: String,
-    denials: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct PulseTotalsOut {
-    sessions: String,
-    requests: String,
-    tool_calls: String,
-    secrets_caught: String,
-}
-
-/// Everything an operator gets that a member does not.
-///
-/// Boxed in [`PulseResponse`] because it is large and absent for two of the
-/// three tiers; inlining it would make every member response carry the
-/// footprint of a block it never uses.
-#[derive(Debug, Clone, Serialize)]
-struct AdminDetailOut {
-    /// Site traffic over [`ADMIN_TRAFFIC_RANGE`]: KPIs with period-over-period
-    /// comparison, timeseries, sources, geo, devices, top pages.
-    traffic: Arc<TrafficData>,
-    /// This hour and today, for the top of the block.
-    realtime: RealtimePulse,
-    /// Lifetime-ish event counters across the plugin spine.
-    activity: ActivityStats,
-    active_users_24h: i64,
-    /// Who is actually using the demo. The one place an identity appears in any
-    /// pulse payload, and it appears only here.
-    top_users: Vec<TopUserOut>,
-    /// What they are running.
-    popular_skills: Vec<SkillCount>,
-    /// When they run it, by hour of day.
-    hourly_activity: Vec<HourlyActivity>,
-    /// Which tools work.
-    tool_success: Vec<ToolSuccessRate>,
-    /// Per-tool and per-agent rollups over the last seven days.
-    tools: Vec<ToolRollupOut>,
-    agents: Vec<AgentRollupOut>,
-}
-
-/// [`TopUser`] without the email address.
-///
-/// An admin can read the email from the CLI, and this payload reaches a browser
-/// on the public homepage. The display name identifies the account for the
-/// purpose the block serves — seeing who is exercising the demo — and the
-/// address adds nothing to that while being the field worth leaking.
-#[derive(Debug, Clone, Serialize)]
-struct TopUserOut {
-    user_id: UserId,
-    display_name: String,
-    logins: i64,
-    edits: i64,
-    mcp_calls: i64,
-    last_active: chrono::DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct ToolRollupOut {
-    tool_name: String,
-    calls: i64,
-    errors: i64,
-    sessions: i64,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct AgentRollupOut {
-    agent_id: AgentId,
-    calls: i64,
-    errors: i64,
-    sessions: i64,
-}
-
-/// `GET /api/public/pi/pulse?token=…`
 pub(super) async fn pulse(
     State(pool): State<Arc<PgPool>>,
     Query(q): Query<PulseQuery>,
@@ -253,8 +113,6 @@ pub(super) async fn pulse(
         },
         Err(e) => {
             tracing::error!(error = %e, ?tier, "could not read the platform pulse");
-            // A stale snapshot beats an error card: the section is context, and
-            // minute-old context is still true enough to make its point.
             stale_snapshot(tier).map_or_else(
                 // lint-ok: http-error — logged above
                 || {
@@ -269,7 +127,6 @@ pub(super) async fn pulse(
     }
 }
 
-/// How long this tier's snapshot stays good for.
 const fn ttl(tier: Tier) -> Duration {
     match tier {
         Tier::Admin => ADMIN_CACHE_TTL,
@@ -277,7 +134,6 @@ const fn ttl(tier: Tier) -> Duration {
     }
 }
 
-/// The cached snapshot if it is still inside its TTL.
 fn fresh_snapshot(tier: Tier) -> Option<PulseResponse> {
     let guard = CACHE.lock().ok()?;
     let (at, snapshot) = guard[tier.index()].as_ref()?;
@@ -285,7 +141,6 @@ fn fresh_snapshot(tier: Tier) -> Option<PulseResponse> {
     (age < ttl(tier)).then(|| snapshot.clone().aged(age.as_secs()))
 }
 
-/// The cached snapshot regardless of age, for the error path.
 fn stale_snapshot(tier: Tier) -> Option<PulseResponse> {
     let guard = CACHE.lock().ok()?;
     let (at, snapshot) = guard[tier.index()].as_ref()?;
@@ -302,8 +157,6 @@ impl PulseResponse {
 async fn collect(pool: &PgPool, tier: Tier) -> Result<PulseResponse, sqlx::Error> {
     let all_time = repo::get_pulse_all_time(pool).await?;
 
-    // The anonymous tier stops here. Not an optimisation — there is no window
-    // it is entitled to, so computing one would be work done to throw away.
     let window = match tier {
         Tier::Anonymous => None,
         Tier::Member | Tier::Admin => collect_window(pool, tier).await?,
@@ -329,15 +182,12 @@ async fn collect(pool: &PgPool, tier: Tier) -> Result<PulseResponse, sqlx::Error
     })
 }
 
-/// The 24h window, or `None` when it is too sparse for this tier to see.
 async fn collect_window(pool: &PgPool, tier: Tier) -> Result<Option<PulseWindowOut>, sqlx::Error> {
     let since = Utc::now() - chrono::Duration::hours(WINDOW_HOURS);
     let exact = tier == Tier::Admin;
 
     let window = repo::get_pulse_window(pool, since).await?;
 
-    // Suppression before any further query: a window this empty is not going to
-    // be rendered, so the model mix and blocklist are work for nothing.
     if !exact && !normalize::window_is_publishable(window.people) {
         return Ok(None);
     }
@@ -391,9 +241,6 @@ async fn collect_window(pool: &PgPool, tier: Tier) -> Result<Option<PulseWindowO
     }))
 }
 
-/// The operator block, assembled from the repositories that outlived the admin
-/// pages. Nothing here is new SQL — these are the same queries the retired
-/// dashboard ran and the CLI still runs.
 async fn collect_detail(pool: &PgPool) -> Result<AdminDetailOut, sqlx::Error> {
     let traffic = dashboard::traffic::get_traffic_data(pool, ADMIN_TRAFFIC_RANGE).await?;
     let realtime = dashboard::traffic::get_realtime_pulse(pool).await?;
@@ -434,35 +281,4 @@ async fn collect_detail(pool: &PgPool) -> Result<AdminDetailOut, sqlx::Error> {
             })
             .collect(),
     })
-}
-
-impl From<TopUser> for TopUserOut {
-    fn from(u: TopUser) -> Self {
-        Self {
-            user_id: u.user_id,
-            display_name: u.display_name,
-            logins: u.logins,
-            edits: u.edits,
-            mcp_calls: u.mcp_calls,
-            last_active: u.last_active,
-        }
-    }
-}
-
-/// A count rendered for the caller's tier.
-fn count(n: i64, exact: bool) -> String {
-    if exact {
-        n.to_string()
-    } else {
-        normalize::bucket(n)
-    }
-}
-
-/// A token count rendered for the caller's tier, on its own larger scale.
-fn tokens(n: i64, exact: bool) -> String {
-    if exact {
-        n.to_string()
-    } else {
-        normalize::bucket_tokens(n)
-    }
 }

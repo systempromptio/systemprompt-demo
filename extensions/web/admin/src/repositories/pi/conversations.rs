@@ -12,7 +12,6 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use systemprompt::identifiers::{SessionId, UserId};
 
-/// A conversation as its owner's routes need it.
 #[derive(Debug, Clone)]
 pub struct PiConversationRow {
     pub id: String,
@@ -23,7 +22,6 @@ pub struct PiConversationRow {
     pub closed_at: Option<DateTime<Utc>>,
 }
 
-/// A conversation as the picker lists it.
 #[derive(Debug, Clone)]
 pub struct PiConversationSummary {
     pub id: String,
@@ -195,7 +193,6 @@ pub async fn update_conversation_session(
     Ok(())
 }
 
-/// Record that the child process ended. The row and its transcript remain.
 pub async fn update_conversation_closed(pool: &PgPool, id: &str) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"

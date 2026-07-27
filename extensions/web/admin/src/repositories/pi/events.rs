@@ -7,7 +7,6 @@
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
-/// One stored frame.
 #[derive(Debug, Clone)]
 pub struct PiStoredEvent {
     pub seq: i64,
@@ -16,7 +15,6 @@ pub struct PiStoredEvent {
     pub at: DateTime<Utc>,
 }
 
-/// A frame on its way to Postgres, before it has an `at`.
 #[derive(Debug, Clone)]
 pub struct NewPiEvent {
     pub seq: i64,
@@ -94,8 +92,6 @@ pub async fn insert_conversation_events(
     )
     .execute(&mut *tx)
     .await?;
-    // GREATEST, not assignment: batches can retry, and a watermark that moved
-    // backwards would make a viewer re-request history it already has.
     sqlx::query!(
         r#"
         UPDATE pi_conversations

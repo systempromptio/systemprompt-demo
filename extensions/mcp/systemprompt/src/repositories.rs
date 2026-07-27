@@ -79,8 +79,8 @@ pub(crate) struct SafetyFindingRow {
 #[derive(Debug)]
 pub(crate) struct GlobalDecisionRow {
     pub(crate) at: chrono::DateTime<chrono::Utc>,
-    pub(crate) user_id: String,
-    pub(crate) session_id: String,
+    pub(crate) user_id: UserId,
+    pub(crate) session_id: SessionId,
     pub(crate) tool_name: String,
     pub(crate) decision: String,
     pub(crate) policy: String,
@@ -210,8 +210,8 @@ pub(crate) async fn list_all_decisions(
 ) -> Result<Vec<GlobalDecisionRow>, sqlx::Error> {
     sqlx::query_as!(
         GlobalDecisionRow,
-        r#"SELECT created_at as "at!", COALESCE(user_id, '') as "user_id!",
-                  COALESCE(session_id, '') as "session_id!",
+        r#"SELECT created_at as "at!", COALESCE(user_id, '') as "user_id!: UserId",
+                  COALESCE(session_id, '') as "session_id!: SessionId",
                   tool_name as "tool_name!", decision as "decision!",
                   COALESCE(NULLIF(policy, ''), 'default_included') as "policy!"
            FROM governance_decisions

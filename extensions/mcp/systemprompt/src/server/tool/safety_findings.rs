@@ -74,11 +74,6 @@ impl McpToolHandler for SafetyFindingsHandler {
     }
 }
 
-/// Render the findings as Markdown.
-///
-/// The empty case says what empty means. A blank section reads to a model as
-/// "nothing to report", and it would then tell the user the gateway is not
-/// scanning — when the truth is that nothing they sent has tripped it.
 fn render_findings(rows: &[repositories::SafetyFindingRow]) -> String {
     let mut body = String::from("# Gateway safety findings for this caller\n\n");
     if rows.is_empty() {
@@ -97,8 +92,6 @@ fn render_findings(rows: &[repositories::SafetyFindingRow]) -> String {
          |---|---|---|---|---|---|\n",
     );
     for row in rows {
-        // A pipe in an excerpt would silently break the table, and the excerpt
-        // is cut from text the caller controls.
         let excerpt = row.excerpt.replace('|', "\\|");
         body.push_str(&format!(
             "| {} | {} | {} | `{}` | `{}` | {} |\n",

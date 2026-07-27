@@ -117,6 +117,10 @@ jobs:
       # script as `just file-size`.
       - name: Enforce 300-line ceiling on extension sources
         run: bash scripts/check-file-size.sh
+      # The file ceiling says nothing about one function, so a 154-line function
+      # sat inside a passing file. Same script as `just function-size`.
+      - name: Enforce 75-line ceiling on function bodies
+        run: bash scripts/check-function-size.sh
 
   msrv:
     name: MSRV check (Rust 1.94)

@@ -29,6 +29,10 @@ use serde::Serialize;
 use sqlx::PgPool;
 use systemprompt::identifiers::SessionId;
 
+mod facets;
+
+use facets::{Facets, credit_position, facets, model_mix, policy_stages, trace_counts};
+
 use super::api::TokenQuery;
 use super::auth::{authorize_conversation, problem};
 use super::format;
@@ -134,76 +138,6 @@ pub(super) async fn stats(
     }
 }
 
-async fn credit_position(pool: &PgPool, user_id: &systemprompt::identifiers::UserId) -> PiCredit {
-    let balance = systemprompt_credits_extension::get_balance(pool, user_id.as_str())
-        .await
-        .unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "could not read a credit balance for the pi stats pane");
-            systemprompt_credits_extension::CreditBalance {
-                balance_microdollars: 0,
-                granted_microdollars: 0,
-                spent_microdollars: 0,
-            }
-        });
-
-    let remaining_percent = if balance.granted_microdollars > 0 {
-        let pct = balance.balance_microdollars.saturating_mul(100) / balance.granted_microdollars;
-        pct.clamp(0, 100)
-    } else {
-        0
-    };
-
-    PiCredit {
-        granted_microdollars: balance.granted_microdollars,
-        spent_microdollars: balance.spent_microdollars,
-        remaining_microdollars: balance.balance_microdollars,
-        granted_display: format::cost_round(balance.granted_microdollars),
-        spent_display: format::cost(balance.spent_microdollars),
-        remaining_display: format::cost(balance.balance_microdollars.max(0)),
-        remaining_percent,
-        exhausted: balance.granted_microdollars > 0 && balance.balance_microdollars <= 0,
-    }
-}
-
-fn policy_stages(rows: &[crate::repositories::governance::PerPolicyCounts]) -> Vec<PiPolicyStage> {
-    stages::STAGES
-        .iter()
-        .map(|(id, label)| {
-            let found = rows.iter().find(|r| r.policy == *id);
-            PiPolicyStage {
-                id: (*id).to_owned(),
-                label: (*label).to_owned(),
-                passed: found.map_or(0, |r| r.allowed),
-                failed: found.map_or(0, |r| r.denied),
-                active: found.is_some(),
-            }
-        })
-        .collect()
-}
-
-fn model_mix(requests: &[session_detail::SessionRequestRow]) -> Vec<PiModelShare> {
-    let total = requests.len() as i64;
-    if total == 0 {
-        return Vec::new();
-    }
-    let mut tally: Vec<(String, i64)> = Vec::new();
-    for row in requests {
-        match tally.iter_mut().find(|(m, _)| *m == row.model) {
-            Some((_, n)) => *n += 1,
-            None => tally.push((row.model.clone(), 1)),
-        }
-    }
-    tally.sort_by(|a, b| b.1.cmp(&a.1));
-    tally
-        .into_iter()
-        .map(|(model, requests)| PiModelShare {
-            model,
-            percent: requests.saturating_mul(100) / total,
-            requests,
-        })
-        .collect()
-}
-
 async fn collect(
     pool: &PgPool,
     conversation_id: &str,
@@ -217,17 +151,15 @@ async fn collect(
     let counts = stages::get_session_governance_counts(pool, attested).await?;
     let stage_rows = stages::list_session_policy_stages(pool, attested).await?;
 
-    let latest = requests.first();
-    let latency_last_ms = latest.and_then(|r| r.latency_ms);
-    let latencies: Vec<i32> = requests.iter().filter_map(|r| r.latency_ms).collect();
-    let latency_p50_ms = format::median(latencies.clone());
-    let latency_p95_ms = format::percentile(latencies, 95);
-    let model = latest.map(|r| r.model.clone());
-    let provider = latest.map(|r| r.provider.clone());
-    let route_match = latest.and_then(|r| r.route_match.clone());
-    let requested_model = latest
-        .and_then(|r| r.requested_model.clone())
-        .filter(|asked| Some(asked) != model.as_ref());
+    let Facets {
+        latency_last_ms,
+        latency_p50_ms,
+        latency_p95_ms,
+        model,
+        provider,
+        route_match,
+        requested_model,
+    } = facets(&requests);
 
     let cache_hit_percent = if kpis.request_count > 0 {
         kpis.cache_hit_count.saturating_mul(100) / kpis.request_count
@@ -240,12 +172,7 @@ async fn collect(
         format::cost(0)
     };
 
-    let counted = |kind: &str, outcome: &str| {
-        trace
-            .iter()
-            .filter(|r| r.kind == kind && r.outcome == outcome)
-            .count() as i64
-    };
+    let counts_from_trace = trace_counts(&trace);
 
     Ok(PiStats {
         conversation_id: conversation_id.to_owned(),
@@ -269,11 +196,11 @@ async fn collect(
         secrets_caught: counts.secret_breaches,
         policy_stages: policy_stages(&stage_rows),
         model_mix: model_mix(&requests),
-        allowed: trace.iter().filter(|r| r.outcome == "allow").count() as i64,
-        denied: trace.iter().filter(|r| r.outcome == "deny").count() as i64,
-        prompts_blocked: counted("prompt", "deny"),
-        tools_blocked: counted("tool", "deny"),
-        tool_calls: trace.iter().filter(|r| r.kind == "fire").count() as i64,
+        allowed: counts_from_trace.allowed,
+        denied: counts_from_trace.denied,
+        prompts_blocked: counts_from_trace.prompts_blocked,
+        tools_blocked: counts_from_trace.tools_blocked,
+        tool_calls: counts_from_trace.tool_calls,
         credit,
         events: trace
             .into_iter()

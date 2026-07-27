@@ -19,7 +19,6 @@
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
-/// Everything that happened in one rolling window.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PulseWindow {
     pub people: i64,
@@ -34,7 +33,6 @@ pub struct PulseWindow {
     pub cost_microdollars: i64,
 }
 
-/// Cumulative totals since the deployment's first row.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PulseTotals {
     pub sessions: i64,
@@ -43,14 +41,12 @@ pub struct PulseTotals {
     pub secrets_caught: i64,
 }
 
-/// One model's share of a window.
 #[derive(Debug, Clone)]
 pub struct PulseModelShare {
     pub model: String,
     pub requests: i64,
 }
 
-/// A tool and how often policy refused it.
 #[derive(Debug, Clone)]
 pub struct PulseBlockedTool {
     pub tool_name: String,
@@ -123,9 +119,6 @@ pub async fn get_pulse_window(
         tool_calls: row.tool_calls,
         allowed: row.allowed,
         denied: row.denied,
-        // A latency in milliseconds that overflows an i32 is 24 days; the
-        // column it came from is already i32, so the cast cannot lose anything
-        // a real row could carry.
         #[expect(
             clippy::cast_possible_truncation,
             reason = "source column is i32; a p50 cannot exceed its own inputs"
@@ -137,7 +130,6 @@ pub async fn get_pulse_window(
     })
 }
 
-/// Which models served a window, busiest first.
 pub async fn list_pulse_model_mix(
     pool: &PgPool,
     since: DateTime<Utc>,
@@ -161,7 +153,6 @@ pub async fn list_pulse_model_mix(
     .await
 }
 
-/// The tools policy refused most often in a window.
 pub async fn list_pulse_blocked_tools(
     pool: &PgPool,
     since: DateTime<Utc>,

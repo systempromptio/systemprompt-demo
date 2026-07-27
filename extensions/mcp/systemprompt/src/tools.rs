@@ -27,7 +27,6 @@ use systemprompt::models::artifacts::{CliArtifact, ToolResponse};
 
 pub const SERVER_NAME: &str = "systemprompt";
 
-/// Input for `list_topics`: no parameters.
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(default)]
 #[expect(
@@ -36,7 +35,6 @@ pub const SERVER_NAME: &str = "systemprompt";
 )]
 pub struct ListTopicsInput {}
 
-/// Input for `get_topic`: the id of the topic to read in full.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct GetTopicInput {
     /// The topic id to fetch, e.g. "governance-pipeline". Use `list_topics` to
@@ -44,14 +42,11 @@ pub struct GetTopicInput {
     pub topic_id: String,
 }
 
-/// Input for `search_docs`: a free-text query over all topics.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SearchDocsInput {
-    /// A natural-language question or keywords, e.g. "how are secrets blocked".
     pub query: String,
 }
 
-/// Input for `governance_stats`: no parameters.
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(default)]
 #[expect(
@@ -76,10 +71,8 @@ pub struct SafetyFindingsInput {}
 )]
 pub struct AdminAuditDumpInput {}
 
-/// Input for `fetch_remote_docs`: the upstream path to retrieve.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct FetchRemoteDocsInput {
-    /// Path under the public documentation site, e.g. "/docs/governance".
     pub path: String,
 }
 

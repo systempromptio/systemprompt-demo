@@ -24,17 +24,8 @@
 //! privacy control enforced by the party it protects against. It is server-side
 //! now, and the sparse window never leaves the process.
 
-/// Fewer distinct people than this in the window and the window is withheld.
-///
-/// Three rather than two: at two, one participant plus a known total is a
-/// subtraction. Three leaves an unknown behind after the subtraction.
 pub(super) const MIN_PEOPLE: i64 = 3;
 
-/// A count as a bucketed display string.
-///
-/// The buckets widen with the magnitude because the privacy risk narrows with
-/// it: at four figures nobody is identifiable by a rounding boundary, so the
-/// step can be large and the string short.
 pub(super) fn bucket(n: i64) -> String {
     match n {
         i64::MIN..=0 => "0".to_owned(),
@@ -46,18 +37,11 @@ pub(super) fn bucket(n: i64) -> String {
     }
 }
 
-/// Round to the nearest multiple of `step`, never down to zero.
-///
-/// Clamping the floor matters: bucketing 4 to "0" would report a window that
-/// had traffic as a window that had none, which is a stronger claim than the
-/// one being withheld.
 fn round_to(n: i64, step: i64) -> i64 {
     let rounded = (n + step / 2) / step * step;
     rounded.max(step)
 }
 
-/// Bytes-style rounding for token counts, which run orders of magnitude larger
-/// than the call counts and would otherwise dominate the pane.
 pub(super) fn bucket_tokens(n: i64) -> String {
     match n {
         i64::MIN..1_000 => "<1k".to_owned(),
@@ -66,7 +50,6 @@ pub(super) fn bucket_tokens(n: i64) -> String {
     }
 }
 
-/// Whether a window is populated enough to be reported at all.
 pub(super) const fn window_is_publishable(people: i64) -> bool {
     people >= MIN_PEOPLE
 }
@@ -84,11 +67,9 @@ mod tests {
 
     #[test]
     fn rounding_never_reports_traffic_as_silence() {
-        // 12 rounds to 10, not to 0.
         assert_eq!(bucket(12), "10");
         assert_eq!(bucket(14), "10");
         assert_eq!(bucket(16), "20");
-        // The nearest multiple of 50 below 110 is 100, not 0.
         assert_eq!(bucket(110), "100");
         assert_eq!(bucket(126), "150");
     }
