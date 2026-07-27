@@ -19,7 +19,6 @@
 use crate::args::Spec;
 
 #[cfg(target_os = "linux")]
-#[cfg(target_os = "linux")]
 fn enforce(
     spec: &Spec,
     readable: &[std::path::PathBuf],
@@ -52,6 +51,7 @@ fn enforce(
     created.restrict_self()
 }
 
+#[cfg(target_os = "linux")]
 pub(crate) fn apply(spec: &Spec) -> Result<String, String> {
     use landlock::{ABI, RulesetStatus};
 
