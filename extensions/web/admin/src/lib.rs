@@ -61,6 +61,7 @@ pub mod test_support {
     pub use crate::handlers::pi::scope::escape_reason;
     pub use crate::handlers::pi::skills::{escape, scalar};
     pub use crate::handlers::webhook::governance::secrets::scan_str_for_secret;
+    pub use crate::handlers::webhook::governance::scope::cap_at;
     pub use crate::handlers::pi::token::{B64, Invalid, sign, verify};
     pub use crate::util::hmac;
     pub use crate::handlers::pi::SHIM_SOURCE;

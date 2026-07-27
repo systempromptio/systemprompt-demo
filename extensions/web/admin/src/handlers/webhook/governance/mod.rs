@@ -10,7 +10,7 @@ mod handler;
 pub(crate) mod inproc;
 mod policies;
 pub(crate) mod policy;
-mod scope;
+pub(crate) mod scope;
 pub(crate) mod secrets;
 pub(crate) mod stages;
 pub(crate) mod types;

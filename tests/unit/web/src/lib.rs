@@ -23,6 +23,8 @@ mod seed_contract;
 #[cfg(test)]
 mod bridge_downloads;
 #[cfg(test)]
+mod governance_scope;
+#[cfg(test)]
 mod middleware_gates;
 #[cfg(test)]
 mod pi_format;

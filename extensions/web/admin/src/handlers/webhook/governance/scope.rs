@@ -66,36 +66,11 @@ pub(super) const fn higher_privilege(a: AccessScope, b: AccessScope) -> AccessSc
 /// resolved by taking the *most* privilege the caller can prove, then capped at
 /// the *most* the surface is willing to evaluate at. A sandboxed surface can
 /// hold every caller at `User` without touching how roles are read.
-pub(super) const fn cap_at(resolved: AccessScope, ceiling: AccessScope) -> AccessScope {
+pub const fn cap_at(resolved: AccessScope, ceiling: AccessScope) -> AccessScope {
     match (resolved, ceiling) {
         (AccessScope::Unknown, _) | (_, AccessScope::Unknown) => AccessScope::Unknown,
         (AccessScope::User, _) | (_, AccessScope::User) => AccessScope::User,
         _ => AccessScope::Admin,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{AccessScope, cap_at};
-
-    #[test]
-    fn ceiling_lowers_admin_to_user() {
-        assert_eq!(cap_at(AccessScope::Admin, AccessScope::User), AccessScope::User);
-    }
-
-    #[test]
-    fn ceiling_never_raises() {
-        assert_eq!(cap_at(AccessScope::User, AccessScope::Admin), AccessScope::User);
-        assert_eq!(
-            cap_at(AccessScope::Unknown, AccessScope::Admin),
-            AccessScope::Unknown
-        );
-        assert_eq!(cap_at(AccessScope::Unknown, AccessScope::User), AccessScope::Unknown);
-    }
-
-    #[test]
-    fn an_admin_ceiling_is_no_ceiling() {
-        assert_eq!(cap_at(AccessScope::Admin, AccessScope::Admin), AccessScope::Admin);
     }
 }
 
