@@ -122,12 +122,17 @@ impl TempDb {
 
     // All `mcp_access` rows recorded for a given `entity_name` (server or
     // tool), returned as (user_id, action, entity_type, description).
+    /// Recorded `mcp_access` rows: `(user_id, action, entity_type, description,
+    /// session_id)`.
+    ///
+    /// The session comes out of `metadata` rather than a column — see
+    /// `record_mcp_access` for why it lives there.
     pub async fn mcp_rows(
         &self,
         entity_name: &str,
-    ) -> Vec<(String, String, Option<String>, String)> {
-        sqlx::query_as::<_, (String, String, Option<String>, String)>(
-            r"SELECT user_id, action, entity_type, description
+    ) -> Vec<(String, String, Option<String>, String, Option<String>)> {
+        sqlx::query_as::<_, (String, String, Option<String>, String, Option<String>)>(
+            r"SELECT user_id, action, entity_type, description, metadata->>'session_id'
               FROM user_activity
               WHERE category = 'mcp_access' AND entity_name = $1",
         )

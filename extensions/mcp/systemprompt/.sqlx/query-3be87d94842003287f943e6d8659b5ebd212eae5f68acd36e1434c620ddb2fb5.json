@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) as \"requests!\",\n                  COALESCE(SUM(input_tokens), 0)::BIGINT as \"input_tokens!\",\n                  COALESCE(SUM(output_tokens), 0)::BIGINT as \"output_tokens!\",\n                  COALESCE(SUM(cost_microdollars), 0)::BIGINT as \"cost_microdollars!\",\n                  AVG(latency_ms)::FLOAT8 as \"mean_latency_ms?\",\n                  (SELECT COALESCE(r.requested_model, r.model) FROM ai_requests r\n                   WHERE r.user_id = $1 AND r.session_id = $2\n                   ORDER BY r.created_at DESC LIMIT 1) as \"model?\"\n           FROM ai_requests\n           WHERE user_id = $1 AND session_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "requests!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "input_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "output_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "cost_microdollars!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "mean_latency_ms?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "model?",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "3be87d94842003287f943e6d8659b5ebd212eae5f68acd36e1434c620ddb2fb5"
+}

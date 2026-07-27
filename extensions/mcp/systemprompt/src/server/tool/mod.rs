@@ -14,7 +14,7 @@ use systemprompt::mcp::McpToolExecutor;
 use systemprompt::models::artifacts::{CliArtifact, TextArtifact};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 use systemprompt::security::authz::SharedAuthzHook;
-use systemprompt_mcp_shared::{record_mcp_access, record_mcp_access_rejected};
+use systemprompt_mcp_shared::{McpAccess, record_mcp_access, record_mcp_access_rejected};
 
 /// How long `fetch_remote_docs` waits before giving up. Short on purpose: where
 /// the boundary is a firewall rather than a refusal the failure mode is a hang,
@@ -62,10 +62,13 @@ pub(super) async fn authenticate_tool_request(
                 Ok(authenticated) => {
                     record_mcp_access(
                         db_pool,
-                        authenticated.context.user_id(),
-                        server_name,
-                        tool_name,
-                        "authenticated",
+                        &McpAccess {
+                            user_id: authenticated.context.user_id(),
+                            session_id: authenticated.context.session_id(),
+                            server: server_name,
+                            tool: tool_name,
+                            action: "authenticated",
+                        },
                     )
                     .await;
                     let token = authenticated.token().to_owned();

@@ -107,9 +107,11 @@ pub fn may_pass_pending_gate(is_admin: bool, is_approved: bool, path: &str) -> b
     is_admin || is_approved || is_pending_allowed_path(path)
 }
 
-/// What an account under review may still reach: the pending page itself, the
-/// sign-in and sign-out round trip, and the JSON API. The rest of `/admin` is
-/// the Bridge's device endpoints, which wait on approval by design.
+/// What an account under review may still reach.
+///
+/// The pending page itself, the sign-in and sign-out round trip, and the JSON
+/// API. The rest of `/admin` is the Bridge's device endpoints, which wait on
+/// approval by design.
 ///
 /// `/admin/auth/` is here because the homepage pane's whoami lives there, not
 /// under `/admin/api/`. Without it a visitor who has just registered — and so

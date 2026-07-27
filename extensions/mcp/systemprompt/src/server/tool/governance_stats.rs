@@ -8,6 +8,7 @@
 use crate::repositories::{self, DECISION_LIMIT};
 use crate::tools::GovernanceStatsInput;
 use systemprompt::database::DbPool;
+use systemprompt::identifiers::SessionId;
 use rmcp::ErrorData as McpError;
 use std::future::Future;
 use systemprompt::identifiers::McpExecutionId;
@@ -37,7 +38,7 @@ impl McpToolHandler for GovernanceStatsHandler {
     }
 
     fn description(&self) -> &'static str {
-        "Return the calling identity's own governance verdicts, spend, and tool fires."
+        "Return this session's own governance verdicts, spend, and tool fires."
     }
 
     fn handle(
@@ -48,6 +49,7 @@ impl McpToolHandler for GovernanceStatsHandler {
     ) -> impl Future<Output = Result<(Self::Output, String), McpError>> + Send {
         let db_pool = std::sync::Arc::<systemprompt::database::Database>::clone(&self.db_pool);
         let user_id = ctx.user_id().clone();
+        let session_id = ctx.session_id().clone();
         async move {
             // No pool means the server started without a database. Reporting
             // that plainly beats an empty table, which would read as "nothing
@@ -61,18 +63,24 @@ impl McpToolHandler for GovernanceStatsHandler {
             };
             let pool = pool.as_ref();
             let stats = Spine {
-                tallies: repositories::list_policy_tallies(pool, &user_id)
+                tallies: repositories::list_policy_tallies(pool, &user_id, &session_id)
                     .await
                     .map_err(|e| db_error(&e))?,
-                decisions: repositories::list_recent_decisions(pool, &user_id, DECISION_LIMIT)
+                decisions: repositories::list_recent_decisions(
+                    pool,
+                    &user_id,
+                    &session_id,
+                    DECISION_LIMIT,
+                )
+                .await
+                .map_err(|e| db_error(&e))?,
+                spend: repositories::get_spend(pool, &user_id, &session_id)
                     .await
                     .map_err(|e| db_error(&e))?,
-                spend: repositories::get_spend(pool, &user_id)
+                fires: repositories::list_tool_fires(pool, &user_id, &session_id, DECISION_LIMIT)
                     .await
                     .map_err(|e| db_error(&e))?,
-                fires: repositories::list_tool_fires(pool, &user_id, DECISION_LIMIT)
-                    .await
-                    .map_err(|e| db_error(&e))?,
+                session_id,
             };
 
             let summary = format!(
@@ -89,12 +97,13 @@ impl McpToolHandler for GovernanceStatsHandler {
     }
 }
 
-/// One caller's spine, as the four queries return it.
+/// One session's spine, as the four queries return it.
 struct Spine {
     tallies: Vec<repositories::PolicyTally>,
     decisions: Vec<repositories::DecisionRow>,
     spend: repositories::SpendRow,
     fires: Vec<repositories::ToolFireRow>,
+    session_id: SessionId,
 }
 
 impl Spine {
@@ -105,6 +114,16 @@ impl Spine {
     fn denied(&self) -> i64 {
         self.tallies.iter().map(|t| t.denied).sum()
     }
+
+    /// Whether the caller presented a real session.
+    ///
+    /// `SysRequestContext::default()` carries the placeholder `"unknown"`. Every
+    /// query here is session-scoped, so that placeholder matches nothing and
+    /// renders as a spine full of zeros — which reads as "this deployment
+    /// governs nothing" rather than "you did not say which session to read".
+    fn has_session(&self) -> bool {
+        !self.session_id.as_str().is_empty() && self.session_id.as_str() != "unknown"
+    }
 }
 
 /// Render the spine as Markdown for a model to read and summarise.
@@ -113,7 +132,19 @@ impl Spine {
 /// reads to a model as "nothing to report", and it would then tell the user
 /// that nothing was governed — the opposite of what an empty table means here.
 fn render_spine(stats: &Spine) -> String {
-    let mut body = String::from("# Governance statistics for the calling identity\n\n## Spend\n\n");
+    if !stats.has_session() {
+        return "# Governance statistics\n\nThis caller presented no session id, so no \
+                session-scoped rows can be read. This is not an ungoverned deployment — it \
+                is a request that did not say which session to report on.\n"
+            .to_owned();
+    }
+
+    let mut body = format!(
+        "# Governance statistics for this session (`{}`)\n\n\
+         Every figure below is scoped to this session alone, not to the account's history.\n\n\
+         ## Spend\n\n",
+        stats.session_id
+    );
 
     let spend = &stats.spend;
     body.push_str(&format!(
@@ -133,10 +164,10 @@ fn render_spine(stats: &Spine) -> String {
     ));
 
     if stats.tallies.is_empty() {
-        body.push_str("No governance decisions recorded for this identity yet.\n\n");
+        body.push_str("No governance decisions recorded in this session yet.\n\n");
     } else {
         body.push_str(&format!(
-            "{} allowed, {} denied across all policies.\n\n\
+            "{} allowed, {} denied across all policies in this session.\n\n\
              | Policy | Allowed | Denied |\n|---|---|---|\n",
             stats.allowed(),
             stats.denied()
@@ -176,7 +207,7 @@ fn render_spine(stats: &Spine) -> String {
 
     body.push_str("## Tools that actually ran\n\n");
     if stats.fires.is_empty() {
-        body.push_str("None recorded.\n");
+        body.push_str("None in this session.\n");
     } else {
         for row in &stats.fires {
             body.push_str(&format!("- `{}` — {} fire(s)\n", row.tool_name, row.fires));

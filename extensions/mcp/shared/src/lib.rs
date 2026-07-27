@@ -7,7 +7,7 @@
 //! propagate errors.
 
 use systemprompt::database::DbPool;
-use systemprompt::identifiers::UserId;
+use systemprompt::identifiers::{SessionId, UserId};
 
 mod repositories;
 
@@ -46,13 +46,35 @@ pub fn truncate_on_char_boundary(s: &str, max_bytes: usize) -> String {
     format!("{}...", &s[..end])
 }
 
-pub async fn record_mcp_access(
-    pool: &DbPool,
-    user_id: &UserId,
-    server: &str,
-    tool: &str,
-    action: &str,
-) {
+/// Who did what, for [`record_mcp_access`].
+///
+/// A struct rather than five more positional arguments: four of them are
+/// strings, and swapping `server` for `tool` — or either for `action` — would
+/// compile and then quietly mislabel every audit row it wrote.
+#[derive(Debug, Clone, Copy)]
+pub struct McpAccess<'a> {
+    pub user_id: &'a UserId,
+    pub session_id: &'a SessionId,
+    pub server: &'a str,
+    pub tool: &'a str,
+    pub action: &'a str,
+}
+
+/// Record one MCP access event against `user_activity`.
+///
+/// The session is stamped into `metadata` because callers read these rows back
+/// per session — "which tools ran in the session I just watched" is the
+/// question, and a user-lifetime total answers a different one. `user_activity`
+/// is core-owned, so this repo adds an index over the JSON key rather than a
+/// column (`020_user_activity_session_index.sql`).
+pub async fn record_mcp_access(pool: &DbPool, access: &McpAccess<'_>) {
+    let McpAccess {
+        user_id,
+        session_id,
+        server,
+        tool,
+        action,
+    } = *access;
     let Some(pg_pool) = pool.pool() else {
         tracing::warn!("No PgPool available to record MCP access event");
         return;
@@ -68,7 +90,11 @@ pub async fn record_mcp_access(
         "mcp_server"
     };
     let entity_name = if action == ACTION_USED { tool } else { server };
-    let metadata = serde_json::json!({ "tool_name": tool, "server": server });
+    let metadata = serde_json::json!({
+        "tool_name": tool,
+        "server": server,
+        "session_id": session_id.as_str(),
+    });
 
     let params = McpAccessParams {
         user_id,

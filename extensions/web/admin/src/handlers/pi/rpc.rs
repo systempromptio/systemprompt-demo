@@ -41,7 +41,7 @@ pub(super) struct ExtensionUiResponse<'a> {
 }
 
 impl<'a> ExtensionUiResponse<'a> {
-    pub const fn new(id: &'a str, confirmed: bool) -> Self {
+    pub(super) const fn new(id: &'a str, confirmed: bool) -> Self {
         Self {
             kind: "extension_ui_response",
             id,
@@ -49,7 +49,7 @@ impl<'a> ExtensionUiResponse<'a> {
         }
     }
 
-    pub fn to_line(&self) -> Result<String, serde_json::Error> {
+    pub(super) fn to_line(&self) -> Result<String, serde_json::Error> {
         Ok(format!("{}\n", serde_json::to_string(self)?))
     }
 }
@@ -100,7 +100,7 @@ pub struct GovernancePayload {
     pub prompt: Option<String>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PayloadKind {
     Prompt,

@@ -27,7 +27,7 @@ use systemprompt::mcp::{
     build_artifact_viewer_resource, build_extension_capabilities, read_artifact_viewer_resource,
 };
 use systemprompt::security::authz::SharedAuthzHook;
-use systemprompt_mcp_shared::record_mcp_access;
+use systemprompt_mcp_shared::{McpAccess, record_mcp_access};
 
 use tool::{authenticate_tool_request, dispatch_tool};
 
@@ -144,10 +144,13 @@ impl ServerHandler for SystempromptServer {
 
         record_mcp_access(
             &self.db_pool,
-            request_context.user_id(),
-            &server_name,
-            &tool_name,
-            "used",
+            &McpAccess {
+                user_id: request_context.user_id(),
+                session_id: request_context.session_id(),
+                server: &server_name,
+                tool: &tool_name,
+                action: "used",
+            },
         )
         .await;
 

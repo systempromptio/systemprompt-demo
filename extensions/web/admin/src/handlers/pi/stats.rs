@@ -2,7 +2,7 @@
 //!
 //! The homepage pane shows a user their own governance spine while the terminal
 //! beside it is still running. That data already exists — `ai_requests` for
-//! spend and latency, `governance_decisions` for verdicts, `plugin_usage_events`
+//! spend and latency, `governance_decisions` for verdicts, `user_activity`
 //! for tool fires — so this endpoint composes the same repository functions the
 //! retired admin pages used rather than adding queries.
 //!

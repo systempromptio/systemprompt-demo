@@ -7,14 +7,23 @@
 //!
 //! * `governance_decisions` — what was asked for, and whether policy allowed it
 //! * `ai_requests` — what reached a provider, and what it cost
-//! * `plugin_usage_events` — which tool calls actually ran
+//! * `user_activity` — which tool calls actually ran
 //!
-//! Every query here is scoped by `user_id`, and that scoping is the security
-//! boundary rather than a convenience: the tool takes no arguments, so there is
-//! no selector a caller could widen to read somebody else's rows.
+//! Every query is scoped by **both** `user_id` and `session_id`, and the two do
+//! different jobs. `user_id` is the security boundary: the tool takes no
+//! arguments, so there is no selector a caller could widen to read somebody
+//! else's rows. `session_id` is the honesty boundary: the tool is presented as
+//! a readout of *this* session, and scoping by user alone made it a lifetime
+//! total instead — a viewer comparing the numbers against the handful of calls
+//! they just watched would find they matched nothing.
+//!
+//! Tool fires come from `user_activity`, which is where `record_mcp_access`
+//! writes them. `plugin_usage_events` only ever carries marketplace-webhook
+//! rows, so reading it here reported "no tools ran" for every session that ever
+//! ran a tool.
 
 use sqlx::PgPool;
-use systemprompt::identifiers::UserId;
+use systemprompt::identifiers::{SessionId, UserId};
 
 /// How many recent decisions the tool returns. A demo session produces a
 /// handful; a long-lived account produces thousands, and a tool result is read
@@ -62,6 +71,7 @@ pub(crate) struct ToolFireRow {
 pub(crate) async fn list_policy_tallies(
     pool: &PgPool,
     user_id: &UserId,
+    session_id: &SessionId,
 ) -> Result<Vec<PolicyTally>, sqlx::Error> {
     sqlx::query_as!(
         PolicyTally,
@@ -69,10 +79,11 @@ pub(crate) async fn list_policy_tallies(
                   COUNT(*) FILTER (WHERE decision = 'allow') as "allowed!",
                   COUNT(*) FILTER (WHERE decision = 'deny')  as "denied!"
            FROM governance_decisions
-           WHERE user_id = $1
+           WHERE user_id = $1 AND session_id = $2
            GROUP BY 1
            ORDER BY 3 DESC, 2 DESC"#,
         user_id.as_str(),
+        session_id.as_str(),
     )
     .fetch_all(pool)
     .await
@@ -81,6 +92,7 @@ pub(crate) async fn list_policy_tallies(
 pub(crate) async fn list_recent_decisions(
     pool: &PgPool,
     user_id: &UserId,
+    session_id: &SessionId,
     limit: i64,
 ) -> Result<Vec<DecisionRow>, sqlx::Error> {
     sqlx::query_as!(
@@ -90,10 +102,11 @@ pub(crate) async fn list_recent_decisions(
                   COALESCE(NULLIF(policy, ''), 'default_included') as "policy!",
                   COALESCE(reason, '') as "reason!"
            FROM governance_decisions
-           WHERE user_id = $1
+           WHERE user_id = $1 AND session_id = $2
            ORDER BY created_at DESC
-           LIMIT $2"#,
+           LIMIT $3"#,
         user_id.as_str(),
+        session_id.as_str(),
         limit,
     )
     .fetch_all(pool)
@@ -103,7 +116,11 @@ pub(crate) async fn list_recent_decisions(
 /// Spend is always one row: the aggregate collapses an empty history to zeros
 /// rather than to no row, so the caller never has to distinguish "no requests"
 /// from "query returned nothing".
-pub(crate) async fn get_spend(pool: &PgPool, user_id: &UserId) -> Result<SpendRow, sqlx::Error> {
+pub(crate) async fn get_spend(
+    pool: &PgPool,
+    user_id: &UserId,
+    session_id: &SessionId,
+) -> Result<SpendRow, sqlx::Error> {
     sqlx::query_as!(
         SpendRow,
         r#"SELECT COUNT(*) as "requests!",
@@ -112,31 +129,43 @@ pub(crate) async fn get_spend(pool: &PgPool, user_id: &UserId) -> Result<SpendRo
                   COALESCE(SUM(cost_microdollars), 0)::BIGINT as "cost_microdollars!",
                   AVG(latency_ms)::FLOAT8 as "mean_latency_ms?",
                   (SELECT COALESCE(r.requested_model, r.model) FROM ai_requests r
-                   WHERE r.user_id = $1
+                   WHERE r.user_id = $1 AND r.session_id = $2
                    ORDER BY r.created_at DESC LIMIT 1) as "model?"
            FROM ai_requests
-           WHERE user_id = $1"#,
+           WHERE user_id = $1 AND session_id = $2"#,
         user_id.as_str(),
+        session_id.as_str(),
     )
     .fetch_one(pool)
     .await
 }
 
+/// Tool calls that actually executed, from `user_activity`.
+///
+/// `record_mcp_access` stamps the session into `metadata` rather than a column:
+/// `user_activity` is core-owned, and an index is a safer thing for this repo to
+/// add to it than a column. Rows written before that stamp existed have no
+/// `session_id` and correctly fall outside every session's scope.
 pub(crate) async fn list_tool_fires(
     pool: &PgPool,
     user_id: &UserId,
+    session_id: &SessionId,
     limit: i64,
 ) -> Result<Vec<ToolFireRow>, sqlx::Error> {
     sqlx::query_as!(
         ToolFireRow,
-        r#"SELECT COALESCE(NULLIF(tool_name, ''), event_type) as "tool_name!",
+        r#"SELECT COALESCE(NULLIF(entity_name, ''), 'unknown') as "tool_name!",
                   COUNT(*) as "fires!"
-           FROM plugin_usage_events
+           FROM user_activity
            WHERE user_id = $1
+             AND category = 'mcp_access'
+             AND action = 'used'
+             AND metadata->>'session_id' = $2
            GROUP BY 1
            ORDER BY 2 DESC
-           LIMIT $2"#,
+           LIMIT $3"#,
         user_id.as_str(),
+        session_id.as_str(),
         limit,
     )
     .fetch_all(pool)

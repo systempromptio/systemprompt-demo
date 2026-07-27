@@ -1,6 +1,39 @@
-//! Parsing skill front-matter, and escaping what goes back out.
+//! Parsing skill front-matter, escaping what goes back out, and keeping the
+//! shipped skill bodies inert to the gateway's secret scanner.
 
-use systemprompt_web_admin::test_support::{escape, scalar};
+use systemprompt_web_admin::test_support::{escape, scalar, scan_str_for_secret};
+
+/// The credential-shaped literal `demonstrate_governance` sends to trigger a
+/// `secret_scan` deny. It matches an operator `extra_pattern`, never a built-in.
+const DEMO_CREDENTIAL: &str = "SPDEMOKEY-0000000000000000";
+
+fn skills_root() -> std::path::PathBuf {
+    std::path::PathBuf::from(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../services/skills"
+    ))
+}
+
+/// Every shipped `SKILL.md`, as `(id, body)`.
+fn shipped_skill_bodies() -> Vec<(String, String)> {
+    let root = skills_root();
+    let entries = std::fs::read_dir(&root).expect("services/skills is readable");
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        let dir = entry.path();
+        let config = dir.join("config.yaml");
+        if !config.exists() {
+            continue;
+        }
+        let raw = std::fs::read_to_string(&config).expect("config.yaml is readable");
+        let id = scalar(&raw, "id").expect("every skill has an id");
+        let file = scalar(&raw, "file").unwrap_or_else(|| "SKILL.md".to_owned());
+        let body = std::fs::read_to_string(dir.join(&file)).expect("skill body is readable");
+        out.push((id, body));
+    }
+    assert!(!out.is_empty(), "no skills found under {}", root.display());
+    out
+}
 
 #[test]
 fn reads_quoted_and_bare_scalars() {

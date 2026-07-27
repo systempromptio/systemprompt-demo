@@ -5,7 +5,7 @@
 //!
 //! * `governance_decisions` — what was asked for, and whether policy allowed it
 //! * `ai_requests` — what actually reached a provider, and what it cost
-//! * `plugin_usage_events` — which tool calls ran to completion
+//! * `user_activity` — which tool calls ran to completion
 //!
 //! Read separately they are three lists. Read as one time-ordered union they
 //! are the demo: a prompt denied by `secret_scan` sits immediately above the
@@ -78,16 +78,21 @@ pub async fn list_demo_trace(
              FROM ai_requests
              WHERE session_id = $1 AND session_id <> ''
              UNION ALL
+             -- Tool fires live in `user_activity`, where `record_mcp_access`
+             -- writes them, with the session stamped into `metadata`.
+             -- `plugin_usage_events` carries only marketplace-webhook rows, so
+             -- reading it here showed an empty fire lane for every session.
              SELECT id,
                     created_at,
                     'fire' as kind,
-                    COALESCE(tool_name, event_type) as subject,
+                    COALESCE(NULLIF(entity_name, ''), 'unknown') as subject,
                     'ok' as outcome,
                     '' as policy,
-                    COALESCE(description, event_type) as detail,
+                    description as detail,
                     NULL::jsonb as evaluated_rules
-             FROM plugin_usage_events
-             WHERE session_id = $1 AND session_id <> ''
+             FROM user_activity
+             WHERE metadata->>'session_id' = $1 AND $1 <> ''
+               AND category = 'mcp_access' AND action = 'used'
            ) trace
            ORDER BY created_at ASC
            LIMIT $2"#,
