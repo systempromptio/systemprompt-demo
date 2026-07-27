@@ -974,31 +974,65 @@
    transcript took input and left the actual input unmarked. Focus is stated
    here instead, on the thing that really does accept typing. */
 .pi-composer {
+  /* The glyph and the input are typographic siblings, so their metrics come
+     from one place. The old bar set them separately and squared the difference
+     up with a padding fudge on the glyph, which only held at one line height
+     and drifted the moment the textarea grew. */
+  --pi-composer-size: 0.85rem;
+  --pi-composer-leading: 1.45;
+
+  position: relative;
   display: flex;
-  align-items: flex-end;
-  gap: var(--sp-space-2);
-  padding: var(--sp-space-3) var(--sp-space-4);
+  /* flex-start, not flex-end: a shell prompt marks the line a command starts
+     on. Pinned to the bottom it slid down the side of a growing textarea. */
+  align-items: flex-start;
+  gap: var(--sp-space-3);
+  padding: var(--sp-space-4);
   border-top: 1px solid var(--sp-color-terminal-border);
-  transition: border-color 200ms ease, background 200ms ease;
+  transition:
+    border-color var(--sp-duration-normal) ease,
+    background var(--sp-duration-normal) ease,
+    box-shadow var(--sp-duration-normal) ease;
 }
 
+/* Lit from the seam rather than outlined. A border colour swap states focus;
+   the glow makes the bar read as the live edge of the instrument. */
 .pi-composer:focus-within {
   border-top-color: var(--pi-rim);
   background: color-mix(in oklch, var(--sp-color-primary) 5%, transparent);
+  box-shadow: 0 -8px 24px -12px color-mix(in oklch, var(--sp-color-primary) 55%, transparent);
 }
 
 .pi-composer .prompt {
-  padding-bottom: 0.2rem;
-  transition: color 200ms ease;
+  flex: none;
+  width: 1ch;
+  font-size: var(--pi-composer-size);
+  line-height: var(--pi-composer-leading);
+  color: var(--sp-color-terminal-text-dim);
+  transition: color var(--sp-duration-normal) ease;
+}
+
+.pi-composer .prompt svg {
+  display: block;
+  width: 1em;
+  height: calc(var(--pi-composer-size) * var(--pi-composer-leading));
+  overflow: visible;
 }
 
 .pi-composer:focus-within .prompt {
   color: var(--sp-color-primary);
 }
 
+/* While the skill list is open the glyph names what the input is doing. The
+   palette sits immediately before the composer, so no JS hook is needed. */
+.pi-palette:not([hidden]) + .pi-composer .prompt {
+  color: var(--sp-color-primary);
+}
+
 .pi-input {
   flex: 1;
   min-width: 0;
+  padding: 0;
   background: transparent;
   border: none;
   outline: none;
@@ -1006,8 +1040,8 @@
   overflow-y: auto;
   color: var(--sp-color-terminal-text);
   font-family: var(--sp-font-mono);
-  font-size: 0.85rem;
-  line-height: 1.45;
+  font-size: var(--pi-composer-size);
+  line-height: var(--pi-composer-leading);
   scrollbar-width: thin;
 }
 
@@ -1019,12 +1053,52 @@
   color: var(--sp-color-text-disabled);
 }
 
+/* A turn in flight, stated on the seam the composer already owns rather than
+   in a spinner that would compete with the transcript for attention. */
+.pi-composer[data-busy]::before {
+  content: '';
+  position: absolute;
+  inset: -1px 0 auto;
+  height: 2px;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, var(--sp-color-primary), transparent);
+  animation: pi-composer-scan 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pi-composer-scan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(285%); }
+}
+
 .pi-hint {
-  padding: 0 var(--sp-space-4) var(--sp-space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-space-1) var(--sp-space-3);
+  padding: 0 var(--sp-space-4) var(--sp-space-3);
   color: var(--sp-color-terminal-text-dim);
   font-family: var(--sp-font-mono);
   font-size: 0.66rem;
-  opacity: 0.6;
+}
+
+.pi-hint__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-1);
+  opacity: 0.75;
+}
+
+/* The keyboard contract is UI, not a footnote — so the keys are drawn as keys
+   instead of run together in a dot-separated sentence. */
+.pi-hint kbd {
+  padding: 0.1rem 0.3rem;
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-radius-sm);
+  background: color-mix(in oklch, var(--sp-color-terminal-header) 70%, transparent);
+  color: var(--sp-color-terminal-text);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.3;
 }
 
 /* The hint is for someone with a keyboard; on a touch device it is noise. */
@@ -1033,6 +1107,13 @@
 }
 
 .pi-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-space-1);
+  /* Fitts's Law floor for a primary action, held even in dense console chrome. */
+  min-height: 2.25rem;
+  min-width: 2.75rem;
   padding: var(--sp-space-2) var(--sp-space-4);
   background: var(--sp-color-primary);
   border: 1px solid transparent;
@@ -1043,11 +1124,27 @@
   text-decoration: none;
   cursor: pointer;
   flex: none;
-  transition: opacity var(--sp-transition-fast);
+  transition:
+    background var(--sp-transition-fast),
+    box-shadow var(--sp-transition-fast),
+    filter var(--sp-transition-fast),
+    transform var(--sp-duration-fast) ease-out;
 }
 
+.pi-btn__icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+}
+
+/* brightness rather than a per-variant hover colour: every variant below sets
+   its own background, and one rule keeps them all consistent. */
 .pi-btn:hover {
-  opacity: 0.88;
+  filter: brightness(1.08);
+}
+
+.pi-btn:active {
+  transform: scale(0.97);
 }
 
 .pi-btn:focus-visible {
@@ -1059,12 +1156,77 @@
 .pi-btn--disabled {
   opacity: 0.45;
   cursor: default;
+  filter: none;
+  transform: none;
+}
+
+/* Run. Gradient and inset highlight rather than a flat fill — against a dark
+   console a solid rectangle reads as a swatch, not as a pressable control. */
+.pi-btn--send {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--sp-color-primary), white 10%),
+    var(--sp-color-primary)
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, white 30%, transparent),
+    0 1px 2px oklch(0 0 0 / 0.35);
+}
+
+.pi-btn--send:hover {
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, white 34%, transparent),
+    0 4px 10px -2px color-mix(in oklch, var(--sp-color-primary) 45%, transparent);
+}
+
+/* Nothing to run yet. Stated by draining the colour out of the button rather
+   than by fading it, so it reads as "not yet" instead of "broken". */
+.pi-btn--send:disabled,
+.pi-composer:has(.pi-input:placeholder-shown) .pi-btn--send {
+  background: color-mix(in oklch, var(--sp-color-primary) 10%, var(--sp-color-terminal-bg));
+  border-color: var(--sp-color-terminal-border);
+  color: var(--sp-color-terminal-text-dim);
+  box-shadow: none;
+  opacity: 1;
+  cursor: default;
+  filter: none;
+  transform: none;
+}
+
+/* Mid-turn Run steers the running turn — a real action, but not the emphasised
+   one while Stop is on the bar. */
+.pi-composer[data-busy] .pi-btn--send {
+  background: transparent;
+  border-color: var(--sp-color-terminal-border);
+  color: var(--sp-color-terminal-text-dim);
+  box-shadow: none;
+}
+
+.pi-composer[data-busy] .pi-btn--stop {
+  border-color: color-mix(in oklch, var(--sp-color-primary) 45%, transparent);
+  color: var(--sp-color-primary);
 }
 
 .pi-btn--ghost {
   background: transparent;
   border-color: var(--sp-color-terminal-border);
   color: var(--sp-color-terminal-text-dim);
+}
+
+/* Motion is decoration here; the colour and shadow states carry every meaning
+   the animation does, so they stay for everyone. */
+@media (prefers-reduced-motion: reduce) {
+  .pi-btn:active { transform: none; }
+
+  .pi-composer[data-busy]::before {
+    width: 100%;
+    animation: pi-composer-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pi-composer-pulse {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 1; }
+  }
 }
 
 .pi-btn--danger {

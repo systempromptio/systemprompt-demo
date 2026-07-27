@@ -50,7 +50,7 @@ const INPUT_ROW_PX = 22;
 /** What an anonymous visitor sees. Mirrors the shape of a real exchange. */
 const CANNED = [
   { cls: 'prompt', text: '>', tail: 'read src/auth.rs and tell me how sessions are minted' },
-  { cls: 'output-dim', text: 'pi is reading the file…' },
+  { cls: 'output-dim', text: 'Reading the file…' },
   { cls: 'stages' },
   { cls: 'tool', name: 'read', arg: 'src/auth.rs', state: 'pending' },
   { cls: 'approval' },
@@ -61,7 +61,7 @@ const CANNED = [
 /** The chain as the replay shows it. The card it feeds is labelled a replay, so
  *  standing in for a real frame here is not a claim about a real evaluation. */
 const CANNED_STAGES = [
-  { policy: 'scope_check', result: 'pass', detail: 'read is in scope for pi_agent' },
+  { policy: 'scope_check', result: 'pass', detail: 'user scope is allowed for tool: read' },
   { policy: 'secret_scan', result: 'pass', detail: 'no credential pattern in the arguments' },
   { policy: 'tool_blocklist', result: 'pass', detail: 'read is not blocked' },
   { policy: 'rate_limit', result: 'pass', detail: '1 of 60 calls this minute' },
@@ -150,17 +150,37 @@ class SpPiTerminal extends HTMLElement {
       + '<div class="pi-palette" data-role="palette" role="listbox"'
       + ' aria-label="Skills" hidden></div>'
       + '<form class="pi-composer" data-role="composer">'
-      + '<span class="prompt" aria-hidden="true">&gt;</span>'
+      // Drawn rather than typed: the ASCII `>` inherited the transcript's
+      // metrics and could not be made to share a baseline with the input.
+      + '<span class="prompt pi-prompt" aria-hidden="true">'
+      + '<svg viewBox="0 0 12 12" focusable="false">'
+      + '<path d="M3.75 2.5 7.25 6l-3.5 3.5" fill="none" stroke="currentColor"'
+      + ' stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>'
+      + '</svg></span>'
       + '<label class="sp-sr-only" for="pi-input-field">Ask the agent</label>'
       + '<textarea class="pi-input" id="pi-input-field" data-role="input" rows="1"'
       + ' autocomplete="off" spellcheck="false"'
-      + ' placeholder="Ask pi something, or type / for skills…"'
+      + ' placeholder="Ask the agent something, or type / for skills…"'
       + ' role="combobox" aria-expanded="false" aria-controls="pi-palette-list"'
       + ' aria-autocomplete="list" disabled></textarea>'
-      + '<button type="submit" class="pi-btn" data-role="send" disabled>Run</button>'
-      + '<button type="button" class="pi-btn pi-btn--ghost" data-role="stop" hidden>Stop</button>'
+      + '<button type="submit" class="pi-btn pi-btn--send" data-role="send" disabled>'
+      + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+      + '<path d="M3.5 2.25 9.25 6 3.5 9.75Z" fill="currentColor"/></svg>'
+      + '<span class="pi-btn__label">Run</span>'
+      + '</button>'
+      + '<button type="button" class="pi-btn pi-btn--ghost pi-btn--stop" data-role="stop" hidden>'
+      + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+      + '<rect x="3" y="3" width="6" height="6" rx="1" fill="currentColor"/></svg>'
+      + '<span class="pi-btn__label">Stop</span>'
+      + '</button>'
       + '</form>'
-      + '<div class="pi-hint">↵ send · ⇧↵ newline · ↑↓ skills · ↑ history · esc stop</div>'
+      + '<div class="pi-hint">'
+      + '<span class="pi-hint__item"><kbd>↵</kbd>send</span>'
+      + '<span class="pi-hint__item"><kbd>⇧↵</kbd>newline</span>'
+      + '<span class="pi-hint__item"><kbd>↑↓</kbd>skills</span>'
+      + '<span class="pi-hint__item"><kbd>↑</kbd>history</span>'
+      + '<span class="pi-hint__item"><kbd>esc</kbd>stop</span>'
+      + '</div>'
       + '<div class="pi-gate" data-role="gate" hidden></div>'
       + '</div>';
 
@@ -177,9 +197,10 @@ class SpPiTerminal extends HTMLElement {
     this._metersEl = this.querySelector('[data-role="meters"]');
     this._traceEl = this.querySelector('[data-role="trace"]');
     this._jailEl = this.querySelector('[data-role="jail"]');
+    this._composer = this.querySelector('[data-role="composer"]');
     this._paletteEl.id = 'pi-palette-list';
 
-    this.querySelector('[data-role="composer"]').addEventListener('submit', (e) => {
+    this._composer.addEventListener('submit', (e) => {
       e.preventDefault();
       this._send();
     });
@@ -582,6 +603,9 @@ class SpPiTerminal extends HTMLElement {
     this._turnLive = true;
     this._flushStream();
     this._stopBtn.hidden = false;
+    // The composer's live treatment — progress sliver, demoted Run — is CSS off
+    // this one attribute, so the busy state can never disagree with _turnLive.
+    this._composer.dataset.busy = 'true';
   }
 
   _turnEnd() {
@@ -591,6 +615,7 @@ class SpPiTerminal extends HTMLElement {
     this._thinkEl = null;
     this._orphanRail();
     this._stopBtn.hidden = true;
+    delete this._composer.dataset.busy;
   }
 
   /**
