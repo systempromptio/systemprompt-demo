@@ -25,8 +25,9 @@ jobs:
   version:
     runs-on: ubuntu-latest
     # bridge-v* releases are the client bundle — only gateway v* tags have
-    # the channels below.
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v') }}
+    # the channels below. A caller passes the tag in `inputs`, where the
+    # release event is not the one that started the run.
+    if: ${{ inputs.tag != '' || startsWith(github.event.release.tag_name, 'v') }}
     outputs:
       tag: ${{ steps.t.outputs.tag }}
       version: ${{ steps.t.outputs.version }}
