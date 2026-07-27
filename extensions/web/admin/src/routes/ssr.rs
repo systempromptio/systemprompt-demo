@@ -141,6 +141,9 @@ fn governance_routes() -> Router<Arc<PgPool>> {
             "/governance/hooks",
             get(handlers::ssr::governance_hooks_page),
         )
+        // One agent session as a single timeline, so a denial and the provider
+        // call it prevented sit next to each other rather than in two tables.
+        .route("/demo/trace", get(handlers::ssr::demo_trace_page))
 }
 
 fn entity_routes() -> Router<Arc<PgPool>> {

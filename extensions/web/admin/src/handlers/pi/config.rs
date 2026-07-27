@@ -38,7 +38,37 @@ pub(crate) struct PiConfig {
     pub(super) max_lifetime: Duration,
     pub(super) max_sessions_per_user: usize,
     pub(super) max_sessions_total: usize,
+    pub(super) limits: ChildLimits,
 }
+
+/// Resource ceilings the child starts under.
+///
+/// These bound the blast radius of a tool that gets through, which is a
+/// different job from deciding whether it should run. They are not a sandbox:
+/// with `--tools read` the thing they actually buy is that a runaway or
+/// hostile read cannot exhaust the host the server shares.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct ChildLimits {
+    /// Processes. **Zero means unset, and that is the default**, for two
+    /// measured reasons: `RLIMIT_NPROC` counts every process the *uid* owns,
+    /// not the child's descendants, so any value below the server user's
+    /// existing process count stops the child forking at all; and `/bin/sh` is
+    /// dash on Debian, whose `ulimit` has no `-u`. Useful once the child has a
+    /// dedicated uid — the same prerequisite as enabling `bash`.
+    pub(super) nproc: u64,
+    /// Bytes any single file the child writes may reach. The one limit that is
+    /// on by default: per-file, per-process, and supported by every `ulimit`.
+    pub(super) fsize: u64,
+    /// Virtual address space. **Zero means unset, and that is the default.**
+    /// V8 reserves address space far in excess of what it commits, so a figure
+    /// chosen to look prudent kills `pi` at startup rather than bounding it.
+    /// Set it deliberately, against a measured value, or leave it alone.
+    pub(super) address_space: u64,
+}
+// A dedicated low-privilege uid is deliberately not here. Dropping privilege
+// in-process needs `setuid` between fork and exec, and this workspace denies
+// `unsafe_code`. It belongs to whatever supervises the server — `User=` in a
+// systemd unit, or the container's own user — where it also covers the parent.
 
 impl PiConfig {
     /// Build from the environment, or `None` when the widget is not configured.
@@ -74,6 +104,11 @@ impl PiConfig {
             max_lifetime: Duration::from_secs(secs("SP_PI_MAX_LIFETIME_SECS", 3_600)),
             max_sessions_per_user: secs("SP_PI_MAX_PER_USER", 1) as usize,
             max_sessions_total: secs("SP_PI_MAX_TOTAL", 8) as usize,
+            limits: ChildLimits {
+                nproc: secs("SP_PI_RLIMIT_NPROC", 0),
+                fsize: secs("SP_PI_RLIMIT_FSIZE", 64 * 1024 * 1024),
+                address_space: secs("SP_PI_RLIMIT_AS", 0),
+            },
         })
     }
 }

@@ -105,3 +105,27 @@ steps:
       An asserted 401 for the invented session, an asserted pass through auth
       for the minted one, and a user_sessions row with source=api — proof that
       ai_requests.session_id is evidence the caller cannot fabricate.
+  - script: 10-pi-agent.sh
+    label: Govern a coding agent that never heard of Claude Code
+    narrative: >
+      Replays the exact wire events examples/pi/extensions/governance.ts sends
+      for Pi's input, tool_call, and tool_result events, and asserts the real
+      decision each time — a prompt carrying an AWS key denied at the prompt
+      gate, a write of a GitHub PAT denied at the tool gate, a source read
+      allowed. With --live it drives the real pi binary through the same gates.
+    outcome: >
+      Six asserted decisions from the same four-stage pipeline Claude Code
+      hits — proof the policy layer is agent-agnostic, not a Claude Code
+      integration wearing a governance label.
+  - script: 11-pi-widget.sh
+    label: Drive the same gates from a browser
+    narrative: >
+      Mints an embed token, opens a server-side pi conversation, replays its
+      SSE stream from seq 0, and — with --live — denies a real tool call and
+      proves a settled approval answers 409 rather than re-opening. Then sends
+      bash-shaped JSON as a prompt to prove a client cannot name the RPC
+      command type, and asks for a second concurrent session to prove the cap.
+    outcome: >
+      A conversation whose every tool call stopped on a human, an inert
+      shell-escape attempt, and a 429 — proof the browser drove a real agent
+      without ever naming what it could run.

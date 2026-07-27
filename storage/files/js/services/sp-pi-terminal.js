@@ -104,7 +104,10 @@ class SpPiTerminal extends HTMLElement {
   async _start() {
     this._status('connecting');
     const token = this.getAttribute('token') || await this._mintToken();
-    if (!token) return this._degrade('anonymous');
+    if (!token) {
+      this._who = await this._whoami();
+      return this._degrade('anonymous');
+    }
     this._token = token;
 
     const res = await this._fetch(this._endpoint + '/session', { token });
@@ -133,6 +136,29 @@ class SpPiTerminal extends HTMLElement {
       if (!res.ok) return null;
       const body = await res.json();
       return body.token || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /**
+   * Who the session cookie belongs to, or null when anonymous.
+   *
+   * `/admin/auth/me` sits behind a middleware that 307s to the login page
+   * rather than answering 401, so an anonymous visitor would otherwise get
+   * 200 OK carrying HTML. `redirect: 'manual'` turns that into an opaque
+   * response we can reject instead of trying to parse.
+   */
+  async _whoami() {
+    try {
+      const res = await fetch('/admin/auth/me', {
+        credentials: 'same-origin',
+        redirect: 'manual',
+      });
+      if (!res.ok) return null;
+      const type = res.headers.get('content-type') || '';
+      if (type.indexOf('application/json') === -1) return null;
+      return await res.json();
     } catch (_) {
       return null;
     }
@@ -413,17 +439,85 @@ class SpPiTerminal extends HTMLElement {
     this._sendBtn.disabled = true;
     CANNED.forEach((step) => this._cannedStep(step));
     this._gateEl.hidden = false;
-    this._gateEl.innerHTML = reason === 'busy'
-      ? '<p>A session is already running for your account — one at a time. '
-        + 'Close the other tab and reload to take it back.</p>'
-      : '<p><strong>This is a replay.</strong> Register or sign in to drive a real '
-        + 'pi agent, with every tool call gated in front of you.</p>'
-        + '<p class="pi-gate-actions">'
-        // /register and /login are the site-level redirects the rest of the
-        // homepage uses; the login bounce returns here with the cookie set.
-        + '<a class="pi-btn" href="/register">Create an account</a> '
-        + '<a class="pi-btn pi-btn--ghost" href="/admin/login?redirect=%2F%23pi-terminal">Sign in</a>'
-        + '</p>';
+    if (reason === 'busy') {
+      this._gateEl.innerHTML = '<p>A session is already running for your account — '
+        + 'one at a time. Close the other tab and reload to take it back.</p>';
+      return;
+    }
+    // Signed in but no token: the account exists and the terminal is
+    // configured, so this is a server-side problem, not a sign-in prompt.
+    if (this._who && this._who.email) {
+      this._gateEl.innerHTML = '<p>Signed in as <strong></strong>, but no session '
+        + 'could be started. The terminal may not be configured on this deployment.</p>';
+      this._gateEl.querySelector('strong').textContent = this._who.email;
+      return;
+    }
+    this._renderAuthPanel();
+  }
+
+  /**
+   * Sign-in and registration, inline beside the terminal.
+   *
+   * The passkey ceremony is deliberately NOT duplicated here — it is a
+   * multi-step WebAuthn + PKCE flow whose redirect_uri is a registered value
+   * pinned to /admin/login. This panel collects the email, hands off to the
+   * real pages, and comes back to this section with the cookie set. One
+   * implementation of the ceremony, not two.
+   */
+  _renderAuthPanel() {
+    const back = encodeURIComponent('/#pi-terminal');
+    this._gateEl.innerHTML = ''
+      + '<p><strong>This is a replay.</strong> Create an account or sign in to drive '
+      + 'a real agent — every tool call it makes will stop here for your approval.</p>'
+      + '<div class="pi-auth">'
+      + '<div class="pi-auth-tabs">'
+      + '<button type="button" class="pi-tab is-active" data-role="tab-signin">Sign in</button>'
+      + '<button type="button" class="pi-tab" data-role="tab-register">Create account</button>'
+      + '</div>'
+      + '<form class="pi-auth-form" data-role="signin">'
+      + '<label class="pi-label" for="pi-signin-email">Email</label>'
+      + '<input class="pi-field" id="pi-signin-email" type="email" autocomplete="email"'
+      + ' placeholder="you@company.com" required>'
+      + '<button type="submit" class="pi-btn">Continue with passkey</button>'
+      + '<p class="pi-auth-note">No password. Your device, your fingerprint.</p>'
+      + '</form>'
+      + '<form class="pi-auth-form" data-role="register" hidden>'
+      + '<label class="pi-label" for="pi-reg-email">Work email</label>'
+      + '<input class="pi-field" id="pi-reg-email" type="email" autocomplete="email"'
+      + ' placeholder="you@company.com" required>'
+      + '<button type="submit" class="pi-btn">Create account</button>'
+      + '<p class="pi-auth-note">Registration is all the terminal needs. '
+      + 'The $5 credit and the Bridge wait on a short review.</p>'
+      + '</form>'
+      + '</div>';
+
+    const signin = this._gateEl.querySelector('[data-role="signin"]');
+    const register = this._gateEl.querySelector('[data-role="register"]');
+    const tabSignin = this._gateEl.querySelector('[data-role="tab-signin"]');
+    const tabRegister = this._gateEl.querySelector('[data-role="tab-register"]');
+
+    const show = (which) => {
+      const registering = which === 'register';
+      signin.hidden = registering;
+      register.hidden = !registering;
+      tabSignin.classList.toggle('is-active', !registering);
+      tabRegister.classList.toggle('is-active', registering);
+    };
+    tabSignin.addEventListener('click', () => show('signin'));
+    tabRegister.addEventListener('click', () => show('register'));
+
+    signin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = signin.querySelector('input').value.trim();
+      window.location.href = '/admin/login?redirect=' + back
+        + (email ? '&email=' + encodeURIComponent(email) : '');
+    });
+    register.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = register.querySelector('input').value.trim();
+      window.location.href = '/admin/register?redirect=' + back
+        + (email ? '&email=' + encodeURIComponent(email) : '');
+    });
   }
 
   _cannedStep(step) {

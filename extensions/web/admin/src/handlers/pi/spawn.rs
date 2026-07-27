@@ -11,7 +11,7 @@ use std::process::Stdio;
 
 use tokio::process::{Child, Command};
 
-use super::config::PiConfig;
+use super::config::{ChildLimits, PiConfig};
 
 /// Files a fresh workspace starts with, so a read-only agent has something to
 /// read. Deliberately tiny and inert: no credentials, no repo.
@@ -62,7 +62,7 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
     )
     .await?;
 
-    let mut cmd = Command::new(&cfg.binary);
+    let mut cmd = limited_command(cfg, cfg.limits);
     cmd.current_dir(&workspace)
         .arg("--mode")
         .arg("rpc")
@@ -102,6 +102,59 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
 
     let child = cmd.spawn()?;
     Ok(Spawned { child, workspace })
+}
+
+/// Rewrite the command so the child starts under `ulimit` ceilings.
+///
+/// The obvious implementation is `pre_exec` with `setrlimit`, but that needs
+/// `unsafe`, and this workspace denies `unsafe_code` outright with no existing
+/// exemption. A one-line `sh` preamble reaches the same syscall and keeps that
+/// property, at the cost of one `execve`.
+///
+/// `exec` matters: `sh` replaces itself with pi, so there is still exactly one
+/// process, the handle still refers to pi, and `kill_on_drop` still reaps the
+/// thing that matters. No argument is ever interpolated into the script text —
+/// the binary and its argv arrive positionally through `"$@"` — so this adds no
+/// quoting surface.
+///
+/// Failing to raise a limit is not fatal: it means the host's hard limit is
+/// already below what we asked for, which is stricter than we wanted.
+fn limited_command(cfg: &PiConfig, limits: ChildLimits) -> Command {
+    let mut script = String::new();
+    // dash has no `ulimit -u`, and dash is `/bin/sh` on Debian. Rather than
+    // emit a limit that silently does nothing, ask for a shell that supports
+    // it and say so plainly when there isn't one.
+    let mut shell = "/bin/sh";
+    if limits.nproc > 0 {
+        if Path::new("/bin/bash").exists() {
+            shell = "/bin/bash";
+            script.push_str(&format!("ulimit -u {};", limits.nproc));
+        } else {
+            tracing::warn!(
+                "SP_PI_RLIMIT_NPROC is set but /bin/bash is absent; \
+                 /bin/sh cannot apply it, so the process cap is NOT in effect"
+            );
+        }
+    }
+    if limits.fsize > 0 {
+        // ulimit counts 1KiB blocks; the config is in bytes.
+        script.push_str(&format!("ulimit -f {} 2>/dev/null;", limits.fsize / 1024));
+    }
+    if limits.address_space > 0 {
+        script.push_str(&format!(
+            "ulimit -v {} 2>/dev/null;",
+            limits.address_space / 1024
+        ));
+    }
+    if script.is_empty() {
+        return Command::new(&cfg.binary);
+    }
+    script.push_str(" exec \"$@\"");
+
+    let mut cmd = Command::new(shell);
+    // The second `sh` is the child's $0; the real argv starts after it.
+    cmd.arg("-c").arg(script).arg("sh").arg(&cfg.binary);
+    cmd
 }
 
 /// Point pi at this deployment's Anthropic-compatible gateway.

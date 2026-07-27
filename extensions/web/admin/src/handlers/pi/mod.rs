@@ -22,6 +22,15 @@
 //!   [`rpc::RpcCommand`]'s variants are ever constructed here, and no client
 //!   string reaches pi as a command type — relaying raw RPC would hand every
 //!   viewer a shell. See [`commands`].
+//! - **One shared gateway credential caps this to one user.** `SP_PI_GATEWAY_KEY`
+//!   is a single PAT, but every conversation sends the `x-session-id` this
+//!   server attested for *its own* user. The gateway rejects a session that
+//!   does not belong to the credential's owner — `401 unknown or revoked
+//!   session` — so in practice only that one account can drive the agent;
+//!   anyone else gets a turn that starts and ends with no output. Verified
+//!   against a live gateway. A PAT per conversation is the fix, and it is a
+//!   prerequisite for offering this to more than one signed-in user, not the
+//!   nice-to-have it was first filed as.
 //! - **pi has no sandbox.** Tools run with this process's permissions, so the
 //!   default tool set is read-only (`--tools read`, enforced by pi itself) and
 //!   the child gets a scratch workspace, a cleared environment, and its own

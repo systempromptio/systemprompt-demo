@@ -68,7 +68,7 @@ pub(super) async fn issue_own_embed_token(
 /// deleted account's cookie useless even while the JWT is still in date.
 async fn mint_for(pool: &Arc<PgPool>, user_id: &UserId) -> AdminResult<Response> {
     let secret = SecretsBootstrap::manifest_signing_secret_seed().map_err(AdminError::internal)?;
-    let version = repositories::users::find_share_token_version(pool, user_id)
+    let version = repositories::users::find_or_create_share_token_version(pool, user_id)
         .await
         .map_err(AdminError::internal)?
         .ok_or_else(|| AdminError::NotFound("user not found".to_owned()))?;
