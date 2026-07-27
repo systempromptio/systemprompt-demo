@@ -6518,7 +6518,9 @@ dependencies = [
 name = "web-unit-tests"
 version = "0.0.0"
 dependencies = [
+ "base64 0.22.1",
  "serde_json",
+ "systemprompt",
  "systemprompt-web-admin",
  "systemprompt-web-shared",
 ]

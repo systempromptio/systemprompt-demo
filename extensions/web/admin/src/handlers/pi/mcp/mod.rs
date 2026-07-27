@@ -45,6 +45,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 
 use systemprompt::identifiers::SessionId;
+use systemprompt_security::policy::types::AccessScope;
 
 use crate::handlers::webhook::governance::inproc::{self, GovernedCall};
 use super::auth::{authorize_session, problem, unauthorized};

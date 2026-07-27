@@ -15,6 +15,7 @@ use std::sync::Arc;
 use sqlx::PgPool;
 use systemprompt::identifiers::{PolicyId, SessionId};
 use systemprompt::traits::AnalyticsProvider;
+use systemprompt_security::policy::types::AccessScope;
 
 use crate::handlers::webhook::governance::inproc::{
     self, GovernedCall, PROMPT_TOOL_NAME, PolicyVerdict,

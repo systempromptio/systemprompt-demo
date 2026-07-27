@@ -35,13 +35,13 @@ impl RpcCommand {
 #[derive(Debug, Serialize)]
 pub(super) struct ExtensionUiResponse<'a> {
     #[serde(rename = "type")]
-    pub(super) kind: &'static str,
-    pub(super) id: &'a str,
-    pub(super) confirmed: bool,
+    pub kind: &'static str,
+    pub id: &'a str,
+    pub confirmed: bool,
 }
 
 impl<'a> ExtensionUiResponse<'a> {
-    pub(super) const fn new(id: &'a str, confirmed: bool) -> Self {
+    pub const fn new(id: &'a str, confirmed: bool) -> Self {
         Self {
             kind: "extension_ui_response",
             id,
@@ -49,7 +49,7 @@ impl<'a> ExtensionUiResponse<'a> {
         }
     }
 
-    pub(super) fn to_line(&self) -> Result<String, serde_json::Error> {
+    pub fn to_line(&self) -> Result<String, serde_json::Error> {
         Ok(format!("{}\n", serde_json::to_string(self)?))
     }
 }
@@ -60,7 +60,7 @@ impl<'a> ExtensionUiResponse<'a> {
 /// frame the proxy must never miss, so it is matched first and everything else
 /// degrades to [`Self::Other`] with the raw value preserved for the widget.
 #[derive(Debug)]
-pub(super) enum RpcFrame {
+pub enum RpcFrame {
     /// The shim asking for a verdict. The governance gate lives here.
     UiRequest(UiRequest),
     /// A reply to a command we sent.
@@ -76,39 +76,39 @@ pub(super) enum RpcFrame {
 
 /// An `extension_ui_request` frame.
 #[derive(Debug, Deserialize)]
-pub(super) struct UiRequest {
-    pub(super) id: String,
-    pub(super) method: String,
+pub struct UiRequest {
+    pub id: String,
+    pub method: String,
     /// For our shim this is the JSON-encoded [`GovernancePayload`]; for any
     /// other extension it is prose.
     #[serde(default)]
-    pub(super) message: String,
+    pub message: String,
 }
 
 /// What the shim smuggles through `confirm`'s `message` so the proxy receives
 /// typed data instead of prose.
 #[derive(Debug, Deserialize)]
-pub(super) struct GovernancePayload {
-    pub(super) kind: PayloadKind,
+pub struct GovernancePayload {
+    pub kind: PayloadKind,
     #[serde(default)]
-    pub(super) tool_name: Option<String>,
+    pub tool_name: Option<String>,
     #[serde(default)]
-    pub(super) tool_use_id: Option<String>,
+    pub tool_use_id: Option<String>,
     #[serde(default)]
-    pub(super) tool_input: Option<serde_json::Value>,
+    pub tool_input: Option<serde_json::Value>,
     #[serde(default)]
-    pub(super) prompt: Option<String>,
+    pub prompt: Option<String>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub(super) enum PayloadKind {
+pub enum PayloadKind {
     Prompt,
     Tool,
 }
 
 /// Parse one stdout line.
-pub(super) fn parse_frame(line: &str) -> RpcFrame {
+pub fn parse_frame(line: &str) -> RpcFrame {
     let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
         return RpcFrame::Unparseable(line.to_owned());
     };

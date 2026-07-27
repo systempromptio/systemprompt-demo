@@ -6,7 +6,8 @@
 //! own expiry claim to be read.
 
 use systemprompt::identifiers::UserId;
-use systemprompt_web_admin::test_support::{Invalid, sign, verify};
+use base64::Engine as _;
+use systemprompt_web_admin::test_support::{B64, Invalid, hmac, sign, verify};
 
 const SECRET: &[u8] = b"test-signing-secret";
 

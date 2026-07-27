@@ -25,7 +25,7 @@ const PURPOSE: &str = "pi-embed";
 /// a widget only needs it long enough to open a stream.
 pub(super) const TTL_SECS: i64 = 3_600;
 
-const B64: base64::engine::general_purpose::GeneralPurpose =
+pub const B64: base64::engine::general_purpose::GeneralPurpose =
     base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
 /// `b64(user_id):b64(version):b64(exp):hex(mac)`

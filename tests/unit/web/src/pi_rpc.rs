@@ -2,7 +2,9 @@
 //! command type it is handed, with no `tool_call` hook firing at all. These
 //! pin the wire shapes, so no client string can ever reach pi as a command.
 
-use systemprompt_web_admin::test_support::RpcCommand;
+use systemprompt_web_admin::test_support::{
+    GovernancePayload, PayloadKind, RpcCommand, RpcFrame, parse_frame,
+};
 
 #[test]
 fn prompt_serialises_with_message_not_prompt() {
