@@ -10,6 +10,7 @@
  * glows. That keeps the field neutral enough for the chain rail's green/red
  * pips and the amber approval card to stay the loudest things on the page. */
 
+:root:has(body.home-split-body),
 .home-split-body {
   --sp-stage-ink: oklch(0.16 0.012 55);
   --sp-stage-glow: oklch(0.62 0.19 47);
@@ -34,17 +35,27 @@
   --sp-stage-text-muted: oklch(0.68 0.01 60);
 
   /* Brand orange as light, not paint. Declared once and used twice — on the
-     body, and again over the video — because a body background propagates to
-     the canvas and would otherwise sit *behind* the video layer. */
+     root, and again over the video in `.stage-video-layer::after`. */
   --sp-stage-glows:
     radial-gradient(60rem 40rem at 12% -10%, oklch(0.62 0.19 47 / 0.22), transparent 60%),
     radial-gradient(50rem 35rem at 88% 60%, oklch(0.62 0.19 47 / 0.13), transparent 60%);
+}
 
-  /* The field lives on the body, not on the hero, so the band below it shares
-     the same background and there is no seam to line up. This is also the
-     fallback the page falls back to if the video never arrives. */
+/* The field lives on the root, not on the body, so the band below the fold
+   shares it with no seam — and, critically, so it cannot paint *over* the video.
+   `head-assets.html` sets `html { background-color }` for anti-FOUC, and a root
+   that has a background is exactly the condition under which the body's own
+   background stops propagating to the canvas: it would paint on the body box
+   instead, above `.stage-video-layer`'s `z-index: -1`, hiding the footage
+   completely. Putting it here keeps it behind the layer by construction.
+   This is also the fallback the page falls back to if the video never arrives. */
+:root:has(body.home-split-body) {
   background: var(--sp-stage-glows), var(--sp-stage-ink);
   background-attachment: fixed;
+}
+
+.home-split-body {
+  background: transparent;
   /* Native form controls and scrollbars follow, without claiming the global
      theme — the footer's theme toggle still owns that. */
   color-scheme: dark;
@@ -109,11 +120,9 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  /* The middle of this gradient was tuned while the video was never actually
-     revealing itself, so it was really being tuned against the poster — and it
-     is opaque enough to hide footage. The top and bottom stay heavy, because
-     that is where the header and the band land; the middle lifts, because that
-     is the only part of the frame anyone sees move. */
+  /* The top and bottom stay heavy, because that is where the header and the
+     band land; the middle lifts, because that is the only part of the frame
+     anyone sees move. */
   backdrop-filter: blur(6px) saturate(1.08);
   -webkit-backdrop-filter: blur(6px) saturate(1.08);
   background:

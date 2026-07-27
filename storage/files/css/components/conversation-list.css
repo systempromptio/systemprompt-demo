@@ -21,6 +21,13 @@ sp-conversation-list {
   font-size: 0.8125rem;
 }
 
+/* Signed out there is no list, and the element renders nothing — but it still
+   claimed its bottom margin, which pushed the terminal below the account card
+   beside it. Nothing to separate, nothing to reserve. */
+sp-conversation-list:empty {
+  margin-block-end: 0;
+}
+
 .conv-head {
   display: flex;
   align-items: center;

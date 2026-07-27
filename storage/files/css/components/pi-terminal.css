@@ -114,6 +114,26 @@
   background: transparent;
 }
 
+/* The replay strip is chrome like the rest of it. Left opaque it was a grey
+   slab across the foot of a glass card — the one place the illusion broke. */
+.home-split-body .pi-terminal .pi-gate {
+  background: transparent;
+}
+
+/* Every internal division uses the shell's own edge. The default here is
+   `--sp-color-terminal-border`, a zero-chroma grey that belongs to the opaque
+   theme this widget wears everywhere else; against the stage's warm glass it
+   reads as a hard rule drawn across the material rather than a seam in it. */
+.home-split-body .pi-terminal .terminal-header {
+  border-bottom-color: var(--sp-stage-glass-border);
+}
+
+.home-split-body .pi-terminal .pi-composer,
+.home-split-body .pi-terminal .pi-gate,
+.home-split-body .pi-terminal .pi-approvals:not(:empty) {
+  border-top-color: var(--sp-stage-glass-border);
+}
+
 /* ── header ─────────────────────────────────────────────────────────────── */
 
 .pi-terminal .terminal-header {

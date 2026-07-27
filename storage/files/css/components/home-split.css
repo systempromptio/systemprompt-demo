@@ -21,28 +21,44 @@
   height: 100dvh;
   padding-top: var(--sp-header-height);
   padding-inline: var(--sp-space-6);
-  padding-block-end: 0;
+  /* The scroll cue is absolutely positioned against this box, so the panes have
+     to stop above it — otherwise they run underneath the one thing telling you
+     there is more page. Enough for the cue plus its own offset. */
+  padding-block-end: var(--sp-space-7);
   min-height: 0;
   /* The body owns the field now. */
   background: none;
 }
 
+/* No `gap`: the terminal column carries an extra first child, the conversation
+   list, which is empty and zero-height until you sign in — but a gap is paid
+   whether or not the child has height, so the terminal started below the
+   account card next to it. The list carries its own bottom margin, which it
+   drops when empty (see `conversation-list.css`). */
 .home-split-pane {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-space-3);
+  gap: 0;
   min-height: 0;
   min-width: 0;
   padding-block: var(--sp-space-5);
   overflow-y: auto;
 }
 
-.home-split-note {
-  flex: none;
-  margin: 0;
-  color: var(--sp-stage-text-muted, var(--sp-color-text-muted));
-  font-size: 0.78rem;
-  line-height: 1.5;
+/* Both halves are one sheet of glass, so they need one top edge and one bottom
+   edge. The terminal already fills its column; this is the account card doing
+   the same. Its content stays where it is — top-aligned in a tall card reads as
+   deliberate, content distributed down the height does not. */
+.home-split-pane--profile .auth-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.home-split-pane--profile .auth-pane .pane {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* ── the terminal, filling its half ─────────────────────────────────────── */
