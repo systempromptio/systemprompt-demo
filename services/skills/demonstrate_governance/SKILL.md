@@ -55,9 +55,9 @@ refusal — the same spine records what was permitted, by whom, and at what cost
 carrying a credential-shaped string and the call is denied before it executes,
 for any caller, admin included.
 
-Construct that string **yourself at call time**; do not copy one from this
-document. Use a plainly fake AWS access key id: the literal characters `AKIA`
-followed by sixteen uppercase letters and digits of your own choosing. Then:
+Construct that string **yourself at call time**, from your own knowledge of the
+format. Invent a fake AWS access key id — you know the shape; do not read it
+from here. Then:
 
 ```
 mcp__systemprompt__search_docs {"query": "find docs mentioning <the fake key you just built>"}
@@ -66,10 +66,14 @@ mcp__systemprompt__search_docs {"query": "find docs mentioning <the fake key you
 Expect a deny naming `policy: secret_scan` and the pattern it matched. Nothing
 was searched — the tool never ran.
 
-> This skill body deliberately contains no credential-shaped literal. Invoking a
-> skill expands its text into the prompt, and the prompt is scanned by the same
-> policy — a literal here would deny the invocation itself rather than the call
-> it is meant to demonstrate.
+> This skill body contains no credential-shaped text at all, not even a prefix
+> in prose, and that is a hard constraint rather than tidiness. Invoking a skill
+> expands its whole body into the prompt, and the gateway re-scans the entire
+> conversation on **every** later turn. A recognisable fragment here does not
+> demonstrate the deny — it denies the invocation itself, and then denies every
+> subsequent turn in the session, including other skills. That failure looks
+> exactly like the terminal being broken. It has happened; do not reintroduce
+> it when editing this file.
 
 ### 3. A live `tool_blocklist` deny
 

@@ -15,17 +15,17 @@ mod plugins_config;
 mod plugins_requests;
 mod traffic;
 mod user_context;
-pub use departments::{Department, DepartmentInput, DepartmentMember, DepartmentSummary};
+pub use departments::{Department, DepartmentInput, DepartmentSummary};
 mod users;
 pub mod webhook;
 
 pub use dashboard::{
     AchievementInfo, ActivityStats, ContentPerformanceRow, DashboardData, DashboardQuery,
     DepartmentActivity, DepartmentQuery, DepartmentScore, EventBreakdown, EventFeedRow,
-    EventTypeBreakdown, EventsQuery, EventsResponse, GovernanceDecisionRow, GovernanceEvent,
+    EventTypeBreakdown, EventsQuery, EventsResponse, GovernanceEvent,
     HourlyActivity, IncidentGroup, LeaderboardEntry, McpAccessEvent, McpAccessSummary, ModelUsage,
     PaginationQuery, ProjectActivity, RealtimePulse, RecentMcpError, SkillCount, TimeSeriesBucket,
-    TokenUsageRow, ToolSuccessRate, TopActor, TopPageDailyBucket, TopPolicy, TopUser,
+    TokenUsageRow, ToolSuccessRate, TopPageDailyBucket, TopUser,
     TrafficCountryBucket, TrafficData, TrafficDevice, TrafficGeo, TrafficKpis,
     TrafficReadingPattern, TrafficSource, TrafficTimeBucket, TrafficTopPage, UnlockedAchievement,
     UserGamificationProfile, WindowedCounts,
@@ -36,7 +36,7 @@ pub use gateway::{
 pub use hooks_export::{HookEventType, HookHandler, HooksFile, HttpHook, MatcherGroup};
 pub use jobs::JobSummary;
 pub use plugins_config::{
-    AgentCatalogEntry, AgentDetail, AgentInfo, AgentSkillInfo, ConfiguredHook, HookCatalogEntry,
+    AgentCatalogEntry, AgentDetail, AgentInfo, AgentSkillInfo, HookCatalogEntry,
     HookDetail, HookOverview, McpServerDetail, PlatformPluginConfig, PluginDetail,
     PluginOnboardingConfig, PluginOnboardingDataSource, PluginOnboardingQuestion, PluginOverview,
     RequiredSecret, SkillCatalogEntry, SkillInfo,

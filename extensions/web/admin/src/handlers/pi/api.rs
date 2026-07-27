@@ -222,7 +222,7 @@ pub(super) async fn stream(
 fn sse_event(event: &events::PiEvent) -> Event {
     let data = serde_json::to_string(event)
         .unwrap_or_else(|_| "{\"type\":\"error\",\"message\":\"unserialisable\"}".to_owned());
-    Event::default().id(event.seq.to_string()).data(data)
+    Event::default().id(event.seq().to_string()).data(data)
 }
 
 fn header_string(headers: &HeaderMap, name: axum::http::header::HeaderName) -> Option<String> {

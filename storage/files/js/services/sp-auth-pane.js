@@ -110,6 +110,15 @@ class SpAuthPane extends HTMLElement {
   _renderAuth() {
     this.innerHTML = ''
       + '<div class="pane">'
+      // The offer sits above the form rather than inside the copy under it.
+      // It is the reason to complete the form, and a visitor who reads only one
+      // element on this half of the page should read this one.
+      + '<div class="pane-offer">'
+      + '<strong class="pane-offer-amount">$5 of free AI</strong>'
+      + '<span class="pane-offer-line">on us, to learn what systemprompt.io does</span>'
+      + '<span class="pane-offer-fine">No card. Passkey only. Spend it in the terminal '
+      + 'on the left and watch every cent land in your own audit trail.</span>'
+      + '</div>'
       + '<header class="pane-head">'
       + '<h2 class="pane-title">Drive it yourself</h2>'
       + '<p class="pane-sub">The terminal on the left is a replay until you sign in. '
@@ -359,6 +368,21 @@ class SpAuthPane extends HTMLElement {
           + 'The terminal is yours now; the $5 credit and the Bridge unlock once a '
           + 'human approves it.</p>'
         : '')
+      + '<section class="pane-section pane-section--credit" data-role="credit" hidden>'
+      + '<h3 class="pane-h3">Your credit <span class="pane-h3-sub" data-role="credit-of"></span></h3>'
+      + '<div class="pane-credit">'
+      + '<div class="pane-credit-figure">'
+      + '<strong class="pane-credit-left" data-role="credit-left">$0</strong>'
+      + '<span class="pane-credit-cap">left</span>'
+      + '</div>'
+      // A meter rather than a bare number: the shape of the bar is what makes
+      // "you have barely touched it" legible at a glance, which is the whole
+      // point of showing a free grant back to the person who was given it.
+      + '<div class="pane-credit-bar" data-role="credit-bar" role="img"'
+      + ' aria-label="credit remaining"><span data-role="credit-fill"></span></div>'
+      + '<p class="pane-credit-note" data-role="credit-note"></p>'
+      + '</div>'
+      + '</section>'
       + '<section class="pane-section">'
       + '<h3 class="pane-h3">This session</h3>'
       + '<dl class="pane-stats" data-role="stats">'
@@ -392,6 +416,7 @@ class SpAuthPane extends HTMLElement {
 
     this._feed = this.querySelector('[data-role="feed"]');
     this._feedCount = this.querySelector('[data-role="feed-count"]');
+    this._credit = this.querySelector('[data-role="credit"]');
     this.querySelector('[data-role="signout"]').addEventListener('click', () => this._signOut());
 
     if (this._conversation) this._startPolling();
@@ -406,6 +431,12 @@ class SpAuthPane extends HTMLElement {
       el.classList.remove('is-changed');
       void el.offsetWidth;
       el.classList.add('is-changed');
+    }
+    // A block that actually happened is the number this pane exists to show.
+    // The terminal header's meter already goes red on the same fact; the two
+    // halves should not disagree about it.
+    if (el && key === 'blocked') {
+      el.parentElement.dataset.hot = value && value !== '0' ? '1' : '0';
     }
   }
 
@@ -489,7 +520,44 @@ class SpAuthPane extends HTMLElement {
       ? '—' : s.latency_p50_ms + 'ms');
     this._stat('tokens', compact(s.input_tokens) + ' in / ' + compact(s.output_tokens) + ' out');
     this._stat('cost', s.cost_display || '$0');
+    this._applyCredit(s.credit);
     this._renderFeed(s.events || []);
+  }
+
+  /**
+   * Show what is left of the grant.
+   *
+   * Stays hidden when nothing has been granted rather than rendering "$0 of
+   * $0": an account still awaiting approval has no grant yet, and an empty
+   * meter would read as "you have spent it all" — the opposite of the truth,
+   * and the discouraging half of the two possible misreadings.
+   */
+  _applyCredit(credit) {
+    if (!this._credit) return;
+    if (!credit || !credit.granted_microdollars) {
+      this._credit.hidden = true;
+      return;
+    }
+    this._credit.hidden = false;
+    this.querySelector('[data-role="credit-left"]').textContent = credit.remaining_display;
+    this.querySelector('[data-role="credit-of"]').textContent = 'of ' + credit.granted_display;
+
+    const pct = Math.max(0, Math.min(100, credit.remaining_percent));
+    const bar = this.querySelector('[data-role="credit-bar"]');
+    this.querySelector('[data-role="credit-fill"]').style.width = pct + '%';
+    bar.setAttribute('aria-label', credit.remaining_display + ' of '
+      + credit.granted_display + ' remaining');
+    bar.dataset.state = credit.exhausted ? 'empty' : (pct <= 15 ? 'low' : 'ok');
+
+    const note = this.querySelector('[data-role="credit-note"]');
+    if (credit.exhausted) {
+      // The terminal is about to start refusing turns. Saying so here, next to
+      // the number that explains it, beats letting the agent go quiet first.
+      note.textContent = 'Your credit is spent — the gateway will refuse the next request.';
+    } else {
+      note.textContent = 'Spent ' + credit.spent_display + ' so far. Every request is '
+        + 'metered against this balance before it reaches a provider.';
+    }
   }
 
   _renderFeed(events) {

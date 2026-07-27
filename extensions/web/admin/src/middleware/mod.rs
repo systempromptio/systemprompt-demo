@@ -8,7 +8,7 @@
 //! are derived from a remote catalog and are identical for every user holding
 //! the same role set.
 
-mod gates;
+pub(crate) mod gates;
 
 pub(crate) use gates::{
     require_admin_middleware, require_approved_middleware,

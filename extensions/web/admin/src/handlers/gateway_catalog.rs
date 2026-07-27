@@ -74,15 +74,16 @@ async fn collect_allowed_routes(
     let attributes = subject_attributes_for(pool, user_id).await;
     let mut allowed = Vec::with_capacity(routes.len());
     for route in routes {
-        let rules = gateway_acl::list_rules_for_route(pool, &route.id).await?;
-        let default_included = gateway_acl::find_entity(pool, &route.id)
+        let route_id = RouteId::new(route.id.clone());
+        let rules = gateway_acl::list_rules_for_route(pool, &route_id).await?;
+        let default_included = gateway_acl::find_entity(pool, &route_id)
             .await
             .unwrap_or_else(|e| {
-                tracing::error!(error = %e, route_id = %route.id, "Failed to load catalog entity");
+                tracing::error!(error = %e, route_id = %route_id, "Failed to load catalog entity");
                 None
             })
             .map(|e| e.default_included);
-        let entity = EntityRef::GatewayRoute(RouteId::new(route.id.clone()));
+        let entity = EntityRef::GatewayRoute(route_id);
         if matches!(
             gateway_acl::resolve(ResolveInput {
                 entity: &entity,
@@ -162,11 +163,12 @@ pub(crate) async fn detect_after_the_fact(
         };
         let user_roles = access.roles;
         let attributes = subject_attributes_for(pool, &UserId::new(&row.user_id)).await;
-        let rules = gateway_acl::list_rules_for_route(pool, &route.id).await?;
-        let default_included = gateway_acl::find_entity(pool, &route.id)
+        let route_id = RouteId::new(route.id.clone());
+        let rules = gateway_acl::list_rules_for_route(pool, &route_id).await?;
+        let default_included = gateway_acl::find_entity(pool, &route_id)
             .await?
             .map(|e| e.default_included);
-        let entity = EntityRef::GatewayRoute(RouteId::new(route.id.clone()));
+        let entity = EntityRef::GatewayRoute(route_id);
         let uid = UserId::new(&row.user_id);
         if let Decision::Deny { reason } = gateway_acl::resolve(ResolveInput {
             entity: &entity,

@@ -1,6 +1,5 @@
-//! Plugin marketplace: installed plugin config, hooks, and usage events.
+//! Plugin marketplace: installed plugin config and usage events.
 
-pub mod hooks;
 pub mod plugin_env;
 pub(crate) mod plugin_loader;
 pub(crate) mod plugin_resolvers;

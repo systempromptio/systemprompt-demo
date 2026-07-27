@@ -11,7 +11,7 @@ use axum::http::HeaderMap;
 use axum::response::{Html, IntoResponse, Redirect, Response};
 
 
-mod bridge_downloads;
+pub(crate) mod bridge_downloads;
 mod ssr_add_passkey;
 mod ssr_bridge_device_link;
 mod ssr_bridge_setup;

@@ -249,6 +249,11 @@ lint-gates:
     bash scripts/check-comments.sh
     bash scripts/check-duplicate-types.sh
     bash scripts/check-repository-naming.sh
+    bash scripts/check-sqlx-cache.sh
+    # `check-fork-drift` and `check-dead-repository-code` consult the sibling
+    # fork only when SIBLING_REPO is set, which CI does not do. Both still run
+    # single-repo without it; the dead-code check carries no exemptions, so
+    # there is nothing left for the sibling pass to have to confirm.
     bash scripts/check-fork-drift.sh
     bash scripts/check-dead-repository-code.sh
     bash scripts/check-file-headers.sh

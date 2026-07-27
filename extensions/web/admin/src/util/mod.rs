@@ -2,4 +2,3 @@
 //! domain.
 
 pub mod hmac;
-pub mod time_range;

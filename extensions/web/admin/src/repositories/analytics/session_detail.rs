@@ -1,27 +1,11 @@
-//! Session-detail repository — drives `/admin/sessions/{id}`.
+//! Session-detail repository.
 //!
-//! A session groups every AI request, context, and trace produced by a single
-//! interactive run. This module assembles the header row from
-//! `plugin_session_summaries` (when present) plus an `ai_requests` rollup, and
-//! returns the contexts/traces/requests that belong to the session.
+//! A session groups every AI request produced by a single interactive run.
+//! This module serves the KPI rollup and the request list for one session.
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
-use systemprompt::identifiers::{ContextId, PluginId, SessionId, TraceId, UserId};
-
-#[derive(Debug, Clone)]
-pub struct SessionHeader {
-    pub session_id: SessionId,
-    pub user_id: Option<UserId>,
-    pub display_name: Option<String>,
-    pub department: Option<String>,
-    pub started_at: Option<DateTime<Utc>>,
-    pub last_activity_at: Option<DateTime<Utc>>,
-    pub status: Option<String>,
-    pub model: Option<String>,
-    pub plugin_id: Option<PluginId>,
-    pub ai_title: Option<String>,
-}
+use systemprompt::identifiers::{ContextId, SessionId, TraceId};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SessionKpis {
@@ -35,24 +19,6 @@ pub struct SessionKpis {
 }
 
 #[derive(Debug, Clone)]
-pub struct SessionContextRow {
-    pub context_id: ContextId,
-    pub name: Option<String>,
-    pub request_count: i64,
-    pub last_request_at: Option<DateTime<Utc>>,
-    pub model: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct SessionTraceRow {
-    pub trace_id: TraceId,
-    pub request_count: i64,
-    pub started_at: Option<DateTime<Utc>>,
-    pub ended_at: Option<DateTime<Utc>>,
-    pub error_count: i64,
-}
-
-#[derive(Debug, Clone)]
 pub struct SessionRequestRow {
     pub id: String,
     pub context_id: Option<ContextId>,
@@ -62,49 +28,6 @@ pub struct SessionRequestRow {
     pub latency_ms: Option<i32>,
     pub cost_microdollars: i64,
     pub created_at: DateTime<Utc>,
-}
-
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn find_session_header(
-    pool: &PgPool,
-    session_id: &SessionId,
-) -> Result<Option<SessionHeader>, sqlx::Error> {
-    sqlx::query_as!(
-        SessionHeader,
-        r#"
-        SELECT
-            COALESCE(s.session_id, r.session_id) AS "session_id!: SessionId",
-            COALESCE(s.user_id, r.user_id)       AS "user_id?: UserId",
-            u.display_name                       AS "display_name?",
-            upe.department                       AS "department?",
-            COALESCE(s.started_at, r.first_seen) AS "started_at?",
-            COALESCE(s.ended_at, r.last_seen)    AS "last_activity_at?",
-            s.status                             AS "status?",
-            COALESCE(s.model, r.model)           AS "model?",
-            s.plugin_id                          AS "plugin_id?: PluginId",
-            s.ai_title                           AS "ai_title?"
-        FROM (
-            SELECT
-                session_id,
-                MAX(user_id) AS user_id,
-                MIN(created_at) AS first_seen,
-                MAX(created_at) AS last_seen,
-                MAX(model) AS model
-            FROM ai_requests
-            WHERE session_id = $1
-            GROUP BY session_id
-        ) r
-        FULL OUTER JOIN plugin_session_summaries s
-          ON s.session_id = r.session_id
-        LEFT JOIN users u ON u.id = COALESCE(s.user_id, r.user_id)
-        LEFT JOIN user_profile_ext upe ON upe.user_id = u.id
-        WHERE COALESCE(s.session_id, r.session_id) = $1
-        LIMIT 1
-        "#,
-        session_id.as_str()
-    )
-    .fetch_optional(pool)
-    .await
 }
 
 pub async fn get_session_kpis(
@@ -137,59 +60,6 @@ pub async fn get_session_kpis(
         total_output_tokens: row.total_output_tokens,
         total_cost_microdollars: row.total_cost_microdollars,
     })
-}
-
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn list_session_contexts(
-    pool: &PgPool,
-    session_id: &SessionId,
-) -> Result<Vec<SessionContextRow>, sqlx::Error> {
-    sqlx::query_as!(
-        SessionContextRow,
-        r#"
-        SELECT
-            r.context_id                         AS "context_id!: ContextId",
-            c.name                               AS "name?",
-            COUNT(*)::bigint                     AS "request_count!",
-            MAX(r.created_at)                    AS "last_request_at?",
-            MAX(r.model)                         AS "model?"
-        FROM ai_requests r
-        LEFT JOIN user_contexts c ON c.context_id = r.context_id
-        WHERE r.session_id = $1 AND r.context_id IS NOT NULL
-        GROUP BY r.context_id, c.name
-        ORDER BY MAX(r.created_at) DESC
-        LIMIT 200
-        "#,
-        session_id.as_str()
-    )
-    .fetch_all(pool)
-    .await
-}
-
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn list_session_traces(
-    pool: &PgPool,
-    session_id: &SessionId,
-) -> Result<Vec<SessionTraceRow>, sqlx::Error> {
-    sqlx::query_as!(
-        SessionTraceRow,
-        r#"
-        SELECT
-            trace_id                                            AS "trace_id!: TraceId",
-            COUNT(*)::bigint                                    AS "request_count!",
-            MIN(created_at)                                     AS "started_at?",
-            MAX(COALESCE(completed_at, created_at))             AS "ended_at?",
-            COUNT(*) FILTER (WHERE status = 'failed')::bigint   AS "error_count!"
-        FROM ai_requests
-        WHERE session_id = $1 AND trace_id IS NOT NULL
-        GROUP BY trace_id
-        ORDER BY MIN(created_at) DESC
-        LIMIT 200
-        "#,
-        session_id.as_str()
-    )
-    .fetch_all(pool)
-    .await
 }
 
 pub async fn list_session_requests(

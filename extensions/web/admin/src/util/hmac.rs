@@ -59,35 +59,3 @@ pub fn eq(a: &str, b: &str) -> bool {
     }
     diff == 0
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// RFC 4231 test case 2, so a refactor of the pad arithmetic cannot quietly
-    /// change every token this signs.
-    #[test]
-    fn matches_rfc4231_case_2() {
-        assert_eq!(
-            hex(b"Jefe", "what do ya want for nothing?"),
-            "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
-        );
-    }
-
-    #[test]
-    fn long_key_is_hashed_first() {
-        // Exercises the >64-byte branch; value pinned from this implementation
-        // to catch accidental changes, and asserted stable across lengths.
-        let a = hex(&[0xaa; 80], "payload");
-        let b = hex(&[0xaa; 80], "payload");
-        assert_eq!(a, b);
-        assert_ne!(a, hex(&[0xaa; 64], "payload"));
-    }
-
-    #[test]
-    fn eq_rejects_length_and_content_mismatch() {
-        assert!(eq("abc", "abc"));
-        assert!(!eq("abc", "abd"));
-        assert!(!eq("abc", "abcd"));
-    }
-}

@@ -142,46 +142,6 @@ pub struct PendingApplicant {
     pub requested_at: String,
 }
 
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn list_pending_applicants(pool: &PgPool) -> Vec<PendingApplicant> {
-    sqlx::query!(
-        r#"
-        SELECT
-            u.id AS "user_id!",
-            COALESCE(u.full_name, u.display_name, u.name) AS "display_name!",
-            u.email AS "email!",
-            p.company AS "company!",
-            p.role AS "role!",
-            p.team_size AS "team_size!",
-            p.why_assessing AS "why_assessing!",
-            p.credit_plans,
-            to_char(a.requested_at, 'YYYY-MM-DD HH24:MI') AS "requested_at!"
-        FROM user_approvals a
-        JOIN users u ON u.id = a.user_id
-        JOIN user_onboarding_profiles p ON p.user_id = a.user_id
-        WHERE a.status = 'pending'
-        ORDER BY a.requested_at ASC
-        "#,
-    )
-    .fetch_all(pool)
-    .await
-    .inspect_err(|e| tracing::warn!(error = %e, "list_pending_applicants failed"))
-    .unwrap_or_default()
-    .into_iter()
-    .map(|r| PendingApplicant {
-        user_id: UserId::new(r.user_id),
-        display_name: r.display_name,
-        email: r.email,
-        company: r.company,
-        role: r.role,
-        team_size: r.team_size,
-        why_assessing: r.why_assessing,
-        credit_plans: r.credit_plans,
-        requested_at: r.requested_at,
-    })
-    .collect()
-}
-
 pub async fn find_applicant(pool: &PgPool, user_id: &UserId) -> Option<PendingApplicant> {
     sqlx::query!(
         r#"

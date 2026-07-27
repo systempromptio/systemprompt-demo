@@ -38,42 +38,11 @@ pub struct GovernanceEvent {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct GovernanceDecisionRow {
-    pub id: String,
-    pub user_id: UserId,
-    pub tool_name: String,
-    pub agent_id: Option<AgentId>,
-    pub agent_scope: Option<String>,
-    pub decision: String,
-    pub policy: String,
-    pub reason: String,
-    pub created_at: DateTime<Utc>,
-}
-
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, FromRow)]
 pub struct WindowedCounts {
     pub decisions: i64,
     pub denied: i64,
     pub secret_blocks: i64,
-    pub distinct_actors: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct TopActor {
-    pub user_id: UserId,
-    pub display_name: String,
-    pub email: Option<String>,
-    pub deny_count: i64,
-    pub secret_count: i64,
-    pub total: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct TopPolicy {
-    pub policy: String,
-    pub tool_name: String,
-    pub hits: i64,
     pub distinct_actors: i64,
 }
 

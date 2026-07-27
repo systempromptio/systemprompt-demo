@@ -21,25 +21,6 @@ pub struct DepartmentInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct DepartmentMember {
-    pub id: String,
-    pub email: String,
-    pub display_name: Option<String>,
-    pub status: String,
-    pub roles: Vec<String>,
-    #[serde(default)]
-    pub input_tokens: i64,
-    #[serde(default)]
-    pub output_tokens: i64,
-    #[serde(default)]
-    pub requests: i64,
-    #[serde(default)]
-    pub cost_microdollars: i64,
-    #[serde(default)]
-    pub last_active: Option<DateTime<Utc>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct DepartmentSummary {
     pub id: String,
     pub name: String,
@@ -54,8 +35,3 @@ pub struct DepartmentSummary {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct DepartmentTopTool {
-    pub tool_name: String,
-    pub invocations: i64,
-}

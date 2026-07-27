@@ -7,13 +7,41 @@
 .auth-pane {
   display: block;
   min-width: 0;
+
+  /* Local dark-glass tokens. This component is used by the homepage and
+     nowhere else, so it is styled for the stage directly rather than being
+     themed through it. */
+  --ap-glass: var(--sp-stage-glass, oklch(0.24 0.012 55 / 0.72));
+  --ap-border: var(--sp-stage-glass-border, oklch(1 0 0 / 0.09));
+  --ap-well: oklch(0 0 0 / 0.28);
+  --ap-raise: oklch(1 0 0 / 0.08);
+  --ap-text: var(--sp-stage-text, oklch(0.96 0.004 60));
+  --ap-text-dim: var(--sp-stage-text-dim, oklch(0.82 0.008 60));
+  --ap-text-muted: var(--sp-stage-text-muted, oklch(0.68 0.01 60));
 }
+
+/* The JS wizard toggles `hidden` on the form, on each step, and on the busy
+   row. An author `display` on any of those silently defeats the UA's
+   `[hidden] { display: none }` — which is exactly how sign-in, register step
+   1, register step 2, and a spinner all ended up stacked on screen at once.
+   These live above the `display: flex` rules and must stay above them. */
+.auth-pane .pane-form[hidden],
+.auth-pane .pane-step[hidden],
+.auth-pane .pane-busy[hidden],
+.auth-pane .pane-alert[hidden] { display: none; }
 
 .auth-pane .pane {
   display: flex;
   flex-direction: column;
   gap: var(--sp-space-5);
-  max-width: 32rem;
+  padding: var(--sp-space-5);
+  background: var(--ap-glass);
+  backdrop-filter: blur(var(--sp-stage-blur, 16px)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--sp-stage-blur, 16px)) saturate(140%);
+  border: 1px solid var(--ap-border);
+  border-radius: var(--sp-corners-lg);
+  box-shadow: 0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.04) inset;
+  color: var(--ap-text-dim);
 }
 
 /* ── head ───────────────────────────────────────────────────────────────── */
@@ -24,12 +52,12 @@
   font-size: clamp(1.35rem, 1.1rem + 0.9vw, 1.9rem);
   line-height: 1.15;
   letter-spacing: -0.02em;
-  color: var(--sp-color-text-primary);
+  color: var(--ap-text);
 }
 
 .auth-pane .pane-sub {
   margin: 0;
-  color: var(--sp-color-text-secondary);
+  color: var(--ap-text-muted);
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -40,7 +68,7 @@
   justify-content: space-between;
   gap: var(--sp-space-4);
   padding-bottom: var(--sp-space-4);
-  border-bottom: 1px solid var(--sp-color-border);
+  border-bottom: 1px solid var(--ap-border);
 }
 
 .auth-pane .pane-id {
@@ -67,14 +95,14 @@
 
 .auth-pane .pane-name {
   display: block;
-  color: var(--sp-color-text-primary);
+  color: var(--ap-text);
   font-size: 0.95rem;
   line-height: 1.3;
 }
 
 .auth-pane .pane-email {
   display: block;
-  color: var(--sp-color-text-muted);
+  color: var(--ap-text-muted);
   font-size: 0.8rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -99,7 +127,7 @@
   display: flex;
   gap: var(--sp-space-1);
   padding: 0.25rem;
-  background: var(--sp-color-surface-variant);
+  background: var(--ap-well);
   border-radius: var(--sp-radius-md);
 }
 
@@ -109,7 +137,7 @@
   background: transparent;
   border: none;
   border-radius: var(--sp-radius-sm);
-  color: var(--sp-color-text-secondary);
+  color: var(--ap-text-muted);
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
@@ -117,9 +145,9 @@
 }
 
 .auth-pane .pane-tab.is-active {
-  background: var(--sp-color-surface-elevated);
-  color: var(--sp-color-text-primary);
-  box-shadow: var(--sp-shadow-sm);
+  background: var(--ap-raise);
+  color: var(--ap-text);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.35);
 }
 
 /* ── forms ──────────────────────────────────────────────────────────────── */
@@ -135,7 +163,7 @@
 }
 
 .auth-pane .pane-label {
-  color: var(--sp-color-text-secondary);
+  color: var(--ap-text-muted);
   font-size: 0.78rem;
   letter-spacing: 0.02em;
 }
@@ -147,10 +175,10 @@
 .auth-pane .pane-field {
   width: 100%;
   padding: var(--sp-space-3);
-  background: var(--sp-color-surface-elevated);
-  border: 1px solid var(--sp-color-border);
+  background: var(--ap-well);
+  border: 1px solid var(--ap-border);
   border-radius: var(--sp-radius-md);
-  color: var(--sp-color-text-primary);
+  color: var(--ap-text);
   font: inherit;
   font-size: 0.9rem;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -204,23 +232,23 @@
 
 .auth-pane .pane-btn--ghost {
   background: transparent;
-  border-color: var(--sp-color-border);
-  color: var(--sp-color-text-secondary);
+  border-color: var(--ap-border);
+  color: var(--ap-text-dim);
 }
 
 .auth-pane .pane-note {
   margin: var(--sp-space-1) 0 0;
-  color: var(--sp-color-text-muted);
+  color: var(--ap-text-muted);
   font-size: 0.78rem;
   line-height: 1.55;
 }
 
 .auth-pane .pane-note--pending {
   padding: var(--sp-space-3);
-  background: var(--sp-color-surface-variant);
+  background: var(--ap-well);
   border-left: 2px solid var(--sp-color-warning);
   border-radius: 0 var(--sp-radius-md) var(--sp-radius-md) 0;
-  color: var(--sp-color-text-secondary);
+  color: var(--ap-text-dim);
 }
 
 .auth-pane .pane-link {
@@ -244,29 +272,29 @@
 }
 
 .auth-pane .pane-alert[data-tone="error"] {
-  background: var(--sp-color-surface-variant);
+  background: color-mix(in oklch, var(--sp-color-error) 14%, transparent);
   border-left: 2px solid var(--sp-color-error);
   color: var(--sp-color-error);
 }
 
 .auth-pane .pane-alert[data-tone="info"] {
-  background: var(--sp-color-surface-variant);
+  background: var(--ap-well);
   border-left: 2px solid var(--sp-color-info);
-  color: var(--sp-color-text-secondary);
+  color: var(--ap-text-dim);
 }
 
 .auth-pane .pane-busy {
   display: flex;
   align-items: center;
   gap: var(--sp-space-3);
-  color: var(--sp-color-text-secondary);
+  color: var(--ap-text-dim);
   font-size: 0.85rem;
 }
 
 .auth-pane .pane-spinner {
   width: 1rem;
   height: 1rem;
-  border: 2px solid var(--sp-color-border);
+  border: 2px solid var(--ap-border);
   border-top-color: var(--sp-color-primary);
   border-radius: var(--sp-radius-full);
   animation: auth-pane-spin 0.8s linear infinite;
@@ -291,7 +319,7 @@
   justify-content: space-between;
   gap: var(--sp-space-3);
   margin: 0;
-  color: var(--sp-color-text-secondary);
+  color: var(--ap-text-muted);
   font-family: var(--sp-font-heading);
   font-size: 0.78rem;
   font-weight: 600;
@@ -300,10 +328,110 @@
 }
 
 .auth-pane .pane-h3-sub {
-  color: var(--sp-color-text-muted);
+  color: var(--ap-text-muted);
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
+}
+
+/* ── The offer, and what is left of it ──────────────────────────────────────
+   Two faces of one fact. Signed out it is `.pane-offer`: the reason to make an
+   account. Signed in it is `.pane-credit`: what that grant has left. They are
+   styled as a pair on purpose — the promise and the receipt should look like
+   the same object, because a visitor who acted on the first is owed the
+   second in the same visual language. */
+
+.auth-pane .pane-offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1);
+  margin-bottom: var(--sp-space-4);
+  padding: var(--sp-space-4);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--sp-color-primary-rgb) / 0.14),
+    rgb(var(--sp-color-primary-rgb) / 0.04)
+  );
+  border: 1px solid rgb(var(--sp-color-primary-rgb) / 0.35);
+  border-radius: var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-sm);
+}
+
+.auth-pane .pane-offer-amount {
+  color: var(--sp-color-primary-text, var(--ap-text));
+  font-family: var(--sp-font-heading);
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.auth-pane .pane-offer-line {
+  color: var(--ap-text);
+  font-size: 0.92rem;
+}
+
+.auth-pane .pane-offer-fine {
+  color: var(--ap-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.auth-pane .pane-credit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+}
+
+.auth-pane .pane-credit-figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-space-2);
+}
+
+.auth-pane .pane-credit-left {
+  color: var(--ap-text);
+  font-family: var(--sp-font-mono);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.auth-pane .pane-credit-cap {
+  color: var(--ap-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-pane .pane-credit-bar {
+  overflow: hidden;
+  height: 0.4rem;
+  background: var(--ap-raise);
+  border: 1px solid var(--ap-border);
+  border-radius: var(--sp-radius-full);
+}
+
+.auth-pane .pane-credit-bar > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--sp-color-success);
+  border-radius: inherit;
+  /* Eased because the bar moves on a 3s poll, not per frame: a jump would
+     read as a glitch, a slide reads as spend. */
+  transition: width 0.5s ease-out, background-color 0.3s ease-out;
+}
+
+.auth-pane .pane-credit-bar[data-state="low"] > span { background: var(--sp-color-warning); }
+.auth-pane .pane-credit-bar[data-state="empty"] > span { background: var(--sp-color-error); }
+
+.auth-pane .pane-credit-note {
+  margin: 0;
+  color: var(--ap-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-pane .pane-credit-bar > span { transition: none; }
 }
 
 .auth-pane .pane-stats {
@@ -315,14 +443,14 @@
 
 .auth-pane .pane-stat {
   padding: var(--sp-space-3);
-  background: var(--sp-color-surface-elevated);
-  border: 1px solid var(--sp-color-border-subtle);
+  background: var(--ap-raise);
+  border: 1px solid var(--ap-border);
   /* One squared corner per tile, so a grid of them reads as one family. */
   border-radius: var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-sm);
 }
 
 .auth-pane .pane-stat dt {
-  color: var(--sp-color-text-muted);
+  color: var(--ap-text-muted);
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -330,7 +458,7 @@
 
 .auth-pane .pane-stat dd {
   margin: var(--sp-space-1) 0 0;
-  color: var(--sp-color-text-primary);
+  color: var(--ap-text);
   font-family: var(--sp-font-mono);
   font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
@@ -347,7 +475,7 @@
 
 @keyframes auth-pane-flash {
   from { color: var(--sp-color-primary); }
-  to { color: var(--sp-color-text-primary); }
+  to { color: var(--ap-text); }
 }
 
 .auth-pane .pane-section--feed {
@@ -367,7 +495,7 @@
 }
 
 .auth-pane .pane-feed-empty {
-  color: var(--sp-color-text-muted);
+  color: var(--ap-text-muted);
   font-size: 0.82rem;
   line-height: 1.55;
 }
@@ -377,7 +505,7 @@
   flex-direction: column;
   gap: 0.15rem;
   padding: var(--sp-space-2) var(--sp-space-3);
-  background: var(--sp-color-surface-elevated);
+  background: var(--ap-well);
   border-left: 2px solid var(--sp-color-success);
   border-radius: 0 var(--sp-radius-sm) var(--sp-radius-sm) 0;
   font-family: var(--sp-font-mono);
@@ -389,17 +517,29 @@
 }
 
 .auth-pane .pane-feed-head {
-  color: var(--sp-color-text-primary);
+  color: var(--ap-text);
 }
 
 .auth-pane .pane-feed-tail {
-  color: var(--sp-color-text-muted);
+  color: var(--ap-text-muted);
   overflow-wrap: anywhere;
 }
 
 .auth-pane .pane-foot {
   padding-top: var(--sp-space-3);
-  border-top: 1px solid var(--sp-color-border);
+  border-top: 1px solid var(--ap-border);
+}
+
+/* A non-zero block count is the number this pane exists to show, so it gets a
+   hot state — the same one the terminal header's meter already uses, because
+   the two halves are reporting the same fact. */
+.auth-pane .pane-stat[data-hot="1"] {
+  border-color: color-mix(in oklch, var(--sp-color-error) 55%, transparent);
+  background: color-mix(in oklch, var(--sp-color-error) 12%, var(--ap-raise));
+}
+
+.auth-pane .pane-stat[data-hot="1"] dd {
+  color: var(--sp-color-error);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -15,7 +15,11 @@
   top: 0;
 }
 
+/* Three logo images ship in the header markup and exactly one may show. The
+   white variant is opt-in per page (see home-stage.css); without this rule it
+   rendered on top of the themed one on every page. */
 .logo-dark { display: none; }
+.logo-video { display: none; }
 [data-theme="dark"] .logo-light { display: none; }
 [data-theme="dark"] .logo-dark { display: block; }
 

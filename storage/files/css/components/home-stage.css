@@ -1,0 +1,288 @@
+/* The homepage stage: one full-bleed dark field, the terminal and the account
+ * pane floating on it as glass, and everything utilitarian below the fold.
+ *
+ * `home-split.css` owns the split grid. This file owns the field itself, the
+ * header's disappearing act, and the band under the hero. They are separate
+ * because the grid is a layout and this is a look — and only this one is
+ * scoped, wholesale, to `body.home-split-body`.
+ *
+ * Brand orange appears here as *light*, never as paint: two soft off-screen
+ * glows. That keeps the field neutral enough for the chain rail's green/red
+ * pips and the amber approval card to stay the loudest things on the page. */
+
+.home-split-body {
+  --sp-stage-ink: oklch(0.16 0.012 55);
+  --sp-stage-glow: oklch(0.62 0.19 47);
+  --sp-stage-glass: oklch(0.24 0.012 55 / 0.72);
+  --sp-stage-glass-border: oklch(1 0 0 / 0.09);
+  --sp-stage-blur: 16px;
+  --sp-stage-rim: oklch(0.62 0.19 47 / 0.28);
+  --sp-stage-text: oklch(0.96 0.004 60);
+  --sp-stage-text-dim: oklch(0.82 0.008 60);
+  --sp-stage-text-muted: oklch(0.68 0.01 60);
+
+  /* Brand orange as light, not paint. Declared once and used twice — on the
+     body, and again over the video — because a body background propagates to
+     the canvas and would otherwise sit *behind* the video layer. */
+  --sp-stage-glows:
+    radial-gradient(60rem 40rem at 12% -10%, oklch(0.62 0.19 47 / 0.22), transparent 60%),
+    radial-gradient(50rem 35rem at 88% 60%, oklch(0.62 0.19 47 / 0.13), transparent 60%);
+
+  /* The field lives on the body, not on the hero, so the band below it shares
+     the same background and there is no seam to line up. This is also the
+     fallback the page falls back to if the video never arrives. */
+  background: var(--sp-stage-glows), var(--sp-stage-ink);
+  background-attachment: fixed;
+  /* Native form controls and scrollbars follow, without claiming the global
+     theme — the footer's theme toggle still owns that. */
+  color-scheme: dark;
+  color: var(--sp-stage-text);
+  /* The page scrolls now; only the horizontal overflow is unwanted. */
+  overflow-x: hidden;
+}
+
+/* ── the video field ────────────────────────────────────────────────────── */
+
+/* Fixed and behind everything, so the hero and the band below it share one
+   continuous field with no seam at the fold and nothing to keep in sync while
+   scrolling. `z-index: -1` puts it under the page's own content without taking
+   it out of the body's stacking context, so the orange glows above composite
+   over it rather than being hidden by it. */
+/* The poster is set here as well as on the <video>, and this is the copy that
+   is load-bearing: it is the only .webp the site serves and core has no
+   `image/webp` mapping, so it arrives as application/octet-stream. A CSS
+   background is decoded by sniffing its content and does not care; a `poster`
+   attribute depends on the browser choosing to sniff. First paint is not the
+   place to find out which browsers do. */
+.stage-video-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--sp-stage-ink) url("/files/video/hero/hero-poster.webp") center / cover no-repeat;
+}
+
+.stage-video-layer .hero-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Starts invisible over its own poster and crossfades once it can play, so a
+     half-buffered first frame never pops. hero-header.js adds `.is-ready`. */
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+
+.stage-video-layer .hero-video.is-ready {
+  opacity: 1;
+}
+
+/* The scrim is the reason any of this is readable.
+   Adapted from the hero implementation this replaces, where it was tuned for
+   exactly this problem: light text over an image that will not hold still. The
+   blur takes the detail out of the footage so the eye stops trying to resolve
+   it, and the gradients weight the darkening toward the top, where the header
+   sits, and the bottom, where the band arrives. */
+/* The glows again, this time above the footage. `background-attachment: fixed`
+   on the body cannot reach here, but the layer is itself fixed, so they hold
+   the same position on screen either way. */
+.stage-video-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--sp-stage-glows);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.stage-video-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  backdrop-filter: blur(4px) saturate(1.05);
+  -webkit-backdrop-filter: blur(4px) saturate(1.05);
+  background:
+    linear-gradient(180deg,
+      oklch(0.12 0.012 55 / 0.82) 0%,
+      oklch(0.12 0.012 55 / 0.58) 32%,
+      oklch(0.12 0.012 55 / 0.58) 68%,
+      oklch(0.12 0.012 55 / 0.86) 100%),
+    linear-gradient(90deg,
+      oklch(0.12 0.012 55 / 0.42) 0%,
+      transparent 55%);
+}
+
+/* On a dark field the white wordmark is the right asset, and it is already in
+   the header markup — see the `.logo-video` rule in header-core.css. */
+.home-split-body .logo-light,
+.home-split-body .logo-dark { display: none; }
+.home-split-body .logo-video { display: block; }
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+
+/* Over the stage the header is a logo and nothing else: it dissolves into the
+   field rather than sitting on it as a white bar. */
+.home-split-body .site-header {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+
+/* Once the hero has scrolled past, the header needs its own surface again or
+   the logo lands on top of the band's content. `hero-header.js` sets the
+   attribute on <html>. */
+[data-scrolled] .home-split-body .site-header {
+  background: oklch(0.16 0.012 55 / 0.72);
+  backdrop-filter: blur(var(--sp-stage-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--sp-stage-blur)) saturate(160%);
+  border-bottom-color: var(--sp-stage-glass-border);
+}
+
+/* `display: none` rather than visual hiding: the nav is genuinely gone here,
+   so it leaves the tab order and the a11y tree with it. The same links live in
+   the band below, built from the same config. */
+.home-split-body .nav-links,
+.home-split-body .mobile-menu-toggle,
+.home-split-body .mobile-menu-overlay { display: none; }
+
+/* ── the scroll cue ─────────────────────────────────────────────────────── */
+
+/* A 100dvh hero reads as the whole page unless something says otherwise, and
+   then nobody finds the band. */
+.home-split-body .home-split {
+  position: relative;
+}
+
+.home-split-scroll-cue {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-space-3);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  color: var(--sp-stage-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.home-split-scroll-cue:hover {
+  color: var(--sp-stage-text-dim);
+}
+
+/* Once you have scrolled, the cue has done its job — and it must stop taking
+   clicks as well as fading, or it sits invisible over the band. */
+[data-scrolled] .home-split-scroll-cue {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── below the fold ─────────────────────────────────────────────────────── */
+
+.home-below {
+  border-top: 1px solid var(--sp-stage-glass-border);
+}
+
+.home-below-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-space-5);
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--sp-space-8) var(--sp-space-6);
+}
+
+.home-below-inner > a {
+  color: var(--sp-stage-text-dim);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.home-below-inner > a:hover {
+  color: var(--sp-stage-text);
+}
+
+.home-below-downloads {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+  margin-left: auto;
+}
+
+.home-below-downloads a.download-badge {
+  background: oklch(1 0 0 / 0.06);
+  border: 1px solid var(--sp-stage-glass-border);
+  color: var(--sp-stage-text);
+}
+
+.home-below-downloads a.download-badge:hover {
+  background: var(--sp-color-primary);
+  color: var(--sp-color-text-on-primary);
+}
+
+/* ── footer ─────────────────────────────────────────────────────────────── */
+
+/* The homepage emits a footer for the first time here — it had nowhere to
+   scroll to before. It carries the legal links and the theme toggle for free;
+   it just has to stop being a light slab. */
+.home-split-body .site-footer {
+  background: transparent;
+  border-top: 1px solid var(--sp-stage-glass-border);
+  color: var(--sp-stage-text-dim);
+}
+
+.home-split-body .site-footer a,
+.home-split-body .site-footer h3,
+.home-split-body .site-footer p {
+  color: var(--sp-stage-text-dim);
+}
+
+.home-split-body .site-footer a:hover {
+  color: var(--sp-stage-text);
+}
+
+.home-split-body .site-footer .logo-light,
+.home-split-body .site-footer .logo-dark { display: none; }
+
+.home-split-body .site-footer .footer-logo::after {
+  /* The footer markup carries only the two themed logos, and both are hidden
+     on the stage. A wordmark in text keeps the brand present without editing a
+     shared partial. */
+  content: 'systemprompt.io';
+  font-family: var(--sp-font-brand, inherit);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--sp-stage-text);
+}
+
+.home-split-body .theme-toggle-btn {
+  color: var(--sp-stage-text-dim);
+  border-color: var(--sp-stage-glass-border);
+}
+
+/* ── narrow ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  /* With the hero stacked there is no fold to cue past. */
+  .home-split-scroll-cue { display: none; }
+
+  .home-below-inner {
+    padding: var(--sp-space-6) var(--sp-space-4);
+  }
+
+  .home-below-downloads {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-split-scroll-cue { transition: none; }
+}

@@ -57,8 +57,12 @@ function motionOk() {
  */
 function chainRail(stages, opts) {
   const animate = (!opts || opts.animate !== false) && motionOk();
+  // Compact is the inline form, drawn inside the row the chain judged. The pips
+  // shrink to their dots and the policy names are revealed on hover or focus —
+  // attached to its subject, the rail no longer has to name it in full.
+  const compact = !!(opts && opts.compact);
   const rail = document.createElement('div');
-  rail.className = 'pi-rail';
+  rail.className = compact ? 'pi-rail pi-rail--compact' : 'pi-rail';
   rail.setAttribute('role', 'list');
   rail.setAttribute('aria-label', 'Governance chain');
 

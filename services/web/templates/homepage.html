@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +23,28 @@
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-split.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/auth-pane.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-stage.css">
+    <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
     <script src="{{JS_BASE_PATH}}/services/pi-render.js" defer></script>
     <script src="{{JS_BASE_PATH}}/services/pi-gate-view.js" defer></script>
     <script src="{{JS_BASE_PATH}}/services/sp-pi-terminal.js" defer></script>
     <script type="module" src="{{JS_BASE_PATH}}/services/sp-auth-pane.js"></script>
 </head>
-<body class="home-split-body">
+<body class="home-split-body" data-scroll-header>
+    <!--
+      The field. The poster is a 71KB still and paints on its own; the video
+      carries no <source> children until hero-header.js adds them once the page
+      is idle, so nothing above the fold waits on four megabytes. The scrim is
+      what keeps the glass panes legible over a moving image.
+    -->
+    <div class="stage-video-layer" aria-hidden="true">
+        <video class="hero-video" muted loop playsinline preload="none"
+               poster="/files/video/hero/hero-poster.webp"
+               data-src-webm="/files/video/hero/hero.webm"
+               data-src-mp4="/files/video/hero/hero.mp4"></video>
+        <div class="stage-video-scrim"></div>
+    </div>
+
     {{{HEADER}}}
 
     <main id="main" class="home-split">
@@ -40,7 +56,39 @@
         <section class="home-split-pane home-split-pane--profile" aria-label="Your account and agent telemetry">
             <sp-auth-pane></sp-auth-pane>
         </section>
+        <a class="home-split-scroll-cue" href="#home-below">
+            <span>More below</span><span aria-hidden="true">&#8595;</span>
+        </a>
     </main>
+
+    <!--
+      Below the fold: the nav, the downloads, and the footer the homepage used
+      to omit. The links come from the same `site.header_nav` config the header
+      reads, so the two can never drift apart.
+    -->
+    <section id="home-below" class="home-below" aria-label="Downloads and resources">
+        <div class="home-below-inner">
+            {{#each site.header_nav.items}}
+            <a href="{{this.href}}"{{#if this.external}} target="_blank" rel="noopener noreferrer"{{/if}}>{{this.label}}</a>
+            {{/each}}
+            {{#if site.header_nav.cta}}
+            <a href="{{site.header_nav.cta.href}}" class="cta-button"{{#if site.header_nav.cta.external}} target="_blank" rel="noopener noreferrer"{{/if}}>{{site.header_nav.cta.label}}</a>
+            {{/if}}
+            <div class="home-below-downloads">
+                <!--
+                  One pinned URL to the release page rather than a fourth copy of
+                  the two binary URLs (header.html, bridge_downloads.rs, and the
+                  email templates already hold three).
+                -->
+                <a href="https://github.com/systempromptio/systemprompt-demo/releases/latest" class="download-badge" target="_blank" rel="noopener noreferrer">
+                    <span class="download-badge-text">
+                        <span class="download-badge-prefix">Download the bridge</span>
+                        <span class="download-badge-platform">Mac &amp; Windows</span>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </section>
 
     <!--
       Signing in happens in the pane without a navigation, so nothing reloads
@@ -57,6 +105,8 @@
             if (t && t.restart) t.restart();
         });
     </script>
+
+    {{{FOOTER}}}
 
     {{{SCRIPTS}}}
 </body>

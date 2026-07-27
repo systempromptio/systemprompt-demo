@@ -18,7 +18,7 @@
 use std::sync::Arc;
 
 use sqlx::PgPool;
-use systemprompt::identifiers::{AgentId, PluginId, SessionId, UserId};
+use systemprompt::identifiers::{AgentId, PluginId, PolicyId, SessionId, UserId};
 use systemprompt::traits::AnalyticsProvider;
 use systemprompt_security::authz::{Decision, MatchedBy};
 use systemprompt_security::policy::types::AccessScope;
@@ -48,6 +48,16 @@ pub(crate) struct GovernedCall<'a> {
     /// one runaway conversation cannot throttle a user's other sessions.
     pub(crate) agent_session: &'a SessionId,
     pub(crate) tool_input: Option<&'a serde_json::Value>,
+    /// The most privilege this surface may ever evaluate at, whatever the
+    /// caller's roles say. `Admin` means "no ceiling".
+    ///
+    /// Scope is otherwise resolved upwards — DB roles joined with the agent's
+    /// declared scope, taking the higher. That is right for the admin console
+    /// and for `/hooks/govern`, and wrong for a sandboxed surface, where an
+    /// operator signed in as admin would silently skip the policies that
+    /// surface exists to demonstrate. There is no `Default`: a new surface has
+    /// to say which it is.
+    pub(crate) scope_ceiling: AccessScope,
 }
 
 /// The synthetic tool name a governed prompt is audited under, matching the
@@ -104,7 +114,11 @@ pub(crate) async fn govern_call(
     let attested = attested_session_id(analytics, claimed_session, call.user_id).await;
 
     let db_scope = scope::scope_from_user_roles(pool, call.user_id).await;
-    let access_scope = scope::higher_privilege(db_scope, scope::resolve_agent_scope(&agent_id));
+    let resolved = scope::higher_privilege(db_scope, scope::resolve_agent_scope(&agent_id));
+    // The capped scope is what the chain evaluates at *and* what gets audited.
+    // Recording the uncapped one would make the trace disagree with the policy
+    // that ran.
+    let access_scope = scope::cap_at(resolved, call.scope_ceiling);
 
     let (decision, chain) = evaluate(&EvaluateInput {
         tool_name: call.tool_name,
@@ -132,7 +146,7 @@ pub(crate) async fn govern_call(
         access_scope,
         attested,
     };
-    record(pool, call, &verdict, &agent_id);
+    record(pool, call, &verdict, &agent_id).await;
     verdict
 }
 
@@ -141,7 +155,7 @@ pub(crate) async fn govern_call(
 /// A second row rather than a mutation of the first: the spine is append-only,
 /// and "policy allowed, operator refused" is two facts, not a correction of
 /// one. `policy` is `human_approval` so the trace view can tell them apart.
-pub(crate) fn record_human_decision(
+pub(crate) async fn record_human_decision(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
     verdict: &PolicyVerdict,
@@ -173,7 +187,7 @@ pub(crate) fn record_human_decision(
             plugin_id: Some(PluginId::new(PI_PLUGIN_ID)),
         },
         chain: vec![ChainEntryOutcome {
-            policy_id: systemprompt::identifiers::PolicyId::new("human_approval"),
+            policy_id: PolicyId::new("human_approval"),
             result: match outcome {
                 HumanOutcome::Approved => ChainEntryResult::Pass,
                 _ => ChainEntryResult::Fail,
@@ -181,7 +195,11 @@ pub(crate) fn record_human_decision(
             detail: outcome.reason().to_owned(),
         }],
     };
-    spawn_write(pool, audit);
+    if outcome.allowed() {
+        spawn_write(pool, audit);
+    } else {
+        write_now(pool, audit).await;
+    }
 }
 
 /// Audit a caller-side policy that refused a call the chain had allowed.
@@ -194,17 +212,17 @@ pub(crate) fn record_human_decision(
 /// A second row rather than a mutation of the first, for the same reason
 /// [`record_human_decision`] is: "policy allowed, the caller's own rule
 /// refused" is two facts.
-pub(crate) fn record_policy_denial(
+pub(crate) async fn record_policy_denial(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
     verdict: &PolicyVerdict,
-    policy_id: &str,
+    policy_id: &PolicyId,
     detail: &str,
 ) {
     let audit = DecisionAudit {
         decision: Decision::Deny {
             reason: systemprompt_security::authz::DenyReason::PolicyViolation {
-                policy: policy_id.to_owned(),
+                policy: policy_id.to_string(),
                 detail: std::borrow::Cow::Owned(detail.to_owned()),
             },
         },
@@ -220,12 +238,12 @@ pub(crate) fn record_policy_denial(
             plugin_id: Some(PluginId::new(PI_PLUGIN_ID)),
         },
         chain: vec![ChainEntryOutcome {
-            policy_id: systemprompt::identifiers::PolicyId::new(policy_id),
+            policy_id: policy_id.clone(),
             result: ChainEntryResult::Fail,
             detail: detail.to_owned(),
         }],
     };
-    spawn_write(pool, audit);
+    write_now(pool, audit).await;
 }
 
 /// How an approval ended. Three of the four are denials, which is the point:
@@ -255,7 +273,7 @@ impl HumanOutcome {
     }
 }
 
-fn record(
+async fn record(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
     verdict: &PolicyVerdict,
@@ -276,22 +294,39 @@ fn record(
         },
         chain: verdict.chain.clone(),
     };
-    spawn_write(pool, audit);
+    if verdict.allowed {
+        spawn_write(pool, audit);
+    } else {
+        write_now(pool, audit).await;
+    }
 }
 
-/// Audit writes never block a verdict: the tool call is already waiting on it,
-/// and a slow `INSERT` must not become a slow gate.
+/// Audit writes never block an *allow*: the tool call is already waiting on the
+/// verdict, and a slow `INSERT` must not become a slow gate.
+///
+/// Denials do not take this path — see [`write_now`].
 fn spawn_write(pool: &Arc<PgPool>, audit: DecisionAudit) {
     let pool = Arc::<PgPool>::clone(pool);
     tokio::spawn(async move {
-        let session_id = audit.principal.session_id.clone();
-        if let Err(e) = audit::record_decision(&pool, &audit).await {
-            tracing::error!(
-                target: "governance.audit.write_failed",
-                error = %e,
-                session_id = %session_id,
-                "pi governance audit write failed; row dropped",
-            );
-        }
+        write_now(&pool, audit).await;
     });
+}
+
+/// Write the row before returning the verdict.
+///
+/// Denials are read back immediately — the caller is shown a refusal and then
+/// asks the spine to prove it happened, often within the same second. Spawning
+/// that write races the read, and the demonstration reports no denial for a
+/// call the user just watched be refused. An allow can afford to be eventually
+/// consistent; the row that proves enforcement cannot.
+async fn write_now(pool: &Arc<PgPool>, audit: DecisionAudit) {
+    let session_id = audit.principal.session_id.clone();
+    if let Err(e) = audit::record_decision(pool, &audit).await {
+        tracing::error!(
+            target: "governance.audit.write_failed",
+            error = %e,
+            session_id = %session_id,
+            "pi governance audit write failed; row dropped",
+        );
+    }
 }

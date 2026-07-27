@@ -91,7 +91,7 @@ class SpPiTerminal extends HTMLElement {
     this._historyAt = -1;
     this._statsTimer = null;
     this._cannedTimers = [];
-    this._stream = null;
+    this._workEl = null;
     this._streamBuf = '';
     this._thinkBuf = '';
     this._thinkEl = null;
@@ -122,9 +122,13 @@ class SpPiTerminal extends HTMLElement {
     this.innerHTML = ''
       + '<div class="terminal active">'
       + '<div class="terminal-header">'
+      + '<span class="pi-brand">'
+      + '<img class="pi-brand-mark" src="/files/images/icon.svg" alt="" width="18" height="18">'
+      + '<span class="pi-brand-name">systemprompt<span class="pi-brand-tld">.io</span></span>'
+      + '</span>'
       + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
       + '<span class="pi-status" data-role="status"></span></span>'
-      + '<span class="terminal-title">pi — governed</span>'
+      + '<span class="pi-jail-chip" data-role="jail" hidden></span>'
       + '<div class="pi-meters" data-role="meters" hidden>'
       + '<span class="pi-meter" data-role="m-tools" title="Tool calls the gate has judged">'
       + '<b>0</b><i>calls</i></span>'
@@ -143,17 +147,20 @@ class SpPiTerminal extends HTMLElement {
       + '<button type="button" class="pi-jump" data-role="jump" hidden></button>'
       + '</div>'
       + '<div class="pi-approvals" data-role="approvals"></div>'
-      + '<div class="pi-palette" data-role="palette" hidden></div>'
+      + '<div class="pi-palette" data-role="palette" role="listbox"'
+      + ' aria-label="Skills" hidden></div>'
       + '<form class="pi-composer" data-role="composer">'
       + '<span class="prompt" aria-hidden="true">&gt;</span>'
       + '<label class="sp-sr-only" for="pi-input-field">Ask the agent</label>'
       + '<textarea class="pi-input" id="pi-input-field" data-role="input" rows="1"'
       + ' autocomplete="off" spellcheck="false"'
-      + ' placeholder="Ask pi something, or type / for skills…" disabled></textarea>'
+      + ' placeholder="Ask pi something, or type / for skills…"'
+      + ' role="combobox" aria-expanded="false" aria-controls="pi-palette-list"'
+      + ' aria-autocomplete="list" disabled></textarea>'
       + '<button type="submit" class="pi-btn" data-role="send" disabled>Run</button>'
       + '<button type="button" class="pi-btn pi-btn--ghost" data-role="stop" hidden>Stop</button>'
       + '</form>'
-      + '<div class="pi-hint">↵ send · ⇧↵ newline · ↑ history · esc stop</div>'
+      + '<div class="pi-hint">↵ send · ⇧↵ newline · ↑↓ skills · ↑ history · esc stop</div>'
       + '<div class="pi-gate" data-role="gate" hidden></div>'
       + '</div>';
 
@@ -169,6 +176,8 @@ class SpPiTerminal extends HTMLElement {
     this._jumpBtn = this.querySelector('[data-role="jump"]');
     this._metersEl = this.querySelector('[data-role="meters"]');
     this._traceEl = this.querySelector('[data-role="trace"]');
+    this._jailEl = this.querySelector('[data-role="jail"]');
+    this._paletteEl.id = 'pi-palette-list';
 
     this.querySelector('[data-role="composer"]').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -237,10 +246,14 @@ class SpPiTerminal extends HTMLElement {
     }
 
     this._paletteEl.textContent = '';
-    hits.forEach((hit) => {
+    hits.forEach((hit, n) => {
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'pi-palette-row';
+      row.id = 'pi-cmd-' + n;
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', 'false');
+      row.tabIndex = -1;
       const name = document.createElement('span');
       name.className = 'pi-palette-cmd';
       name.textContent = hit.command;
@@ -248,20 +261,56 @@ class SpPiTerminal extends HTMLElement {
       desc.className = 'pi-palette-desc';
       desc.textContent = hit.description;
       row.append(name, desc);
-      row.addEventListener('click', () => {
-        this._input.value = hit.command + ' ';
-        this._hidePalette();
-        this._input.focus();
-        this._autogrow();
-      });
+      row.dataset.command = hit.command;
+      // Pointer and keyboard resolve to the same call, so the two can never
+      // drift into doing subtly different things.
+      row.addEventListener('click', () => this._acceptPalette(row));
+      row.addEventListener('mousemove', () => this._selectPalette(n));
       this._paletteEl.append(row);
     });
     this._paletteEl.hidden = false;
+    this._input.setAttribute('aria-expanded', 'true');
+    // Preselect the first hit, so `/` then Enter is a complete keyboard flow.
+    this._selectPalette(0);
+  }
+
+  /** Move the palette's selection. Wraps, so ↑ from the top reaches the end. */
+  _selectPalette(n) {
+    const rows = this._paletteRows();
+    if (!rows.length) return;
+    const at = (n + rows.length) % rows.length;
+    rows.forEach((row, i) => {
+      const on = i === at;
+      row.classList.toggle('is-selected', on);
+      row.setAttribute('aria-selected', on ? 'true' : 'false');
+      if (on) {
+        row.scrollIntoView({ block: 'nearest' });
+        this._input.setAttribute('aria-activedescendant', row.id);
+      }
+    });
+    this._paletteAt = at;
+  }
+
+  /** Take the highlighted command into the composer. */
+  _acceptPalette(row) {
+    const target = row || this._paletteRows()[this._paletteAt];
+    if (!target) return;
+    this._input.value = target.dataset.command + ' ';
+    this._hidePalette();
+    this._input.focus();
+    this._autogrow();
+  }
+
+  _paletteRows() {
+    return Array.from(this._paletteEl.querySelectorAll('.pi-palette-row'));
   }
 
   _hidePalette() {
     this._paletteEl.hidden = true;
     this._paletteEl.textContent = '';
+    this._paletteAt = 0;
+    this._input.setAttribute('aria-expanded', 'false');
+    this._input.removeAttribute('aria-activedescendant');
   }
 
   _paletteOpen() {
@@ -295,8 +344,7 @@ class SpPiTerminal extends HTMLElement {
     this._turnLive = false;
     this._closed = false;
     this._who = null;
-    this._cursorEl = null;
-    this._stream = null;
+    this._workEl = null;
     this._streamBuf = '';
     this._thinkBuf = '';
     this._thinkEl = null;
@@ -500,11 +548,28 @@ class SpPiTerminal extends HTMLElement {
       case 'approval_request': return this._approvalRequest(f);
       case 'approval_resolved': return this._approvalResolved(f);
       case 'turn_end': return this._turnEnd();
-      case 'stderr': return this._line('output-dim', f.line);
+      case 'stderr': return this._stderr(f.line);
       case 'error': return this._line('output-warn', f.message);
       case 'exit': return this._exit(f);
       default: return undefined;
     }
+  }
+
+  /**
+   * The jail banner is a claim about confinement, and it was the first line of
+   * the transcript — which made it the first thing to scroll out of sight. It
+   * is promoted to the chrome, where it stays true for as long as it is true.
+   */
+  _stderr(line) {
+    const jail = /^sp-pi-jail:\s*(.+)$/.exec(line || '');
+    if (jail && this._jailEl) {
+      const landlock = /\(([^)]*Landlock[^)]*)\)/i.exec(jail[1]);
+      this._jailEl.textContent = landlock ? landlock[1] : 'sandboxed';
+      this._jailEl.title = jail[1];
+      this._jailEl.hidden = false;
+      return undefined;
+    }
+    return this._line('output-dim', line);
   }
 
   _enable() {
@@ -517,7 +582,6 @@ class SpPiTerminal extends HTMLElement {
     this._turnLive = true;
     this._flushStream();
     this._stopBtn.hidden = false;
-    this._cursor(true);
   }
 
   _turnEnd() {
@@ -525,18 +589,22 @@ class SpPiTerminal extends HTMLElement {
     this._flushStream();
     this._thinkBuf = '';
     this._thinkEl = null;
+    this._orphanRail();
     this._stopBtn.hidden = true;
-    this._cursor(false);
   }
 
   /**
-   * Assistant prose, buffered.
+   * Assistant prose, buffered and never shown raw.
    *
-   * Text arrives token by token but markdown cannot be parsed token by token — a
-   * fence is not a fence until its closing line lands. So deltas stream into a
-   * plain-text span and the buffer is re-rendered as markdown when the turn ends.
-   * The streamed update is coalesced onto a frame either way: touching the DOM
-   * per delta is quadratic in the length of the answer.
+   * Markdown cannot be parsed token by token — a fence is not a fence until its
+   * closing line lands, and a table is not a table until its separator row does.
+   * The old behaviour streamed the raw buffer into the transcript and only
+   * rendered it at the end of the turn, which meant the viewer read literal
+   * `## heading` and `**bold**` for the entire time an answer took to arrive.
+   *
+   * So nothing is written until it is renderable. Deltas accumulate, the working
+   * indicator carries the fact that something is happening, and every *complete*
+   * top-level block is revealed as prose the moment it closes.
    */
   _delta(text, thinking) {
     if (!text) return;
@@ -549,41 +617,69 @@ class SpPiTerminal extends HTMLElement {
       return;
     }
     this._streamBuf += text;
-    if (!this._stream) {
-      const line = document.createElement('div');
-      line.className = 'terminal-line pi-prose-line';
-      const span = document.createElement('span');
-      span.className = 'pi-stream';
-      line.append(span);
-      this._append(line);
-      this._stream = span;
-    }
+    this._working(true);
+    // Coalesced onto a frame: a blank-line scan per delta is wasted work when
+    // twenty of them land between two paints.
     if (!this._raf) {
       this._raf = requestAnimationFrame(() => {
         this._raf = 0;
-        if (this._stream) this._stream.textContent = this._streamBuf;
+        this._revealComplete();
+        this._workingSync();
         this._nudge();
       });
     }
   }
 
-  /** Swap the streamed plain text for rendered markdown. */
+  /**
+   * Reveal every block that has finished, keep the rest buffered.
+   *
+   * Waiting for the whole turn would leave a long answer as nothing but a
+   * spinner for as long as it takes to write, which trades one bad experience
+   * for another. A blank line is markdown's own block separator, so everything
+   * before the last one is complete by definition and can be rendered now.
+   *
+   * The exception is an open code fence: an odd number of ``` means the reader
+   * is mid-block and its blank lines separate nothing, so the whole buffer waits.
+   */
+  _revealComplete() {
+    if (!window.SpPiRender) return;
+    const cut = this._streamBuf.lastIndexOf('\n\n');
+    if (cut === -1) return;
+    const head = this._streamBuf.slice(0, cut);
+    if (!head.trim()) return;
+    if (countFences(head) % 2 !== 0) return;
+    this._renderProse(head);
+    this._streamBuf = this._streamBuf.slice(cut + 2);
+  }
+
+  /** Render one finished unit of markdown into the transcript. */
+  _renderProse(md) {
+    this._orphanRail();
+    const host = document.createElement('div');
+    host.className = 'pi-prose pi-reveal';
+    host.append(window.SpPiRender.markdown(md));
+    this._append(host);
+  }
+
+  /** End of a block: render whatever is left, however it ends. */
   _flushStream() {
     if (this._raf) {
       cancelAnimationFrame(this._raf);
       this._raf = 0;
     }
-    if (this._stream && this._streamBuf.trim() && window.SpPiRender) {
-      const host = document.createElement('div');
-      host.className = 'pi-prose';
-      host.append(window.SpPiRender.markdown(this._streamBuf));
-      const line = this._stream.closest('.pi-prose-line') || this._stream;
-      line.replaceWith(host);
-    } else if (this._stream) {
-      this._stream.textContent = this._streamBuf;
+    if (this._streamBuf.trim()) {
+      if (window.SpPiRender) {
+        this._renderProse(this._streamBuf);
+      } else {
+        // No renderer: plain text beats nothing, and beats markup.
+        const line = document.createElement('div');
+        line.className = 'terminal-line pi-stream';
+        line.textContent = this._streamBuf;
+        this._append(line);
+      }
     }
-    this._stream = null;
     this._streamBuf = '';
+    this._working(false);
   }
 
   /** Chain-of-thought, collapsed. Interesting, but not the answer. */
@@ -611,18 +707,47 @@ class SpPiTerminal extends HTMLElement {
    * Rendered for every governed call, allow or deny. A gate only visible when it
    * blocks something reads as an error path; a gate visible on every call reads
    * as what it is.
+   *
+   * Held rather than drawn immediately. A rail on its own line says a chain ran
+   * but not what it judged, and two of them in a row — one for the prompt, one
+   * for the tool it triggered — read as the same thing rendered twice. So the
+   * stages wait here for the row they belong to and are drawn inside it.
    */
   _policyStages(f) {
     if (!window.SpPiGate) return;
+    this._railFor = f.stages || [];
+  }
+
+  /** Draw a held chain inline, or on its own line if nothing claimed it. */
+  _railEl(stages, compact) {
+    const rail = window.SpPiGate.chainRail(stages, { compact });
+    if (compact) return rail;
     const wrap = document.createElement('div');
     wrap.className = 'pi-rail-line';
-    if ((f.stages || []).some((s) => s.result === 'fail')) wrap.classList.add('is-denied');
-    wrap.append(window.SpPiGate.chainRail(f.stages || []));
-    this._append(wrap);
+    if (stages.some((st) => st.result === 'fail')) wrap.classList.add('is-denied');
+    wrap.append(rail);
+    return wrap;
+  }
+
+  /**
+   * Nothing claimed the chain, so give it its own line.
+   *
+   * A held rail must never be silently dropped: the rail's whole claim to being
+   * evidence is that it is a complete record of what ran.
+   */
+  _orphanRail() {
+    if (!this._railFor || !window.SpPiGate) return;
+    this._append(this._railEl(this._railFor, false));
+    this._railFor = null;
   }
 
   _toolStart(f) {
+    // Claim the held chain before flushing: _renderProse orphans anything still
+    // unclaimed, and this call is exactly the thing that was going to claim it.
+    const held = this._railFor;
+    this._railFor = null;
     this._flushStream();
+    this._railFor = held;
     const row = this._toolRow(f.tool_name, summarise(f.tool_input), f.tool_input);
     // tool_use_id is nullable; fall back to a per-row key so two concurrent
     // calls of the same tool cannot collide.
@@ -657,6 +782,13 @@ class SpPiTerminal extends HTMLElement {
     state.className = 'pi-tool-state';
     state.textContent = 'awaiting the gate';
     summary.append(icon, label, argEl, state);
+    if (this._railFor && window.SpPiGate) {
+      if (this._railFor.some((st) => st.result === 'fail')) {
+        details.classList.add('is-denied');
+      }
+      summary.append(this._railEl(this._railFor, true));
+      this._railFor = null;
+    }
 
     const body = document.createElement('pre');
     body.className = 'pi-tool-body';
@@ -723,7 +855,6 @@ class SpPiTerminal extends HTMLElement {
     this._input.disabled = true;
     this._sendBtn.disabled = true;
     this._stopBtn.hidden = true;
-    this._cursor(false);
     this._line('output-dim', 'Session ended'
       + (typeof f.code === 'number' ? ' (exit ' + f.code + ')' : '') + '.');
   }
@@ -806,13 +937,32 @@ class SpPiTerminal extends HTMLElement {
       }
       return;
     }
+    // The palette owns the arrows and the accept keys while it is open, and
+    // recalling history under an open list would fight what the viewer is
+    // reading. This block used to be a bare `return` with a comment saying the
+    // palette owned these keys — nothing did, so the list was mouse-only.
+    if (this._paletteOpen()) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        this._selectPalette(this._paletteAt + 1);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        this._selectPalette(this._paletteAt - 1);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        this._acceptPalette();
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       void this._send();
       return;
     }
-    // The palette owns the arrow keys while it is open; recalling history would
-    // fight the list the viewer is reading.
     if (this._paletteOpen()) return;
     // History only when the caret cannot usefully move, so ↑ still navigates a
     // prompt the visitor is part-way through writing.
@@ -1051,17 +1201,50 @@ class SpPiTerminal extends HTMLElement {
     this._jumpBtn.hidden = true;
   }
 
-  _cursor(on) {
-    if (on && !this._cursorEl) {
-      this._cursorEl = document.createElement('span');
-      this._cursorEl.className = 'cursor';
-      this._cursorEl.textContent = '▋';
-      this._cursorEl.setAttribute('aria-hidden', 'true');
-      this._body.append(this._cursorEl);
-    } else if (!on && this._cursorEl) {
-      this._cursorEl.remove();
-      this._cursorEl = null;
+  /**
+   * The working indicator.
+   *
+   * This replaced a blinking caret that was appended to the transcript body. A
+   * caret in the transcript claims the transcript is an input — it is not, and
+   * the one that is sat several hundred pixels below it, so the page gave no
+   * honest answer to "where do I type?". The composer owns the caret now.
+   *
+   * What belongs here instead is the fact that something is running and how
+   * much of it has arrived, which is exactly what a viewer waiting on a block
+   * wants to know while the raw markdown is deliberately withheld.
+   */
+  _working(on) {
+    if (on && !this._workEl) {
+      const row = document.createElement('div');
+      row.className = 'pi-working';
+      row.setAttribute('aria-hidden', 'true');
+      const dot = document.createElement('i');
+      dot.className = 'pi-working-dot';
+      const label = document.createElement('span');
+      label.className = 'pi-working-label';
+      label.textContent = 'working';
+      const count = document.createElement('span');
+      count.className = 'pi-working-count';
+      row.append(dot, label, count);
+      this._body.append(row);
+      this._workEl = { row, count };
+    } else if (!on && this._workEl) {
+      this._workEl.row.remove();
+      this._workEl = null;
     }
+  }
+
+  /**
+   * Keep the indicator last and its count current.
+   *
+   * Revealed blocks are appended to the body, so without this the indicator
+   * would be stranded above the prose it is supposedly still producing.
+   */
+  _workingSync() {
+    if (!this._workEl) return;
+    this._workEl.count.textContent = this._streamBuf
+      ? approxTokens(this._streamBuf) + ' tokens' : '';
+    this._body.append(this._workEl.row);
   }
 
   _emit(name, detail) {
@@ -1096,6 +1279,12 @@ function pretty(input) {
  *  usual English approximation, and this is a label, not an invoice. */
 function approxTokens(s) {
   return Math.max(1, Math.round(s.length / 4));
+}
+
+/** Fence count, to tell a closed code block from one still being written. */
+function countFences(s) {
+  const m = s.match(/^\s*```/gm);
+  return m ? m.length : 0;
 }
 
 /** 1200 -> 1.2k. Keeps the header meters from reflowing as a session runs. */

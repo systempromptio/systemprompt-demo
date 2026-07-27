@@ -10,12 +10,12 @@ use serde::Serialize;
 use super::super::webhook::governance::stages::{StageOutcome, StageResult};
 
 #[derive(Debug, Clone, Serialize)]
-pub(super) struct PolicyStage {
-    pub(super) policy: String,
+pub struct PolicyStage {
+    pub policy: String,
     /// `pass`, `fail`, or `skip`. Skip is its own state so a policy that never
     /// ran can be dimmed rather than implying it cleared the call.
-    pub(super) result: &'static str,
-    pub(super) detail: String,
+    pub result: &'static str,
+    pub detail: String,
 }
 
 impl PolicyStage {
@@ -29,35 +29,5 @@ impl PolicyStage {
             },
             detail: outcome.detail.clone(),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_stage_carries_the_policys_own_wording() {
-        // The detail is not re-authored for the UI: it is the same string the
-        // audit spine stores, so a card and a trace row cannot disagree.
-        let stage = PolicyStage::from_outcome(&StageOutcome {
-            policy: "secret_scan".to_owned(),
-            result: StageResult::Fail,
-            detail: "matched anthropic_api_key".to_owned(),
-        });
-        assert_eq!(stage.result, "fail");
-        assert_eq!(stage.detail, "matched anthropic_api_key");
-    }
-
-    #[test]
-    fn skip_survives_as_itself() {
-        // Collapsing skip into pass would tell the viewer a check cleared the
-        // call when it never ran — the one thing this type exists to prevent.
-        let stage = PolicyStage::from_outcome(&StageOutcome {
-            policy: "rate_limit".to_owned(),
-            result: StageResult::Skip,
-            detail: "not reached".to_owned(),
-        });
-        assert_eq!(stage.result, "skip");
     }
 }

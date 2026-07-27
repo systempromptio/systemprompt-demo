@@ -12,22 +12,7 @@
 //! `ai_requests` row that never happened, which is the whole point.
 
 use sqlx::PgPool;
-use systemprompt::identifiers::{AgentId, SessionId};
-
-/// One agent session that produced governance decisions.
-#[derive(Debug, Clone)]
-pub struct DemoSessionRow {
-    pub session_id: SessionId,
-    pub allowed: i64,
-    pub denied: i64,
-    /// Provider calls this session reached, so a chip can say whether the
-    /// session got past the gates at all.
-    pub requests: i64,
-    /// Newest model the session asked for, absent when it never reached one.
-    pub model: Option<String>,
-    pub started_at: chrono::DateTime<chrono::Utc>,
-    pub last_at: chrono::DateTime<chrono::Utc>,
-}
+use systemprompt::identifiers::SessionId;
 
 /// One event in the merged timeline.
 #[derive(Debug, Clone)]
@@ -46,41 +31,6 @@ pub struct DemoTraceRow {
     pub detail: String,
     // JSON: governance audit payload; each policy stage writes its own shape.
     pub evaluated_rules: Option<serde_json::Value>,
-}
-
-/// Sessions with governance activity for one agent, newest first.
-///
-/// Rows with an empty `session_id` are excluded: the gateway writes route
-/// decisions without one, and grouping them produced a phantom "session" that
-/// pooled every unrelated run into a single unreadable list.
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn list_demo_sessions(
-    pool: &PgPool,
-    agent_id: &AgentId,
-    limit: i64,
-) -> Result<Vec<DemoSessionRow>, sqlx::Error> {
-    sqlx::query_as!(
-        DemoSessionRow,
-        r#"SELECT g.session_id as "session_id!: _",
-                  COUNT(*) FILTER (WHERE g.decision = 'allow') as "allowed!",
-                  COUNT(*) FILTER (WHERE g.decision = 'deny')  as "denied!",
-                  MIN(g.created_at) as "started_at!",
-                  MAX(g.created_at) as "last_at!",
-                  COALESCE((SELECT COUNT(*) FROM ai_requests r
-                            WHERE r.session_id = g.session_id), 0) as "requests!",
-                  (SELECT COALESCE(r.requested_model, r.model) FROM ai_requests r
-                   WHERE r.session_id = g.session_id
-                   ORDER BY r.created_at DESC LIMIT 1) as "model?"
-           FROM governance_decisions g
-           WHERE g.agent_id = $1 AND g.session_id <> ''
-           GROUP BY g.session_id
-           ORDER BY MAX(g.created_at) DESC
-           LIMIT $2"#,
-        agent_id.as_str(),
-        limit,
-    )
-    .fetch_all(pool)
-    .await
 }
 
 /// The merged, time-ordered trace for one session.

@@ -12,15 +12,26 @@ use super::stage::PolicyStage;
 /// One frame to one widget. `seq` is per-session and monotonic so a reconnect
 /// can resume with `Last-Event-ID`.
 #[derive(Debug, Clone, Serialize)]
-pub(super) struct PiEvent {
-    pub(super) seq: u64,
+pub struct PiEvent {
+    seq: u64,
     #[serde(flatten)]
-    pub(super) body: PiEventBody,
+    body: PiEventBody,
+}
+
+impl PiEvent {
+    pub const fn new(seq: u64, body: PiEventBody) -> Self {
+        Self { seq, body }
+    }
+
+    /// Monotonic per session, so a reconnect can resume with `Last-Event-ID`.
+    pub(super) const fn seq(&self) -> u64 {
+        self.seq
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub(super) enum PiEventBody {
+pub enum PiEventBody {
     /// The child is up and accepting prompts.
     SessionReady {
         conversation_id: String,
@@ -106,12 +117,13 @@ pub(super) enum PiEventBody {
 /// Dropping a frame is a filtering decision, not a fallback: the browser never
 /// sees `tool_execution_start`, so a call the gate later denies cannot have
 /// already rendered as running. See [`PiEventBody::ToolStart`].
-pub(super) fn translate(frame: &serde_json::Value) -> Option<PiEventBody> {
+pub fn translate(frame: &serde_json::Value) -> Option<PiEventBody> {
     let kind = frame.get("type").and_then(serde_json::Value::as_str)?;
     match kind {
         "turn_start" => Some(PiEventBody::TurnStart),
         "turn_end" => Some(PiEventBody::TurnEnd),
         "message_update" => translate_message_update(frame),
+        "message_end" => translate_failed_turn(frame),
         "tool_execution_end" => {
             let tool_name = string_at(frame, "toolName")?;
             Some(PiEventBody::ToolEnd {
@@ -127,6 +139,53 @@ pub(super) fn translate(frame: &serde_json::Value) -> Option<PiEventBody> {
         // (fires before the gate, so not a "running" signal) — is dropped.
         _ => None,
     }
+}
+
+/// Surface a turn that failed at the provider.
+///
+/// Measured against pi 0.82.0, and the shape is not what the docs suggest: a
+/// rejected provider call emits **no** `error` event at all. The whole turn is
+/// `turn_start`, an assistant `message_end` carrying `stopReason: "error"` and
+/// an `errorMessage`, then `turn_end` — repeated once per automatic retry.
+///
+/// Dropping it is what made a credit-exhausted account look like four turns
+/// that each began, ended, and said nothing: the terminal sat there having
+/// silently swallowed the one sentence that explained itself. A turn that
+/// produced no output and no reason is the worst answer this widget can give,
+/// because the viewer's only conclusion is that the feature is broken.
+fn translate_failed_turn(frame: &serde_json::Value) -> Option<PiEventBody> {
+    let message = frame.get("message")?;
+    if string_at(message, "role").as_deref() != Some("assistant")
+        || string_at(message, "stopReason").as_deref() != Some("error")
+    {
+        return None;
+    }
+    let raw = string_at(message, "errorMessage")
+        .unwrap_or_else(|| "the provider request failed".to_owned());
+    Some(PiEventBody::Error {
+        message: readable_provider_error(&raw),
+    })
+}
+
+/// Pull the human sentence out of a provider error.
+///
+/// pi hands over the transport status and the raw body — `400 {"type":"error",
+/// "error":{"message":"Credit exhausted…"}}` — and the sentence a person needs
+/// is the innermost `message`. Rendering the envelope instead buries it in
+/// JSON, which in a terminal reads as a crash rather than as an answer.
+/// Anything that does not parse is passed through untouched: an unfamiliar
+/// error still beats no error.
+pub fn readable_provider_error(raw: &str) -> String {
+    let Some(start) = raw.find('{') else {
+        return raw.to_owned();
+    };
+    let Ok(body) = serde_json::from_str::<serde_json::Value>(&raw[start..]) else {
+        return raw.to_owned();
+    };
+    body.pointer("/error/message")
+        .and_then(serde_json::Value::as_str)
+        .or_else(|| body.get("message").and_then(serde_json::Value::as_str))
+        .map_or_else(|| raw.to_owned(), ToOwned::to_owned)
 }
 
 fn translate_message_update(frame: &serde_json::Value) -> Option<PiEventBody> {
@@ -163,106 +222,4 @@ fn string_at(v: &serde_json::Value, key: &str) -> Option<String> {
     v.get(key)
         .and_then(serde_json::Value::as_str)
         .map(ToOwned::to_owned)
-}
-
-#[cfg(test)]
-#[expect(clippy::panic, reason = "assertions in tests")]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn text_delta_is_forwarded() {
-        let frame = serde_json::json!({
-            "type": "message_update",
-            "assistantMessageEvent": { "type": "text_delta", "delta": "hello" }
-        });
-        let Some(PiEventBody::TextDelta { text }) = translate(&frame) else {
-            panic!("expected TextDelta");
-        };
-        assert_eq!(text, "hello");
-    }
-
-    #[test]
-    fn tool_execution_start_is_not_forwarded() {
-        // It fires before the governance gate resolves and also fires for
-        // blocked calls; rendering it would show denied calls as running.
-        let frame = serde_json::json!({ "type": "tool_execution_start", "toolName": "write" });
-        assert!(translate(&frame).is_none());
-    }
-
-    #[test]
-    fn toolcall_deltas_are_dropped_as_noise() {
-        let frame = serde_json::json!({
-            "type": "message_update",
-            "assistantMessageEvent": { "type": "toolcall_delta", "delta": "{\"pa" }
-        });
-        assert!(translate(&frame).is_none());
-    }
-
-    #[test]
-    fn provider_failure_surfaces_as_an_error() {
-        // Shape taken from pi-ai's `AssistantMessageEvent`: the reason is on the
-        // event, the message is on the partial assistant message it carries.
-        let frame = serde_json::json!({
-            "type": "message_update",
-            "assistantMessageEvent": {
-                "type": "error",
-                "reason": "error",
-                "error": { "role": "assistant", "stopReason": "error",
-                           "errorMessage": "401 unknown or revoked session" }
-            }
-        });
-        let Some(PiEventBody::Error { message }) = translate(&frame) else {
-            panic!("expected Error");
-        };
-        assert_eq!(message, "401 unknown or revoked session");
-    }
-
-    #[test]
-    fn a_user_abort_is_not_an_error() {
-        let frame = serde_json::json!({
-            "type": "message_update",
-            "assistantMessageEvent": { "type": "error", "reason": "aborted", "error": {} }
-        });
-        assert!(translate(&frame).is_none());
-    }
-
-    #[test]
-    fn policy_stages_serialises_as_a_tagged_frame() {
-        let event = PiEvent {
-            seq: 7,
-            body: PiEventBody::PolicyStages {
-                tool_use_id: Some("tu_1".to_owned()),
-                tool_name: "read".to_owned(),
-                stages: vec![
-                    PolicyStage {
-                        policy: "scope_check".to_owned(),
-                        result: "pass",
-                        detail: "read is in scope".to_owned(),
-                    },
-                    PolicyStage {
-                        policy: "rate_limit".to_owned(),
-                        result: "skip",
-                        detail: "disabled".to_owned(),
-                    },
-                ],
-            },
-        };
-        let Ok(v) = serde_json::to_value(&event) else {
-            panic!("a frame of owned strings cannot fail to serialise");
-        };
-        assert_eq!(v["type"], "policy_stages");
-        assert_eq!(v["seq"], 7);
-        assert_eq!(v["stages"][0]["policy"], "scope_check");
-        assert_eq!(v["stages"][0]["result"], "pass");
-        // Skip must survive as itself. Collapsing it to a pass would tell the
-        // visitor a check cleared the call when it never ran.
-        assert_eq!(v["stages"][1]["result"], "skip");
-    }
-
-    #[test]
-    fn unknown_frames_are_dropped_not_fatal() {
-        assert!(translate(&serde_json::json!({ "type": "future_thing" })).is_none());
-        assert!(translate(&serde_json::json!({ "no_type": 1 })).is_none());
-    }
 }

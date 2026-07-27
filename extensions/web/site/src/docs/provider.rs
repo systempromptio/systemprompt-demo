@@ -45,9 +45,15 @@ impl DocsPageDataProvider {
             }
             first = false;
 
-            // Why: `fmt::Write` for `String` never returns `Err`; the result is
-            // genuinely discardable.
-            write!(
+            // `write!` into a `String` is infallible — `fmt::Write for String`
+            // never returns `Err` — so there is genuinely no failure to handle.
+            // (`drop` does not work here: the `Result` is `Copy`, so dropping
+            // it is a no-op clippy rejects in turn.)
+            #[expect(
+                clippy::let_underscore_must_use,
+                reason = "fmt::Write for String cannot fail"
+            )]
+            let _ = write!(
                 result,
                 r#"<a href="{}" class="docs-card">
   <h3 class="docs-card-title">{}</h3>
@@ -56,8 +62,7 @@ impl DocsPageDataProvider {
                 html_escape(url),
                 html_escape(title),
                 html_escape(description)
-            )
-            .ok();
+            );
         }
 
         if result.is_empty() {

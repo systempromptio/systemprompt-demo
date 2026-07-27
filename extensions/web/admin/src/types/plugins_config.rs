@@ -70,17 +70,6 @@ pub struct PluginOverview {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ConfiguredHook {
-    pub id: String,
-    pub plugin_id: PluginId,
-    pub event: String,
-    pub matcher: String,
-    pub command: String,
-    pub is_async: bool,
-    pub timeout_ms: Option<u32>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct HookOverview {
     pub event: String,
     pub matcher: String,

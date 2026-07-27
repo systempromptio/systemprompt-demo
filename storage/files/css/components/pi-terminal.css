@@ -85,6 +85,35 @@
   z-index: 1;
 }
 
+/* On the homepage stage the shell becomes glass so the field reads through it.
+   Scoped, because everywhere else this widget sits on an opaque page and glass
+   there would just look like a rendering bug.
+
+   The transcript stays near-solid deliberately: mono text at 0.875rem over a
+   moving gradient is unreadable. Chrome — header, composer, approval strip —
+   carries the transparency instead, which is what makes it read as glass. */
+.home-split-body .pi-terminal {
+  --pi-rim: var(--sp-stage-rim);
+}
+
+.home-split-body .pi-terminal .terminal {
+  background: var(--sp-stage-glass);
+  backdrop-filter: blur(var(--sp-stage-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--sp-stage-blur)) saturate(140%);
+  border-color: var(--sp-stage-glass-border);
+  box-shadow: 0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.04) inset;
+}
+
+.home-split-body .pi-terminal .terminal-body {
+  background: oklch(0.14 0.01 55 / 0.86);
+}
+
+.home-split-body .pi-terminal .terminal-header,
+.home-split-body .pi-terminal .pi-composer,
+.home-split-body .pi-terminal .pi-approvals:not(:empty) {
+  background: transparent;
+}
+
 /* ── header ─────────────────────────────────────────────────────────────── */
 
 .pi-terminal .terminal-header {
@@ -96,6 +125,58 @@
   border-bottom: 1px solid var(--sp-color-terminal-border);
 }
 
+/* The titlebar is branded rather than labelled.
+   It used to read "pi — governed", which named an internal binary and a property
+   in a way that meant nothing to a visitor. A product surface should say whose
+   it is; what it does is demonstrated by the thing underneath. */
+.pi-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  flex: none;
+}
+
+.pi-brand-mark {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.pi-brand-name {
+  font-family: var(--sp-font-brand, var(--sp-font-body));
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-brand-tld {
+  color: var(--sp-color-primary);
+}
+
+/* Confinement, promoted out of the transcript. It was the first line of output
+   and therefore the first thing to scroll away — a claim about a sandbox is
+   worth more when it is still on screen an hour into a session. */
+.pi-jail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-success) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-success);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.pi-jail-chip::before {
+  content: '⛨';
+  font-size: 0.8em;
+}
+
+/* Kept: other surfaces may still render the old title element. */
 .pi-terminal .terminal-title {
   font-family: var(--sp-font-mono);
   font-size: 0.78rem;
@@ -262,9 +343,6 @@
   opacity: 0.6;
 }
 
-.pi-terminal .cursor {
-  color: var(--sp-color-primary);
-}
 
 /* Jump-to-bottom. Only appears once the reader has scrolled away, because that
    is the only time autoscroll is suppressed. */
@@ -282,6 +360,38 @@
   cursor: pointer;
   box-shadow: var(--sp-shadow-lift);
   z-index: 2;
+}
+
+/* ── working ────────────────────────────────────────────────────────────── */
+
+/* What replaced the blinking block cursor that used to be appended to the
+   transcript. That caret implied the transcript was an input; this says the
+   true thing instead — a block is being written, and this much has landed. */
+.pi-working {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-1) 0;
+  font-family: var(--sp-font-mono);
+  font-size: 0.78rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-working-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: var(--sp-radius-full);
+  background: var(--sp-color-primary);
+}
+
+.pi-working-label {
+  letter-spacing: 0.04em;
+}
+
+.pi-working-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
 }
 
 /* ── rendered prose ─────────────────────────────────────────────────────── */
@@ -377,6 +487,71 @@
 .pi-tok-keyword { color: var(--sp-syntax-keyword); }
 .pi-tok-number { color: var(--sp-syntax-number); }
 
+/* ── tables and rules ───────────────────────────────────────────────────── */
+
+/* A table wider than the shell scrolls on its own axis. Widening the terminal
+   instead would push the transcript sideways and break the column the whole
+   page is built on. Focusable, because a scrollable region that only a mouse
+   can reach is not reachable. */
+.pi-table-wrap {
+  margin: var(--sp-space-2) 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-corners-inner-md);
+}
+
+.pi-table-wrap:focus-visible {
+  outline: 1px solid var(--pi-rim);
+  outline-offset: -1px;
+}
+
+.pi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sp-font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-table th,
+.pi-table td {
+  padding: 0.3rem var(--sp-space-3);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.pi-table thead th {
+  background: var(--sp-color-terminal-header);
+  border-bottom: 1px solid var(--sp-color-terminal-border);
+  color: var(--sp-color-terminal-text);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Row rules rather than a full grid: the eye only needs help crossing a row. */
+.pi-table tbody tr + tr td {
+  border-top: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 55%, transparent);
+}
+
+.pi-table tbody td {
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-table tbody td:first-child {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-hr {
+  height: 0;
+  margin: var(--sp-space-3) 0;
+  border: 0;
+  border-top: 1px solid var(--sp-color-terminal-border);
+}
+
 /* ── thinking ───────────────────────────────────────────────────────────── */
 
 .pi-think {
@@ -444,10 +619,14 @@
   cursor: default;
 }
 
+/* The connector meets the dot's centre, not the top of the pip's box. It was
+   drawn against the flex line box before, so on a wrapped rail it joined the
+   dots at a visibly different height on each row. */
 .pi-pip + .pi-pip::before {
   content: '';
   position: absolute;
   left: -0.35rem;
+  top: 50%;
   width: 0.7rem;
   height: 1px;
   background: var(--pi-rail-track);
@@ -464,22 +643,33 @@
   font-size: 0.62rem;
   line-height: 1;
   flex: none;
+  /* Sits above the connector so the line never crosses the glyph. */
+  position: relative;
+  z-index: 1;
+  transition: box-shadow 200ms ease;
 }
 
+/* A pass is lit rather than merely tinted — a soft ring the same hue as the
+   verdict, so a row of four passes reads as a chain of lights. */
 .pi-pip[data-result="pass"] .pi-pip-dot {
   border-color: var(--pi-pass);
   background: color-mix(in oklch, var(--pi-pass) 18%, transparent);
   color: var(--pi-pass);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--pi-pass) 12%, transparent);
 }
 
 .pi-pip[data-result="pass"] .pi-pip-name {
   color: var(--sp-color-terminal-text);
 }
 
+/* A failure is filled, not outlined. It is the one verdict that must be
+   findable in peripheral vision, and weight carries further than hue. */
 .pi-pip[data-result="fail"] .pi-pip-dot {
   border-color: var(--pi-fail);
-  background: color-mix(in oklch, var(--pi-fail) 22%, transparent);
-  color: var(--pi-fail);
+  background: var(--pi-fail);
+  color: var(--sp-color-terminal-bg);
+  font-weight: 700;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--pi-fail) 22%, transparent);
 }
 
 .pi-pip[data-result="fail"] .pi-pip-name {
@@ -495,6 +685,43 @@
 
 .pi-pip[data-result="skip"] .pi-pip-dot {
   border-style: dashed;
+}
+
+/* The compact rail, drawn inside the row whose call it judged.
+   Attached to its subject, it no longer has to name it: the dots carry the
+   verdicts and the names arrive on hover or keyboard focus. */
+.pi-rail--compact {
+  --pi-pip: 1rem;
+  margin-left: auto;
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+.pi-rail--compact .pi-pip {
+  padding: 0 0.3rem 0 0.2rem;
+}
+
+.pi-rail--compact .pi-pip-name {
+  /* Collapsed, not removed — the screen-reader text is a separate node and is
+     unaffected, so the spoken rail stays complete either way. */
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 200ms ease, opacity 200ms ease, margin 200ms ease;
+}
+
+.pi-tool:hover .pi-rail--compact .pi-pip-name,
+.pi-tool:focus-within .pi-rail--compact .pi-pip-name,
+.pi-rail--compact .pi-pip:hover .pi-pip-name {
+  max-width: 10rem;
+  margin-left: 0.35rem;
+  opacity: 1;
+}
+
+/* A denied call colours its whole row, so the chain and its subject agree. */
+.pi-tool.is-denied > summary .pi-tool-name {
+  color: var(--pi-fail);
 }
 
 /* ── blocked ────────────────────────────────────────────────────────────── */
@@ -708,10 +935,22 @@
   font-size: 0.8rem;
 }
 
+/* Selection is one state, whether a mouse or an arrow key put it there. The
+   list used to answer only to the mouse; `.is-selected` is what the keyboard
+   moves, and hover writes the same class so the two can never look different. */
 .pi-palette-row:hover,
-.pi-palette-row:focus-visible {
-  background: var(--sp-color-terminal-border);
+.pi-palette-row:focus-visible,
+.pi-palette-row.is-selected {
+  background: color-mix(in oklch, var(--sp-color-primary) 16%, var(--sp-color-terminal-header));
   outline: none;
+}
+
+.pi-palette-row.is-selected {
+  box-shadow: inset 2px 0 0 var(--sp-color-primary);
+}
+
+.pi-palette-row.is-selected .pi-palette-cmd {
+  color: var(--sp-color-primary);
 }
 
 .pi-palette-cmd {
@@ -730,16 +969,31 @@
   white-space: nowrap;
 }
 
+/* The composer is the only caret on the surface.
+   A blinking block used to be appended to the transcript, which claimed the
+   transcript took input and left the actual input unmarked. Focus is stated
+   here instead, on the thing that really does accept typing. */
 .pi-composer {
   display: flex;
   align-items: flex-end;
   gap: var(--sp-space-2);
   padding: var(--sp-space-3) var(--sp-space-4);
   border-top: 1px solid var(--sp-color-terminal-border);
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.pi-composer:focus-within {
+  border-top-color: var(--pi-rim);
+  background: color-mix(in oklch, var(--sp-color-primary) 5%, transparent);
 }
 
 .pi-composer .prompt {
   padding-bottom: 0.2rem;
+  transition: color 200ms ease;
+}
+
+.pi-composer:focus-within .prompt {
+  color: var(--sp-color-primary);
 }
 
 .pi-input {
@@ -993,10 +1247,6 @@
 /* All of it opt-out. Every state above is legible from colour, glyph, and text
    alone, so switching motion off removes emphasis and never information. */
 @media (prefers-reduced-motion: no-preference) {
-  .pi-terminal .cursor {
-    animation: pi-blink-caret 0.75s step-end infinite;
-  }
-
   .pi-live[data-state="live"] .pi-live-dot {
     animation: pi-pulse 2.4s ease-in-out infinite;
   }
@@ -1023,11 +1273,21 @@
   .pi-jump {
     animation: pi-card-in 180ms ease-out;
   }
+
+  /* Prose arrives as a finished unit, so it gets an arrival. Same easing as the
+     approval card, because both are "a thing resolved and is now here". */
+  .pi-reveal {
+    animation: pi-card-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .pi-working-dot {
+    animation: pi-pulse-dot 1.4s ease-in-out infinite;
+  }
 }
 
-@keyframes pi-blink-caret {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+@keyframes pi-pulse-dot {
+  0%, 100% { opacity: 0.35; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes pi-pulse {

@@ -4,8 +4,12 @@
  * window.SpPiRender.markdown(text) -> DocumentFragment
  *
  * The markdown an agent actually emits, and nothing else: fenced code, inline
- * code, bold, italic, links, bullet and ordered lists, headings, and paragraphs.
- * No tables, no footnotes, no HTML passthrough.
+ * code, bold, italic, links, bullet and ordered lists, headings, paragraphs,
+ * pipe tables, and horizontal rules. No footnotes, no HTML passthrough.
+ *
+ * Tables earned their place: asked to summarise anything, a model reaches for
+ * one, and an unrendered table is the single least readable thing that can land
+ * in a transcript — a wall of pipes and dashes.
  *
  * Hand-written rather than `marked` because the deployment target includes an
  * air-gapped image with no npm and no CDN reachable. The scope above is the
@@ -26,6 +30,17 @@ const FENCE = /^\s*```(\S*)\s*$/;
 const HEADING = /^(#{1,6})\s+(.*)$/;
 const BULLET = /^\s*[-*+]\s+(.*)$/;
 const ORDERED = /^\s*\d+[.)]\s+(.*)$/;
+
+/**
+ * A rule, and a table's header underline.
+ *
+ * RULE must be tested before BULLET: `---` matches the bullet pattern too, and
+ * whichever runs first wins, so the order here is load-bearing rather than
+ * stylistic.
+ */
+const RULE = /^\s*(-{3,}|\*{3,}|_{3,})\s*$/;
+const TABLE_ROW = /^\s*\|(.+)\|\s*$/;
+const TABLE_SEP = /^\s*\|[\s:|-]+\|\s*$/;
 
 /**
  * Inline spans, in the order they must be tried.
@@ -190,6 +205,57 @@ async function copyText(text, btn) {
   setTimeout(() => { btn.textContent = 'copy'; }, 1600);
 }
 
+/** Split one `|a|b|` row into its cells, without the empty outer edges. */
+function tableCells(line) {
+  return TABLE_ROW.exec(line)[1].split('|').map((c) => c.trim());
+}
+
+/**
+ * A pipe table.
+ *
+ * Built with createElement and textContent like everything else here, so the
+ * no-innerHTML guarantee above still holds inside a cell. Cells run through the
+ * same inline pass as prose, so `code` and **bold** work in them.
+ *
+ * The wrapper scrolls: a table wider than the terminal has to move on its own
+ * axis rather than widening the shell and pushing the transcript sideways.
+ */
+function table(head, rows) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pi-table-wrap';
+  wrap.setAttribute('tabindex', '0');
+  wrap.setAttribute('role', 'region');
+  wrap.setAttribute('aria-label', 'Table');
+  const el = document.createElement('table');
+  el.className = 'pi-table';
+
+  const thead = document.createElement('thead');
+  const hr = document.createElement('tr');
+  head.forEach((cell) => {
+    const th = document.createElement('th');
+    inline(th, cell);
+    hr.append(th);
+  });
+  thead.append(hr);
+
+  const tbody = document.createElement('tbody');
+  rows.forEach((cells) => {
+    const tr = document.createElement('tr');
+    // Ragged rows are common in generated markdown; pad rather than drop, so a
+    // malformed table still shows every value it carried.
+    for (let n = 0; n < head.length; n += 1) {
+      const td = document.createElement('td');
+      inline(td, cells[n] || '');
+      tr.append(td);
+    }
+    tbody.append(tr);
+  });
+
+  el.append(thead, tbody);
+  wrap.append(el);
+  return wrap;
+}
+
 /** Block-level parse. One pass, no intermediate AST. */
 function markdown(text) {
   const frag = document.createDocumentFragment();
@@ -242,6 +308,33 @@ function markdown(text) {
       inline(h, heading[2]);
       frag.append(h);
       i += 1;
+      continue;
+    }
+
+    // Before BULLET, which `---` would otherwise match.
+    if (RULE.test(line)) {
+      flushPara();
+      flushList();
+      const hr = document.createElement('hr');
+      hr.className = 'pi-hr';
+      frag.append(hr);
+      i += 1;
+      continue;
+    }
+
+    // A header row is only a table once its separator lands on the next line;
+    // until then it is prose, which is also how it should render mid-stream.
+    if (TABLE_ROW.test(line) && i + 1 < lines.length && TABLE_SEP.test(lines[i + 1])) {
+      flushPara();
+      flushList();
+      const head = tableCells(line);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && TABLE_ROW.test(lines[i])) {
+        rows.push(tableCells(lines[i]));
+        i += 1;
+      }
+      frag.append(table(head, rows));
       continue;
     }
 

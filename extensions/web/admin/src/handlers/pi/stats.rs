@@ -51,7 +51,33 @@ struct PiStats {
     prompts_blocked: i64,
     tools_blocked: i64,
     tool_calls: i64,
+    /// What this identity has left to spend, and of how much.
+    credit: PiCredit,
     events: Vec<PiStatEvent>,
+}
+
+/// The visitor's credit position.
+///
+/// Lifetime, not per-session: `cost_*` above is what this conversation spent,
+/// and the two answer different questions. "This turn cost $0.004" is
+/// interesting; "you have $4.83 of your $5 left" is the one that tells someone
+/// whether to keep going, and it is the number the signup promise is about.
+#[derive(Debug, Serialize)]
+struct PiCredit {
+    granted_microdollars: i64,
+    spent_microdollars: i64,
+    /// Granted minus spent. Can go negative: a request's cost lands after the
+    /// guard has already refused the next one, so the last call overshoots.
+    remaining_microdollars: i64,
+    granted_display: String,
+    spent_display: String,
+    remaining_display: String,
+    /// Whole percent of the grant still unspent, clamped to 0–100 so a meter
+    /// can bind to it directly and an overshoot renders as empty, not inverted.
+    remaining_percent: i64,
+    /// True once the balance is gone. The gateway refuses the next request at
+    /// this point, so the pane says so before the terminal has to.
+    exhausted: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -75,12 +101,17 @@ pub(super) async fn stats(
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
     let Some(session) = authorize_session(&pool, &registry, q.token(), &conversation_id).await
     else {
-        // The same answer a stranger gets for a conversation that never
-        // existed: whose session this is, is not something to confirm.
         return problem(StatusCode::NOT_FOUND, "no such conversation");
     };
 
-    match collect(&pool, &conversation_id, &session.attested_session).await {
+    match collect(
+        &pool,
+        &conversation_id,
+        &session.attested_session,
+        &session.user_id,
+    )
+    .await
+    {
         Ok(stats) => Json(stats).into_response(),
         Err(e) => {
             tracing::error!(error = %e, "could not read pi session stats");
@@ -89,11 +120,52 @@ pub(super) async fn stats(
     }
 }
 
+/// Read the credit position, or fall back to a zeroed one.
+///
+/// A credit-ledger failure must not take the whole pane down: the governance
+/// feed beside it is the thing a visitor came to see, and it is still correct
+/// when the balance is not.
+async fn credit_position(pool: &PgPool, user_id: &systemprompt::identifiers::UserId) -> PiCredit {
+    let balance = systemprompt_credits_extension::get_balance(pool, user_id.as_str())
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!(error = %e, "could not read a credit balance for the pi stats pane");
+            systemprompt_credits_extension::CreditBalance {
+                balance_microdollars: 0,
+                granted_microdollars: 0,
+                spent_microdollars: 0,
+            }
+        });
+
+    let remaining_percent = if balance.granted_microdollars > 0 {
+        let pct = balance.balance_microdollars.saturating_mul(100) / balance.granted_microdollars;
+        pct.clamp(0, 100)
+    } else {
+        0
+    };
+
+    PiCredit {
+        granted_microdollars: balance.granted_microdollars,
+        spent_microdollars: balance.spent_microdollars,
+        remaining_microdollars: balance.balance_microdollars,
+        granted_display: format::cost_round(balance.granted_microdollars),
+        spent_display: format::cost(balance.spent_microdollars),
+        // A negative remainder reads as debt the visitor owes, which is not
+        // what an overshot demo grant means. Floor the display at zero and let
+        // `exhausted` carry the fact.
+        remaining_display: format::cost(balance.balance_microdollars.max(0)),
+        remaining_percent,
+        exhausted: balance.granted_microdollars > 0 && balance.balance_microdollars <= 0,
+    }
+}
+
 async fn collect(
     pool: &PgPool,
     conversation_id: &str,
     attested: &SessionId,
+    user_id: &systemprompt::identifiers::UserId,
 ) -> Result<PiStats, sqlx::Error> {
+    let credit = credit_position(pool, user_id).await;
     let kpis = session_detail::get_session_kpis(pool, attested).await?;
     let requests = session_detail::list_session_requests(pool, attested).await?;
     let trace = demo_trace::list_demo_trace(pool, attested, TRACE_LIMIT).await?;
@@ -126,6 +198,7 @@ async fn collect(
         prompts_blocked: counted("prompt", "deny"),
         tools_blocked: counted("tool", "deny"),
         tool_calls: trace.iter().filter(|r| r.kind == "fire").count() as i64,
+        credit,
         events: trace
             .into_iter()
             .map(|r| PiStatEvent {

@@ -3,15 +3,7 @@
 
 use sqlx::PgPool;
 
-use crate::types::departments::{DepartmentMember, DepartmentSummary, DepartmentTopTool};
-
-/// List department names alphabetically — backs the department filter dropdown.
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn list_department_names(pool: &PgPool) -> Result<Vec<String>, sqlx::Error> {
-    sqlx::query_scalar!("SELECT name FROM departments ORDER BY name")
-        .fetch_all(pool)
-        .await
-}
+use crate::types::departments::DepartmentSummary;
 
 pub async fn list_departments(pool: &PgPool) -> Result<Vec<DepartmentSummary>, sqlx::Error> {
     sqlx::query_as!(
@@ -61,74 +53,3 @@ pub async fn list_departments(pool: &PgPool) -> Result<Vec<DepartmentSummary>, s
     .await
 }
 
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn list_department_members(
-    pool: &PgPool,
-    department_name: &str,
-) -> Result<Vec<DepartmentMember>, sqlx::Error> {
-    sqlx::query_as!(
-        DepartmentMember,
-        r#"
-        SELECT
-            u.id,
-            u.email,
-            u.display_name,
-            u.status as "status!",
-            u.roles as "roles!: Vec<String>",
-            COALESCE(ar.input_tokens, 0)::BIGINT     AS "input_tokens!",
-            COALESCE(ar.output_tokens, 0)::BIGINT    AS "output_tokens!",
-            COALESCE(ar.requests, 0)::BIGINT         AS "requests!",
-            COALESCE(ar.cost_microdollars, 0)::BIGINT AS "cost_microdollars!",
-            ar.last_active                           AS last_active
-        FROM users u
-        LEFT JOIN (
-            SELECT
-                user_id,
-                COALESCE(SUM(input_tokens), 0)::BIGINT  AS input_tokens,
-                COALESCE(SUM(output_tokens), 0)::BIGINT AS output_tokens,
-                COUNT(*)::BIGINT                        AS requests,
-                COALESCE(SUM(cost_microdollars), 0)::BIGINT AS cost_microdollars,
-                MAX(created_at)                         AS last_active
-            FROM ai_requests
-            WHERE created_at >= NOW() - INTERVAL '30 days'
-            GROUP BY user_id
-        ) ar ON ar.user_id = u.id
-        JOIN user_profile_ext upe ON upe.user_id = u.id
-        WHERE upe.department = $1
-          AND NOT ('anonymous' = ANY(u.roles))
-          AND u.email NOT LIKE '%@anonymous.local'
-        ORDER BY (COALESCE(ar.input_tokens, 0) + COALESCE(ar.output_tokens, 0)) DESC, u.email
-        "#,
-        department_name,
-    )
-    .fetch_all(pool)
-    .await
-}
-
-// lint-ok: unused-pub — the retired admin pages were the only caller; kept as the query layer the pane and CLI read from.
-pub async fn list_department_top_tools(
-    pool: &PgPool,
-    department_name: &str,
-    limit: i64,
-) -> Result<Vec<DepartmentTopTool>, sqlx::Error> {
-    sqlx::query_as!(
-        DepartmentTopTool,
-        r#"
-        SELECT
-            COALESCE(p.tool_name, 'unknown') AS "tool_name!",
-            COALESCE(SUM(p.event_count), 0)::BIGINT AS "invocations!"
-        FROM plugin_usage_daily p
-        JOIN user_profile_ext upe ON upe.user_id = p.user_id
-        WHERE upe.department = $1
-          AND p.tool_name IS NOT NULL
-          AND p.date >= CURRENT_DATE - INTERVAL '30 days'
-        GROUP BY p.tool_name
-        ORDER BY 2 DESC
-        LIMIT $2
-        "#,
-        department_name,
-        limit,
-    )
-    .fetch_all(pool)
-    .await
-}

@@ -66,23 +66,23 @@
 mod api;
 mod auth;
 mod commands;
-mod config;
+pub(crate) mod config;
 mod credentials;
-mod events;
-mod format;
+pub(crate) mod events;
+pub(crate) mod format;
 mod gate;
-mod jail;
-mod mcp;
+pub(crate) mod jail;
+pub(crate) mod mcp;
 mod pump;
 mod registry;
-mod rpc;
-mod scope;
+pub(crate) mod rpc;
+pub(crate) mod scope;
 mod session;
-mod skills;
+pub(crate) mod skills;
 mod spawn;
-mod stage;
+pub(crate) mod stage;
 mod stats;
-mod token;
+pub(crate) mod token;
 
 use std::sync::Arc;
 
@@ -98,7 +98,7 @@ use gate::PiDeps;
 
 /// The shim pi loads. Compiled in rather than read from disk so a deployment
 /// cannot drift into running a stale or edited enforcement point.
-const SHIM_SOURCE: &str = include_str!("shim/governance-shim.ts");
+pub const SHIM_SOURCE: &str = include_str!("shim/governance-shim.ts");
 
 /// The MCP-client extension pi loads alongside the shim, registering the
 /// documentation hub's tools. Compiled in for the same reason the shim is: it
@@ -143,79 +143,4 @@ pub(crate) fn pi_router(
         .layer(Extension(registry))
         .layer(Extension(deps))
         .with_state(pool)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::SHIM_SOURCE;
-
-    /// Executable lines only. The shim's own comments discuss the things these
-    /// tests forbid — a naive substring search over the whole file would match
-    /// the prose explaining why the code avoids them.
-    fn shim_code() -> String {
-        let mut out = String::with_capacity(SHIM_SOURCE.len());
-        let mut rest = SHIM_SOURCE;
-        // Block comments first, so a `//` inside one cannot confuse the line pass.
-        while let Some(start) = rest.find("/*") {
-            out.push_str(&rest[..start]);
-            rest = rest[start + 2..]
-                .find("*/")
-                .map_or("", |end| &rest[start + 2 + end + 2..]);
-        }
-        out.push_str(rest);
-        out.lines()
-            .map(|l| l.split_once("//").map_or(l, |(code, _)| code))
-            .collect::<Vec<_>>()
-            .join("\n")
-    }
-
-    /// The shim must decide nothing. A policy name or an HTTP call in here
-    /// would mean a second place where a rule lives — and the one nobody
-    /// reviews.
-    #[test]
-    fn shim_holds_no_policy() {
-        let code = shim_code();
-        for forbidden in [
-            "FAIL_OPEN",
-            "fetch(",
-            "blocklist",
-            "secret_scan",
-            "XMLHttpRequest",
-        ] {
-            assert!(
-                !code.contains(forbidden),
-                "shim code should not contain {forbidden}"
-            );
-        }
-    }
-
-    /// Every path that is not an explicit approval must block.
-    #[test]
-    fn shim_denies_by_default() {
-        let code = shim_code();
-        assert!(code.contains("block: true"), "no block path in the shim");
-        assert!(
-            code.contains("catch"),
-            "a channel failure must be caught and denied"
-        );
-        assert!(
-            code.contains("return false"),
-            "the catch arm must deny rather than rethrow"
-        );
-    }
-
-    /// The comment stripper has to survive the shapes the shim actually uses,
-    /// or the tests above quietly stop checking anything.
-    #[test]
-    fn comment_stripper_removes_both_comment_forms() {
-        assert!(shim_code().contains("ExtensionAPI"));
-        assert!(
-            !shim_code().contains("pi runs its tools in-process"),
-            "block comment survived stripping"
-        );
-        assert!(
-            !shim_code().contains("Title the proxy matches on"),
-            "line comment survived stripping"
-        );
-    }
 }

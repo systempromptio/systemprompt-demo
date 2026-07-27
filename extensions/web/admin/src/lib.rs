@@ -24,7 +24,7 @@ pub mod event_hub;
 pub mod gateway_safety;
 pub(crate) mod handlers;
 pub mod marketplace_filter;
-mod middleware;
+pub(crate) mod middleware;
 pub mod numeric;
 pub mod repositories;
 mod routes;
@@ -42,8 +42,29 @@ use sqlx::PgPool;
 pub use routes::{admin_ssr_router, bridge_auth_ssr_router};
 pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary, UserUsageEvent};
 
+/// Crate-private items that out-of-crate unit tests drive directly.
+///
+/// The tests for these live in `tests/unit/web` rather than beside the code,
+/// so anything they touch needs a public name. Re-exporting here keeps that
+/// list explicit and reviewable instead of widening each item in place.
 pub mod test_support {
+    pub use crate::handlers::pi::config::{PiConfig, SandboxMode};
+    pub use crate::handlers::pi::events::{PiEvent, PiEventBody, readable_provider_error, translate};
+    pub use crate::handlers::pi::mcp::FORWARDABLE;
+    pub use crate::handlers::pi::stage::PolicyStage;
+    pub use crate::handlers::pi::mcp::render::{McpCallResult, first_frame, render};
+    pub use crate::handlers::pi::format::{cost, cost_round, median};
+    pub use crate::handlers::pi::jail::gateway_port;
+    pub use crate::handlers::pi::rpc::RpcCommand;
+    pub use crate::handlers::pi::scope::escape_reason;
+    pub use crate::handlers::pi::skills::{escape, scalar};
+    pub use crate::handlers::pi::token::{Invalid, sign, verify};
+    pub use crate::handlers::pi::SHIM_SOURCE;
     pub use crate::handlers::resolve_principal;
+    pub use crate::handlers::ssr::bridge_downloads::{
+        LINUX, MAC_ARM, MAC_INTEL, RELEASE_PAGE, WINDOWS,
+    };
+    pub use crate::middleware::gates::{is_pending_allowed_path, may_pass_pending_gate};
 }
 
 pub fn hooks_webhook_router(

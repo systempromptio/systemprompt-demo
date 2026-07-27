@@ -101,7 +101,7 @@ impl PiSession {
     /// viewer catches up.
     pub(super) fn emit(&self, body: PiEventBody) -> u64 {
         let seq = self.seq.fetch_add(1, Ordering::SeqCst) + 1;
-        let event = PiEvent { seq, body };
+        let event = PiEvent::new(seq, body);
         if let Ok(mut replay) = self.replay.lock() {
             if replay.len() == REPLAY_CAPACITY {
                 replay.pop_front();
@@ -116,11 +116,10 @@ impl PiSession {
         self.events.subscribe()
     }
 
-    /// Frames after `after_seq`, for a reconnecting viewer.
     pub(super) fn replay_since(&self, after_seq: u64) -> Vec<PiEvent> {
         self.replay.lock().map_or_else(
             |_| Vec::new(),
-            |r| r.iter().filter(|e| e.seq > after_seq).cloned().collect(),
+            |r| r.iter().filter(|e| e.seq() > after_seq).cloned().collect(),
         )
     }
 
@@ -171,7 +170,6 @@ impl PiSession {
         result
     }
 
-    /// Register a tool call awaiting a human and hand back the receiver.
     pub(super) fn park_approval(&self, approval_id: String) -> oneshot::Receiver<Verdict> {
         let (tx, rx) = oneshot::channel();
         if let Ok(mut pending) = self.pending.lock() {

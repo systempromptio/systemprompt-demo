@@ -11,6 +11,6 @@ pub use matrix::{
     filter_catalog_for_user, resolve_user_matrix,
 };
 pub use rules::{
-    bulk_set_rules, count_assignments_by_entity_type, list_all_rules, list_rules_for_entity,
+    bulk_set_rules, list_all_rules, list_rules_for_entity,
     set_entity_rules,
 };
