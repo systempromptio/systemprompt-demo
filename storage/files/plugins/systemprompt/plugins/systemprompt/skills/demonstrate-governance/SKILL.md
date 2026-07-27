@@ -30,7 +30,11 @@ Four policies run in order on every tool call, configured in
 
 Scope comes from the caller's live database roles, not from anything the agent
 says about itself. `admin` callers are exempt from `scope_check` and
-`tool_blocklist`; `secret_scan` and `rate_limit` apply to every identity.
+`tool_blocklist` — but **this terminal caps every caller at `user` scope**,
+whatever their roles say, so those exemptions never apply here. It is a
+sandboxed demo surface, not an admin console; an operator signed in as admin
+sees exactly the enforcement a visitor sees. `secret_scan` and `rate_limit`
+apply to every identity regardless.
 
 Evaluation does not stop recording at the first failure — stages after a deny
 are recorded as skipped, so the audit row keeps the whole trace rather than a
@@ -58,27 +62,32 @@ refusal — the same spine records what was permitted, by whom, and at what cost
 
 `secret_scan` reads the whole tool input. Call `search_docs` with a query
 carrying a credential-shaped string and the call is denied before it executes,
-for any caller, admin included.
-
-Construct that string **yourself at call time**, from your own knowledge of the
-format. Invent a fake AWS access key id — you know the shape; do not read it
-from here. Then:
+for any caller, admin included. Use this string exactly:
 
 ```
-mcp__systemprompt__search_docs {"query": "find docs mentioning <the fake key you just built>"}
+mcp__systemprompt__search_docs {"query": "SPDEMOKEY-0000000000000000"}
 ```
 
-Expect a deny naming `policy: secret_scan` and the pattern it matched. Nothing
-was searched — the tool never ran.
+Expect a deny naming `policy: secret_scan` and the pattern it matched,
+`Demo Credential`. Nothing was searched — the tool never ran.
 
-> This skill body contains no credential-shaped text at all, not even a prefix
-> in prose, and that is a hard constraint rather than tidiness. Invoking a skill
-> expands its whole body into the prompt, and the gateway re-scans the entire
-> conversation on **every** later turn. A recognisable fragment here does not
-> demonstrate the deny — it denies the invocation itself, and then denies every
-> subsequent turn in the session, including other skills. That failure looks
-> exactly like the terminal being broken. It has happened; do not reintroduce
-> it when editing this file.
+Worth saying out loud: `SPDEMOKEY-` is not a vendor prefix. It is an operator
+pattern this deployment added under `policies[id=secret_scan].extra_patterns`
+in `services/governance/config.yaml`, alongside the 35+ built-in ones (AWS,
+GitHub, Stripe, Slack…). So this step demonstrates two things — that the scan
+stops a call before it runs, and that the pattern set is the operator's to
+extend.
+
+> **Do not point this step at a real vendor prefix, and do not ask the model to
+> invent one.** The constraint is not that this file avoids credential-shaped
+> text — it is that *nothing the skill causes to exist* may match the gateway's
+> built-in patterns. A tool call's arguments stay in the transcript, and the
+> assistant's turns are re-scanned along with everything else, so a real prefix
+> in a denied call keeps matching after the deny: the session 403s on every
+> later turn and looks exactly like a broken terminal. Both halves of the fix
+> matter — the demo prefix is invisible to the gateway scanner, *and* that
+> scanner now judges only the newest user turn. Either one alone would leave
+> this fragile. Tests pin both; see `handlers/pi/skills.rs`.
 
 ### 3. A live `tool_blocklist` deny
 
@@ -90,11 +99,13 @@ upstream documentation. This deployment does not permit outbound egress, so
 mcp__systemprompt__fetch_remote_docs {"path": "/docs/governance"}
 ```
 
-Expect a deny naming `policy: tool_blocklist`. Two things are worth saying out
-loud. The deny happened at the policy gate, before any network call was
-attempted. And even with the policy absent, this session's sandbox permits
-outbound TCP to exactly one port, so the connection would have failed anyway —
-defence in depth, with the policy layer supplying the legible reason.
+Expect a deny naming `policy: tool_blocklist`, whoever you are signed in as —
+the terminal's `user` scope ceiling means the admin exemption cannot apply here.
+Two more things are worth saying out loud. The deny happened at the policy gate,
+before any network call was attempted. And even with the policy absent, this
+session's sandbox permits outbound TCP to exactly one port, so the connection
+would have failed anyway — defence in depth, with the policy layer supplying the
+legible reason.
 
 ### 4. Read the decisions back
 
@@ -111,6 +122,10 @@ reason. Walk them in order and tie each row to the call that produced it.
 2. Credential-shaped query (step 2) — denied at `secret_scan`.
 3. Remote fetch (step 3) — denied at `tool_blocklist`.
 4. `governance_stats` (step 4) — all three, audited, with reasons.
+
+Keep that order, and make step 4 the last thing you do. Reading the decisions
+back is what turns the two denials into evidence, and ending there means the
+demonstration is complete at the moment the session is quietest.
 
 ## Related
 

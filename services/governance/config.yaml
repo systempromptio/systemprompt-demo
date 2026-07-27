@@ -1,7 +1,23 @@
 governance:
   policies:
+  # `extra_patterns` are operator-defined and are read by this policy only. The
+  # gateway's conversation scanner (extensions/web/admin/src/gateway_safety.rs)
+  # iterates the built-in SECRET_PATTERNS and never sees them.
+  #
+  # `demonstrate_governance` depends on exactly that asymmetry. A deny needs a
+  # credential-shaped string in the tool input, and whatever the model sends
+  # stays in the transcript for the rest of the session. A real vendor prefix
+  # would therefore be caught here (good) and then re-caught by the gateway on
+  # every later turn (fatal — the session 403s forever). A prefix only this
+  # policy knows denies the call and leaves the conversation clean.
+  #
+  # So: never add SPDEMOKEY- to SECRET_PATTERNS, and never point the skill at a
+  # real vendor prefix. There is a test pinning both.
   - id: secret_scan
     enabled: true
+    extra_patterns:
+    - name: Demo Credential
+      prefix: SPDEMOKEY-
   # scope_check stays enabled and enforced; the systemprompt MCP hub is now open
   # to every signed-in user (oauth scope: user), so its tool prefix is no longer
   # admin-only. Any prefix listed here is still denied for non-admin callers.
