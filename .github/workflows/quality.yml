@@ -11,10 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Rev of systemprompt-core the [patch.crates-io] workspace builds against.
-  # Keep in lockstep with the committed .sqlx cache: bump it, run `just prepare`,
-  # and commit both together.
-  CORE_REV: "68811fcb8615b2a902596264c94aed6c49df35be"
   CARGO_TERM_COLOR: always
   SQLX_OFFLINE: "true"
   # aws-lc-sys needs clang (GCC <10 bug #95189); ubuntu-latest ships it.
@@ -27,10 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: |
-          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
-          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
       # Clippy runs on the pinned nightly (channel + clippy component) declared
       # in rust-toolchain.toml, which `rustup show` installs — so lint results
       # match local `just clippy` with no channel duplicated here.
@@ -45,10 +37,6 @@ jobs:
       RUSTDOCFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: |
-          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
-          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --workspace --no-deps
@@ -127,10 +115,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: |
-          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
-          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
       - uses: dtolnay/rust-toolchain@1.94.0
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --workspace
@@ -152,13 +136,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: |
-          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
-          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
-      # Runner-native instead of EmbarkStudios/cargo-deny-action: the action
-      # runs in a container that only mounts the workspace, so the sibling
-      # ../systemprompt-core checkout the [patch.crates-io] needs is invisible.
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-deny
@@ -169,10 +146,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout systemprompt-core (sibling, required by [patch.crates-io])
-        run: |
-          git clone https://github.com/systempromptio/systemprompt-core.git ../systemprompt-core
-          git -C ../systemprompt-core checkout --quiet "$CORE_REV"
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-machete
