@@ -45,6 +45,7 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "homepage-showreel.css"),
         css!(p, "homepage-getting-started.css"),
         css!(p, "homepage-sections-titles.css"),
+        css!(p, "components/pi-terminal.css"),
     ]
 }
 

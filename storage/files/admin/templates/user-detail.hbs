@@ -88,6 +88,55 @@
     </div>
     {{/if}}
 
+    {{#if credits}}
+    <div class="card mb-6">
+        <div class="card-header">
+            <h3>Credits</h3>
+            <span class="text-muted">Balance is total grants minus recorded AI request cost. At or below zero the gateway rejects this user's requests.</span>
+        </div>
+        <div class="dashboard-grid stats-grid-3col">
+            {{> components/stat-card label="Remaining" value=credits.balance_usd}}
+            {{> components/stat-card label="Granted" value=credits.granted_usd}}
+            {{> components/stat-card label="Spent" value=credits.spent_usd}}
+        </div>
+        {{#if credits.exhausted}}
+        <p><span class="badge badge-red">Exhausted</span> <span class="text-muted">Requests are being rejected until credit is added.</span></p>
+        {{/if}}
+        <form id="credit-grant-form" class="user-edit-form" data-user-id="{{user.user_id}}" novalidate>
+            <div class="form-grid">
+                <label class="form-field">
+                    <span class="form-label">Amount (USD)</span>
+                    <input type="number" name="usd" min="0.01" step="0.01" value="25.00" required>
+                </label>
+                <label class="form-field">
+                    <span class="form-label">Reason</span>
+                    <input type="text" name="reason" placeholder="optional — must be unique per user">
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Grant credit</button>
+                <span class="form-status" id="credit-grant-status" aria-live="polite"></span>
+            </div>
+        </form>
+        {{#if credits.grants}}
+        <table class="data-table">
+            <thead><tr><th>Amount</th><th>Reason</th><th class="col-date">Granted</th></tr></thead>
+            <tbody>
+            {{#each credits.grants}}
+            <tr>
+                <td>{{amount_usd}}</td>
+                <td><code class="code-inline">{{reason}}</code></td>
+                <td class="col-date">{{created_at}}</td>
+            </tr>
+            {{/each}}
+            </tbody>
+        </table>
+        {{else}}
+        {{> components/empty-state message="No credit granted yet."}}
+        {{/if}}
+    </div>
+    {{/if}}
+
     {{#if user.activity_summary}}
     <div class="card mb-6">
         <h3>Activity Breakdown</h3>

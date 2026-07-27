@@ -101,6 +101,10 @@ fn build_admin_user_routes() -> Router<Arc<PgPool>> {
             "/users/{user_id}/approve",
             post(handlers::approve_user_handler),
         )
+        .route(
+            "/users/{user_id}/credit",
+            post(handlers::grant_credit_handler),
+        )
 }
 
 fn build_admin_write_routes(write_pool: &Arc<PgPool>) -> Router {

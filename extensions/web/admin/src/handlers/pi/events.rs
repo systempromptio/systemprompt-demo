@@ -90,9 +90,9 @@ pub(super) enum PiEventBody {
 
 /// Translate one pi event frame into zero or one widget frames.
 ///
-/// Returns `None` for frames the widget has no use for (`message_start`,
-/// `toolcall_delta`, and friends) rather than forwarding noise the browser then
-/// has to filter.
+/// Dropping a frame is a filtering decision, not a fallback: the browser never
+/// sees `tool_execution_start`, so a call the gate later denies cannot have
+/// already rendered as running. See [`PiEventBody::ToolStart`].
 pub(super) fn translate(frame: &serde_json::Value) -> Option<PiEventBody> {
     let kind = frame.get("type").and_then(serde_json::Value::as_str)?;
     match kind {

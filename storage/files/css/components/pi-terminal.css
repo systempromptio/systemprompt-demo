@@ -1,0 +1,299 @@
+/* Live pi terminal widget.
+ *
+ * Self-contained by necessity: it borrows the class vocabulary of the canned
+ * homepage demo (.terminal-line, .prompt, .command, .cursor), but
+ * homepage-demo-terminal.css is not registered in css.rs and never reaches the
+ * browser. Every rule those classes need is therefore repeated here, scoped
+ * under .pi-terminal so it cannot collide if that stylesheet is ever revived. */
+
+.pi-demo {
+  padding: var(--sp-space-4xl) 0 var(--sp-space-2xl);
+  border-top: 1px solid var(--sp-color-border);
+}
+
+.pi-demo-note {
+  max-width: 860px;
+  margin: var(--sp-space-4) auto 0;
+  color: var(--sp-color-text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.pi-terminal .terminal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+  padding: var(--sp-space-2) var(--sp-space-4);
+}
+
+.pi-terminal .terminal-dots {
+  display: flex;
+  gap: var(--sp-space-2);
+}
+
+.pi-terminal .terminal-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--sp-radius-full);
+  background: var(--sp-color-terminal-text-dim);
+  opacity: 0.35;
+}
+
+.pi-terminal .terminal-title {
+  font-family: var(--sp-font-mono);
+  font-size: 0.78rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-terminal .prompt {
+  color: var(--sp-color-primary);
+}
+
+.pi-terminal .command {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-terminal .output {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-terminal .output-dim {
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-terminal .cursor {
+  color: var(--sp-color-primary);
+  animation: pi-blink-caret 0.75s step-end infinite;
+}
+
+@keyframes pi-blink-caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.pi-terminal {
+  display: block;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.pi-terminal .terminal {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  background: var(--sp-color-terminal-bg);
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-radius-lg);
+  overflow: hidden;
+}
+
+.pi-terminal .terminal-header {
+  background: var(--sp-color-terminal-header);
+  border-bottom: 1px solid var(--sp-color-terminal-border);
+}
+
+.pi-status {
+  margin-left: auto;
+  font-family: var(--sp-font-mono);
+  font-size: 0.75rem;
+  color: var(--sp-color-terminal-text-dim);
+  text-transform: lowercase;
+}
+
+.pi-status[data-state="live"] {
+  color: var(--sp-color-success);
+}
+
+.pi-status[data-state="reconnecting"],
+.pi-status[data-state="session in use"] {
+  color: var(--sp-color-warning);
+}
+
+.pi-status[data-state="ended"] {
+  color: var(--sp-color-error);
+}
+
+.pi-terminal .terminal-body {
+  min-height: 260px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: var(--sp-space-4);
+  font-family: var(--sp-font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-terminal .terminal-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pi-tool-row {
+  color: var(--sp-color-accent-cyan);
+}
+
+.pi-tool-row--blocked {
+  color: var(--sp-color-error);
+}
+
+.output-warn {
+  color: var(--sp-color-warning);
+}
+
+/* ── approval queue ─────────────────────────────────────────────────────── */
+
+/* A queue, not a modal: parallel tool calls each get their own card and the
+   server resolves them independently. */
+.pi-approvals:not(:empty) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-3) var(--sp-space-4);
+  border-top: 1px solid var(--sp-color-terminal-border);
+}
+
+.pi-approval-card {
+  padding: var(--sp-space-3);
+  background: var(--sp-color-terminal-header);
+  border: 1px solid var(--sp-color-warning);
+  border-radius: var(--sp-radius-md);
+  font-family: var(--sp-font-mono);
+  font-size: 0.8rem;
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-approval-card--canned {
+  opacity: 0.6;
+}
+
+.pi-approval-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-space-3);
+}
+
+.pi-countdown {
+  color: var(--sp-color-warning);
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-approval-input {
+  margin: var(--sp-space-2) 0 0;
+  padding: var(--sp-space-2);
+  max-height: 120px;
+  overflow: auto;
+  background: var(--sp-color-terminal-bg);
+  border-radius: var(--sp-radius-sm);
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+
+/* What already cleared, not a bare "allow this?" — the operator should see the
+   chain that passed before being asked. */
+.pi-policy-chain {
+  margin-top: var(--sp-space-2);
+  color: var(--sp-color-success);
+  font-size: 0.72rem;
+}
+
+.pi-approval-actions {
+  display: flex;
+  gap: var(--sp-space-2);
+  margin-top: var(--sp-space-3);
+}
+
+/* ── composer ───────────────────────────────────────────────────────────── */
+
+.pi-composer {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-3) var(--sp-space-4);
+  border-top: 1px solid var(--sp-color-terminal-border);
+}
+
+.pi-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.85rem;
+}
+
+.pi-input::placeholder {
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-input:disabled {
+  color: var(--sp-color-text-disabled);
+}
+
+.pi-btn {
+  padding: var(--sp-space-2) var(--sp-space-4);
+  background: var(--sp-color-primary);
+  border: 1px solid transparent;
+  border-radius: var(--sp-radius-md);
+  color: var(--sp-color-text-on-primary);
+  font-family: var(--sp-font-body);
+  font-size: 0.8rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--sp-transition-fast);
+}
+
+.pi-btn:hover {
+  opacity: 0.88;
+}
+
+.pi-btn:disabled,
+.pi-btn--disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pi-btn--ghost {
+  background: transparent;
+  border-color: var(--sp-color-terminal-border);
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-btn--danger {
+  background: var(--sp-color-error);
+}
+
+/* ── degraded footer ────────────────────────────────────────────────────── */
+
+.pi-gate {
+  padding: var(--sp-space-4);
+  border-top: 1px solid var(--sp-color-terminal-border);
+  background: var(--sp-color-terminal-header);
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.85rem;
+}
+
+.pi-gate p {
+  margin: 0 0 var(--sp-space-2);
+}
+
+.pi-gate-actions {
+  display: flex;
+  gap: var(--sp-space-2);
+  margin: var(--sp-space-3) 0 0;
+}
+
+@media (max-width: 640px) {
+  .pi-terminal .terminal-body {
+    min-height: 200px;
+    font-size: 0.78rem;
+  }
+
+  .pi-gate-actions {
+    flex-direction: column;
+  }
+}

@@ -129,10 +129,17 @@ pub(crate) async fn user_detail_page(
         .as_ref()
         .is_some_and(|eff| !eff.gateway_routes.is_empty() || !eff.mcp_servers.is_empty());
 
+    let credits = if not_found {
+        None
+    } else {
+        view::load_credits(&pool, &user_id).await
+    };
+
     let data = UserDetailPageData {
         page: "user-detail",
         title: "User Detail",
         user: detail,
+        credits,
         gamification,
         not_found,
         user_department,
@@ -170,6 +177,7 @@ fn blank_user_detail() -> UserDetailPageData {
         runtime: None,
         effective_permissions: None,
         has_effective_permissions: false,
+        credits: None,
     }
 }
 

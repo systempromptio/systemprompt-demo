@@ -46,6 +46,7 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
         svc_js!(p, "table-sort.js"),
         svc_js!(p, "theme.js"),
         svc_js!(p, "sp-confirm-dialog.js"),
+        svc_js!(p, "sp-pi-terminal.js"),
         svc_js!(p, "sp-toast.js"),
         svc_js!(p, "toast.js"),
         svc_js!(p, "toc-highlight.js"),

@@ -25,7 +25,9 @@
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-sections-titles.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-getting-started.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/homepage-steps-upgrade.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal.css">
     <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
+    <script src="{{JS_BASE_PATH}}/services/sp-pi-terminal.js" defer></script>
 </head>
 <body>
     {{{HEADER}}}
@@ -85,6 +87,17 @@
                     <path d="M12 5v14M5 12l7 7 7-7"/>
                 </svg>
             </a>
+        </section>
+
+        <section id="pi-terminal" class="pi-demo">
+            <div class="container">
+                <header class="section-header">
+                    <h2 class="section-title">Watch a real agent ask permission</h2>
+                    <p class="section-subtitle">This is a live coding agent running on our server, not a recording. Every tool call it makes stops here first — policy-checked in Rust, then handed to you. Sign in and drive it yourself.</p>
+                </header>
+                <sp-pi-terminal endpoint="/api/public/pi"></sp-pi-terminal>
+                <p class="pi-demo-note">Read-only tools, one session per account, ten-minute idle timeout. Every decision below lands an audit row you can query.</p>
+            </div>
         </section>
 
         <section id="get-started" class="demos-quick-start homepage-usage">

@@ -9,7 +9,50 @@
 
 use crate::repositories;
 
-use super::super::types::{DepartmentGroup, EnrichedUserView, UserMarketplaceRef};
+use super::super::types::{
+    DepartmentGroup, EnrichedUserView, UserCreditGrantView, UserCreditsView, UserMarketplaceRef,
+};
+
+fn usd(microdollars: i64) -> String {
+    format!("${:.2}", microdollars as f64 / 1_000_000.0)
+}
+
+/// The user's credit position, or `None` if the ledger is unreadable.
+///
+/// A failed read renders as an absent card rather than a zero balance: showing
+/// "$0.00" for a query error would look identical to a genuinely exhausted
+/// account, which is the one thing an admin comes to this page to distinguish.
+pub(super) async fn load_credits(
+    pool: &sqlx::PgPool,
+    user_id: &systemprompt::identifiers::UserId,
+) -> Option<UserCreditsView> {
+    let subject = user_id.as_str();
+    let balance = systemprompt_credits_extension::get_balance(pool, subject)
+        .await
+        .inspect_err(|e| tracing::warn!(error = %e, "Failed to read credit balance"))
+        .ok()?;
+    let grants = systemprompt_credits_extension::list_grants(pool, subject)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!(error = %e, "Failed to list credit grants");
+            vec![]
+        });
+
+    Some(UserCreditsView {
+        balance_usd: usd(balance.balance_microdollars),
+        granted_usd: usd(balance.granted_microdollars),
+        spent_usd: usd(balance.spent_microdollars),
+        exhausted: balance.balance_microdollars <= 0,
+        grants: grants
+            .into_iter()
+            .map(|g| UserCreditGrantView {
+                amount_usd: usd(g.microdollars),
+                reason: g.reason,
+                created_at: g.created_at.format("%Y-%m-%d %H:%M").to_string(),
+            })
+            .collect(),
+    })
+}
 
 fn freshness_for(ts: Option<chrono::DateTime<chrono::Utc>>) -> &'static str {
     ts.map_or("never", |t| {

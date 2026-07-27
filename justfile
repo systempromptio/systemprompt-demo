@@ -286,6 +286,13 @@ audit:
 # UserId::new call takes a validated identifier as a variable, never a literal.
 # Allowlisted: test code (regression tests intentionally construct ids) and
 # any future bootstrap/provisioning module.
+#
+# The directory excludes only cover tests that live in a `tests/` tree. An
+# inline `#[cfg(test)]` module signing a fixed id — which is the only way to
+# test a signer whose input is a principal — annotates the line with
+# `// lint-ok: no-synthesis <reason>`, matching check-http-errors.sh and
+# check-test-value.sh. The marker must sit on the offending line so it shows up
+# in review next to what it excuses.
 lint-no-synthesis:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -293,6 +300,7 @@ lint-no-synthesis:
         --include='*.rs' \
         --exclude-dir=tests \
         --exclude-dir=bootstrap \
+        | grep -v 'lint-ok: no-synthesis' \
         || true)
     if [ -n "$hits" ]; then
         echo "error: forbidden synthesized principal — UserId::new with string literal"
@@ -301,6 +309,7 @@ lint-no-synthesis:
         echo "UserId::new must take a validated identifier (from cookie, query,"
         echo "JWT claim, or DB row), never a hard-coded literal. If this is"
         echo "legitimate bootstrap code, move it to extensions/**/bootstrap/."
+        echo "Test code may annotate the line with '// lint-ok: no-synthesis <reason>'."
         exit 1
     fi
 

@@ -95,7 +95,7 @@ mod tests {
     const SECRET: &[u8] = b"test-signing-secret";
 
     fn uid() -> UserId {
-        UserId::new("11111111-2222-3333-4444-555555555555")
+        UserId::new("11111111-2222-3333-4444-555555555555") // lint-ok: no-synthesis — signing a principal is the unit under test
     }
 
     #[test]

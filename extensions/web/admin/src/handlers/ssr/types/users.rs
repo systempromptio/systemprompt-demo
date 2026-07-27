@@ -107,6 +107,27 @@ pub(crate) struct UserDetailPageData {
         Option<crate::repositories::governance::effective::EffectivePermissions>,
     #[serde(default)]
     pub has_effective_permissions: bool,
+    /// `None` on the not-found page; otherwise the user's credit position.
+    pub credits: Option<UserCreditsView>,
+}
+
+/// The credit ledger as the user-detail template renders it. Amounts are
+/// pre-formatted because the template engine has no currency helper.
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct UserCreditsView {
+    pub balance_usd: String,
+    pub granted_usd: String,
+    pub spent_usd: String,
+    /// Balance at or below zero — the gateway is rejecting this user's requests.
+    pub exhausted: bool,
+    pub grants: Vec<UserCreditGrantView>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct UserCreditGrantView {
+    pub amount_usd: String,
+    pub reason: String,
+    pub created_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Default)]

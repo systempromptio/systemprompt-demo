@@ -4990,7 +4990,10 @@ name = "systemprompt-credits-extension"
 version = "0.24.0"
 dependencies = [
  "async-trait",
+ "axum",
+ "chrono",
  "inventory",
+ "serde",
  "sqlx",
  "systemprompt",
  "thiserror 2.0.18",
