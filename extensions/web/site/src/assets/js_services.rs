@@ -47,6 +47,7 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
         svc_js!(p, "table-sort.js"),
         svc_js!(p, "theme.js"),
         svc_js!(p, "sp-auth-pane.js"),
+        svc_js!(p, "sp-pulse-admin.js"),
         svc_js!(p, "sp-confirm-dialog.js"),
         svc_js!(p, "pi-render.js"),
         svc_js!(p, "pi-gate-view.js"),

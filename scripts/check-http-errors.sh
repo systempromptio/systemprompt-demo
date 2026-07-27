@@ -15,7 +15,10 @@ SEARCH_DIR="extensions"
 # Every entry-local HTTP error type, not just `ApiError`. Scoping the ban to one
 # type let the identical defect through under `AdminError` / `AdminHtmlError`,
 # which is where most of this crate's handlers actually build their statuses.
-PATTERN='map_err\(.*\|.*\|[[:space:]]*(ApiError|AdminError|AdminHtmlError)::[A-Za-z_]+\([[:space:]]*format!'
+# Backslashes are doubled because awk processes escapes in a `-v` value once
+# before the regex engine sees them; the `\|` are literal closure pipes, which
+# ERE would otherwise read as alternation.
+PATTERN='map_err\\(.*\\|.*\\|[[:space:]]*(ApiError|AdminError|AdminHtmlError)::[A-Za-z_]+\\([[:space:]]*format!'
 
 # The same defect, one level up: a handler that returns a bare `Response` has
 # no error channel at all, so it must build every failure by hand — which is
