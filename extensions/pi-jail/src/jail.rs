@@ -16,7 +16,7 @@
 //! of `FullyEnforced`, this returns an error and the caller exits before
 //! `exec`. There is no path from here to an unsandboxed child.
 
-use crate::args::Spec;
+use systemprompt_pi_jail::args::Spec;
 
 #[cfg(target_os = "linux")]
 fn enforce(

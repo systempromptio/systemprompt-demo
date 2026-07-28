@@ -19,6 +19,7 @@ use serde::Deserialize;
 pub struct HookEventPayload {
     pub common: HookCommonFields,
     pub event: HookEvent,
+    // JSON: the hook body as received, kept verbatim for audit storage
     pub raw: serde_json::Value,
 }
 
@@ -219,6 +220,7 @@ pub struct StatusLinePayload {
     pub model: Option<StatusLineModel>,
     pub cost: Option<StatusLineCost>,
     pub context_window: Option<ContextWindow>,
+    // JSON: whatever else the statusline sends, stored without interpretation
     #[serde(flatten)]
     pub extra: serde_json::Value,
 }
@@ -260,6 +262,7 @@ pub struct StatusLineQuery {
 #[derive(Debug, Deserialize)]
 pub struct TranscriptPayload {
     pub session_id: Option<systemprompt::identifiers::SessionId>,
+    // JSON: raw Claude Code transcript, stored verbatim
     pub transcript: serde_json::Value,
 }
 

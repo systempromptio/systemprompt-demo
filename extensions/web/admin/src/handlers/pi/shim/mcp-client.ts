@@ -76,6 +76,36 @@ const TOOLS: readonly HubTool[] = [
     }),
   },
   {
+    name: "list_site_pages",
+    label: "List Site Pages",
+    description:
+      "List every public page of the live systemprompt.io site — documentation " +
+      "and blog — with the section and slug to read one via " +
+      "mcp__systemprompt__fetch_site_page. Unlike mcp__systemprompt__list_topics, " +
+      "which answers from compiled-in documentation, this reads the site as it " +
+      "is published right now.",
+    parameters: Type.Object({}),
+  },
+  {
+    name: "fetch_site_page",
+    label: "Fetch Site Page",
+    description:
+      "Fetch one page of the live systemprompt.io site as its source markdown. " +
+      "The input is a section and slug, never a URL — the tool can only read " +
+      "systemprompt.io's own markdown endpoint, which is why this egress is " +
+      "permitted while mcp__systemprompt__fetch_remote_docs is refused.",
+    parameters: Type.Object({
+      section: Type.Union([
+        Type.Literal("documentation"),
+        Type.Literal("blog"),
+      ]),
+      slug: Type.String({
+        description:
+          'Page slug from mcp__systemprompt__list_site_pages, e.g. "services/ai".',
+      }),
+    }),
+  },
+  {
     name: "governance_stats",
     label: "Governance Stats",
     description:

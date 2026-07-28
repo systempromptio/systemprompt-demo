@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE pi_conversations\n        SET attested_session_id = $2, closed_at = NULL, updated_at = NOW()\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fceb1878e1fc227d1bd3766cb2755065571d1268304675ba5b5217d4599993cc"
+}

@@ -5,7 +5,7 @@
 //! without a hub to answer, and the rules are worth pinning: a frame that
 //! renders blank reads to a model as success.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct McpCallResult {
@@ -16,19 +16,57 @@ pub struct McpCallResult {
     pub ok: bool,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct McpResponseFrame {
+    #[serde(default)]
+    result: Option<McpToolResult>,
+    #[serde(default)]
+    error: Option<McpError>,
+}
+
+#[derive(Debug, Deserialize)]
+struct McpError {
+    #[serde(default)]
+    message: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct McpToolResult {
+    #[serde(default)]
+    content: Vec<McpContentItem>,
+    #[serde(default)]
+    is_error: bool,
+    // JSON: artifact payload — each tool owns its own shape, walked generically
+    #[serde(default)]
+    structured_content: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+struct McpContentItem {
+    #[serde(default)]
+    text: Option<String>,
+}
+
+impl McpResponseFrame {
+    fn is_answer(&self) -> bool {
+        self.result.is_some() || self.error.is_some()
+    }
+}
+
 /// Pull the first JSON-RPC frame out of an SSE body.
 ///
 /// The hub replies `text/event-stream` even to a single request, so the frame
 /// arrives as a `data:` line rather than as the whole body. A plain JSON body
 /// is accepted too, so this keeps working if the hub ever stops streaming.
-pub fn first_frame(body: &str) -> Option<serde_json::Value> {
-    if let Ok(value) = serde_json::from_str::<serde_json::Value>(body) {
-        return Some(value);
+pub fn first_frame(body: &str) -> Option<McpResponseFrame> {
+    if let Ok(frame) = serde_json::from_str::<McpResponseFrame>(body) {
+        return Some(frame);
     }
     body.lines()
         .filter_map(|line| line.strip_prefix("data: "))
-        .filter_map(|data| serde_json::from_str::<serde_json::Value>(data).ok())
-        .find(|value| value.get("result").is_some() || value.get("error").is_some())
+        .filter_map(|data| serde_json::from_str::<McpResponseFrame>(data).ok())
+        .find(McpResponseFrame::is_answer)
 }
 
 /// Turn a JSON-RPC frame into the text the model will read.
@@ -36,33 +74,32 @@ pub fn first_frame(body: &str) -> Option<serde_json::Value> {
 /// A hub error is returned as text with `ok: false` rather than as a transport
 /// failure: "no such topic" is an answer the model should see and act on, and
 /// turning it into a 502 would tell the model only that something broke.
-pub fn render(frame: &serde_json::Value) -> McpCallResult {
-    if let Some(error) = frame.get("error") {
-        let message = error
-            .get("message")
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or("the documentation hub refused the call");
+pub fn render(frame: &McpResponseFrame) -> McpCallResult {
+    if let Some(error) = &frame.error {
         return McpCallResult {
-            text: message.to_owned(),
+            text: error
+                .message
+                .clone()
+                .unwrap_or_else(|| "the documentation hub refused the call".to_owned()),
             ok: false,
         };
     }
 
-    let summary = frame
-        .pointer("/result/content")
-        .and_then(|c| c.as_array())
-        .map(|items| {
-            items
-                .iter()
-                .filter_map(|item| item.get("text").and_then(serde_json::Value::as_str))
-                .collect::<Vec<_>>()
-                .join("\n")
-        })
-        .unwrap_or_default();
+    let Some(result) = &frame.result else {
+        return McpCallResult {
+            text: String::new(),
+            ok: true,
+        };
+    };
 
-    let body = frame
-        .pointer("/result/structuredContent")
-        .and_then(artifact_body);
+    let summary = result
+        .content
+        .iter()
+        .filter_map(|item| item.text.as_deref())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let body = result.structured_content.as_ref().and_then(artifact_body);
 
     let text = match body {
         Some(body) if !body.trim().is_empty() => {
@@ -75,13 +112,9 @@ pub fn render(frame: &serde_json::Value) -> McpCallResult {
         _ => summary,
     };
 
-    let is_error = frame
-        .pointer("/result/isError")
-        .and_then(serde_json::Value::as_bool)
-        .unwrap_or(false);
     McpCallResult {
         text,
-        ok: !is_error,
+        ok: !result.is_error,
     }
 }
 

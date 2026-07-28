@@ -1,4 +1,14 @@
-'use strict';
+import {
+  PI_API_BASE, TOOL_ICON, RECONNECT_MIN_MS, RECONNECT_MAX_MS, PIN_SLACK_PX,
+  MAX_LINES, TRIM_BATCH, STATS_MS, HISTORY_MAX, INPUT_MAX_ROWS, INPUT_ROW_PX,
+  REPLAY_PAGES,
+} from './pi-constants.js';
+import { CANNED, CANNED_LOOP_MS, CANNED_STEP_MS } from './pi-replay.js';
+import { markdown } from './pi-render.js';
+import { chainRail, approvalCard, blockedRow, motionOk } from './pi-gate-view.js';
+import { mintToken, whoami, getJson, postJson, conversations } from './pi-transport.js';
+import { terminalChrome } from './pi-terminal-view.js';
+import { summarise, pretty, approxTokens, countFences, compact } from './pi-format.js';
 
 /**
  * <sp-pi-terminal endpoint="/api/public/pi" [token="..."]>
@@ -16,162 +26,6 @@
  * Without a usable credential it plays a scripted replay instead, so a public
  * page can embed it unconditionally.
  */
-
-const DEFAULT_ENDPOINT = '/api/public/pi';
-
-/** Frames the widget renders as a tool row, keyed by tool_use_id. */
-const TOOL_ICON = { pending: '▸', ok: '●', blocked: '✗' };
-
-/** Backoff for manual stream reconnects. EventSource's own retry gives up. */
-const RECONNECT_MIN_MS = 1000;
-const RECONNECT_MAX_MS = 30000;
-
-/** How close to the bottom still counts as "following the output". Roughly one
- *  line of slack, so a trackpad's inertial overscroll does not unpin the view. */
-const PIN_SLACK_PX = 32;
-
-/** Transcript cap, and how much is dropped when it is hit. Trimming in batches
- *  keeps the reflow cost off every line once a long session gets there. */
-const MAX_LINES = 1200;
-const TRIM_BATCH = 200;
-
-/** Stats poll. Matches the interval the pane beside this one already uses. */
-const STATS_MS = 3000;
-
-/** Prompts kept for ↑/↓ recall. In memory only — a governed transcript is not
- *  something to leave in localStorage on a shared machine. */
-const HISTORY_MAX = 50;
-
-/** Composer ceiling, in rows. Past this the transcript matters more than seeing
- *  the whole draft. */
-const INPUT_MAX_ROWS = 6;
-const INPUT_ROW_PX = 22;
-
-/** The chain as the replay shows it. Every card and rail it feeds sits inside a
- *  pane labelled a replay, so standing in for a real frame here is not a claim
- *  about a real evaluation. Each set names what it actually judged rather than
- *  being reused across acts, because a rail that says "tool: read" over a send
- *  is the kind of detail a skeptical reader checks first. */
-const CANNED_STAGES = [
-  { policy: 'scope_check', result: 'pass', detail: 'token scope allows tool: read' },
-  { policy: 'secret_scan', result: 'pass', detail: 'no credential pattern in the arguments' },
-  { policy: 'tool_blocklist', result: 'pass', detail: 'read is not blocked here' },
-  { policy: 'rate_limit', result: 'pass', detail: '1 of 60 calls this minute' },
-];
-
-const CANNED_STAGES_SEND = [
-  { policy: 'scope_check', result: 'pass', detail: 'token scope allows tool: email.send' },
-  { policy: 'secret_scan', result: 'pass', detail: 'no credential pattern in the arguments' },
-  { policy: 'tool_blocklist', result: 'pass', detail: 'email.send is not blocked here' },
-  { policy: 'rate_limit', result: 'pass', detail: '2 of 60 calls this minute' },
-];
-
-/** A chain that stops. Stages after the failure are `skip` and their pips stay
- *  unlit: the pipeline is synchronous, so the later ones genuinely never ran. */
-const CANNED_STAGES_DENY = [
-  { policy: 'scope_check', result: 'pass', detail: 'token scope allows tool: bash' },
-  { policy: 'secret_scan', result: 'fail', detail: 'a provider API key was found in the arguments' },
-  { policy: 'tool_blocklist', result: 'skip', detail: '' },
-  { policy: 'rate_limit', result: 'skip', detail: '' },
-];
-
-/**
- * What an anonymous visitor sees.
- *
- * The visitor arrives knowing nothing, so this is an argument rather than a
- * transcript: the waist every request passes through, then the four things that
- * happen inside it (identity, policy, a person, the record). The prose carries
- * the claim and the rows are the evidence for it, which is why the prose beats
- * are the long ones.
- *
- * Every claim here is one the codebase can answer for. Keep it that way: an
- * invented number on the homepage is the one thing a CTO checks and remembers.
- *
- * `ms` is the dwell *after* a step.
- */
-const CANNED = [
-  // Act 1 — the waist. What the thing is, before any mechanism.
-  { cls: 'prompt', tail: 'what is systemprompt.io?', ms: 900 },
-  { cls: 'note', text: 'Thinking…', ms: 700 },
-  { cls: 'output', ms: 5400, text:
-      'The narrow waist between your organisation and AI. One control plane you '
-      + 'host and own, standing where every request has to pass: it issues the '
-      + 'identity, judges the call, meters the spend, and keeps the record. '
-      + 'Claude Code, Cowork, any Anthropic SDK client, any MCP server. Same '
-      + 'waist, same rules.' },
-  { cls: 'note', text: 'Four things happen in that waist. Here they are.', ms: 2000 },
-
-  // Act 2 — identity. The half nobody expects, and the half that makes the rest
-  // enforceable: policy has nothing to judge until the caller has a name.
-  { cls: 'prompt', tail: 'who is asking, and what are they allowed to do?', ms: 900 },
-  { cls: 'output', ms: 5600, text:
-      'systemprompt.io is the identity provider. It is a full OAuth 2.0 '
-      + 'authorization server: it registers the client, mints the token, signs it '
-      + 'RS256, and publishes the JWKS your services verify against. The agent '
-      + 'never holds your provider key. It holds a scoped token you can revoke.' },
-  { cls: 'note', ms: 2800, text:
-      'Which is what makes the next part enforceable. A policy needs a subject.' },
-
-  // Act 3 — policy. Four stages, synchronous, in the request path.
-  { cls: 'prompt', tail: 'pull last quarter\'s churn from data/accounts.csv', ms: 900 },
-  { cls: 'stages', stages: CANNED_STAGES, ms: 0 },
-  { cls: 'tool', name: 'read', arg: 'data/accounts.csv', state: 'pending', ms: 1700 },
-  { cls: 'tool-end', name: 'read', state: 'ok', ms: 1000 },
-  { cls: 'note', ms: 4200, text:
-      'Scope, secrets, blocklist, rate limit. Four policies, in that order, in '
-      + 'Rust, inside the request. Not a report somebody reads on Monday.' },
-
-  // Act 4 — the person. Governance that only ever says yes is a log, not a gate.
-  { cls: 'prompt', tail: 'email that summary to the board', ms: 900 },
-  { cls: 'stages', stages: CANNED_STAGES_SEND, ms: 0 },
-  { cls: 'tool', name: 'email.send', arg: 'board@acme.com', state: 'pending', ms: 900,
-    input: { to: 'board@acme.com', subject: 'Q3 churn' } },
-  { cls: 'approval', tool: 'email.send', stages: CANNED_STAGES_SEND, ms: 4600,
-    input: { to: 'board@acme.com', subject: 'Q3 churn' } },
-  { cls: 'tool-end', name: 'email.send', state: 'ok', ms: 900 },
-  { cls: 'note', ms: 3400, text:
-      'Policy clearing a call is not the same as a person allowing it. Anything '
-      + 'that writes, spends, or leaves the building stops here first.' },
-
-  // Act 5 — the refusal. The only act that proves the gate is load-bearing.
-  { cls: 'prompt', tail: 'now curl the vendor API with our production key', ms: 900 },
-  { cls: 'stages', stages: CANNED_STAGES_DENY, ms: 0 },
-  { cls: 'tool', name: 'bash', arg: 'curl -H "authorization: sk-…"', state: 'pending', ms: 1300,
-    input: { command: 'curl -H "authorization: sk-live-…" https://vendor.example/v1' } },
-  { cls: 'blocked', ms: 4400, frame: {
-    tool_name: 'bash',
-    policy: 'secret_scan',
-    reason: 'the arguments carry a live credential, which would leave the host in '
-      + 'cleartext and land in a third party\'s logs. 32 patterns are checked on '
-      + 'every call, before it is made.',
-  } },
-
-  // Act 6 — the payoff. The record is the product; the rest is how it gets made.
-  // Anchored to a prompt of its own, so the closing claim reads as an answer
-  // rather than as commentary hanging off the refusal above it.
-  { cls: 'prompt', tail: 'so what do I end up owning?', ms: 900 },
-  { cls: 'output', ms: 5200, text:
-      'Every line above is a row in Postgres, joined on one trace id: who asked, '
-      + 'which agent, which tool, what policy decided, how many tokens, what it '
-      + 'cost. That is the asset. A complete account of how your organisation '
-      + 'uses AI, in a database you own, from one binary you host.' },
-  { cls: 'note', ms: 4200, text:
-      'You could build this yourself. By the time you shipped it, you would be '
-      + 'rebuilding it.' },
-];
-
-/** Dwell before the script restarts. Long enough to read the closing line, short
- *  enough that a visitor who arrived late still sees act 1. */
-const CANNED_LOOP_MS = 4000;
-
-/** Fallback dwell for a step that does not name its own. */
-const CANNED_STEP_MS = 340;
-
-/** History pages fetched when restoring. The server caps each page, so this
- *  bounds a restore at a few round trips rather than an unbounded loop against
- *  a conversation that keeps reporting more. */
-const REPLAY_PAGES = 8;
-
 class SpPiTerminal extends HTMLElement {
   constructor() {
     super();
@@ -205,7 +59,7 @@ class SpPiTerminal extends HTMLElement {
   connectedCallback() {
     if (this._built) return;
     this._built = true;
-    this._endpoint = (this.getAttribute('endpoint') || DEFAULT_ENDPOINT).replace(/\/$/, '');
+    this._endpoint = (this.getAttribute('endpoint') || PI_API_BASE).replace(/\/$/, '');
     this._build();
     this._start();
   }
@@ -224,79 +78,7 @@ class SpPiTerminal extends HTMLElement {
 
   _build() {
     this.classList.add('pi-terminal');
-    this.innerHTML = ''
-      + '<div class="terminal active">'
-      + '<div class="terminal-header">'
-      + '<span class="pi-brand">'
-      // The mark itself, not a request for it. Same two paths as logo.svg, in
-      // the wordmark's coordinate space, so the hero's first paint owes nothing
-      // to the network and the glyph cannot drift from the brand.
-      + '<svg class="pi-brand-mark" viewBox="167 461 78.5 78" aria-hidden="true"'
-      + ' focusable="false">'
-      + '<path d="M 234.109375 461.253906 L 218.292969 516.605469 L 211.96875 538.746094'
-      + ' L 223.039063 538.746094 L 238.859375 483.394531 L 245.179688 461.253906"/>'
-      + '<path d="M 192.523438 474.636719 L 207.539063 474.636719 L 182.179688 500'
-      + ' L 207.539063 525.359375 L 192.523438 525.359375 L 167.15625 500.007813"/>'
-      + '</svg>'
-      + '<span class="pi-brand-name">systemprompt<span class="pi-brand-tld">.io</span></span>'
-      + '</span>'
-      + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
-      + '<span class="pi-status" data-role="status"></span></span>'
-      + '<span class="pi-jail-chip" data-role="jail" hidden></span>'
-      + '<div class="pi-meters" data-role="meters" hidden>'
-      + '<span class="pi-meter" data-role="m-tools" title="Tool calls the gate has judged">'
-      + '<b>0</b><i>calls</i></span>'
-      + '<span class="pi-meter" data-role="m-blocked" title="Calls policy or a person refused">'
-      + '<b>0</b><i>blocked</i></span>'
-      + '<span class="pi-meter" data-role="m-tokens" title="Tokens this conversation has spent">'
-      + '<b>0</b><i>tokens</i></span>'
-      + '<span class="pi-meter" data-role="m-cost" title="Metered spend for this conversation">'
-      + '<b>$0.00</b><i>cost</i></span>'
-      + '</div>'
-      + '<a class="pi-trace-link" data-role="trace" href="/admin/demo/trace" hidden>audit trail →</a>'
-      + '</div>'
-      + '<div class="pi-body-wrap">'
-      + '<div class="terminal-body" data-role="body" tabindex="0" role="log"'
-      + ' aria-live="polite" aria-relevant="additions" aria-label="Agent transcript"></div>'
-      + '<button type="button" class="pi-jump" data-role="jump" hidden></button>'
-      + '</div>'
-      + '<div class="pi-approvals" data-role="approvals"></div>'
-      + '<div class="pi-palette" data-role="palette" role="listbox"'
-      + ' aria-label="Skills" hidden></div>'
-      + '<form class="pi-composer" data-role="composer">'
-      // Drawn rather than typed: the ASCII `>` inherited the transcript's
-      // metrics and could not be made to share a baseline with the input.
-      + '<span class="prompt pi-prompt" aria-hidden="true">'
-      + '<svg viewBox="0 0 12 12" focusable="false">'
-      + '<path d="M3.75 2.5 7.25 6l-3.5 3.5" fill="none" stroke="currentColor"'
-      + ' stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>'
-      + '</svg></span>'
-      + '<label class="sp-sr-only" for="pi-input-field">Ask the agent</label>'
-      + '<textarea class="pi-input" id="pi-input-field" data-role="input" rows="1"'
-      + ' autocomplete="off" spellcheck="false"'
-      + ' placeholder="Ask the agent something, or type / for skills…"'
-      + ' role="combobox" aria-expanded="false" aria-controls="pi-palette-list"'
-      + ' aria-autocomplete="list" disabled></textarea>'
-      + '<button type="submit" class="pi-btn pi-btn--send" data-role="send" disabled>'
-      + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
-      + '<path d="M3.5 2.25 9.25 6 3.5 9.75Z" fill="currentColor"/></svg>'
-      + '<span class="pi-btn__label">Run</span>'
-      + '</button>'
-      + '<button type="button" class="pi-btn pi-btn--ghost pi-btn--stop" data-role="stop" hidden>'
-      + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
-      + '<rect x="3" y="3" width="6" height="6" rx="1" fill="currentColor"/></svg>'
-      + '<span class="pi-btn__label">Stop</span>'
-      + '</button>'
-      + '</form>'
-      + '<div class="pi-hint">'
-      + '<span class="pi-hint__item"><kbd>↵</kbd>send</span>'
-      + '<span class="pi-hint__item"><kbd>⇧↵</kbd>newline</span>'
-      + '<span class="pi-hint__item"><kbd>↑↓</kbd>skills</span>'
-      + '<span class="pi-hint__item"><kbd>↑</kbd>history</span>'
-      + '<span class="pi-hint__item"><kbd>esc</kbd>stop</span>'
-      + '</div>'
-      + '<div class="pi-gate" data-role="gate" hidden></div>'
-      + '</div>';
+    this.replaceChildren(terminalChrome());
 
     this._body = this.querySelector('[data-role="body"]');
     this._approvalsEl = this.querySelector('[data-role="approvals"]');
@@ -311,7 +93,20 @@ class SpPiTerminal extends HTMLElement {
     this._metersEl = this.querySelector('[data-role="meters"]');
     this._traceEl = this.querySelector('[data-role="trace"]');
     this._jailEl = this.querySelector('[data-role="jail"]');
+    this._modelEl = this.querySelector('[data-role="model"]');
+    this._userEl = this.querySelector('[data-role="user"]');
+    this._userNameEl = this.querySelector('[data-role="user-name"]');
+    this._clearBtn = this.querySelector('[data-role="clear"]');
     this._composer = this.querySelector('[data-role="composer"]');
+    this._clearBtn.addEventListener('click', () => {
+      void this.newConversation();
+    });
+    // A change spawns a fresh child on the new model, resuming the same
+    // conversation so the transcript carries over.
+    this._modelEl.addEventListener('change', () => {
+      this.restart(this._conversationId || undefined);
+    });
+    this._loadModels();
     this._paletteEl.id = 'pi-palette-list';
 
     this._composer.addEventListener('submit', (e) => {
@@ -349,6 +144,38 @@ class SpPiTerminal extends HTMLElement {
     });
   }
 
+  /**
+   * The model allow-list, fetched once. Silent on failure and hidden below
+   * two entries: the picker is a convenience, never a precondition.
+   */
+  async _loadModels() {
+    const cat = await getJson(this._endpoint + '/models');
+    // No catalogue, no picker — the server default still applies.
+    if (!cat) return;
+    const models = cat.models || [];
+    if (models.length < 2 || !this._modelEl) return;
+
+    // Grouped by provider, in catalogue order: the grouping is itself part of
+    // the demo — one governed endpoint fronting several vendors.
+    this._modelEl.replaceChildren();
+    const groups = new Map();
+    models.forEach((m) => {
+      const provider = m.provider || 'gateway';
+      if (!groups.has(provider)) {
+        const g = document.createElement('optgroup');
+        g.label = provider;
+        groups.set(provider, g);
+        this._modelEl.append(g);
+      }
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.id;
+      opt.selected = m.id === cat.default;
+      groups.get(provider).append(opt);
+    });
+    this._modelEl.hidden = false;
+  }
+
   // ── slash commands ────────────────────────────────────────────────────────
 
   /**
@@ -359,12 +186,7 @@ class SpPiTerminal extends HTMLElement {
   async _loadCommands() {
     const url = this._endpoint + '/commands/' + encodeURIComponent(this._conversationId)
       + '?token=' + encodeURIComponent(this._token);
-    try {
-      const res = await fetch(url, { credentials: 'same-origin' });
-      this._commands = res.ok ? await res.json() : [];
-    } catch (_) {
-      this._commands = [];
-    }
+    this._commands = (await getJson(url)) || [];
   }
 
   _refreshPalette() {
@@ -379,7 +201,16 @@ class SpPiTerminal extends HTMLElement {
       this._hidePalette();
       return;
     }
+    this._renderPalette(hits);
+  }
 
+  /** The whole catalogue, unfiltered — what ↓ on an empty composer opens. */
+  _openPaletteAll() {
+    if (!this._commands || !this._commands.length) return;
+    this._renderPalette(this._commands);
+  }
+
+  _renderPalette(hits) {
     this._paletteEl.textContent = '';
     hits.forEach((hit, n) => {
       const row = document.createElement('button');
@@ -472,8 +303,8 @@ class SpPiTerminal extends HTMLElement {
     this._cannedRow = null;
     this._approvals.forEach((a) => a.settle());
     this._approvals.clear();
-    this._approvalsEl.innerHTML = '';
-    this._body.innerHTML = '';
+    this._approvalsEl.replaceChildren();
+    this._body.replaceChildren();
     this._toolRows.clear();
     this._hidePalette();
     this._conversationId = null;
@@ -492,8 +323,10 @@ class SpPiTerminal extends HTMLElement {
     this._clearUnseen();
     this._metersEl.hidden = true;
     this._traceEl.hidden = true;
+    this._userEl.hidden = true;
+    this._clearBtn.hidden = true;
     this._gateEl.hidden = true;
-    this._gateEl.innerHTML = '';
+    this._gateEl.replaceChildren();
     this.classList.remove('is-replay');
     await this._start(resume);
   }
@@ -507,16 +340,24 @@ class SpPiTerminal extends HTMLElement {
    */
   async _start(resume) {
     this._status('connecting');
-    const token = this.getAttribute('token') || await this._mintToken();
+    // whoami first: an anonymous visitor never POSTs embed-token, so a public
+    // page load logs no 401.
+    this._who = await whoami();
+    const token = this.getAttribute('token')
+      || (this._who ? await mintToken(this._endpoint) : null);
     if (!token) {
-      this._who = await this._whoami();
       return this._degrade('anonymous');
     }
     this._token = token;
 
     const wanted = resume === undefined ? await this._latestConversation() : resume;
-    const res = await this._fetch(this._endpoint + '/session',
-      wanted ? { token, resume: wanted } : { token });
+    const create = wanted ? { token, resume: wanted } : { token };
+    // The picker's value rides along when one is showing; absent, the server
+    // default applies.
+    if (this._modelEl && !this._modelEl.hidden && this._modelEl.value) {
+      create.model = this._modelEl.value;
+    }
+    const res = await postJson(this._endpoint + '/session', create);
     if (!res.ok) {
       // 429 is by far the likeliest and is not an error the visitor caused.
       return this._degrade(res.status === 429 ? 'busy' : 'anonymous');
@@ -545,22 +386,8 @@ class SpPiTerminal extends HTMLElement {
    * conversation, which is what a visitor with no history gets anyway.
    */
   async _latestConversation() {
-    const list = await this._conversations();
+    const list = await conversations(this._endpoint, this._token);
     return list.length ? list[0].id : null;
-  }
-
-  /** This viewer's conversations, newest first. Never throws. */
-  async _conversations() {
-    if (!this._token) return [];
-    try {
-      const res = await fetch(this._endpoint + '/conversations?token='
-        + encodeURIComponent(this._token), { credentials: 'same-origin' });
-      if (!res.ok) return [];
-      const body = await res.json();
-      return Array.isArray(body) ? body : [];
-    } catch (_) {
-      return [];
-    }
   }
 
   /**
@@ -583,9 +410,8 @@ class SpPiTerminal extends HTMLElement {
           + encodeURIComponent(this._conversationId) + '/history'
           + '?token=' + encodeURIComponent(this._token)
           + '&after_seq=' + after;
-        const res = await fetch(url, { credentials: 'same-origin' });
-        if (!res.ok) break;
-        const body = await res.json();
+        const body = await getJson(url);
+        if (!body) break;
         (body.events || []).forEach((f) => this._onFrame(JSON.stringify(f)));
         after = body.last_seq || after;
         if (!body.more) break;
@@ -608,50 +434,6 @@ class SpPiTerminal extends HTMLElement {
   /** Reopen a stored conversation of this viewer's. */
   async openConversation(conversationId) {
     await this.restart(conversationId);
-  }
-
-  /**
-   * Ask the server to mint a token for whoever owns the session cookie.
-   * A 401 here is the ordinary anonymous case, not a failure.
-   */
-  async _mintToken() {
-    try {
-      const res = await fetch(this._endpoint + '/embed-token', {
-        method: 'POST',
-        credentials: 'same-origin',
-        // The route 404s entirely when the terminal is unconfigured, and an
-        // /admin redirect would arrive as HTML. Either way: no token.
-        redirect: 'manual',
-      });
-      if (!res.ok) return null;
-      const body = await res.json();
-      return body.token || null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /**
-   * Who the session cookie belongs to, or null when anonymous.
-   *
-   * `/admin/auth/me` sits behind a middleware that 307s to the login page
-   * rather than answering 401, so an anonymous visitor would otherwise get
-   * 200 OK carrying HTML. `redirect: 'manual'` turns that into an opaque
-   * response we can reject instead of trying to parse.
-   */
-  async _whoami() {
-    try {
-      const res = await fetch('/admin/auth/me', {
-        credentials: 'same-origin',
-        redirect: 'manual',
-      });
-      if (!res.ok) return null;
-      const type = res.headers.get('content-type') || '';
-      if (type.indexOf('application/json') === -1) return null;
-      return await res.json();
-    } catch (_) {
-      return null;
-    }
   }
 
   _openStream() {
@@ -704,15 +486,11 @@ class SpPiTerminal extends HTMLElement {
   _startStats() {
     const poll = async () => {
       if (this._closed || !this._conversationId) return;
-      try {
-        const res = await fetch(this._endpoint + '/stats/'
-          + encodeURIComponent(this._conversationId)
-          + '?token=' + encodeURIComponent(this._token), { credentials: 'same-origin' });
-        if (!res.ok) return;
-        this._meters(await res.json());
-      } catch (_) {
-        // A failed poll is cosmetic. The transcript is the source of truth.
-      }
+      // A failed poll is cosmetic. The transcript is the source of truth.
+      const stats = await getJson(this._endpoint + '/stats/'
+        + encodeURIComponent(this._conversationId)
+        + '?token=' + encodeURIComponent(this._token));
+      if (stats) this._meters(stats);
     };
     void poll();
     this._statsTimer = setInterval(poll, STATS_MS);
@@ -731,6 +509,24 @@ class SpPiTerminal extends HTMLElement {
     set('m-cost', s.cost_display || '$0.00');
     const blocked = this.querySelector('[data-role="m-blocked"]');
     if (blocked) blocked.dataset.hot = (s.tools_blocked || s.prompts_blocked) ? '1' : '0';
+  }
+
+  /**
+   * The replay's meters. The strip must count the replay's own calls — a chrome
+   * that says "0 calls, $0.00" over a transcript showing four tool calls and a
+   * block is the pane contradicting itself. The trace link stays hidden: no
+   * real audit trail exists behind a scripted pass, and linking one would be
+   * the dishonest move.
+   */
+  _cannedMeters(m) {
+    this._meters({
+      tool_calls: m.calls,
+      tools_blocked: m.blocked,
+      input_tokens: m.tokens,
+      output_tokens: 0,
+      cost_display: m.cost,
+    });
+    this._traceEl.hidden = true;
   }
 
   // ── frames ────────────────────────────────────────────────────────────────
@@ -762,8 +558,13 @@ class SpPiTerminal extends HTMLElement {
       case 'session_ready': return this._enable();
       // Live, `_echo` already drew this the moment it was typed — rendering the
       // server's copy too would double every prompt. On replay it is the only
-      // record of the viewer's half of the conversation.
-      case 'user_message': return this._replaying ? this._echo(f.text) : undefined;
+      // record of the viewer's half of the conversation — and it also refills
+      // ↑-recall, which lives in memory and would otherwise start every page
+      // load empty even though the transcript above shows what was asked.
+      case 'user_message':
+        if (!this._replaying) return undefined;
+        this._remember(f.text);
+        return this._echo(f.text);
       case 'turn_start': return this._turnStart();
       case 'text_delta': return this._delta(f.text, false);
       case 'thinking_delta': return this._delta(f.text, true);
@@ -803,6 +604,16 @@ class SpPiTerminal extends HTMLElement {
     this._status('live');
     this._input.disabled = false;
     this._sendBtn.disabled = false;
+    // The session is established, so the header can now say — truthfully —
+    // whose identity every call is signed to, and offer to clear the
+    // conversation that identity owns.
+    if (this._who && this._who.email) {
+      this._userNameEl.textContent = this._who.email;
+      this._userEl.title = 'Signed in as ' + this._who.email
+        + ' — every call this session makes is signed to this identity';
+      this._userEl.hidden = false;
+    }
+    this._clearBtn.hidden = false;
   }
 
   _turnStart() {
@@ -873,7 +684,6 @@ class SpPiTerminal extends HTMLElement {
    * is mid-block and its blank lines separate nothing, so the whole buffer waits.
    */
   _revealComplete() {
-    if (!window.SpPiRender) return;
     const cut = this._streamBuf.lastIndexOf('\n\n');
     if (cut === -1) return;
     const head = this._streamBuf.slice(0, cut);
@@ -888,7 +698,7 @@ class SpPiTerminal extends HTMLElement {
     this._orphanRail();
     const host = document.createElement('div');
     host.className = 'pi-prose pi-reveal';
-    host.append(window.SpPiRender.markdown(md));
+    host.append(markdown(md));
     this._append(host);
   }
 
@@ -899,15 +709,7 @@ class SpPiTerminal extends HTMLElement {
       this._raf = 0;
     }
     if (this._streamBuf.trim()) {
-      if (window.SpPiRender) {
-        this._renderProse(this._streamBuf);
-      } else {
-        // No renderer: plain text beats nothing, and beats markup.
-        const line = document.createElement('div');
-        line.className = 'terminal-line pi-stream';
-        line.textContent = this._streamBuf;
-        this._append(line);
-      }
+      this._renderProse(this._streamBuf);
     }
     this._streamBuf = '';
     this._working(false);
@@ -945,13 +747,12 @@ class SpPiTerminal extends HTMLElement {
    * stages wait here for the row they belong to and are drawn inside it.
    */
   _policyStages(f) {
-    if (!window.SpPiGate) return;
     this._railFor = f.stages || [];
   }
 
   /** Draw a held chain inline, or on its own line if nothing claimed it. */
   _railEl(stages, compact) {
-    const rail = window.SpPiGate.chainRail(stages, { compact });
+    const rail = chainRail(stages, { compact });
     if (compact) return rail;
     const wrap = document.createElement('div');
     wrap.className = 'pi-rail-line';
@@ -967,7 +768,7 @@ class SpPiTerminal extends HTMLElement {
    * evidence is that it is a complete record of what ran.
    */
   _orphanRail() {
-    if (!this._railFor || !window.SpPiGate) return;
+    if (!this._railFor) return;
     this._append(this._railEl(this._railFor, false));
     this._railFor = null;
   }
@@ -1013,7 +814,7 @@ class SpPiTerminal extends HTMLElement {
     state.className = 'pi-tool-state';
     state.textContent = 'awaiting the gate';
     summary.append(icon, label, argEl, state);
-    if (this._railFor && window.SpPiGate) {
+    if (this._railFor) {
       if (this._railFor.some((st) => st.result === 'fail')) {
         details.classList.add('is-denied');
       }
@@ -1046,11 +847,7 @@ class SpPiTerminal extends HTMLElement {
       row.icon.textContent = TOOL_ICON.blocked;
       row.state.textContent = 'blocked';
     }
-    if (window.SpPiGate) this._append(window.SpPiGate.blockedRow(f));
-    else {
-      this._line('output-warn', f.tool_name + ' blocked'
-        + (f.policy ? ' by ' + f.policy : '') + (f.reason ? ' — ' + f.reason : ''));
-    }
+    this._append(blockedRow(f));
   }
 
   _promptBlocked(f) {
@@ -1098,8 +895,7 @@ class SpPiTerminal extends HTMLElement {
    * independently. A modal would serialise what the server does concurrently.
    */
   _approvalRequest(f) {
-    if (!window.SpPiGate) return;
-    const handle = window.SpPiGate.approvalCard(f, (decision) => {
+    const handle = approvalCard(f, (decision) => {
       handle.lock();
       void this._decide(f.approval_id, decision);
     });
@@ -1195,6 +991,14 @@ class SpPiTerminal extends HTMLElement {
       return;
     }
     if (this._paletteOpen()) return;
+    // ↓ on an empty composer opens the whole skill catalogue: the hint bar
+    // promises "↑↓ skills", and a key that only worked once the list was
+    // already open was a promise the keyboard could not actually redeem.
+    if (e.key === 'ArrowDown' && !this._input.value) {
+      e.preventDefault();
+      this._openPaletteAll();
+      return;
+    }
     // History only when the caret cannot usefully move, so ↑ still navigates a
     // prompt the visitor is part-way through writing.
     if (e.key === 'ArrowUp' && this._caretAtStart()) {
@@ -1253,16 +1057,7 @@ class SpPiTerminal extends HTMLElement {
       { token: this._token, conversation_id: this._conversationId },
       extra,
     );
-    return this._fetch(this._endpoint + '/' + path, payload).catch(() => null);
-  }
-
-  _fetch(url, payload) {
-    return fetch(url, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    return postJson(this._endpoint + '/' + path, payload).catch(() => null);
   }
 
   // ── degraded mode ─────────────────────────────────────────────────────────
@@ -1276,28 +1071,30 @@ class SpPiTerminal extends HTMLElement {
     this._cannedPlay();
 
     this._gateEl.hidden = false;
+    const blurb = document.createElement('p');
     if (reason === 'busy') {
       // Not "you already have one": a second conversation from the same
       // account displaces the first, so the only 429 left is the server-wide
       // cap, which no action of this user's can clear.
-      this._gateEl.innerHTML = '<p>Every pi session on this server is in use. '
-        + 'Sessions free up as they finish or go idle — reload in a minute.</p>';
-      return;
+      blurb.textContent = 'Every pi session on this server is in use. '
+        + 'Sessions free up as they finish or go idle — reload in a minute.';
+    } else if (this._who && this._who.email) {
+      // Signed in but no token: the account exists and the terminal is
+      // configured, so this is a server-side problem, not a sign-in prompt.
+      const email = document.createElement('strong');
+      email.textContent = this._who.email;
+      blurb.append('Signed in as ', email, ', but no session could be started. '
+        + 'The terminal may not be configured on this deployment.');
+    } else {
+      // Anonymous. The pane beside this terminal owns sign-in and registration —
+      // one implementation of the ceremony, and it is the half of the screen the
+      // visitor is already looking at. Here, say only what the replay is.
+      const lead = document.createElement('strong');
+      lead.textContent = 'This is a replay.';
+      blurb.append(lead, ' Create an account or sign in to drive a real agent — '
+        + 'every tool call it makes will stop here for your approval.');
     }
-    // Signed in but no token: the account exists and the terminal is
-    // configured, so this is a server-side problem, not a sign-in prompt.
-    if (this._who && this._who.email) {
-      this._gateEl.innerHTML = '<p>Signed in as <strong></strong>, but no session '
-        + 'could be started. The terminal may not be configured on this deployment.</p>';
-      this._gateEl.querySelector('strong').textContent = this._who.email;
-      return;
-    }
-    // Anonymous. The pane beside this terminal owns sign-in and registration —
-    // one implementation of the ceremony, and it is the half of the screen the
-    // visitor is already looking at. Here, say only what the replay is.
-    this._gateEl.innerHTML = '<p><strong>This is a replay.</strong> Create an account '
-      + 'or sign in to drive a real agent — every tool call it makes will stop here '
-      + 'for your approval.</p>';
+    this._gateEl.replaceChildren(blurb);
   }
 
   /**
@@ -1315,7 +1112,7 @@ class SpPiTerminal extends HTMLElement {
   _cannedPlay() {
     // Reduced motion gets the whole script at once, and no loop — a transcript
     // that rewrites itself on a timer is exactly what was asked to stop.
-    if (!window.SpPiGate || !window.SpPiGate.motionOk()) {
+    if (!motionOk()) {
       CANNED.forEach((s) => this._cannedStep(s));
       return;
     }
@@ -1340,16 +1137,21 @@ class SpPiTerminal extends HTMLElement {
     this._cannedCards = [];
     this._approvals.forEach((a) => a.settle());
     this._approvals.clear();
-    this._approvalsEl.innerHTML = '';
-    this._body.innerHTML = '';
+    this._approvalsEl.replaceChildren();
+    this._body.replaceChildren();
     this._toolRows.clear();
     this._cannedRow = null;
     this._railFor = null;
     this._lines = 0;
     this._pinned = true;
+    // Back to zero, so each pass counts up from nothing like a fresh session.
+    this._cannedMeters({ calls: 0, blocked: 0, tokens: 0, cost: '$0.00' });
   }
 
   _cannedStep(step) {
+    // Applied first, whichever branch the step takes. The reduced-motion path
+    // dumps every step at once and correctly ends on the final totals.
+    if (step.meters) this._cannedMeters(step.meters);
     if (step.cls === 'stages') {
       this._policyStages({ stages: step.stages });
       return;
@@ -1380,16 +1182,16 @@ class SpPiTerminal extends HTMLElement {
         row.icon.textContent = TOOL_ICON.blocked;
         row.state.textContent = 'blocked';
       }
-      if (window.SpPiGate) this._append(window.SpPiGate.blockedRow(step.frame));
+      this._append(blockedRow(step.frame));
       return;
     }
     if (step.cls === 'note') {
-      this._line('output-dim', step.text);
+      // Commentary, not agent output — the extra class styles it as an aside.
+      this._line('output-dim pi-note', step.text);
       return;
     }
     if (step.cls === 'approval') {
-      if (!window.SpPiGate) return;
-      const handle = window.SpPiGate.approvalCard({
+      const handle = approvalCard({
         tool_name: step.tool,
         tool_input: step.input || { path: step.arg },
         policy_chain: step.stages.map((s) => s.policy),
@@ -1410,10 +1212,10 @@ class SpPiTerminal extends HTMLElement {
       this._echo(step.tail);
       return;
     }
-    if (step.cls === 'output' && window.SpPiRender) {
+    if (step.cls === 'output') {
       const host = document.createElement('div');
       host.className = 'pi-prose';
-      host.append(window.SpPiRender.markdown(step.text));
+      host.append(markdown(step.text));
       this._append(host);
       return;
     }
@@ -1424,7 +1226,9 @@ class SpPiTerminal extends HTMLElement {
 
   _echo(message) {
     const line = document.createElement('div');
-    line.className = 'terminal-line';
+    // pi-turn-user marks the line as an act boundary: every exchange opens with
+    // a prompt, so a rule above each one is all the grouping the transcript needs.
+    line.className = 'terminal-line pi-turn-user';
     const p = document.createElement('span');
     p.className = 'prompt';
     p.textContent = '>';
@@ -1555,42 +1359,4 @@ class SpPiTerminal extends HTMLElement {
   }
 }
 
-/** One-line form of a tool's arguments, for the collapsed row. */
-function summarise(input) {
-  if (!input || typeof input !== 'object') return '';
-  const v = input.path || input.file_path || input.pattern || input.command;
-  if (typeof v === 'string') return v;
-  const keys = Object.keys(input);
-  return keys.length ? keys.join(', ') : '';
-}
-
-function pretty(input) {
-  try {
-    return JSON.stringify(input, null, 2);
-  } catch (_) {
-    return String(input);
-  }
-}
-
-/** Rough token count for the thinking summary. Four characters per token is the
- *  usual English approximation, and this is a label, not an invoice. */
-function approxTokens(s) {
-  return Math.max(1, Math.round(s.length / 4));
-}
-
-/** Fence count, to tell a closed code block from one still being written. */
-function countFences(s) {
-  const m = s.match(/^\s*```/gm);
-  return m ? m.length : 0;
-}
-
-/** 1200 -> 1.2k. Keeps the header meters from reflowing as a session runs. */
-function compact(n) {
-  if (n < 1000) return String(n);
-  if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-  return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
-}
-
-if (!customElements.get('sp-pi-terminal')) {
-  customElements.define('sp-pi-terminal', SpPiTerminal);
-}
+customElements.define('sp-pi-terminal', SpPiTerminal);

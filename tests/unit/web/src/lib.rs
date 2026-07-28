@@ -19,6 +19,8 @@ mod pi_events;
 #[cfg(test)]
 mod pi_mcp_render;
 #[cfg(test)]
+mod site_markdown_routes;
+#[cfg(test)]
 mod pi_persist;
 #[cfg(test)]
 mod seed_contract;
@@ -35,6 +37,10 @@ mod pi_format;
 #[cfg(test)]
 mod pi_jail;
 #[cfg(test)]
+mod pi_jail_args;
+#[cfg(test)]
+mod pi_normalize;
+#[cfg(test)]
 mod pi_rpc;
 #[cfg(test)]
 mod pi_scope;
@@ -44,3 +50,5 @@ mod pi_shim;
 mod pi_skills;
 #[cfg(test)]
 mod pi_token;
+#[cfg(test)]
+mod pi_transcript;

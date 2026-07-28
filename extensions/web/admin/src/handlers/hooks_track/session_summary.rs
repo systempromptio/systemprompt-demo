@@ -18,6 +18,9 @@ pub(crate) async fn generate_session_summary(
 ) -> Option<GeneratedSessionSummary> {
     let rows = hooks_track::list_session_events(pool, session_id, user_id)
         .await
+        .inspect_err(|e| {
+            tracing::warn!(error = %e, session_id = %session_id, "could not read session events for a summary");
+        })
         .ok()?;
 
     if rows.is_empty() {

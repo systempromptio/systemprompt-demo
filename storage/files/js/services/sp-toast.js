@@ -32,6 +32,4 @@ class SpToast extends HTMLElement {
   }
 }
 
-if (!customElements.get('sp-toast')) {
-  customElements.define('sp-toast', SpToast);
-}
+customElements.define('sp-toast', SpToast);

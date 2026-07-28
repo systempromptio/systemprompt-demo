@@ -24,6 +24,7 @@ pub(crate) mod responses;
 pub(crate) mod secrets;
 pub(crate) mod share;
 pub(crate) mod shared;
+pub(crate) mod site_markdown;
 pub(crate) mod ssr;
 mod users;
 mod users_approval;

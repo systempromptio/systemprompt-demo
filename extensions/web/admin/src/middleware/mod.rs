@@ -69,7 +69,7 @@ pub(crate) async fn user_context_middleware(
 
     // Why: an unreadable row falls back to unapproved, so a database blip
     // downgrades the caller to the pending page rather than opening the plane.
-    let access = fetch_user_access(&pool, &session.user_id)
+    let access = find_user_access(&pool, &session.user_id)
         .await
         .unwrap_or_else(|| UserAccess {
             roles: vec!["user".to_owned()],
@@ -93,11 +93,11 @@ pub(crate) async fn user_context_middleware(
     next.run(request).await
 }
 
-async fn fetch_user_access(pool: &PgPool, user_id: &UserId) -> Option<UserAccess> {
+async fn find_user_access(pool: &PgPool, user_id: &UserId) -> Option<UserAccess> {
     super::repositories::users::queries::find_user_access(pool, user_id)
         .await
         .inspect_err(
-            |e| tracing::warn!(error = %e, user_id = %user_id, "Failed to fetch user roles"),
+            |e| tracing::warn!(error = %e, user_id = %user_id, "could not read user roles"),
         )
         .ok()
         .flatten()

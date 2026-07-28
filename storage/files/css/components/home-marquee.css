@@ -1,0 +1,104 @@
+/* The compatibility marquee: one sliding band between the hero and the band
+ * below, saying who the gateway speaks to.
+ *
+ * Adapted from systemprompt-web's `deploy-marquee` — same mechanics: a track of
+ * four identical groups sliding -25% for a seamless loop, edge-masked so names
+ * enter and leave as light rather than popping at a hard edge, paused on hover
+ * and focus, and static (single group, wrapped) under reduced motion.
+ *
+ * Items are spans, not links: this band states compatibility, it does not
+ * endorse or send traffic. Colours are the stage tokens declared on
+ * `body.home-split-body` in home-stage.css, so the band cannot drift from the
+ * glass panes above it. */
+
+.compat-marquee {
+  position: relative;
+  overflow: hidden;
+  padding: var(--sp-space-4) 0;
+  border-top: 1px solid var(--sp-stage-glass-border);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+
+.compat-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: compat-marquee-scroll 40s linear infinite;
+}
+
+.compat-marquee:hover .compat-marquee-track,
+.compat-marquee:focus-within .compat-marquee-track {
+  animation-play-state: paused;
+}
+
+.compat-marquee-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-8);
+  padding-right: var(--sp-space-8);
+  white-space: nowrap;
+}
+
+.compat-marquee-label {
+  font-family: var(--sp-font-brand, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--sp-stage-glow);
+}
+
+.compat-marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  font-family: var(--sp-font-brand, inherit);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sp-stage-text-dim);
+  opacity: 0.85;
+}
+
+/* Third-party marks arrive in their own colours; the band wants one voice.
+   Flattened to the stage's light ink, same as the hero strip in the web repo. */
+.compat-marquee-logo {
+  width: 1.1rem;
+  height: 1.1rem;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+/* A quiet divider between the agents and the providers, so the one band reads
+   as two lists rather than a soup. */
+.compat-marquee-sep {
+  width: 1px;
+  height: 1rem;
+  background: var(--sp-stage-glass-border);
+}
+
+@keyframes compat-marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-25%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compat-marquee-track {
+    animation: none;
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .compat-marquee-group[aria-hidden="true"] {
+    display: none;
+  }
+
+  .compat-marquee-group {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0 var(--sp-space-4);
+    white-space: normal;
+    row-gap: var(--sp-space-2);
+  }
+}

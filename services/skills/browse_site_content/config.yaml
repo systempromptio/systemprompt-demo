@@ -1,0 +1,10 @@
+id: browse_site_content
+name: Browse the Live Site
+description: "Read live, current systemprompt.io pages through the governed site bridge (list_site_pages then fetch_site_page) and digest them for the visitor"
+enabled: true
+file: SKILL.md
+tags:
+  - docs
+  - mcp
+  - site
+category: documentation

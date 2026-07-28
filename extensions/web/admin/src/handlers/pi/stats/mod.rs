@@ -27,15 +27,15 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 use sqlx::PgPool;
-use systemprompt::identifiers::SessionId;
+use systemprompt::identifiers::{ContextId, SessionId};
 
 mod facets;
 
 use facets::{Facets, credit_position, facets, model_mix, policy_stages, trace_counts};
 
-use super::api::TokenQuery;
 use super::auth::{authorize_conversation, problem};
 use super::format;
+use super::watch::TokenQuery;
 use crate::repositories::analytics::session_detail;
 use crate::repositories::governance::{demo_trace, stages};
 
@@ -43,7 +43,7 @@ const TRACE_LIMIT: i64 = 120;
 
 #[derive(Debug, Serialize)]
 struct PiStats {
-    conversation_id: String,
+    conversation_id: ContextId,
     model: Option<String>,
     requested_model: Option<String>,
     provider: Option<String>,
@@ -114,7 +114,7 @@ struct PiStatEvent {
 
 pub(super) async fn stats(
     State(pool): State<Arc<PgPool>>,
-    Path(conversation_id): Path<String>,
+    Path(conversation_id): Path<ContextId>,
     Query(q): Query<TokenQuery>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
@@ -140,7 +140,7 @@ pub(super) async fn stats(
 
 async fn collect(
     pool: &PgPool,
-    conversation_id: &str,
+    conversation_id: &ContextId,
     attested: &SessionId,
     user_id: &systemprompt::identifiers::UserId,
 ) -> Result<PiStats, sqlx::Error> {
@@ -175,7 +175,7 @@ async fn collect(
     let counts_from_trace = trace_counts(&trace);
 
     Ok(PiStats {
-        conversation_id: conversation_id.to_owned(),
+        conversation_id: conversation_id.clone(),
         model,
         requested_model,
         provider,

@@ -5,8 +5,9 @@
 //! and so nothing internal (workspace paths, session credentials) can leak into
 //! a frame by accident.
 
-use serde::Serialize;
+use serde::{Deserialize as _, Serialize};
 
+use super::rpc;
 use super::stage::PolicyStage;
 
 /// One frame to one widget. `seq` is per-session and monotonic so a reconnect
@@ -59,7 +60,7 @@ impl PiEventBody {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum PiEventBody {
     SessionReady {
-        conversation_id: String,
+        conversation_id: systemprompt::identifiers::ContextId,
     },
     TurnStart,
     UserMessage {
@@ -75,6 +76,7 @@ pub enum PiEventBody {
     ToolStart {
         tool_use_id: Option<String>,
         tool_name: String,
+        // JSON: arbitrary tool arguments, shape owned by whichever tool ran
         tool_input: serde_json::Value,
     },
     ToolEnd {
@@ -100,6 +102,7 @@ pub enum PiEventBody {
     ApprovalRequest {
         approval_id: String,
         tool_name: String,
+        // JSON: arbitrary tool arguments, rendered to the approver as-is
         tool_input: serde_json::Value,
         policy_chain: Vec<String>,
         timeout_secs: u64,
@@ -126,35 +129,30 @@ pub enum PiEventBody {
 /// sees `tool_execution_start`, so a call the gate later denies cannot have
 /// already rendered as running. See [`PiEventBody::ToolStart`].
 pub fn translate(frame: &serde_json::Value) -> Option<PiEventBody> {
-    let kind = frame.get("type").and_then(serde_json::Value::as_str)?;
-    match kind {
-        "turn_start" => Some(PiEventBody::TurnStart),
-        "turn_end" => Some(PiEventBody::TurnEnd),
-        "message_update" => translate_message_update(frame),
-        "message_end" => translate_failed_turn(frame),
-        "tool_execution_end" => {
-            let tool_name = string_at(frame, "toolName")?;
-            Some(PiEventBody::ToolEnd {
-                tool_use_id: string_at(frame, "toolCallId"),
-                tool_name,
-                ok: !frame
-                    .get("isError")
-                    .and_then(serde_json::Value::as_bool)
-                    .unwrap_or(false),
-            })
-        },
-        _ => None,
+    match rpc::PiWireFrame::deserialize(frame).ok()? {
+        rpc::PiWireFrame::TurnStart => Some(PiEventBody::TurnStart),
+        rpc::PiWireFrame::TurnEnd => Some(PiEventBody::TurnEnd),
+        rpc::PiWireFrame::MessageUpdate { event } => translate_message_update(event),
+        rpc::PiWireFrame::MessageEnd { message } => translate_failed_turn(message),
+        rpc::PiWireFrame::ToolExecutionEnd {
+            tool_name,
+            tool_call_id,
+            is_error,
+        } => Some(PiEventBody::ToolEnd {
+            tool_use_id: tool_call_id,
+            tool_name,
+            ok: !is_error,
+        }),
+        rpc::PiWireFrame::Other => None,
     }
 }
 
-fn translate_failed_turn(frame: &serde_json::Value) -> Option<PiEventBody> {
-    let message = frame.get("message")?;
-    if string_at(message, "role").as_deref() != Some("assistant")
-        || string_at(message, "stopReason").as_deref() != Some("error")
-    {
+fn translate_failed_turn(message: rpc::EndedMessage) -> Option<PiEventBody> {
+    if message.role != "assistant" || message.stop_reason.as_deref() != Some("error") {
         return None;
     }
-    let raw = string_at(message, "errorMessage")
+    let raw = message
+        .error_message
         .unwrap_or_else(|| "the provider request failed".to_owned());
     Some(PiEventBody::Error {
         message: readable_provider_error(&raw),
@@ -170,6 +168,8 @@ fn translate_failed_turn(frame: &serde_json::Value) -> Option<PiEventBody> {
 /// Anything that does not parse is passed through untouched: an unfamiliar
 /// error still beats no error.
 pub fn readable_provider_error(raw: &str) -> String {
+    // JSON: provider error envelopes vary by upstream; only the innermost
+    // `message` is wanted and anything unparseable passes through untouched
     let Some(start) = raw.find('{') else {
         return raw.to_owned();
     };
@@ -182,32 +182,26 @@ pub fn readable_provider_error(raw: &str) -> String {
         .map_or_else(|| raw.to_owned(), ToOwned::to_owned)
 }
 
-fn translate_message_update(frame: &serde_json::Value) -> Option<PiEventBody> {
-    let ev = frame.get("assistantMessageEvent")?;
-    match ev.get("type").and_then(serde_json::Value::as_str)? {
-        "text_delta" => Some(PiEventBody::TextDelta {
-            text: string_at(ev, "delta").or_else(|| string_at(ev, "text"))?,
+fn translate_message_update(event: rpc::AssistantMessageEvent) -> Option<PiEventBody> {
+    match event {
+        rpc::AssistantMessageEvent::TextDelta { delta, text } => Some(PiEventBody::TextDelta {
+            text: delta.or(text)?,
         }),
-        "thinking_delta" => Some(PiEventBody::ThinkingDelta {
-            text: string_at(ev, "delta").or_else(|| string_at(ev, "text"))?,
-        }),
-        "error" => {
-            if string_at(ev, "reason").as_deref() == Some("aborted") {
+        rpc::AssistantMessageEvent::ThinkingDelta { delta, text } => {
+            Some(PiEventBody::ThinkingDelta {
+                text: delta.or(text)?,
+            })
+        },
+        rpc::AssistantMessageEvent::Error { reason, error } => {
+            if reason.as_deref() == Some("aborted") {
                 return None;
             }
             Some(PiEventBody::Error {
-                message: ev
-                    .get("error")
-                    .and_then(|e| string_at(e, "errorMessage"))
+                message: error
+                    .and_then(|e| e.error_message)
                     .unwrap_or_else(|| "the provider request failed".to_owned()),
             })
         },
-        _ => None,
+        rpc::AssistantMessageEvent::Other => None,
     }
-}
-
-fn string_at(v: &serde_json::Value, key: &str) -> Option<String> {
-    v.get(key)
-        .and_then(serde_json::Value::as_str)
-        .map(ToOwned::to_owned)
 }

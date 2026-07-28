@@ -47,6 +47,12 @@ wound, and the visitor can check the audit trail. So:
   `mcp__systemprompt__list_topics`, `mcp__systemprompt__get_topic`,
   `mcp__systemprompt__search_docs` — and `mcp__systemprompt__governance_stats`
   for anything about this deployment's own numbers. Cite the topic id.
+- For what the site publishes *right now* — a documentation page, a blog post —
+  read it live with `mcp__systemprompt__list_site_pages` and
+  `mcp__systemprompt__fetch_site_page`, and end with the page's public URL.
+  That bridge reaches systemprompt.io's own markdown endpoint and nothing
+  else; it is the deliberate contrast to `fetch_remote_docs`, whose refusal
+  demonstrates the no-egress posture.
 - When the hub does not cover it, say so plainly. "I don't know, and here is
   what I can check" is a better demo than a confident guess.
 - Do not oversell. The honest, specific version of a capability is more

@@ -11,7 +11,7 @@
 
 use chrono::TimeDelta;
 use sqlx::PgPool;
-use systemprompt::identifiers::UserId;
+use systemprompt::identifiers::{ContextId, UserId};
 
 use crate::repositories::bridge::IssuedApiKey;
 use crate::services::device_service;
@@ -23,7 +23,7 @@ const PAT_GRACE: TimeDelta = TimeDelta::minutes(5);
 pub(super) async fn issue(
     pool: &PgPool,
     user_id: &UserId,
-    conversation_id: &str,
+    conversation_id: &ContextId,
     max_lifetime: std::time::Duration,
 ) -> Result<IssuedApiKey, String> {
     let expires_at =

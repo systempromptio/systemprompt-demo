@@ -100,10 +100,8 @@ pub(super) struct AuditTarget {
     pub plugin_id: Option<PluginId>,
 }
 
-// Why: Typed audit blob serialized into `governance_decisions.evaluated_rules`.
-//
-// The `decision` and `reason` columns are populated from the same data by the
-// repository layer.
+// Why: the `decision` and `reason` columns are populated from this same
+// blob by the repository layer before it lands in `evaluated_rules`.
 #[derive(Debug, Serialize, Clone)]
 pub(super) struct DecisionAudit {
     pub decision: Decision,

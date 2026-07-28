@@ -55,7 +55,7 @@ pub async fn get_content_handler(
     let content_service = ContentService::new(Arc::clone(&state.pool));
 
     match content_service
-        .get_by_source_and_slug(&source_id, &slug)
+        .find_by_source_and_slug(&source_id, &slug)
         .await
     {
         Ok(Some(content)) => Json(content).into_response(),

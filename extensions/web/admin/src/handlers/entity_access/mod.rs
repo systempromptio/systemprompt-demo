@@ -112,9 +112,7 @@ pub(crate) async fn set_entity_default_handler(
     .into_response())
 }
 
-// Why: Bulk-list every entity of the given type with its rules and default.
-//
-// Entity ids come from the on-disk profile (`gateway_route`) or
+// Why: entity ids come from the on-disk profile (`gateway_route`) or
 // `services/mcp/*.yaml` (`mcp_server`), not from the database.
 pub(crate) async fn list_all_entity_access_handler(
     State(pool): State<Arc<PgPool>>,
@@ -152,9 +150,7 @@ pub(crate) async fn list_all_entity_access_handler(
     .into_response())
 }
 
-// Why: Apply a department/role template across every entity of a given type.
-//
-// Per-entity failures are counted rather than aborting the run, and the
+// Why: per-entity failures are counted rather than aborting the run, and the
 // gateway-ACL export fires once at the end instead of per rule.
 pub(crate) async fn apply_template_handler(
     State(pool): State<Arc<PgPool>>,

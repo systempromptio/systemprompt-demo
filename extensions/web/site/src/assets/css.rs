@@ -22,7 +22,6 @@ pub(super) fn css_assets(storage_css: &Path) -> Vec<AssetDefinition> {
 
 fn core_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "core/variables.css"),
         css!(p, "core/tokens-primitives.css"),
         css!(p, "core/tokens.css"),
         css!(p, "core/page-tokens.css"),
@@ -47,6 +46,7 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/home-split.css"),
         css!(p, "components/home-stage.css"),
         css!(p, "components/home-scene.css"),
+        css!(p, "components/home-marquee.css"),
         css!(p, "components/auth-pane.css"),
         css!(p, "components/analytics-pane.css"),
         css!(p, "components/conversation-list.css"),
@@ -84,12 +84,6 @@ fn blog_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "blog-workflow.css"),
         css!(p, "blog-provenance-details.css"),
         css!(p, "blog-responsive.css"),
-        css!(p, "blog-code.css"),
-        css!(p, "blog-layout-structure.css"),
-        css!(p, "blog-layout-cards.css"),
-        css!(p, "blog-print.css"),
-        css!(p, "blog-typography-base.css"),
-        css!(p, "blog-typography-blocks.css"),
     ]
 }
 

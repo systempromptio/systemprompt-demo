@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_approvals (user_id, status)\n         VALUES ($1, 'pending')\n         ON CONFLICT (user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1a2f05a7ccdb875d5d0a2d7aa98120936a3ff52f11feba57fa0fa918bb8c496c"
+}

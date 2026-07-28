@@ -34,6 +34,8 @@ pub(crate) async fn handle_hook_track(
     Extension(ai_service): Extension<Option<Arc<AiService>>>,
     State(pool): State<Arc<PgPool>>,
     headers: HeaderMap,
+    // JSON: hook bodies must never 422 — `from_value` degrades leniently,
+    // collecting warnings, and the sanitized raw value is traced for audit
     Json(raw): Json<serde_json::Value>,
 ) -> AdminResult<Response> {
     let (user_id, plugin_id, jwt_token) = extract_and_validate_jwt(&headers)?;

@@ -7,21 +7,21 @@
 use std::path::PathBuf;
 
 #[derive(Debug)]
-pub(crate) struct Spec {
-    pub(crate) workspace: PathBuf,
+pub struct Spec {
+    pub workspace: PathBuf,
     // Why: never `/proc` — `/proc/<server-pid>/environ` is readable by this uid
     // and holds the credentials this jail exists to hide.
-    pub(crate) allow_read: Vec<PathBuf>,
-    pub(crate) connect_tcp: Vec<u16>,
-    pub(crate) command: PathBuf,
-    pub(crate) command_args: Vec<String>,
+    pub allow_read: Vec<PathBuf>,
+    pub connect_tcp: Vec<u16>,
+    pub command: PathBuf,
+    pub command_args: Vec<String>,
 }
 
-pub(crate) const USAGE: &str = "usage: sp-pi-jail --workspace <dir> \
+pub const USAGE: &str = "usage: sp-pi-jail --workspace <dir> \
 [--allow-read <dir>]… [--allow-connect-tcp <port>]… -- <binary> [args…]";
 
 impl Spec {
-    pub(crate) fn parse(argv: &[String]) -> Result<Self, String> {
+    pub fn parse(argv: &[String]) -> Result<Self, String> {
         let mut workspace: Option<PathBuf> = None;
         let mut allow_read = Vec::new();
         let mut connect_tcp = Vec::new();
@@ -61,47 +61,5 @@ impl Spec {
             command: PathBuf::from(command),
             command_args: command_args.iter().map(|s| (*s).to_owned()).collect(),
         })
-    }
-}
-
-#[cfg(test)]
-#[expect(clippy::expect_used, reason = "assertions in tests")]
-mod tests {
-    use super::Spec;
-
-    fn argv(parts: &[&str]) -> Vec<String> {
-        parts.iter().map(|s| (*s).to_owned()).collect()
-    }
-
-    #[test]
-    fn parses_a_full_invocation() {
-        let spec = Spec::parse(&argv(&[
-            "--workspace",
-            "/ws",
-            "--allow-read",
-            "/usr/bin",
-            "--allow-read",
-            "/lib",
-            "--allow-connect-tcp",
-            "8080",
-            "--",
-            "/usr/bin/node",
-            "--mode",
-            "rpc",
-        ]))
-        .expect("valid invocation");
-        assert_eq!(spec.workspace, std::path::Path::new("/ws"));
-        assert_eq!(spec.allow_read.len(), 2);
-        assert_eq!(spec.connect_tcp, vec![8080]);
-        assert_eq!(spec.command_args, vec!["--mode", "rpc"]);
-    }
-
-    #[test]
-    fn rejects_unknown_flags_and_missing_pieces() {
-        assert!(Spec::parse(&argv(&["--nope", "x", "--", "/bin/true"])).is_err());
-        assert!(Spec::parse(&argv(&["--workspace", "/ws"])).is_err());
-        assert!(Spec::parse(&argv(&["--workspace", "/ws", "--"])).is_err());
-        assert!(Spec::parse(&argv(&["--", "/bin/true"])).is_err());
-        assert!(Spec::parse(&argv(&["--workspace"])).is_err());
     }
 }

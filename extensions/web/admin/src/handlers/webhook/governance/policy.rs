@@ -110,7 +110,14 @@ fn load_chain() -> PolicyChain {
 }
 
 fn config_path() -> Option<PathBuf> {
-    let bootstrap = ProfileBootstrap::get().ok()?;
+    let bootstrap = ProfileBootstrap::get()
+        .inspect_err(|e| {
+            tracing::error!(
+                error = %e,
+                "governance profile bootstrap failed; policies fall back to built-in defaults"
+            );
+        })
+        .ok()?;
     Some(PathBuf::from(&bootstrap.paths.services).join("governance/config.yaml"))
 }
 

@@ -14,6 +14,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use systemprompt::identifiers::ContextId;
 
 use super::auth::{authenticate, authorize_conversation, problem, unauthorized};
 use super::registry::PiRegistry;
@@ -45,7 +46,7 @@ pub(super) struct RenameBody {
 
 #[derive(Debug, Serialize)]
 struct ConversationSummary {
-    id: String,
+    id: ContextId,
     title: Option<String>,
     last_seq: i64,
     created_at: chrono::DateTime<chrono::Utc>,
@@ -55,7 +56,7 @@ struct ConversationSummary {
 
 #[derive(Debug, Serialize)]
 struct HistoryPage {
-    conversation_id: String,
+    conversation_id: ContextId,
     title: Option<String>,
     last_seq: i64,
     more: bool,
@@ -94,7 +95,7 @@ pub(super) async fn list(State(pool): State<Arc<PgPool>>, Query(q): Query<TokenO
 
 pub(super) async fn history(
     State(pool): State<Arc<PgPool>>,
-    Path(conversation_id): Path<String>,
+    Path(conversation_id): Path<ContextId>,
     Query(q): Query<HistoryQuery>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
@@ -129,7 +130,7 @@ pub(super) async fn history(
 
 pub(super) async fn rename(
     State(pool): State<Arc<PgPool>>,
-    Path(conversation_id): Path<String>,
+    Path(conversation_id): Path<ContextId>,
     Json(body): Json<RenameBody>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
@@ -157,7 +158,7 @@ pub(super) async fn rename(
 pub(super) async fn remove(
     State(pool): State<Arc<PgPool>>,
     Extension(registry): Extension<PiRegistry>,
-    Path(conversation_id): Path<String>,
+    Path(conversation_id): Path<ContextId>,
     Json(body): Json<TokenOnly>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose

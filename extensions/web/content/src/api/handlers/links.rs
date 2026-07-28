@@ -159,7 +159,7 @@ pub async fn campaign_performance_handler(
 ) -> Response {
     let service = LinkAnalyticsService::new(Arc::clone(&state.pool));
 
-    match service.get_campaign_performance(&campaign_id).await {
+    match service.find_campaign_performance(&campaign_id).await {
         Ok(Some(perf)) => Json(perf).into_response(),
         Ok(None) => error_response(StatusCode::NOT_FOUND, "Campaign not found"),
         Err(e) => {
@@ -175,7 +175,7 @@ pub async fn content_journey_handler(
 ) -> Response {
     let service = LinkAnalyticsService::new(Arc::clone(&state.pool));
 
-    match service.get_content_journey(&query.content_id).await {
+    match service.list_content_journey(&query.content_id).await {
         Ok(journey) => Json(journey).into_response(),
         Err(e) => {
             tracing::error!(error = %e, "Failed to get content journey");

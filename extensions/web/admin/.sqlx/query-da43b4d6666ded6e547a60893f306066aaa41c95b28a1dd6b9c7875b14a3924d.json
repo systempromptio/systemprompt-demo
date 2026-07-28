@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE pi_conversations\n        SET title = $2\n        WHERE id = $1 AND title IS NULL\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "da43b4d6666ded6e547a60893f306066aaa41c95b28a1dd6b9c7875b14a3924d"
+}

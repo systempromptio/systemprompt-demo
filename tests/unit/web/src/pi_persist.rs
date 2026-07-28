@@ -7,6 +7,7 @@
 //! *not* conversation — stderr from the child, the session's own start and exit
 //! — stay out of the record entirely.
 
+use systemprompt::identifiers::ContextId;
 use systemprompt_web_admin::test_support::{Journal, NewPiEvent, PiEvent, PiEventBody};
 
 /// Drive a whole conversation through the journal, as the writer task does.
@@ -81,7 +82,7 @@ fn thinking_does_not_merge_into_prose() {
 fn frames_that_are_not_conversation_are_not_stored() {
     let rows = journal(vec![
         PiEventBody::SessionReady {
-            conversation_id: "c1".to_owned(),
+            conversation_id: ContextId::generate(),
         },
         PiEventBody::Stderr {
             line: "sp-pi-jail: Landlock v5".to_owned(),

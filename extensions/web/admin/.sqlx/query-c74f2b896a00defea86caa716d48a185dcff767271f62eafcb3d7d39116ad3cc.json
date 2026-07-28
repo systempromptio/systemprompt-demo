@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE pi_conversations\n        SET last_seq = GREATEST(last_seq, $2), updated_at = NOW()\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c74f2b896a00defea86caa716d48a185dcff767271f62eafcb3d7d39116ad3cc"
+}

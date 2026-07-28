@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_approvals (user_id, status, decided_at, decided_by)\n         VALUES ($1, 'approved', NOW(), 'system:auto-approve')\n         ON CONFLICT (user_id) DO UPDATE SET\n            status = 'approved',\n            decided_at = NOW(),\n            decided_by = EXCLUDED.decided_by",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "73984a408e6accdce27bc726318a12c7efe00025e0ae4bda5c2bd5311bc37236"
+}

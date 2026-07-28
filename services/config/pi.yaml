@@ -37,6 +37,18 @@ workspace_root: /tmp/systemprompt-pi-sessions
 provider: systemprompt
 model: claude-sonnet-4-6
 
+# The models a visitor may pick in the terminal come from the profile's
+# provider registry — the same catalogue the gateway routes by — so every
+# advertised model of every advertised provider (anthropic, openai, gemini,
+# and anything else registered via `systemprompt admin config catalog`) is
+# offered automatically. `model` above is the default and always leads the
+# list.
+#
+# `models` is an OPTIONAL narrowing filter, not the source: leave it empty (or
+# omit it) to offer the whole catalogue; list ids to offer only those. POST
+# /session refuses anything the gateway would not serve either way.
+models: []
+
 # Who the agent says it is. Omitted here on purpose: it defaults to
 # services/config/pi-persona.md, which is compiled into the binary — the child
 # is jailed, so it could not read the file at spawn time anyway. Edit that file
@@ -60,6 +72,11 @@ tools:
   - mcp__systemprompt__list_topics
   - mcp__systemprompt__get_topic
   - mcp__systemprompt__search_docs
+  # The live-site pair: they read the site's own markdown endpoint and nothing
+  # else — the input is {section, slug}, never a URL — which is why this egress
+  # is allowed while fetch_remote_docs below stays refused.
+  - mcp__systemprompt__list_site_pages
+  - mcp__systemprompt__fetch_site_page
   - mcp__systemprompt__governance_stats
   - mcp__systemprompt__safety_findings
   # The next two are registered on purpose so that a policy has something to

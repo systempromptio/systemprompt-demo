@@ -31,20 +31,20 @@ impl ContentRepository {
         self.mutations.create(params).await
     }
 
-    pub async fn get_by_id(&self, id: &ContentId) -> Result<Option<Content>, sqlx::Error> {
-        self.queries.get_by_id(id).await
+    pub async fn find_by_id(&self, id: &ContentId) -> Result<Option<Content>, sqlx::Error> {
+        self.queries.find_by_id(id).await
     }
 
-    pub async fn get_by_slug(&self, slug: &str) -> Result<Option<Content>, sqlx::Error> {
-        self.queries.get_by_slug(slug).await
+    pub async fn find_by_slug(&self, slug: &str) -> Result<Option<Content>, sqlx::Error> {
+        self.queries.find_by_slug(slug).await
     }
 
-    pub async fn get_by_source_and_slug(
+    pub async fn find_by_source_and_slug(
         &self,
         source_id: &SourceId,
         slug: &str,
     ) -> Result<Option<Content>, sqlx::Error> {
-        self.queries.get_by_source_and_slug(source_id, slug).await
+        self.queries.find_by_source_and_slug(source_id, slug).await
     }
 
     pub async fn list(&self, limit: i64, offset: i64) -> Result<Vec<Content>, sqlx::Error> {
@@ -67,11 +67,11 @@ impl ContentRepository {
         self.queries.list_all(limit, offset).await
     }
 
-    pub async fn get_slugs_by_source(
+    pub async fn list_slugs_by_source(
         &self,
         source_id: &SourceId,
     ) -> Result<Vec<String>, sqlx::Error> {
-        self.queries.get_slugs_by_source(source_id).await
+        self.queries.list_slugs_by_source(source_id).await
     }
 
     pub async fn delete_orphaned_slugs(

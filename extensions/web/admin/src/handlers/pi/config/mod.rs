@@ -34,6 +34,7 @@ pub struct PiConfig {
     pub(super) base_url: String,
     pub(super) provider: String,
     pub(super) model: String,
+    pub(super) models: Vec<String>,
     pub(super) persona: String,
     pub(super) tools: Vec<String>,
     pub(super) child_path: String,
@@ -83,8 +84,9 @@ impl PiConfig {
     pub(crate) fn load_or_defaults() -> Self {
         Self::load().unwrap_or_else(|errors| {
             tracing::error!(
-                "{errors}\nFalling back to built-in pi defaults. The terminal is serving, but \
-                 not with the settings in services/config/pi.yaml."
+                errors = %errors,
+                "falling back to built-in pi defaults; the terminal is serving, but not with \
+                 the settings in services/config/pi.yaml"
             );
             Self::from_raw(PiConfigRaw::default())
         })
@@ -149,6 +151,12 @@ impl PiConfig {
             base_url: raw.base_url.unwrap_or_else(profile_base_url),
             provider: raw.provider,
             model: raw.model,
+            models: raw
+                .models
+                .iter()
+                .map(|m| m.trim().to_owned())
+                .filter(|m| !m.is_empty())
+                .collect(),
             persona: raw.persona,
             tools: raw
                 .tools

@@ -56,8 +56,8 @@ impl PublishPipelineJob {
         }
     }
 
-    async fn run_bundle_admin_css(&self, stats: &mut PipelineStats) {
-        match BundleAdminCssJob::execute_bundle().await {
+    async fn run_bundle_admin_css(&self, paths: &AppPaths, stats: &mut PipelineStats) {
+        match BundleAdminCssJob::execute_bundle(paths).await {
             Ok(result) => {
                 tracing::debug!(
                     bundled = result.items_processed.unwrap_or(0),
@@ -244,7 +244,7 @@ impl PublishPipelineJob {
         let mut stats = PipelineStats::default();
 
         self.run_ingestion(ctx, &mut stats).await;
-        self.run_bundle_admin_css(&mut stats).await;
+        self.run_bundle_admin_css(paths, &mut stats).await;
         self.run_asset_copy(paths, &mut stats).await;
         self.run_prerender(ctx, &mut stats).await;
         self.run_page_prerender(paths, db_pool, &mut stats).await;

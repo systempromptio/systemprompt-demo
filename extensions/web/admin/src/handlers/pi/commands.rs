@@ -22,20 +22,20 @@ use super::{events, rpc};
 #[derive(Debug, Deserialize)]
 pub(super) struct PromptBody {
     token: String,
-    conversation_id: String,
+    conversation_id: systemprompt::identifiers::ContextId,
     message: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub(super) struct AbortBody {
     token: String,
-    conversation_id: String,
+    conversation_id: systemprompt::identifiers::ContextId,
 }
 
 #[derive(Debug, Deserialize)]
 pub(super) struct ApproveBody {
     token: String,
-    conversation_id: String,
+    conversation_id: systemprompt::identifiers::ContextId,
     approval_id: String,
     decision: String,
 }

@@ -2,7 +2,7 @@
 body {
   font-family: var(--sp-font-body);
   color: var(--sp-color-text);
-  background: var(--sp-color-background);
+  background: var(--sp-color-bg);
   line-height: 1.6;
 }
 
@@ -35,7 +35,7 @@ body {
 .container {
   max-width: var(--sp-container-max);
   margin: 0 auto;
-  padding: 0 var(--sp-space-lg);
+  padding: 0 var(--sp-space-6);
 }
 
 
@@ -44,7 +44,7 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--sp-space-3xl) var(--sp-space-xl) var(--sp-space-xl);
+  padding: var(--sp-space-3xl) var(--sp-space-8) var(--sp-space-8);
   position: relative;
   overflow: hidden;
 }
@@ -67,7 +67,7 @@ body {
 .feature-hero-content {
   text-align: center;
   max-width: 800px;
-  margin-bottom: var(--sp-space-xl);
+  margin-bottom: var(--sp-space-8);
 }
 
 .feature-hero-animation {
@@ -99,7 +99,7 @@ body {
 .feature-icon {
   width: 64px;
   height: 64px;
-  margin: 0 auto var(--sp-space-lg);
+  margin: 0 auto var(--sp-space-6);
   color: var(--sp-color-primary);
 }
 
@@ -115,7 +115,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   line-height: 1.1;
-  margin-bottom: var(--sp-space-lg);
+  margin-bottom: var(--sp-space-6);
   color: var(--sp-color-text);
 }
 

@@ -76,6 +76,41 @@ pub struct FetchRemoteDocsInput {
     pub path: String,
 }
 
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+#[expect(
+    clippy::empty_structs_with_brackets,
+    reason = "serde needs an empty object shape to deserialize a no-arg tool input from {}"
+)]
+pub struct ListSitePagesInput {}
+
+/// The two site sections a page can live in. An enum rather than a string so
+/// that "which hosts can this tool reach" is answered by the type system.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SitePageSection {
+    Documentation,
+    Blog,
+}
+
+impl SitePageSection {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Documentation => "documentation",
+            Self::Blog => "blog",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct FetchSitePageInput {
+    /// Which section of the site the page lives in.
+    pub section: SitePageSection,
+    /// The page slug as listed by `list_site_pages`, e.g. "services/ai".
+    pub slug: String,
+}
+
 #[must_use]
 pub fn output_schema() -> serde_json::Value {
     ToolResponse::<CliArtifact>::schema()
@@ -86,6 +121,7 @@ struct ToolDef<'a> {
     name: &'a str,
     title: &'a str,
     description: &'a str,
+    // JSON: MCP `Tool` schemas are protocol-defined `serde_json` shapes
     input_schema: serde_json::Value,
     output_schema: &'a serde_json::Value,
 }
@@ -119,6 +155,7 @@ fn create_tool(def: &ToolDef<'_>) -> Tool {
 pub fn list_tools() -> Vec<Tool> {
     let output = output_schema();
     let mut tools = docs_tools(&output);
+    tools.append(&mut site_tools(&output));
     tools.append(&mut readback_tools(&output));
     tools.append(&mut refusal_tools(&output));
     tools
@@ -155,6 +192,39 @@ fn docs_tools(output: &serde_json::Value) -> Vec<Tool> {
                  best-matching topics ranked, with short excerpts, e.g. \
                  {\"query\": \"how are secrets blocked\"}.",
             input_schema: schemars::schema_for!(SearchDocsInput).to_value(),
+            output_schema: output,
+        }),
+    ]
+}
+
+fn site_tools(output: &serde_json::Value) -> Vec<Tool> {
+    vec![
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "list_site_pages",
+            title: "List Live Site Pages",
+            description: &format!(
+                "List every public page of the live {WEBSITE_URL} site — documentation and \
+                 blog — with the section and slug to read one via `fetch_site_page`. Unlike \
+                 `list_topics`, which answers from documentation compiled into this server, \
+                 this reads the site as it is published right now."
+            ),
+            input_schema: schemars::schema_for!(ListSitePagesInput).to_value(),
+            output_schema: output,
+        }),
+        create_tool(&ToolDef {
+            server_name: SERVER_NAME,
+            name: "fetch_site_page",
+            title: "Fetch Live Site Page",
+            description: &format!(
+                "Fetch one page of the live {WEBSITE_URL} site as its source markdown, e.g. \
+                 {{\"section\": \"documentation\", \"slug\": \"services/ai\"}}. Use \
+                 `list_site_pages` to discover sections and slugs. The input is a section \
+                 and slug, never a URL: the tool can only ever read {WEBSITE_URL}'s own \
+                 markdown endpoint, which is why this egress is permitted while \
+                 `fetch_remote_docs` is refused."
+            ),
+            input_schema: schemars::schema_for!(FetchSitePageInput).to_value(),
             output_schema: output,
         }),
     ]

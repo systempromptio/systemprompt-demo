@@ -131,7 +131,10 @@ const fn ttl(tier: Tier) -> Duration {
 }
 
 fn snapshot_at(tier: Tier) -> Option<(Duration, PulseResponse)> {
-    let guard = CACHE.lock().ok()?;
+    let guard = CACHE
+        .lock()
+        .inspect_err(|_| tracing::warn!("pulse cache mutex poisoned; recomputing snapshot"))
+        .ok()?;
     let taken = guard[tier.index()]
         .as_ref()
         .map(|(at, snapshot)| (at.elapsed(), snapshot.clone()));

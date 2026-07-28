@@ -22,7 +22,10 @@ static BALANCE_CACHE: LazyLock<Mutex<HashMap<String, CachedBalance>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 fn cached_balance(subject: &str) -> Option<i64> {
-    let cache = BALANCE_CACHE.lock().ok()?;
+    let cache = BALANCE_CACHE
+        .lock()
+        .inspect_err(|_| tracing::warn!("credits balance cache mutex poisoned; treating as miss"))
+        .ok()?;
     let entry = cache.get(subject)?;
     let fresh = entry.fetched_at.elapsed() < CACHE_TTL;
     let value = entry.microdollars;

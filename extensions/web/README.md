@@ -166,10 +166,10 @@ use systemprompt_blog_extension::ContentService;
 let service = ContentService::new(pool.clone());
 
 // Get content by ID
-let content = service.get_by_id("content-123").await?;
+let content = service.find_by_id("content-123").await?;
 
 // Get content by slug
-let content = service.get_by_slug("getting-started").await?;
+let content = service.find_by_slug("getting-started").await?;
 
 // List content with pagination
 let items = service.list(10, 0).await?;

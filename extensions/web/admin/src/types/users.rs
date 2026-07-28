@@ -75,6 +75,7 @@ pub struct UserUsageEvent {
     pub event_type: String,
     pub tool_name: Option<String>,
     pub created_at: DateTime<Utc>,
+    // JSON: per-event metadata JSONB column, rendered without interpretation
     pub metadata: serde_json::Value,
 }
 

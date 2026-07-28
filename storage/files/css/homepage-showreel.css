@@ -24,8 +24,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--sp-space-xs) var(--sp-space-lg);
-  padding: var(--sp-space-lg) var(--sp-space-xl);
+  gap: var(--sp-space-1) var(--sp-space-6);
+  padding: var(--sp-space-6) var(--sp-space-8);
   border-top: 1px solid var(--sp-brand-800);
   text-align: left;
 }
@@ -50,10 +50,10 @@
 
 @media (max-width: 768px) {
   .hero-showreel {
-    margin-top: var(--sp-space-2xl);
+    margin-top: var(--sp-space-12);
   }
 
   .hero-showreel-caption {
-    padding: var(--sp-space-md) var(--sp-space-lg);
+    padding: var(--sp-space-4) var(--sp-space-6);
   }
 }

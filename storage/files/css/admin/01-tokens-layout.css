@@ -1,11 +1,5 @@
 @layer tokens {
 :root {
-    --sp-radius-xs: 0.25rem;
-    --sp-radius-sm: 0.375rem;
-    --sp-radius-md: 0.625rem;
-    --sp-radius-lg: 0.875rem;
-    --sp-radius-xl: 1.25rem;
-    --sp-radius-full: 9999px;
     --sp-radius-card: 1rem;
     --sp-radius-card-inner: 0.625rem;
     --sp-radius-widget: 1.25rem;

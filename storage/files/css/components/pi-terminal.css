@@ -31,7 +31,7 @@
 }
 
 .pi-demo {
-  padding: var(--sp-space-4xl) 0 var(--sp-space-2xl);
+  padding: var(--sp-space-4xl) 0 var(--sp-space-12);
   border-top: 1px solid var(--sp-color-border);
 }
 
@@ -65,7 +65,10 @@
   opacity: 1;
   visibility: visible;
   background: var(--sp-color-terminal-bg);
-  border: 1px solid var(--sp-color-terminal-border);
+  /* Softened: at full strength the edge read as a hard white frame against the
+     dark stage. The rim-light below is what says "lit"; the border only has to
+     say "ends here". */
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 65%, transparent);
   /* The brand's asymmetric corner, which the rest of the site uses and this
      widget used to ignore. */
   border-radius: var(--sp-corners-lg);
@@ -89,15 +92,17 @@
    Scoped, because everywhere else this widget sits on an opaque page and glass
    there would just look like a rendering bug.
 
-   The transcript stays near-solid deliberately: mono text at 0.875rem over a
-   moving gradient is unreadable. Chrome — header, composer, approval strip —
-   carries the transparency instead, which is what makes it read as glass. */
+   One surface, not two. The transcript used to carry a near-solid slab of its
+   own while the chrome around it stayed transparent — which made the shell read
+   as a box inside a box, with a visible seam where the slab ended. The whole
+   shell now wears the near-solid ink (mono text over moving footage still needs
+   it) and every section inside is a region of that one surface. */
 .home-split-body .pi-terminal {
   --pi-rim: var(--sp-stage-rim);
 }
 
 .home-split-body .pi-terminal .terminal {
-  background: var(--sp-stage-glass);
+  background: oklch(0.14 0.01 55 / 0.86);
   backdrop-filter: blur(var(--sp-stage-blur)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--sp-stage-blur)) saturate(140%);
   border-color: var(--sp-stage-glass-border);
@@ -105,7 +110,7 @@
 }
 
 .home-split-body .pi-terminal .terminal-body {
-  background: oklch(0.14 0.01 55 / 0.86);
+  background: transparent;
 }
 
 .home-split-body .pi-terminal .terminal-header,
@@ -142,7 +147,7 @@
   gap: var(--sp-space-3);
   padding: var(--sp-space-2) var(--sp-space-4);
   background: var(--sp-color-terminal-header);
-  border-bottom: 1px solid var(--sp-color-terminal-border);
+  border-bottom: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
 }
 
 /* The titlebar is branded rather than labelled.
@@ -156,12 +161,12 @@
   flex: none;
 }
 
+/* An <img> of icon.svg — the asset carries the brand colour itself. */
 .pi-brand-mark {
   display: block;
   width: 18px;
   height: 18px;
   flex: none;
-  fill: var(--sp-color-primary);
 }
 
 .pi-brand-name {
@@ -195,6 +200,124 @@
 .pi-jail-chip::before {
   content: '⛨';
   font-size: 0.8em;
+}
+
+/* Who the session is signed to. A padlock and the identity, dressed as a chip
+   so the header stays one family — the lock is the claim that every call this
+   terminal makes carries a token minted for exactly this identity. */
+.pi-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-primary) 35%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+}
+
+.pi-user-lock {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: none;
+  color: var(--sp-color-primary);
+}
+
+/* The identity may be long; the chip may not be. */
+.pi-user-chip > span {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Abandon the transcript, keep the identity. A chip-shaped button so the
+   header's controls and its facts share one visual language. */
+.pi-clear-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  background: transparent;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-text-dim) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--sp-transition-fast), border-color var(--sp-transition-fast);
+}
+
+.pi-clear-chip:hover {
+  color: var(--sp-color-terminal-text);
+  border-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 70%, transparent);
+}
+
+.pi-clear-chip:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 2px;
+}
+
+.pi-clear-icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: none;
+}
+
+/* The model picker, dressed as a chip so the header stays one family. Only
+   rendered when the gateway advertises more than one model. The native
+   arrow is replaced with an inline chevron so the closed control matches the
+   jail chip beside it on every platform. */
+.pi-model {
+  appearance: none;
+  -webkit-appearance: none;
+  max-width: 12rem;
+  padding: 0.15rem 1.3rem 0.15rem 0.6rem;
+  overflow: hidden;
+  background-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 8%, transparent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M1 1.5 4 4.5 7 1.5' fill='none' stroke='%23999' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.45rem center;
+  background-size: 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-text-dim) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.pi-model:hover {
+  border-color: color-mix(in oklch, var(--sp-color-primary) 55%, transparent);
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-model:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 1px;
+}
+
+/* The open list is native; these are the only knobs it honours. */
+.pi-model option,
+.pi-model optgroup {
+  background: var(--sp-color-terminal-bg, #1a1a1a);
+  color: var(--sp-color-terminal-text, #eee);
+  font-family: var(--sp-font-mono);
+}
+
+.pi-model optgroup {
+  color: var(--sp-color-terminal-text-dim, #999);
+  font-size: 0.7rem;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 /* Kept: other surfaces may still render the old title element. */
@@ -306,7 +429,7 @@
   font-family: var(--sp-font-mono);
   font-variant-ligatures: none;
   font-size: 0.875rem;
-  line-height: 1.65;
+  line-height: 1.6;
   color: var(--sp-color-terminal-text);
   box-shadow: var(--sp-shadow-inner-glow);
   scrollbar-width: thin;
@@ -336,10 +459,63 @@
 .pi-terminal .terminal-line {
   white-space: pre-wrap;
   word-break: break-word;
+  /* Measure cap. Mono at 0.875rem across the full 860px shell runs past 150
+     characters a line — unreadable. ~68ch is where prose stops being a wall. */
+  max-width: 68ch;
 }
 
 .pi-terminal .prompt {
   color: var(--sp-color-primary);
+}
+
+/* A user turn opens every act, so a hairline above each one is all the
+   grouping the transcript needs: the eye scans a flush-left column of `>`
+   prompts and each answer hangs off its question. */
+.pi-terminal .pi-turn-user {
+  margin-top: var(--sp-space-5);
+  padding-top: var(--sp-space-3);
+  border-top: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 45%, transparent);
+}
+
+.pi-terminal .pi-turn-user:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.pi-terminal .pi-turn-user .command {
+  font-weight: 600;
+}
+
+/* Replay commentary — the narrator's voice, not the agent's. Set apart as an
+   editorial aside so the two can never be read as the same speaker. */
+.pi-terminal .pi-note {
+  display: inline-block;
+  max-width: 60ch;
+  margin: var(--sp-space-2) 0 var(--sp-space-1);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.pi-terminal .pi-note::before {
+  content: '— ';
+  opacity: 0.5;
+}
+
+/* In replay the agent's half of the exchange is indented off the prompt
+   column. Scoped to replay: a live session's transcript is the operator's
+   working surface and keeps its full width. */
+.pi-terminal.is-replay .terminal-body .pi-prose,
+.pi-terminal.is-replay .terminal-body .pi-tool,
+.pi-terminal.is-replay .terminal-body .pi-rail-line,
+.pi-terminal.is-replay .terminal-body .pi-blocked,
+.pi-terminal.is-replay .terminal-body .pi-note {
+  margin-left: var(--sp-space-4);
+}
+
+.pi-terminal.is-replay .terminal-body .pi-prose {
+  padding-left: var(--sp-space-3);
+  border-left: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 40%, transparent);
 }
 
 .pi-terminal .command {
@@ -419,6 +595,8 @@
 
 .pi-prose {
   color: var(--sp-color-terminal-text);
+  max-width: 68ch;
+  margin-block: var(--sp-space-2) var(--sp-space-3);
 }
 
 .pi-prose > :first-child { margin-top: 0; }
@@ -748,20 +926,49 @@
 /* ── blocked ────────────────────────────────────────────────────────────── */
 
 .pi-blocked {
+  position: relative;
   margin: var(--sp-space-2) 0;
-  padding: var(--sp-space-3);
+  max-width: 46rem;
+  padding: var(--sp-space-2) var(--sp-space-3);
   background: color-mix(in oklch, var(--sp-color-error) 8%, var(--sp-color-terminal-header));
-  border: 1px solid color-mix(in oklch, var(--sp-color-error) 55%, transparent);
-  border-left: 3px solid var(--sp-color-error);
+  /* The verdict carries the colour; the frame does not have to shout it. A
+     bright outline against the dark stage read as an alarm banner — the left
+     accent alone marks the row, and the outer edge stays quiet. */
+  border: 1px solid color-mix(in oklch, var(--sp-color-error) 28%, transparent);
+  border-left: 3px solid color-mix(in oklch, var(--sp-color-error) 75%, transparent);
   border-radius: var(--sp-corners-inner-md);
   font-size: 0.8rem;
+  overflow: hidden;
+}
+
+/* A slow light travelling the left accent — the one edge that carries the
+   verdict is the one that is alive. Decorative: motion-gated below. */
+.pi-blocked::before {
+  content: '';
+  position: absolute;
+  /* Just inside the accent — the shell's overflow:hidden clips anything drawn
+     over the border itself. */
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, transparent 20%, var(--sp-color-error) 50%, transparent 80%);
+  background-size: 100% 300%;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .pi-blocked-head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--sp-space-2);
   color: var(--sp-color-terminal-text);
+}
+
+/* Facts about the evaluation, right-aligned in the head row. */
+.pi-blocked-meta {
+  margin-left: auto;
 }
 
 .pi-blocked-mark {
@@ -779,16 +986,17 @@
 }
 
 .pi-blocked-reason {
-  margin: var(--sp-space-2) 0 0;
+  margin: var(--sp-space-1) 0 0;
+  max-width: 60ch;
   color: var(--sp-color-terminal-text);
   font-family: var(--sp-font-mono);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 }
 
 .pi-blocked-note {
-  margin: var(--sp-space-2) 0 0;
+  margin: var(--sp-space-1) 0 0;
   color: var(--sp-color-terminal-text-dim);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
 /* ── approval queue ─────────────────────────────────────────────────────── */
@@ -803,19 +1011,71 @@
   border-top: 1px solid var(--sp-color-terminal-border);
 }
 
+/* Registered so the sweep angle interpolates. Harmless where @property is
+   unsupported — the animated border simply never engages and the static soft
+   border below stands. */
+@property --pi-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .pi-approval-card {
-  padding: var(--sp-space-3);
+  /* Smaller ring: the card is an instrument in a queue, not a dialog. */
+  --pi-ring-size: 1.75rem;
+
+  padding: var(--sp-space-2) var(--sp-space-3);
   background: linear-gradient(
     180deg,
     color-mix(in oklch, var(--sp-color-warning) 9%, var(--sp-color-terminal-header)),
     var(--sp-color-terminal-header)
   );
-  border: 1px solid color-mix(in oklch, var(--sp-color-warning) 65%, transparent);
+  /* Quiet by default — the amber wash and the draining ring already say
+     "pending"; a bright outline was the frame shouting over its contents. */
+  border: 1px solid color-mix(in oklch, var(--sp-color-warning) 30%, transparent);
   border-radius: var(--sp-corners-inner-md);
   box-shadow: var(--sp-shadow-lift);
   font-family: var(--sp-font-mono);
   font-size: 0.8rem;
   color: var(--sp-color-terminal-text);
+}
+
+/* Args beside the cleared chain: the two facts the decision rests on, side by
+   side rather than stacked into a banner. */
+.pi-approval-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--sp-space-2) var(--sp-space-4);
+  margin-top: var(--sp-space-2);
+}
+
+/* Flat arguments as a ledger — `TO board@acme.com` reads at a glance where a
+   JSON blob has to be parsed by eye. Non-flat input keeps the exact <pre>. */
+.pi-approval-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem var(--sp-space-3);
+  margin: 0;
+  padding: var(--sp-space-2);
+  background: color-mix(in oklch, var(--sp-color-terminal-bg) 70%, transparent);
+  border-radius: var(--sp-radius-sm);
+}
+
+.pi-approval-kv dt {
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.9;
+}
+
+.pi-approval-kv dd {
+  margin: 0;
+  color: var(--sp-color-terminal-text);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  word-break: break-word;
 }
 
 .pi-approval-card--canned {
@@ -899,10 +1159,26 @@
   scrollbar-width: thin;
 }
 
+.pi-approval-grid .pi-approval-input {
+  margin: 0;
+}
+
 /* What already cleared, not a bare "allow this?" — the operator should see the
    chain that passed before being asked. */
 .pi-approval-cleared {
-  margin-top: var(--sp-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1);
+  align-items: flex-start;
+}
+
+/* The cleared rail is compact; hovering the block names the policies, the same
+   contract the compact rail keeps inside a tool row. */
+.pi-approval-cleared:hover .pi-rail--compact .pi-pip-name,
+.pi-approval-cleared:focus-within .pi-rail--compact .pi-pip-name {
+  max-width: 10rem;
+  margin-left: 0.35rem;
+  opacity: 1;
 }
 
 .pi-approval-cleared-label {
@@ -918,6 +1194,33 @@
   margin-top: var(--sp-space-2);
   color: var(--sp-color-success);
   font-size: 0.72rem;
+}
+
+/* Small true facts as pills — shared by the blocked callout and the approval
+   card. Detail belongs in chrome like this, not padded into the prose. */
+.pi-detail-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-space-1);
+}
+
+.pi-approval-card > .pi-detail-row {
+  margin-top: var(--sp-space-2);
+}
+
+.pi-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .pi-approval-actions {
@@ -1276,7 +1579,7 @@
 /* ── tool rows ──────────────────────────────────────────────────────────── */
 
 .pi-tool {
-  margin: 0.1rem 0;
+  margin: var(--sp-space-2) 0;
   font-family: var(--sp-font-mono);
 }
 
@@ -1449,8 +1752,40 @@
     animation: pi-card-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  /* A pending card wears a slow light circling its edge — pending, stated by
+     the border itself. The amber gradient repaints over padding-box and the
+     conic sweep owns the 1px border-box ring behind it. Browsers without
+     @property never interpolate --pi-sweep and keep the static border above. */
+  @supports (background: conic-gradient(from 1deg, red, red)) {
+    .pi-approval-card {
+      border-color: transparent;
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in oklch, var(--sp-color-warning) 9%, var(--sp-color-terminal-header)),
+          var(--sp-color-terminal-header)
+        ) padding-box,
+        conic-gradient(
+          from var(--pi-sweep),
+          color-mix(in oklch, var(--sp-color-warning) 65%, transparent),
+          color-mix(in oklch, var(--sp-color-warning) 14%, transparent) 30%,
+          color-mix(in oklch, var(--sp-color-warning) 14%, transparent) 70%,
+          color-mix(in oklch, var(--sp-color-warning) 65%, transparent)
+        ) border-box;
+      animation:
+        pi-card-in 260ms cubic-bezier(0.16, 1, 0.3, 1),
+        pi-border-sweep 6s linear infinite;
+    }
+  }
+
   .pi-blocked.is-arriving {
     animation: pi-block-in 300ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  /* The blocked card's left accent carries a slow travelling light. */
+  .pi-blocked::before {
+    opacity: 1;
+    animation: pi-edge-shimmer 4s ease-in-out infinite;
   }
 
   .pi-jump {
@@ -1483,6 +1818,15 @@
   to { opacity: 1; transform: none; }
 }
 
+@keyframes pi-border-sweep {
+  to { --pi-sweep: 360deg; }
+}
+
+@keyframes pi-edge-shimmer {
+  from { background-position: 0 300%; }
+  to { background-position: 0 -300%; }
+}
+
 /* A short, small shake. Enough to say "this stopped", not enough to be a toy. */
 @keyframes pi-block-in {
   0% { opacity: 0; transform: translateX(0); }
@@ -1497,12 +1841,72 @@
 @media (max-width: 640px) {
   .pi-terminal .terminal-body {
     min-height: 200px;
+    padding: var(--sp-space-3);
     font-size: 0.8rem;
   }
 
   .pi-terminal .terminal-header {
     flex-wrap: wrap;
     row-gap: var(--sp-space-1);
+  }
+
+  /* The identity keeps its lock but yields width to the transcript. */
+  .pi-user-chip > span {
+    max-width: 8rem;
+  }
+
+  /* The indent that shapes the wide transcript is a tax at phone widths — the
+     column is barely 40ch, so the answer needs every one of them. Prompts keep
+     their hairline rule, which still carries the act grouping. */
+  .pi-terminal.is-replay .terminal-body .pi-prose,
+  .pi-terminal.is-replay .terminal-body .pi-tool,
+  .pi-terminal.is-replay .terminal-body .pi-rail-line,
+  .pi-terminal.is-replay .terminal-body .pi-blocked,
+  .pi-terminal.is-replay .terminal-body .pi-note {
+    margin-left: 0;
+  }
+
+  .pi-terminal.is-replay .terminal-body .pi-prose {
+    padding-left: var(--sp-space-2);
+  }
+
+  .pi-terminal .pi-turn-user {
+    margin-top: var(--sp-space-4);
+    padding-top: var(--sp-space-2);
+  }
+
+  /* Chrome tightens; the transcript is what the height is for. */
+  .pi-composer {
+    padding: var(--sp-space-3);
+  }
+
+  .pi-approvals:not(:empty) {
+    padding: var(--sp-space-2) var(--sp-space-3);
+  }
+
+  .pi-gate {
+    padding: var(--sp-space-3);
+    font-size: 0.8rem;
+  }
+
+  /* The kv ledger's two columns fight for width a phone does not have. */
+  .pi-approval-kv {
+    grid-template-columns: 1fr;
+    gap: 0 var(--sp-space-3);
+  }
+
+  .pi-approval-kv dt {
+    line-height: 1.4;
+  }
+
+  .pi-approval-kv dd {
+    margin-bottom: var(--sp-space-1);
+  }
+
+  /* Chips give way before the verdict does. */
+  .pi-blocked-meta {
+    margin-left: 0;
+    width: 100%;
   }
 
   /* The meters scroll rather than wrapping into a second row that pushes the
@@ -1527,6 +1931,11 @@
   .pi-approval-actions,
   .pi-gate-actions {
     flex-direction: column;
+  }
+
+  /* Args over the cleared chain, single column. */
+  .pi-approval-grid {
+    grid-template-columns: 1fr;
   }
 
   .pi-tool-state {

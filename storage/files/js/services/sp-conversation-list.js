@@ -1,4 +1,5 @@
-'use strict';
+import { PI_API_BASE } from './pi-constants.js';
+import { conversations, sendJson } from './pi-transport.js';
 
 /**
  * <sp-conversation-list for="pi" endpoint="/api/public/pi">
@@ -12,8 +13,6 @@
  * owns the session, the stream, and the credential. Two components that both
  * believed they knew the current conversation would eventually disagree.
  */
-
-const DEFAULT_ENDPOINT = '/api/public/pi';
 
 /** Longest title shown before it is ellipsised in CSS rather than in the DOM,
  *  so the full text stays available as a tooltip. */
@@ -30,7 +29,7 @@ class SpConversationList extends HTMLElement {
   connectedCallback() {
     if (this._built) return;
     this._built = true;
-    this._endpoint = (this.getAttribute('endpoint') || DEFAULT_ENDPOINT).replace(/\/$/, '');
+    this._endpoint = (this.getAttribute('endpoint') || PI_API_BASE).replace(/\/$/, '');
     this._build();
 
     // The terminal is the source of truth for both the credential and which
@@ -57,7 +56,7 @@ class SpConversationList extends HTMLElement {
   }
 
   _build() {
-    this.innerHTML = '';
+    this.replaceChildren();
     const head = document.createElement('div');
     head.className = 'conv-head';
 
@@ -85,21 +84,12 @@ class SpConversationList extends HTMLElement {
 
   /** Reload from the server. The list is never assembled from local guesses. */
   async refresh() {
-    if (!this._token) return this._render([]);
-    try {
-      const res = await fetch(this._endpoint + '/conversations?token='
-        + encodeURIComponent(this._token), { credentials: 'same-origin' });
-      if (!res.ok) return this._render([]);
-      const body = await res.json();
-      return this._render(Array.isArray(body) ? body : []);
-    } catch (_) {
-      return this._render([]);
-    }
+    this._render(await conversations(this._endpoint, this._token));
   }
 
   _render(items) {
     this._items = items;
-    this._listEl.innerHTML = '';
+    this._listEl.replaceChildren();
     this._emptyEl.hidden = items.length > 0;
     if (!items.length) {
       this._emptyEl.textContent = this._token
@@ -181,16 +171,10 @@ class SpConversationList extends HTMLElement {
   }
 
   async _call(method, id, payload) {
-    try {
-      await fetch(this._endpoint + '/conversations/' + encodeURIComponent(id), {
-        method,
-        credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-    } catch (_) {
-      // Swallowed: the refresh below is what tells the viewer whether it took.
-    }
+    // A failed call is not reported here: the refresh below is what tells the
+    // viewer whether it took.
+    await sendJson(method, this._endpoint + '/conversations/' + encodeURIComponent(id), payload)
+      .catch(() => null);
     await this.refresh();
   }
 }
@@ -212,6 +196,4 @@ function relative(iso) {
   return Math.round(hours / 24) + 'd ago';
 }
 
-if (!customElements.get('sp-conversation-list')) {
-  customElements.define('sp-conversation-list', SpConversationList);
-}
+customElements.define('sp-conversation-list', SpConversationList);

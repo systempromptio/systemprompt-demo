@@ -48,7 +48,7 @@
   margin-top: var(--sp-space-2);
   background: var(--sp-color-surface-elevated);
   border: 1px solid var(--sp-color-border);
-  border-radius: var(--sp-corners-card-brand);
+  border-radius: var(--sp-radius-lg);
   box-shadow: var(--sp-shadow-lg);
   opacity: 0;
   visibility: hidden;
@@ -106,7 +106,7 @@
 }
 
 .dropdown-section a.dropdown-link--has-desc:hover {
-  background: var(--sp-color-surface-hover, rgba(0, 0, 0, 0.04));
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.06));
   color: inherit;
 }
 

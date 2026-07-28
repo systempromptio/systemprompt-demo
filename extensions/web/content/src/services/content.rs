@@ -25,22 +25,22 @@ impl ContentService {
         self.repo.create(params).await.map_err(BlogError::from)
     }
 
-    pub async fn get_by_id(&self, id: &str) -> Result<Option<Content>, BlogError> {
+    pub async fn find_by_id(&self, id: &str) -> Result<Option<Content>, BlogError> {
         let id = ContentId::new(id.to_owned());
-        self.repo.get_by_id(&id).await.map_err(BlogError::from)
+        self.repo.find_by_id(&id).await.map_err(BlogError::from)
     }
 
-    pub async fn get_by_slug(&self, slug: &str) -> Result<Option<Content>, BlogError> {
-        self.repo.get_by_slug(slug).await.map_err(BlogError::from)
+    pub async fn find_by_slug(&self, slug: &str) -> Result<Option<Content>, BlogError> {
+        self.repo.find_by_slug(slug).await.map_err(BlogError::from)
     }
 
-    pub async fn get_by_source_and_slug(
+    pub async fn find_by_source_and_slug(
         &self,
         source_id: &SourceId,
         slug: &str,
     ) -> Result<Option<Content>, BlogError> {
         self.repo
-            .get_by_source_and_slug(source_id, slug)
+            .find_by_source_and_slug(source_id, slug)
             .await
             .map_err(BlogError::from)
     }

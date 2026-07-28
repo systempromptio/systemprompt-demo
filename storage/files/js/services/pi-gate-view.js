@@ -1,7 +1,7 @@
-'use strict';
+import { pretty } from './pi-format.js';
 
 /**
- * window.SpPiGate — the governance chain, rendered.
+ * The governance chain, rendered.
  *
  * This is the part of the terminal that no pty can produce. The stream carries a
  * typed `policy_stages` frame naming every policy that ran, in the order it ran,
@@ -13,9 +13,6 @@
  * sees the chain stop. That is the whole demonstration, and it is why `skip` is
  * a distinct state here and in the Rust frame rather than being folded into a
  * boolean.
- *
- * Classic script attaching to a namespace, matching sp-pi-terminal.js's
- * no-import convention.
  */
 
 /** Per-pip reveal delay. Long enough to read left-to-right, short enough not to
@@ -33,7 +30,7 @@ const GLYPH = { pass: '✓', fail: '✗', skip: '·' };
  * upstream therefore still renders — unlabelled prose is a cosmetic gap, whereas
  * a missing pip would be a lie about what ran.
  */
-const EXPLAIN = {
+export const EXPLAIN = {
   scope_check: 'the agent’s scope permits this tool',
   secret_scan: 'no credential pattern in the arguments',
   tool_blocklist: 'the tool is not blocked for this deployment',
@@ -44,7 +41,7 @@ const EXPLAIN = {
 
 /** Whether to animate at all. Read per call, so an OS-level change mid-session
  *  is honoured without a reload. */
-function motionOk() {
+export function motionOk() {
   return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
@@ -55,7 +52,7 @@ function motionOk() {
  * or filters an entry, because the rail's only claim to being evidence is that it
  * is a direct rendering of what the evaluation reported.
  */
-function chainRail(stages, opts) {
+export function chainRail(stages, opts) {
   const animate = (!opts || opts.animate !== false) && motionOk();
   // Compact is the inline form, drawn inside the row the chain judged. The pips
   // shrink to their dots and the policy names are revealed on hover or focus —
@@ -120,7 +117,7 @@ function chainRail(stages, opts) {
  * `el` and `settle()`, because resolution can arrive from another tab or from
  * the server's own timeout, not only from these buttons.
  */
-function approvalCard(frame, onDecide) {
+export function approvalCard(frame, onDecide) {
   const card = document.createElement('div');
   card.className = 'pi-approval-card';
   // alertdialog, not dialog: it interrupts, it is time-limited, and the default
@@ -152,10 +149,12 @@ function approvalCard(frame, onDecide) {
   countdown.className = 'pi-countdown';
   head.append(ring, title, countdown);
 
-  const args = document.createElement('pre');
-  args.className = 'pi-approval-input';
-  args.textContent = pretty(frame.tool_input);
+  // Arguments as a key/value ledger when the input is flat — `TO board@acme.com`
+  // reads at a glance where a JSON blob has to be parsed by eye. Anything
+  // nested falls back to the pretty-printed form, which stays exact.
+  const args = kvArgs(frame.tool_input);
 
+  const chain = (frame.policy_chain || []);
   const cleared = document.createElement('div');
   cleared.className = 'pi-approval-cleared';
   const clearedLabel = document.createElement('span');
@@ -164,10 +163,27 @@ function approvalCard(frame, onDecide) {
   cleared.append(clearedLabel);
   // The chain that passed, shown before the question rather than after it. The
   // operator is being asked to add a judgement on top of policy, not to trust a
-  // bare prompt — so what policy established has to be on the card.
+  // bare prompt — so what policy established has to be on the card. Compact:
+  // the dots carry the verdicts and the names arrive on hover or focus.
   cleared.append(chainRail(
-    (frame.policy_chain || []).map((p) => ({ policy: p, result: 'pass', detail: EXPLAIN[p] || '' })),
+    chain.map((p) => ({ policy: p, result: 'pass', detail: EXPLAIN[p] || '' })),
+    { compact: true },
   ));
+
+  // Args on the left, the cleared chain on the right — the two facts the
+  // decision rests on, side by side instead of stacked into a banner.
+  const grid = document.createElement('div');
+  grid.className = 'pi-approval-grid';
+  grid.append(args, cleared);
+
+  // Small true facts, stated as chips: how much of the chain passed, and what
+  // ignoring the card does. Both come from the frame, not from copy.
+  const meta = document.createElement('div');
+  meta.className = 'pi-detail-row';
+  if (chain.length) {
+    meta.append(detailChip(chain.length + '/' + chain.length + ' policies passed'));
+  }
+  if (frame.timeout_secs) meta.append(detailChip('auto-denied if ignored'));
 
   const actions = document.createElement('div');
   actions.className = 'pi-approval-actions';
@@ -183,7 +199,7 @@ function approvalCard(frame, onDecide) {
   // ways an approval can end are denials; the UI should not lean on allow.
   actions.append(deny, allow);
 
-  card.append(head, args, cleared, actions);
+  card.append(head, grid, meta, actions);
 
   const total = frame.timeout_secs || 0;
   let left = total;
@@ -233,7 +249,7 @@ function approvalCard(frame, onDecide) {
 }
 
 /** A blocked call, given the weight it deserves. */
-function blockedRow(frame) {
+export function blockedRow(frame) {
   const box = document.createElement('div');
   box.className = 'pi-blocked';
   if (motionOk()) box.classList.add('is-arriving');
@@ -252,6 +268,17 @@ function blockedRow(frame) {
     chip.className = 'pi-policy-chip';
     chip.textContent = frame.policy;
     head.append(chip);
+  }
+
+  // Detail chips, right-aligned in the head row. Facts about the evaluation —
+  // pattern counts, timing — belong in chrome, not padded into the reason prose.
+  if (frame.meta) {
+    const detail = document.createElement('span');
+    detail.className = 'pi-detail-row pi-blocked-meta';
+    Object.values(frame.meta).forEach((v) => {
+      if (v) detail.append(detailChip(String(v)));
+    });
+    head.append(detail);
   }
 
   box.append(head);
@@ -274,12 +301,37 @@ function blockedRow(frame) {
   return box;
 }
 
-function pretty(input) {
-  try {
-    return JSON.stringify(input, null, 2);
-  } catch (_) {
-    return String(input);
-  }
+/** One small true fact, as a pill. */
+function detailChip(text) {
+  const chip = document.createElement('span');
+  chip.className = 'pi-detail-chip';
+  chip.textContent = text;
+  return chip;
 }
 
-window.SpPiGate = { chainRail, approvalCard, blockedRow, motionOk, EXPLAIN };
+/**
+ * A tool's arguments as a key/value ledger, when they are flat enough to be
+ * one. Nested or non-object input falls back to the exact pretty-printed JSON —
+ * a card asking for a judgement must never summarise away what it is asking
+ * about.
+ */
+function kvArgs(input) {
+  const flat = input && typeof input === 'object' && !Array.isArray(input)
+    && Object.values(input).every((v) => ['string', 'number', 'boolean'].includes(typeof v));
+  if (!flat || !Object.keys(input).length) {
+    const pre = document.createElement('pre');
+    pre.className = 'pi-approval-input';
+    pre.textContent = pretty(input);
+    return pre;
+  }
+  const dl = document.createElement('dl');
+  dl.className = 'pi-approval-kv';
+  Object.entries(input).forEach(([k, v]) => {
+    const dt = document.createElement('dt');
+    dt.textContent = k;
+    const dd = document.createElement('dd');
+    dd.textContent = String(v);
+    dl.append(dt, dd);
+  });
+  return dl;
+}

@@ -15,7 +15,6 @@ use systemprompt::models::execution::context::RequestContext as SysRequestContex
 
 use super::text_artifact;
 
-// Why: `list_topics` — enumerate every documentation topic.
 pub(in crate::server) struct ListTopicsHandler;
 
 impl McpToolHandler for ListTopicsHandler {
@@ -51,7 +50,6 @@ impl McpToolHandler for ListTopicsHandler {
     }
 }
 
-// Why: `get_topic` — return the full Markdown of one topic.
 pub(in crate::server) struct GetTopicHandler;
 
 impl McpToolHandler for GetTopicHandler {
@@ -88,7 +86,6 @@ impl McpToolHandler for GetTopicHandler {
     }
 }
 
-// Why: `search_docs` — keyword search across all topics.
 pub(in crate::server) struct SearchDocsHandler;
 
 impl McpToolHandler for SearchDocsHandler {

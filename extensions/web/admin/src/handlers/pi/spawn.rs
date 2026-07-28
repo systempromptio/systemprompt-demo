@@ -45,13 +45,15 @@ you have no record of; you do not need it to answer an ordinary follow-up.
 const TRANSCRIPT_FILE: &str = "TRANSCRIPT.md";
 
 pub(super) struct SpawnRequest<'a> {
-    pub(super) conversation_id: &'a str,
+    pub(super) conversation_id: &'a systemprompt::identifiers::ContextId,
     pub(super) attested_session: &'a str,
     pub(super) gateway_key: &'a str,
     pub(super) shim_source: &'a str,
     pub(super) mcp_client_source: &'a str,
     pub(super) mcp_token: &'a str,
     pub(super) transcript: Option<&'a str>,
+    // Why: already resolved against the config's allow-list by the caller
+    pub(super) model: &'a str,
 }
 
 pub(super) struct Spawned {
@@ -68,7 +70,7 @@ struct Materialised {
 }
 
 async fn materialise(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Result<Materialised> {
-    let workspace = cfg.workspace_root.join(req.conversation_id);
+    let workspace = cfg.workspace_root.join(req.conversation_id.as_str());
     let home = workspace.join("home");
     let shim_dir = workspace.join(".pi");
 
@@ -132,7 +134,7 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
         .arg("--provider")
         .arg(&cfg.provider)
         .arg("--model")
-        .arg(&cfg.model)
+        .arg(req.model)
         .arg("--tools")
         .arg(cfg.tools.join(","))
         .arg("--no-session")
@@ -161,7 +163,7 @@ pub(super) async fn spawn(cfg: &PiConfig, req: &SpawnRequest<'_>) -> std::io::Re
         .env("PATH", &cfg.child_path)
         .env("SYSTEMPROMPT_BASE_URL", &cfg.base_url)
         .env("SYSTEMPROMPT_PI_SESSION", req.attested_session)
-        .env("SP_PI_CONVERSATION", req.conversation_id)
+        .env("SP_PI_CONVERSATION", req.conversation_id.as_str())
         .env("SP_PI_MCP_TOKEN", req.mcp_token)
         .env("PI_OFFLINE", "1")
         // Why: jiti caches transpiled extensions to /tmp/jiti/, which Landlock
@@ -236,20 +238,30 @@ fn ulimit_command(limits: ChildLimits, argv: Vec<String>) -> Command {
 }
 
 async fn write_models_json(cfg: &PiConfig, gateway_key: &str, home: &Path) -> std::io::Result<()> {
+    // Why: the catalogue is the whole allow-list, not just the session's model,
+    // so the child stays confined to gateway-served models even if steered.
+    // Every entry points at the one governed endpoint speaking
+    // anthropic-messages; the gateway translates to each provider's wire.
+    let entries: Vec<serde_json::Value> = super::models::catalogue(cfg)
+        .into_iter()
+        .map(|m| {
+            serde_json::json!({
+                "id": m.id,
+                "name": format!("{} via governed gateway", m.id),
+                "reasoning": true,
+                "input": ["text"],
+                "contextWindow": m.context_window.unwrap_or(200_000),
+                "maxTokens": m.max_output_tokens.unwrap_or(8_000),
+            })
+        })
+        .collect();
     let models = serde_json::json!({
         "providers": {
             &cfg.provider: {
                 "baseUrl": &cfg.base_url,
                 "api": "anthropic-messages",
                 "apiKey": gateway_key,
-                "models": [{
-                    "id": &cfg.model,
-                    "name": "Governed gateway model",
-                    "reasoning": true,
-                    "input": ["text"],
-                    "contextWindow": 200_000,
-                    "maxTokens": 8_000,
-                }],
+                "models": entries,
             }
         }
     });

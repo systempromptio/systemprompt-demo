@@ -15,4 +15,5 @@ pub mod marketplace;
 pub mod mcp;
 pub mod pi;
 pub mod secrets;
+pub mod site_markdown;
 pub mod users;

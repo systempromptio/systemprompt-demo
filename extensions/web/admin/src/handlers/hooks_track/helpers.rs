@@ -84,6 +84,7 @@ pub(super) fn extract_file_path(payload: &HookEventPayload) -> Option<String> {
     }
 }
 
+// JSON: log sanitizer over arbitrary hook bodies — generic by nature
 pub(super) fn sanitize_metadata(raw: &serde_json::Value) -> serde_json::Value {
     let mut obj = match raw.as_object() {
         Some(map) => map.clone(),

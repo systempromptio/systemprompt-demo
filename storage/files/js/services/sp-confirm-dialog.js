@@ -84,6 +84,4 @@ class SpConfirmDialog extends HTMLElement {
   }
 }
 
-if (!customElements.get('sp-confirm-dialog')) {
-  customElements.define('sp-confirm-dialog', SpConfirmDialog);
-}
+customElements.define('sp-confirm-dialog', SpConfirmDialog);

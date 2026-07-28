@@ -4,7 +4,9 @@
 //! `web/dist/`.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
+use systemprompt::models::AppPaths;
 use systemprompt::traits::{Job, JobContext, JobResult};
 
 use crate::error::JobError;
@@ -13,20 +15,12 @@ use crate::error::JobError;
 pub struct BundleAdminCssJob;
 
 impl BundleAdminCssJob {
-    pub async fn execute_bundle() -> Result<JobResult, JobError> {
+    pub async fn execute_bundle(paths: &AppPaths) -> Result<JobResult, JobError> {
         let start_time = std::time::Instant::now();
 
         tracing::info!("Bundle admin CSS job started");
 
-        let css_dir = std::env::current_dir()
-            .unwrap_or_else(|e| {
-                tracing::warn!(error = %e, "Failed to get current directory, using fallback");
-                PathBuf::from(".")
-            })
-            .join("storage")
-            .join("files")
-            .join("css")
-            .join("admin");
+        let css_dir = paths.storage().files().join("css").join("admin");
 
         let bundle_path = css_dir
             .parent()
@@ -121,9 +115,12 @@ impl Job for BundleAdminCssJob {
     }
     async fn execute(
         &self,
-        _ctx: &JobContext,
+        ctx: &JobContext,
     ) -> Result<JobResult, systemprompt::traits::ProviderError> {
-        Ok(Self::execute_bundle().await?)
+        let paths = ctx
+            .app_paths::<Arc<AppPaths>>()
+            .ok_or_else(|| JobError::other("AppPaths unavailable in job context"))?;
+        Ok(Self::execute_bundle(paths).await?)
     }
 }
 

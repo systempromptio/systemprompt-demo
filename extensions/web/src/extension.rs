@@ -91,7 +91,8 @@ pub(crate) fn log_and_discard_err<T: Clone>(
         Err(message) => {
             tracing::error!(
                 error = %message,
-                "{msg}: config failed to load; its pages and sections will not render"
+                config = msg,
+                "config failed to load; its pages and sections will not render"
             );
             None
         },

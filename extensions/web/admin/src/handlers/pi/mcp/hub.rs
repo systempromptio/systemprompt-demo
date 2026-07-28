@@ -30,7 +30,7 @@ pub(super) async fn forward(
         .map_err(|e| e.to_string())?;
 
     let trace_id = format!("pi-mcp-{}", uuid::Uuid::new_v4());
-    let token = mint_hub_token(session)?;
+    let token = mint_hub_token(session).map_err(|e| e.to_string())?;
     let headers = Identity {
         user_id: session.user_id.as_str(),
         session_id: session.attested_session.as_str(),
@@ -96,13 +96,19 @@ struct Identity<'a> {
     token: &'a str,
 }
 
-fn mint_hub_token(session: &Arc<PiSession>) -> Result<String, String> {
-    let issuer = Config::get()
-        .map_err(|e| format!("no config: {e}"))?
-        .jwt_issuer
-        .clone();
-    let id = uuid::Uuid::parse_str(session.user_id.as_str())
-        .map_err(|e| format!("user id is not a uuid: {e}"))?;
+#[derive(Debug, thiserror::Error)]
+enum HubTokenError {
+    #[error("no config: {0}")]
+    Config(#[from] systemprompt::models::errors::ConfigError),
+    #[error("user id is not a uuid: {0}")]
+    UserId(#[from] uuid::Error),
+    #[error("could not mint an mcp token: {0}")]
+    Mint(#[from] systemprompt::oauth::OauthError),
+}
+
+fn mint_hub_token(session: &Arc<PiSession>) -> Result<String, HubTokenError> {
+    let issuer = Config::get()?.jwt_issuer.clone();
+    let id = uuid::Uuid::parse_str(session.user_id.as_str())?;
     let permissions = vec![Permission::User];
     let user = AuthenticatedUser::new(
         id,
@@ -124,12 +130,14 @@ fn mint_hub_token(session: &Arc<PiSession>) -> Result<String, String> {
         &SessionId::new(session.attested_session.to_string()),
         &JwtSigningParams { issuer: &issuer },
     )
-    .map_err(|e| format!("could not mint an mcp token: {e}"))
+    .map_err(HubTokenError::Mint)
 }
 
 struct HubReply {
+    // Why: an opaque MCP-transport token whose format is owned by the MCP
+    // spec and the hub, so it deliberately stays a String, not a typed id
     mcp_session_id: Option<String>,
-    payload: Option<serde_json::Value>,
+    payload: Option<super::render::McpResponseFrame>,
 }
 
 async fn post(

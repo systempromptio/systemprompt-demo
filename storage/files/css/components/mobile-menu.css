@@ -72,7 +72,7 @@
     flex-shrink: 0;
     width: 100%;
     height: var(--sp-header-height);
-    padding: 0 var(--sp-space-md);
+    padding: 0 var(--sp-space-4);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     box-sizing: border-box;
   }
@@ -104,7 +104,7 @@
     flex-direction: column;
     gap: 0;
     background: rgba(0, 0, 0, 0.98);
-    padding: var(--sp-space-md) var(--sp-space-lg);
+    padding: var(--sp-space-4) var(--sp-space-6);
     transform: translateX(100%);
     transition: transform 0.25s ease;
     z-index: var(--sp-z-mobile-menu);
@@ -119,7 +119,7 @@
   .nav-links > a,
   .nav-links > .nav-dropdown > .nav-dropdown-trigger {
     display: block;
-    padding: var(--sp-space-sm) 0;
+    padding: var(--sp-space-2) 0;
     font-size: 0.95rem;
     font-weight: 500;
     letter-spacing: 0.01em;
@@ -136,10 +136,10 @@
 
   
   .nav-links .cta-button {
-    margin-top: var(--sp-space-lg);
+    margin-top: var(--sp-space-6);
     width: 100%;
     text-align: center;
-    padding: var(--sp-space-sm) var(--sp-space-md);
+    padding: var(--sp-space-2) var(--sp-space-4);
     font-size: 0.85rem;
     border-bottom: none;
     border-radius: var(--sp-radius-sm);
@@ -168,7 +168,7 @@
     background: transparent;
     border: none;
     box-shadow: none;
-    padding: 0 0 var(--sp-space-sm) 0;
+    padding: 0 0 var(--sp-space-2) 0;
     margin: 0;
     min-width: auto;
     transform: none;
@@ -187,7 +187,7 @@
   }
 
   .dropdown-section a {
-    padding: var(--sp-space-xs) 0 var(--sp-space-xs) var(--sp-space-md);
+    padding: var(--sp-space-1) 0 var(--sp-space-1) var(--sp-space-4);
     font-size: 0.85rem;
     font-weight: 400;
     color: rgba(255, 255, 255, 0.6);

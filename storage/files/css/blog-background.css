@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: var(--sp-color-background);
+  background: var(--sp-color-bg);
 }
 
 .blog-background::before {

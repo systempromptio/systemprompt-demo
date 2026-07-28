@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.model AS \"model!\", COUNT(*)::bigint AS \"requests!\"\n           FROM ai_requests r\n           JOIN users u ON u.id = r.user_id\n           WHERE r.created_at >= $1\n             AND r.model IS NOT NULL\n             AND NOT ('anonymous' = ANY(u.roles))\n             AND u.email NOT LIKE '%@anonymous.local'\n           GROUP BY r.model\n           ORDER BY COUNT(*) DESC\n           LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "model!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_requests",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "requests!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      null
+    ]
+  },
+  "hash": "eef1e019371db1df83391997cbe0ee4908503dcc0794041b83a602a0ad65630b"
+}

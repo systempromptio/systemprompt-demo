@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_approvals (user_id, status, decided_at, decided_by)\n         VALUES ($1, 'approved', NOW(), $2)\n         ON CONFLICT (user_id) DO UPDATE SET\n            status = 'approved',\n            decided_at = NOW(),\n            decided_by = EXCLUDED.decided_by",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4a04d527789e7c4c692b5f58e82009b11ec13be71b747613bc3add22632dd5f5"
+}

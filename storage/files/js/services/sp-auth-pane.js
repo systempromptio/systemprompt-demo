@@ -1,4 +1,4 @@
-'use strict';
+import { whoami } from './pi-transport.js';
 
 /**
  * <sp-auth-pane> — the right half of the homepage.
@@ -25,7 +25,7 @@ import {
   buildAuthCredentialPayload, buildCreationCredentialPayload,
   establishSessionInline, WEBAUTHN_BASE,
 } from '/js/services/webauthn-passkey-helpers.js';
-import { renderAdminPulse } from '/js/services/sp-pulse-admin.js';
+import { renderAdminPulse } from './sp-pulse-admin.js';
 
 /** How often the authoritative numbers are re-read while a session is live. */
 const POLL_MS = 3000;
@@ -72,7 +72,7 @@ class SpAuthPane extends HTMLElement {
     document.addEventListener('pi-session', (e) => this._onSession(e.detail));
     document.addEventListener('pi-frame', (e) => this._onFrame(e.detail));
 
-    this._who = await this._whoami();
+    this._who = await whoami();
     this._render();
   }
 
@@ -83,30 +83,11 @@ class SpAuthPane extends HTMLElement {
   // ── identity ──────────────────────────────────────────────────────────────
 
   /**
-   * `/admin/auth/me` 307s to the login page for an anonymous visitor rather
-   * than answering 401, so an unguarded fetch would return 200 OK carrying
-   * HTML. `redirect: 'manual'` makes that an opaque response we can reject.
-   */
-  async _whoami() {
-    try {
-      const res = await fetch('/admin/auth/me', {
-        credentials: 'same-origin',
-        redirect: 'manual',
-      });
-      if (!res.ok) return null;
-      if ((res.headers.get('content-type') || '').indexOf('application/json') === -1) return null;
-      return await res.json();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /**
    * Announce the new identity so the terminal restarts against it, then swap
    * this pane over to the telemetry view.
    */
   async _onAuthenticated() {
-    this._who = await this._whoami();
+    this._who = await whoami();
     this._render();
     this.dispatchEvent(new CustomEvent('sp-auth:authenticated', {
       detail: this._who, bubbles: true,
@@ -265,8 +246,8 @@ class SpAuthPane extends HTMLElement {
       + '<button type="button" class="pane-btn pane-btn--ghost" data-role="back">Back</button>'
       + '<button type="submit" class="pane-btn pane-btn--primary">Create account</button>'
       + '</div>'
-      + '<p class="pane-note">The terminal works the moment you register. '
-      + 'The $5 credit and the Bridge wait on a short review.</p>'
+      + '<p class="pane-note">The terminal, your $5 credit, and the Bridge are '
+      + 'yours the moment you register.</p>'
       + '</fieldset>'
       + '</form>';
   }
@@ -394,6 +375,8 @@ class SpAuthPane extends HTMLElement {
           + 'The terminal is yours now; the $5 credit and the Bridge unlock once a '
           + 'human approves it.</p>'
         : '')
+      // The credit meter sits above the tabs, not inside one: it is the one
+      // number that must stay visible whatever the visitor is looking at.
       + '<section class="pane-section pane-section--credit" data-role="credit" hidden>'
       + '<h3 class="pane-h3">Your credit <span class="pane-h3-sub" data-role="credit-of"></span></h3>'
       + '<div class="pane-credit">'
@@ -409,51 +392,15 @@ class SpAuthPane extends HTMLElement {
       + '<p class="pane-credit-note" data-role="credit-note"></p>'
       + '</div>'
       + '</section>'
-      // Each group is one question. Splitting them is what turns a wall of
-      // numbers into an argument: which model, how much traffic, how fast,
-      // how many tokens, what it cost, and what policy did about it.
-      + sectionHtml('Model &amp; route', 'route', [
-        statHtml('model', 'Model', '—'),
-        statHtml('requested', 'Requested', 'as served'),
-        statHtml('provider', 'Provider', '—'),
-        statHtml('route', 'Gateway route', '—'),
-        statHtml('cache', 'Cache hits', '0%'),
-      ])
-      + sectionHtml('Traffic', 'traffic', [
-        statHtml('requests', 'Requests', '0'),
-        statHtml('tools', 'Tool calls', '0'),
-        statHtml('blocked', 'Blocked', '0'),
-        statHtml('errors', 'Errors', '0'),
-      ])
-      + sectionHtml('Latency', 'latency', [
-        statHtml('latency', 'p50', '—'),
-        statHtml('latency95', 'p95', '—'),
-        statHtml('latencyLast', 'Last turn', '—'),
-      ])
-      + sectionHtml('Tokens', 'tokens', [
-        statHtml('tokensIn', 'Input', '0'),
-        statHtml('tokensOut', 'Output', '0'),
-        statHtml('cacheRead', 'Cache read', '0'),
-        statHtml('cacheWrite', 'Cache written', '0'),
-      ])
-      + sectionHtml('Cost', 'cost-section', [
-        statHtml('cost', 'This session', '$0'),
-        statHtml('costPer', 'Per request', '$0'),
-      ])
-      // The stage list, not a tile grid: these are four sequential checks and
-      // the order they run in is part of what is being shown.
-      + '<section class="pane-section">'
-      + '<h3 class="pane-h3">Policy pipeline '
-      + '<span class="pane-h3-sub" data-role="stage-sub"></span></h3>'
-      + '<ol class="pane-stages" data-role="stages"></ol>'
-      + '</section>'
-      + '<section class="pane-section pane-section--feed">'
-      + '<h3 class="pane-h3">Governance <span class="pane-h3-sub" data-role="feed-count"></span></h3>'
-      + '<ol class="pane-feed" data-role="feed">'
-      + '<li class="pane-feed-empty">Ask the agent to read a file. Every decision it '
-      + 'triggers is recorded here.</li>'
-      + '</ol>'
-      + '</section>'
+      // Four tabs, each one question: what is happening, how much and how
+      // fast, what it consumed, and what policy did about it. Every panel is
+      // rendered once and stays in the DOM; switching only toggles `hidden`,
+      // so live updates keep landing in panels the visitor is not looking at.
+      + tabsHtml()
+      + panelHtml('overview', overviewHtml(), false)
+      + panelHtml('traffic', trafficHtml(), true)
+      + panelHtml('usage', usageHtml(), true)
+      + panelHtml('governance', governanceHtml(), true)
       // Hidden until the pulse arrives. A visitor's own numbers prove we record
       // them; this proves the machinery is not a diorama built for one person.
       + '<section class="pane-section pane-section--pulse" data-role="pulse" hidden>'
@@ -478,10 +425,17 @@ class SpAuthPane extends HTMLElement {
 
     this._feed = this.querySelector('[data-role="feed"]');
     this._feedCount = this.querySelector('[data-role="feed-count"]');
+    this._feedPreview = this.querySelector('[data-role="feed-preview"]');
     this._credit = this.querySelector('[data-role="credit"]');
     this._stages = this.querySelector('[data-role="stages"]');
     this._stageSub = this.querySelector('[data-role="stage-sub"]');
+    this._stageMini = this.querySelector('[data-role="stage-mini"]');
+    this._govChip = this.querySelector('[data-role="gov-chip"]');
     this._pulse = this.querySelector('[data-role="pulse"]');
+    this._wireTabs();
+    const viewGov = this.querySelector('[data-role="view-gov"]');
+    if (viewGov) viewGov.addEventListener('click', () => this._selectTab('governance'));
+    this._syncFeedPreview();
     // Render the four stages at zero straight away. Waiting for the first poll
     // would mean the pipeline appears to come into existence once something
     // trips it, which is the opposite of the claim.
@@ -495,22 +449,65 @@ class SpAuthPane extends HTMLElement {
     this._startPulsePolling();
   }
 
+  /**
+   * A key can appear in more than one panel — the Overview repeats the
+   * headline numbers other tabs own — so every instance is updated, not just
+   * the first the selector happens to find.
+   */
   _stat(key, value) {
-    const el = this.querySelector('[data-stat="' + key + '"]');
-    if (el && el.textContent !== value) {
-      el.textContent = value;
-      // Re-triggering the animation needs the class to actually leave the
-      // element first; a same-frame remove/add is coalesced away.
-      el.classList.remove('is-changed');
-      void el.offsetWidth;
-      el.classList.add('is-changed');
-    }
-    // A block that actually happened is the number this pane exists to show.
-    // The terminal header's meter already goes red on the same fact; the two
-    // halves should not disagree about it.
-    if (el && key === 'blocked') {
-      el.parentElement.dataset.hot = value && value !== '0' ? '1' : '0';
-    }
+    this.querySelectorAll('[data-stat="' + key + '"]').forEach((el) => {
+      if (el.textContent !== value) {
+        el.textContent = value;
+        // Re-triggering the animation needs the class to actually leave the
+        // element first; a same-frame remove/add is coalesced away.
+        el.classList.remove('is-changed');
+        void el.offsetWidth;
+        el.classList.add('is-changed');
+      }
+      // A block that actually happened is the number this pane exists to show.
+      // The terminal header's meter already goes red on the same fact; the two
+      // halves should not disagree about it.
+      if (key === 'blocked') {
+        el.parentElement.dataset.hot = value && value !== '0' ? '1' : '0';
+      }
+    });
+  }
+
+  // ── tabs ──────────────────────────────────────────────────────────────────
+
+  _wireTabs() {
+    this._tabs = Array.from(this.querySelectorAll('.pane-tabs--stats .pane-tab'));
+    this._panels = Array.from(this.querySelectorAll('.pane-panel'));
+    if (!this._tabs.length) return;
+    this._tabs.forEach((tab) => {
+      tab.addEventListener('click', () => this._selectTab(tab.dataset.tab));
+    });
+    this.querySelector('.pane-tabs--stats').addEventListener('keydown', (e) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+      e.preventDefault();
+      const current = this._tabs.findIndex((t) => t.dataset.tab === this._activeTab);
+      let next = current;
+      if (e.key === 'ArrowLeft') next = (current - 1 + this._tabs.length) % this._tabs.length;
+      else if (e.key === 'ArrowRight') next = (current + 1) % this._tabs.length;
+      else if (e.key === 'Home') next = 0;
+      else next = this._tabs.length - 1;
+      this._selectTab(this._tabs[next].dataset.tab);
+      this._tabs[next].focus();
+    });
+    // Survives a re-render (sign-out/in, re-auth): the last chosen tab is
+    // restored rather than snapping back to Overview.
+    this._selectTab(this._activeTab || 'overview');
+  }
+
+  _selectTab(id) {
+    this._activeTab = id;
+    this._tabs.forEach((tab) => {
+      const active = tab.dataset.tab === id;
+      tab.classList.toggle('is-active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      tab.tabIndex = active ? 0 : -1;
+    });
+    this._panels.forEach((p) => { p.hidden = p.id !== 'ap-panel-' + id; });
   }
 
   _onSession(detail) {
@@ -735,12 +732,18 @@ class SpAuthPane extends HTMLElement {
 
     this._stat('requests', String(s.requests || 0));
     this._stat('tools', String(Math.max(s.tool_calls || 0, this._live.tools)));
-    this._stat('blocked', String(Math.max(s.denied || 0, this._live.blocked)));
+    const denials = Math.max(s.denied || 0, this._live.blocked);
+    this._stat('blocked', String(denials));
     this._stat('errors', String(s.errors || 0));
+    const reqs = s.requests || 0;
+    this._stat('successRate', reqs
+      ? Math.round(((reqs - (s.errors || 0)) / reqs) * 100) + '%'
+      : '—');
 
     this._stat('latency', ms(s.latency_p50_ms));
     this._stat('latency95', ms(s.latency_p95_ms));
     this._stat('latencyLast', ms(s.latency_last_ms));
+    this._applyLatencyBars(s);
 
     this._stat('tokensIn', compact(s.input_tokens));
     this._stat('tokensOut', compact(s.output_tokens));
@@ -752,7 +755,75 @@ class SpAuthPane extends HTMLElement {
 
     if (s.policy_stages && s.policy_stages.length) this._applyStages(s.policy_stages);
     this._applyCredit(s.credit);
+    this._applyModelMix(s.model_mix);
+    this._applyGovChip((s.events || []).length, denials);
     this._renderFeed(s.events || []);
+  }
+
+  /**
+   * The three latencies as one comparative picture: each bar is scaled against
+   * the slowest of them, so the spread between p50 and p95 is visible rather
+   * than three equally sized tiles saying numbers.
+   */
+  _applyLatencyBars(s) {
+    const vals = {
+      latency: s.latency_p50_ms,
+      latency95: s.latency_p95_ms,
+      latencyLast: s.latency_last_ms,
+    };
+    const max = Math.max(...Object.values(vals).map((v) => Number(v) || 0), 1);
+    Object.entries(vals).forEach(([k, v]) => {
+      const el = this.querySelector('[data-bar="' + k + '"]');
+      if (el) el.style.width = Math.round(((Number(v) || 0) / max) * 100) + '%';
+    });
+  }
+
+  /** Which models actually served this conversation, as labelled share bars. */
+  _applyModelMix(mix) {
+    const section = this.querySelector('[data-role="mix-section"]');
+    const list = this.querySelector('[data-role="mix"]');
+    if (!section || !list) return;
+    if (!mix || !mix.length) {
+      section.hidden = true;
+      return;
+    }
+    section.hidden = false;
+    list.innerHTML = '';
+    mix.forEach((m) => {
+      const row = document.createElement('div');
+      row.className = 'pane-mix-row';
+      const label = document.createElement('span');
+      label.className = 'pane-mix-label';
+      label.textContent = m.model;
+      const bar = document.createElement('div');
+      bar.className = 'pane-bar';
+      bar.setAttribute('role', 'img');
+      bar.setAttribute('aria-label', m.model + ' ' + pct(m.percent) + ' of requests');
+      const fill = document.createElement('span');
+      fill.style.width = Math.max(0, Math.min(100, Number(m.percent) || 0)) + '%';
+      bar.append(fill);
+      const share = document.createElement('span');
+      share.className = 'pane-mix-pct';
+      share.textContent = pct(m.percent);
+      row.append(label, bar, share);
+      list.append(row);
+    });
+  }
+
+  /**
+   * The Governance tab's count chip lives in the always-visible tablist, so a
+   * denial registers even while that panel is hidden.
+   */
+  _applyGovChip(count, denials) {
+    if (!this._govChip) return;
+    this._govChip.hidden = !count;
+    this._govChip.textContent = String(count);
+    this._govChip.dataset.alert = denials > 0 ? '1' : '0';
+    const tab = this.querySelector('#ap-tab-governance');
+    if (tab) {
+      tab.setAttribute('aria-label', 'Governance, ' + count + ' events'
+        + (denials ? ', ' + denials + ' blocked' : ''));
+    }
   }
 
   /**
@@ -788,6 +859,26 @@ class SpAuthPane extends HTMLElement {
 
       li.append(name, tally);
       this._stages.append(li);
+    });
+    this._applyStageMini(stages);
+  }
+
+  /**
+   * The Overview's one-line echo of the pipeline: four named pips, red where
+   * a stage has blocked something. The full tallies live on the Governance
+   * tab; this exists so the pipeline is present on the default view at all.
+   */
+  _applyStageMini(stages) {
+    if (!this._stageMini) return;
+    this._stageMini.innerHTML = '';
+    stages.forEach((st) => {
+      const pip = document.createElement('span');
+      pip.className = 'pane-stage-pip';
+      pip.dataset.hot = st.failed > 0 ? '1' : '0';
+      pip.dataset.active = st.active ? '1' : '0';
+      pip.textContent = st.label || st.id;
+      if (st.failed > 0) pip.title = st.failed + ' blocked';
+      this._stageMini.append(pip);
     });
   }
 
@@ -834,12 +925,31 @@ class SpAuthPane extends HTMLElement {
     // Newest first: the pane is short, and the thing that just happened is the
     // thing being watched for.
     events.slice(-40).reverse().forEach((e) => this._feed.append(feedItem(e)));
+    this._syncFeedPreview();
   }
 
   _pushFeed(e) {
     const empty = this._feed.querySelector('.pane-feed-empty');
     if (empty) empty.remove();
     this._feed.prepend(feedItem(e));
+    this._syncFeedPreview();
+  }
+
+  /** The Overview shows the three newest decisions; the full list is a tab away. */
+  _syncFeedPreview() {
+    if (!this._feedPreview || !this._feed) return;
+    this._feedPreview.innerHTML = '';
+    const items = Array.from(this._feed.children)
+      .filter((li) => !li.classList.contains('pane-feed-empty'))
+      .slice(0, 3);
+    if (!items.length) {
+      const li = document.createElement('li');
+      li.className = 'pane-feed-empty';
+      li.textContent = 'Ask the agent to read a file — every decision lands here live.';
+      this._feedPreview.append(li);
+      return;
+    }
+    items.forEach((li) => this._feedPreview.append(li.cloneNode(true)));
   }
 
   async _signOut() {
@@ -882,6 +992,127 @@ class SpAuthPane extends HTMLElement {
 function statHtml(key, label, initial) {
   return '<div class="pane-stat"><dt>' + label + '</dt>'
     + '<dd data-stat="' + key + '">' + initial + '</dd></div>';
+}
+
+// ── tabbed telemetry layout ─────────────────────────────────────────────────
+
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'traffic', label: 'Traffic' },
+  { id: 'usage', label: 'Usage' },
+  { id: 'governance', label: 'Governance' },
+];
+
+function tabsHtml() {
+  return '<div class="pane-tabs pane-tabs--stats" role="tablist" aria-label="Session telemetry">'
+    + TABS.map((t, i) => {
+      const active = i === 0;
+      return '<button type="button" class="pane-tab' + (active ? ' is-active' : '')
+        + '" role="tab" id="ap-tab-' + t.id + '" aria-controls="ap-panel-' + t.id
+        + '" aria-selected="' + active + '" tabindex="' + (active ? '0' : '-1')
+        + '" data-tab="' + t.id + '">' + t.label
+        + (t.id === 'governance'
+          ? '<span class="pane-tab-chip" data-role="gov-chip" hidden></span>'
+          : '')
+        + '</button>';
+    }).join('')
+    + '</div>';
+}
+
+function panelHtml(id, inner, hidden) {
+  return '<section class="pane-panel" role="tabpanel" id="ap-panel-' + id
+    + '" aria-labelledby="ap-tab-' + id + '" tabindex="0"' + (hidden ? ' hidden' : '') + '>'
+    + inner + '</section>';
+}
+
+/**
+ * The default view answers "what is going on" in one screen: the headline
+ * numbers large, the model in one line, the pipeline as pips, and the last
+ * few decisions. Everything on it is repeated in full on another tab.
+ */
+function overviewHtml() {
+  return '<dl class="pane-stats pane-stats--hero">'
+    + statHtml('requests', 'Requests', '0')
+    + statHtml('tools', 'Tool calls', '0')
+    + statHtml('blocked', 'Blocked', '0')
+    + statHtml('cost', 'Session cost', '$0')
+    + '</dl>'
+    + '<p class="pane-model-line"><span data-stat="model">—</span>'
+    + '<span class="pane-model-sep">·</span><span data-stat="provider">—</span>'
+    + '<span class="pane-model-sep">·</span><span data-stat="route">—</span></p>'
+    + '<div class="pane-stage-mini" data-role="stage-mini"'
+    + ' aria-label="policy pipeline"></div>'
+    + '<section class="pane-section pane-section--feed">'
+    + '<h3 class="pane-h3">Latest decisions '
+    + '<button type="button" class="pane-link pane-link--sm" data-role="view-gov">'
+    + 'view all</button></h3>'
+    + '<ol class="pane-feed pane-feed--preview" data-role="feed-preview"></ol>'
+    + '</section>';
+}
+
+function trafficHtml() {
+  return sectionHtml('Traffic', 'traffic', [
+    statHtml('requests', 'Requests', '0'),
+    statHtml('tools', 'Tool calls', '0'),
+    statHtml('blocked', 'Blocked', '0'),
+    statHtml('errors', 'Errors', '0'),
+    statHtml('successRate', 'Success', '—'),
+  ])
+  + '<section class="pane-section">'
+  + '<h3 class="pane-h3">Latency</h3>'
+  + '<div class="pane-lat">'
+  + latencyRowHtml('latency', 'p50')
+  + latencyRowHtml('latency95', 'p95')
+  + latencyRowHtml('latencyLast', 'Last turn')
+  + '</div>'
+  + '</section>';
+}
+
+function latencyRowHtml(key, label) {
+  return '<div class="pane-lat-row"><span class="pane-lat-label">' + label + '</span>'
+    + '<div class="pane-bar"><span data-bar="' + key + '"></span></div>'
+    + '<span class="pane-lat-val" data-stat="' + key + '">—</span></div>';
+}
+
+function usageHtml() {
+  return sectionHtml('Tokens', 'tokens', [
+    statHtml('tokensIn', 'Input', '0'),
+    statHtml('tokensOut', 'Output', '0'),
+    statHtml('cacheRead', 'Cache read', '0'),
+    statHtml('cacheWrite', 'Cache written', '0'),
+  ])
+  + sectionHtml('Cost', 'cost-section', [
+    statHtml('cost', 'This session', '$0'),
+    statHtml('costPer', 'Per request', '$0'),
+  ])
+  + sectionHtml('Model &amp; route', 'route', [
+    statHtml('model', 'Model', '—'),
+    statHtml('requested', 'Requested', 'as served'),
+    statHtml('provider', 'Provider', '—'),
+    statHtml('route', 'Gateway route', '—'),
+    statHtml('cache', 'Cache hits', '0%'),
+  ])
+  + '<section class="pane-section" data-role="mix-section" hidden>'
+  + '<h3 class="pane-h3">Model mix</h3>'
+  + '<div class="pane-mix" data-role="mix"></div>'
+  + '</section>';
+}
+
+function governanceHtml() {
+  // The stage list, not a tile grid: these are four sequential checks and
+  // the order they run in is part of what is being shown.
+  return '<section class="pane-section">'
+    + '<h3 class="pane-h3">Policy pipeline '
+    + '<span class="pane-h3-sub" data-role="stage-sub"></span></h3>'
+    + '<ol class="pane-stages" data-role="stages"></ol>'
+    + '</section>'
+    + '<section class="pane-section pane-section--feed">'
+    + '<h3 class="pane-h3">Governance <span class="pane-h3-sub" data-role="feed-count"></span></h3>'
+    + '<ol class="pane-feed" data-role="feed">'
+    + '<li class="pane-feed-empty">Ask the agent to read a file. Every decision it '
+    + 'triggers is recorded here.</li>'
+    + '</ol>'
+    + '</section>';
 }
 
 /** One labelled group of tiles. */
@@ -929,6 +1160,4 @@ function passkeyMessage(err, fallback) {
   return (err && err.message) || fallback;
 }
 
-if (!customElements.get('sp-auth-pane')) {
-  customElements.define('sp-auth-pane', SpAuthPane);
-}
+customElements.define('sp-auth-pane', SpAuthPane);

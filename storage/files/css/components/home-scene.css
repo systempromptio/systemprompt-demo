@@ -21,7 +21,27 @@
   position: relative;
 }
 
+/* The shared stage scrim (home-stage.css) is at its lightest in the middle of
+   the viewport, which — because the video layer is fixed — is exactly what sits
+   behind this band while it is being read. A local scrim in the same ink, light
+   at the seam so the field still reads as continuous with the hero. */
+.home-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  background: linear-gradient(180deg,
+    oklch(0.12 0.012 55 / 0.50) 0%,
+    oklch(0.12 0.012 55 / 0.78) 22%,
+    oklch(0.12 0.012 55 / 0.82) 100%);
+}
+
 .home-scene-inner {
+  position: relative;
+  z-index: 1;
   max-width: 1600px;
   margin: 0 auto;
   padding: var(--sp-space-10, 4rem) var(--sp-space-6) var(--sp-space-8);
@@ -50,7 +70,7 @@
 .scene-deck {
   margin: 0 0 var(--sp-space-5);
   max-width: 62ch;
-  font-size: 1.02rem;
+  font-size: 1.08rem;
   line-height: 1.6;
   color: var(--sp-stage-text-dim);
 }
@@ -63,14 +83,14 @@
   flex-wrap: wrap;
   gap: var(--sp-space-2) 0;
   list-style: none;
-  margin: 0 0 var(--sp-space-8);
+  margin: 0 0 var(--sp-space-6);
   padding: 0;
   font-family: var(--sp-font-brand, inherit);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sp-stage-text-dim);
+  color: var(--sp-stage-text-muted);
 }
 
 .scene-verbs li {
@@ -469,6 +489,30 @@
   .scene-offer-actions > * {
     flex: 1 1 auto;
     justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-scene-inner {
+    padding-inline: var(--sp-space-3);
+  }
+
+  /* One column of cards on a phone: side padding eases, vertical rhythm grows,
+     so each card reads as its own beat instead of a cramped list. */
+  .scene-hosts {
+    gap: var(--sp-space-3);
+  }
+
+  .scene-host {
+    padding: var(--sp-space-4);
+  }
+
+  .scene-deck {
+    font-size: 1rem;
+  }
+
+  .scene-verbs li {
+    padding: 0 var(--sp-space-3);
   }
 }
 

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE pi_conversations\n        SET closed_at = NOW()\n        WHERE id = $1 AND closed_at IS NULL\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "22f548434085aaadaa9a307a33be80eb535483a50e25ea300127bb679df0a293"
+}

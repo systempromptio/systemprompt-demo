@@ -20,15 +20,18 @@ use crate::repositories::pi::events as event_repo;
 
 const MAX_FRAMES: i64 = 400;
 
-const MAX_CHARS: usize = 4000;
+pub const MAX_CHARS: usize = 4000;
 
-pub(super) async fn render(pool: &PgPool, conversation_id: &str) -> Option<String> {
+pub(super) async fn render(
+    pool: &PgPool,
+    conversation_id: &systemprompt::identifiers::ContextId,
+) -> Option<String> {
     let stored = match event_repo::list_conversation_events(pool, conversation_id, 0, MAX_FRAMES)
         .await
     {
         Ok(rows) => rows,
         Err(e) => {
-            tracing::warn!(error = %e, conversation_id, "could not read a transcript to resume");
+            tracing::warn!(error = %e, conversation_id = %conversation_id, "could not read a transcript to resume");
             return None;
         },
     };
@@ -51,7 +54,8 @@ pub(super) async fn render(pool: &PgPool, conversation_id: &str) -> Option<Strin
     (out.len() > before).then_some(out)
 }
 
-fn section(kind: &str, body: &serde_json::Value) -> Option<String> {
+// JSON: reads stored JSONB frames whose shapes vary by `kind`
+pub fn section(kind: &str, body: &serde_json::Value) -> Option<String> {
     match kind {
         "user_message" => Some(format!("## User\n\n{}", clamp(text_of(body, "text")?))),
         "text_delta" => Some(format!("## Assistant\n\n{}", clamp(text_of(body, "text")?))),
@@ -77,7 +81,7 @@ fn text_of<'a>(body: &'a serde_json::Value, key: &str) -> Option<&'a str> {
     (!text.trim().is_empty()).then_some(text)
 }
 
-fn clamp(text: &str) -> String {
+pub fn clamp(text: &str) -> String {
     if text.chars().count() <= MAX_CHARS {
         return text.to_owned();
     }
@@ -88,53 +92,4 @@ fn clamp(text: &str) -> String {
         chars[chars.len() - half..].iter().collect()
     };
     format!("{head}\n\n[… elided …]\n\n{tail}")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_short_message_is_untouched() {
-        assert_eq!(clamp("hello"), "hello");
-    }
-
-    #[test]
-    fn a_long_message_keeps_both_ends() {
-        let text = format!("START{}END", "x".repeat(MAX_CHARS * 2));
-        let clamped = clamp(&text);
-        assert!(clamped.starts_with("START"));
-        assert!(clamped.ends_with("END"));
-        assert!(clamped.contains("[… elided …]"));
-    }
-
-    #[test]
-    fn governance_frames_are_not_shown_to_the_model() {
-        for kind in ["policy_stages", "approval_request", "thinking_delta"] {
-            assert!(
-                section(
-                    kind,
-                    &serde_json::json!({ "text": "x", "tool_name": "read" })
-                )
-                .is_none(),
-                "{kind} should not reach the resumed agent"
-            );
-        }
-    }
-
-    #[test]
-    fn a_blocked_call_names_the_tool_but_not_the_reason() {
-        let body = serde_json::json!({
-            "tool_name": "read",
-            "reason": "workspace_scope: /etc/passwd is outside the workspace",
-        });
-        let rendered = section("tool_blocked", &body).unwrap_or_default();
-        assert!(rendered.contains("read"));
-        assert!(!rendered.contains("workspace_scope"));
-    }
-
-    #[test]
-    fn an_empty_message_is_skipped() {
-        assert!(section("user_message", &serde_json::json!({ "text": "   " })).is_none());
-    }
 }

@@ -1,15 +1,15 @@
 .hero-ctas {
   display: flex;
-  gap: var(--sp-space-md);
+  gap: var(--sp-space-4);
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: var(--sp-space-xl);
+  margin-top: var(--sp-space-8);
 }
 
 .hero-cta {
   display: inline-flex;
   align-items: center;
-  padding: var(--sp-space-sm) var(--sp-space-lg);
+  padding: var(--sp-space-2) var(--sp-space-6);
   border-radius: var(--sp-radius-sm);
   font-family: var(--sp-font-brand);
   font-weight: 600;
@@ -48,17 +48,17 @@
 
 .hero-nav-chips {
   display: flex;
-  gap: var(--sp-space-sm);
+  gap: var(--sp-space-2);
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: var(--sp-space-xl);
+  margin-top: var(--sp-space-8);
 }
 
 .hero-nav-chip {
   display: inline-flex;
   align-items: center;
-  padding: var(--sp-space-xs) var(--sp-space-md);
-  border-radius: var(--sp-radius-round, 999px);
+  padding: var(--sp-space-1) var(--sp-space-4);
+  border-radius: var(--sp-radius-full);
   border: 1px solid var(--sp-color-border);
   background: var(--sp-color-surface);
   color: var(--sp-color-text-secondary);
@@ -89,7 +89,7 @@
 }
 
 .section-header {
-  margin-bottom: var(--sp-space-2xl);
+  margin-bottom: var(--sp-space-12);
   text-align: center;
 }
 
@@ -97,7 +97,7 @@
   font-size: 2rem;
   font-family: var(--sp-font-heading);
   color: var(--sp-color-text);
-  margin: 0 0 var(--sp-space-sm);
+  margin: 0 0 var(--sp-space-2);
 }
 
 .section-subtitle {
@@ -111,15 +111,15 @@
   list-style: none;
   padding: 0;
   display: grid;
-  gap: var(--sp-space-md);
+  gap: var(--sp-space-4);
   max-width: 900px;
   margin: 0 auto;
 }
 
 .quick-start-step {
   display: flex;
-  gap: var(--sp-space-lg);
-  padding: var(--sp-space-lg);
+  gap: var(--sp-space-6);
+  padding: var(--sp-space-6);
   background: var(--sp-color-surface-variant);
   border: 1px solid var(--sp-color-border);
   border-radius: var(--sp-radius-md);
@@ -130,7 +130,7 @@
   flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
-  border-radius: var(--sp-radius-round);
+  border-radius: var(--sp-radius-full);
   background: var(--sp-color-primary);
   color: var(--sp-color-text-on-primary);
   display: grid;
@@ -146,13 +146,13 @@
 }
 
 .quick-start-label {
-  margin: 0 0 var(--sp-space-xs);
+  margin: 0 0 var(--sp-space-1);
   font-size: 1.05rem;
   color: var(--sp-color-text);
 }
 
 .quick-start-desc {
-  margin: 0 0 var(--sp-space-sm);
+  margin: 0 0 var(--sp-space-2);
   color: var(--sp-color-text-secondary);
   font-size: 0.9rem;
 }
@@ -160,14 +160,14 @@
 
 .command-row {
   display: flex;
-  gap: var(--sp-space-sm);
+  gap: var(--sp-space-2);
   align-items: stretch;
 }
 
 .command-block {
   flex: 1 1 auto;
   margin: 0;
-  padding: var(--sp-space-sm) var(--sp-space-md);
+  padding: var(--sp-space-2) var(--sp-space-4);
   background: var(--sp-syntax-bg);
   border: 1px solid var(--sp-color-border);
   border-radius: var(--sp-radius-sm);
@@ -180,7 +180,7 @@
 
 .copy-btn {
   flex: 0 0 auto;
-  padding: 0 var(--sp-space-md);
+  padding: 0 var(--sp-space-4);
   background: var(--sp-color-surface-variant);
   border: 1px solid var(--sp-color-border);
   border-radius: var(--sp-radius-sm);
@@ -211,7 +211,7 @@
 }
 
 .copy-btn-small {
-  padding: var(--sp-space-xs) var(--sp-space-sm);
+  padding: var(--sp-space-1) var(--sp-space-2);
   font-size: 0.75rem;
 }
 
@@ -224,13 +224,13 @@
 .pillars-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--sp-space-lg);
+  gap: var(--sp-space-6);
   max-width: 1100px;
   margin: 0 auto;
 }
 
 .pillar-card {
-  padding: var(--sp-space-lg);
+  padding: var(--sp-space-6);
   background: var(--sp-color-surface-variant);
   border: 1px solid var(--sp-color-border);
   border-radius: var(--sp-radius-md);
@@ -250,7 +250,7 @@ a.pillar-card:hover {
 }
 
 .pillar-card-title {
-  margin: 0 0 var(--sp-space-xs);
+  margin: 0 0 var(--sp-space-1);
   font-size: 1.05rem;
   color: var(--sp-color-text);
 }
@@ -271,13 +271,13 @@ a.pillar-card:hover {
 .integrations-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--sp-space-lg);
+  gap: var(--sp-space-6);
   max-width: 1100px;
   margin: 0 auto;
 }
 
 .integration-name {
-  margin: 0 0 var(--sp-space-xs);
+  margin: 0 0 var(--sp-space-1);
   font-family: var(--sp-font-mono);
   font-size: 0.9rem;
   font-weight: 600;
@@ -294,5 +294,5 @@ a.pillar-card:hover {
 }
 
 .download-alternates {
-  margin-top: var(--sp-space-sm);
+  margin-top: var(--sp-space-2);
 }

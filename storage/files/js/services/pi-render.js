@@ -1,7 +1,5 @@
-'use strict';
-
 /**
- * window.SpPiRender.markdown(text) -> DocumentFragment
+ * markdown(text) -> DocumentFragment
  *
  * The markdown an agent actually emits, and nothing else: fenced code, inline
  * code, bold, italic, links, bullet and ordered lists, headings, paragraphs,
@@ -20,9 +18,6 @@
  * is filled with textContent. The renderer cannot inject markup even if a
  * response is adversarial, which — since a prompt can be anything a visitor
  * types — is a security property and not a stylistic preference.
- *
- * Classic script, not a module: sp-pi-terminal.js takes no imports, so this
- * attaches to a namespace and the load order in the template stays trivial.
  */
 
 /** Fence, heading, list item, and blank line. Everything else is prose. */
@@ -78,7 +73,7 @@ const STRING = /("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/;
 const NUMBER = /\b(\d+(?:\.\d+)?)\b/;
 
 /** Render one block of source into a <code>, tinting four token classes. */
-function highlight(code, lang) {
+export function highlight(code, lang) {
   const el = document.createElement('code');
   if (lang) el.dataset.lang = lang;
   // Longest-match-first over the whole block: a keyword inside a string or a
@@ -257,7 +252,7 @@ function table(head, rows) {
 }
 
 /** Block-level parse. One pass, no intermediate AST. */
-function markdown(text) {
+export function markdown(text) {
   const frag = document.createDocumentFragment();
   const lines = String(text == null ? '' : text).split('\n');
   let i = 0;
@@ -372,5 +367,3 @@ function markdown(text) {
   flushList();
   return frag;
 }
-
-window.SpPiRender = { markdown, highlight };

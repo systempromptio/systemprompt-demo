@@ -37,7 +37,7 @@ impl LinkService {
         short_code: &str,
     ) -> Result<Option<CampaignLink>, BlogError> {
         self.link_repo
-            .get_link_by_short_code(short_code)
+            .find_link_by_short_code(short_code)
             .await
             .map_err(BlogError::from)
     }
@@ -47,7 +47,7 @@ impl LinkService {
         link_id: &LinkId,
     ) -> Result<Option<LinkPerformance>, BlogError> {
         self.analytics_repo
-            .get_link_performance(link_id)
+            .find_link_performance(link_id)
             .await
             .map_err(BlogError::from)
     }
@@ -58,7 +58,7 @@ impl LinkService {
         limit: i64,
     ) -> Result<Vec<LinkClick>, BlogError> {
         self.analytics_repo
-            .get_clicks_by_link(link_id, limit, 0)
+            .list_clicks_by_link(link_id, limit, 0)
             .await
             .map_err(BlogError::from)
     }
@@ -72,7 +72,7 @@ impl LinkService {
     ) -> Result<String, BlogError> {
         let link = self
             .link_repo
-            .get_link_by_short_code(short_code)
+            .find_link_by_short_code(short_code)
             .await
             .map_err(BlogError::from)?
             .ok_or_else(|| BlogError::LinkNotFound(short_code.to_owned()))?;

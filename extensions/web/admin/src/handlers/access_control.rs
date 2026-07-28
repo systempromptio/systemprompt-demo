@@ -203,8 +203,8 @@ fn build_matrix_sections(
     sections
 }
 
-// Why: Renders current DB state as YAML for copying into the committed
-// baseline. Writes nothing to disk — instances never write back to `services/`.
+// Why: writes nothing to disk — instances never write back to `services/`;
+// the YAML is only offered for copying into the committed baseline.
 pub(crate) async fn yaml_snapshot_handler(
     State(pool): State<Arc<PgPool>>,
 ) -> AdminResult<Response> {

@@ -13,7 +13,7 @@ use axum::{Extension, Json};
 use serde::Serialize;
 use sqlx::PgPool;
 use systemprompt::config::SecretsBootstrap;
-use systemprompt::identifiers::UserId;
+use systemprompt::identifiers::{ContextId, UserId};
 
 use super::registry::PiRegistry;
 use super::{session, token};
@@ -69,7 +69,11 @@ async fn mint_for(pool: &Arc<PgPool>, user_id: &UserId) -> AdminResult<Response>
 }
 
 pub(super) async fn authenticate(pool: &Arc<PgPool>, raw: &str) -> Option<UserId> {
-    let secret = SecretsBootstrap::manifest_signing_secret_seed().ok()?;
+    let secret = SecretsBootstrap::manifest_signing_secret_seed()
+        .inspect_err(|e| {
+            tracing::error!(error = %e, "no manifest signing secret; rejecting all pi embed tokens");
+        })
+        .ok()?;
     let (user_id, version) = match token::verify(&secret, raw, now_secs()) {
         Ok(v) => v,
         Err(reason) => {
@@ -79,6 +83,7 @@ pub(super) async fn authenticate(pool: &Arc<PgPool>, raw: &str) -> Option<UserId
     };
     let current = repositories::users::find_share_token_version(pool, &user_id)
         .await
+        .inspect_err(|e| tracing::warn!(error = %e, "could not read a share-token version"))
         .ok()??;
     (current == version).then_some(user_id)
 }
@@ -86,7 +91,7 @@ pub(super) async fn authenticate(pool: &Arc<PgPool>, raw: &str) -> Option<UserId
 pub(super) async fn authorize_conversation(
     pool: &Arc<PgPool>,
     raw_token: &str,
-    conversation_id: &str,
+    conversation_id: &ContextId,
 ) -> Option<conversations::PiConversationRow> {
     let user_id = authenticate(pool, raw_token).await?;
     conversations::find_conversation(pool, conversation_id, &user_id)
@@ -101,7 +106,7 @@ pub(super) async fn authorize_session(
     pool: &Arc<PgPool>,
     registry: &PiRegistry,
     raw_token: &str,
-    conversation_id: &str,
+    conversation_id: &ContextId,
 ) -> Option<Arc<session::PiSession>> {
     let user_id = authenticate(pool, raw_token).await?;
     let session = registry.get(conversation_id)?;

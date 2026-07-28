@@ -6,11 +6,13 @@
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
+use systemprompt::identifiers::ContextId;
 
 #[derive(Debug, Clone)]
 pub struct PiStoredEvent {
     pub seq: i64,
     pub kind: String,
+    // JSON: the stored frame itself — a JSONB column replayed verbatim
     pub body: serde_json::Value,
     pub at: DateTime<Utc>,
 }
@@ -19,6 +21,7 @@ pub struct PiStoredEvent {
 pub struct NewPiEvent {
     pub seq: i64,
     pub kind: String,
+    // JSON: the frame to store — a JSONB column written verbatim
     pub body: serde_json::Value,
 }
 
@@ -26,7 +29,7 @@ pub struct NewPiEvent {
 /// replays in.
 pub async fn list_conversation_events(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     after_seq: i64,
     limit: i64,
 ) -> Result<Vec<PiStoredEvent>, sqlx::Error> {
@@ -38,7 +41,7 @@ pub async fn list_conversation_events(
         ORDER BY seq
         LIMIT $3
         "#,
-        id,
+        id.as_str(),
         after_seq,
         limit
     )
@@ -66,7 +69,7 @@ pub async fn list_conversation_events(
 /// conversation, so a duplicate is always the same frame.
 pub async fn insert_conversation_events(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     events: &[NewPiEvent],
 ) -> Result<(), sqlx::Error> {
     if events.is_empty() {
@@ -85,7 +88,7 @@ pub async fn insert_conversation_events(
         FROM UNNEST($2::bigint[], $3::text[], $4::jsonb[]) AS t(s, k, b)
         ON CONFLICT (conversation_id, seq) DO NOTHING
         "#,
-        id,
+        id.as_str(),
         &seqs,
         &kinds,
         &bodies
@@ -98,7 +101,7 @@ pub async fn insert_conversation_events(
         SET last_seq = GREATEST(last_seq, $2), updated_at = NOW()
         WHERE id = $1
         "#,
-        id,
+        id.as_str(),
         high
     )
     .execute(&mut *tx)

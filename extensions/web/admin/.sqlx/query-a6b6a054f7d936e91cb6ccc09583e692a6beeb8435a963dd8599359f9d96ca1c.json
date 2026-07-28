@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT entry->>'policy_id'                                      AS \"policy!\",\n                  COUNT(*) FILTER (WHERE entry->>'result' = 'pass')::bigint AS \"allowed!\",\n                  COUNT(*) FILTER (WHERE entry->>'result' = 'fail')::bigint AS \"denied!\",\n                  MAX(created_at)                                          AS \"last_at?\"\n           FROM governance_decisions,\n                LATERAL jsonb_array_elements(evaluated_rules->'chain') entry\n           WHERE session_id = $1\n             AND session_id <> ''\n             AND jsonb_typeof(evaluated_rules->'chain') = 'array'\n             AND entry->>'policy_id' IS NOT NULL\n           GROUP BY entry->>'policy_id'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "policy!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "allowed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "denied!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "last_at?",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a6b6a054f7d936e91cb6ccc09583e692a6beeb8435a963dd8599359f9d96ca1c"
+}

@@ -16,14 +16,20 @@
 # and say why.
 set -uo pipefail
 
-REPO_DIR="${REPO_DIR:-extensions/web/admin/src/repositories}"
+# Every repository directory in the tree, unless the caller narrows it.
+if [ -n "${REPO_DIR:-}" ]; then
+    REPO_DIRS="$REPO_DIR"
+else
+    REPO_DIRS=$(find extensions -type d \( -name repositories -o -name repository \) -path '*/src/*' | sort)
+fi
 
-[ -d "$REPO_DIR" ] || { echo "check-repository-naming: no $REPO_DIR - nothing to check"; exit 0; }
+[ -n "$REPO_DIRS" ] || { echo "check-repository-naming: no repository dirs - nothing to check"; exit 0; }
 
-python3 - "$REPO_DIR" <<'PY'
+# shellcheck disable=SC2086
+python3 - $REPO_DIRS <<'PY'
 import re, sys, pathlib
 
-root = pathlib.Path(sys.argv[1])
+roots = [pathlib.Path(p) for p in sys.argv[1:]]
 SHAPE_PREFIXES = ("list_", "find_", "get_")
 violations = []
 
@@ -67,7 +73,7 @@ def shape_of(rt):
         return 'list'
     return 'get'
 
-for path in sorted(root.rglob('*.rs')):
+for path in sorted(p for root in roots for p in root.rglob('*.rs')):
     src = path.read_text()
     lines = src.splitlines()
     for m in re.finditer(r'\bfn ([a-z][a-z0-9_]*)\s*(?:<[^>]*>)?\s*\(', src):

@@ -15,3 +15,8 @@ pub mod tools;
 pub mod topics;
 
 pub use server::SystempromptServer;
+
+/// Crate-private items that out-of-crate unit tests drive directly.
+pub mod test_support {
+    pub use crate::server::tool::site_pages::{site_page_url, truncate_for_model};
+}

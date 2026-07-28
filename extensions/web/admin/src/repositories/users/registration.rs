@@ -182,6 +182,8 @@ pub async fn find_applicant(pool: &PgPool, user_id: &UserId) -> Option<PendingAp
 /// `DO NOTHING` keeps the original
 /// `requested_at`, so a user who abandons the passkey step and retries does not
 /// jump the review queue — and a denied account cannot reset itself to pending.
+// lint-ok: unused-pub — the disabled-but-not-removed half of the review flow;
+// re-enabling manual review swaps registration back to this.
 pub async fn insert_pending_approval<'e>(
     executor: impl PgExecutor<'e>,
     user_id: &UserId,
@@ -190,6 +192,30 @@ pub async fn insert_pending_approval<'e>(
         "INSERT INTO user_approvals (user_id, status)
          VALUES ($1, 'pending')
          ON CONFLICT (user_id) DO NOTHING",
+        user_id.as_str(),
+    )
+    .execute(executor)
+    .await?;
+    Ok(())
+}
+
+/// Approve an account inside the registration transaction.
+///
+/// Signups are currently auto-approved: the review machinery (gate middleware,
+/// pending page, admin approve endpoint) stays wired but never triggers,
+/// because every account is written approved from the start. `decided_by`
+/// records that no human made the call.
+pub async fn approve_on_signup<'e>(
+    executor: impl PgExecutor<'e>,
+    user_id: &UserId,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "INSERT INTO user_approvals (user_id, status, decided_at, decided_by)
+         VALUES ($1, 'approved', NOW(), 'system:auto-approve')
+         ON CONFLICT (user_id) DO UPDATE SET
+            status = 'approved',
+            decided_at = NOW(),
+            decided_by = EXCLUDED.decided_by",
         user_id.as_str(),
     )
     .execute(executor)

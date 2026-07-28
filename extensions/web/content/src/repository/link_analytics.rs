@@ -56,7 +56,7 @@ impl LinkAnalyticsRepository {
         Ok(())
     }
 
-    pub async fn get_link_performance(
+    pub async fn find_link_performance(
         &self,
         link_id: &LinkId,
     ) -> Result<Option<LinkPerformance>, sqlx::Error> {
@@ -122,7 +122,7 @@ impl LinkAnalyticsRepository {
         Ok(())
     }
 
-    pub async fn get_clicks_by_link(
+    pub async fn list_clicks_by_link(
         &self,
         link_id: &LinkId,
         limit: i64,
@@ -150,7 +150,7 @@ impl LinkAnalyticsRepository {
         .await
     }
 
-    pub async fn get_content_journey_map(
+    pub async fn list_content_journey_map(
         &self,
         limit: i64,
         offset: i64,
@@ -181,7 +181,7 @@ impl LinkAnalyticsRepository {
             .collect())
     }
 
-    pub async fn get_campaign_performance(
+    pub async fn find_campaign_performance(
         &self,
         campaign_id: &CampaignId,
     ) -> Result<Option<CampaignPerformance>, sqlx::Error> {
@@ -204,7 +204,7 @@ impl LinkAnalyticsRepository {
         .await
     }
 
-    pub async fn get_content_journey(
+    pub async fn list_content_journey(
         &self,
         content_id: &ContentId,
     ) -> Result<Vec<ContentJourneyNode>, sqlx::Error> {

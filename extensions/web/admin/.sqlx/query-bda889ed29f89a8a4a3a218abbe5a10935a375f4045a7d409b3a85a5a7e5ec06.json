@@ -1,0 +1,86 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH reqs AS (\n            SELECT r.user_id, r.session_id, r.latency_ms, r.input_tokens,\n                   r.output_tokens, r.cost_microdollars\n            FROM ai_requests r\n            JOIN users u ON u.id = r.user_id\n            WHERE r.created_at >= $1\n              AND NOT ('anonymous' = ANY(u.roles))\n              AND u.email NOT LIKE '%@anonymous.local'\n        ),\n        decisions AS (\n            SELECT d.decision\n            FROM governance_decisions d\n            JOIN users u ON u.id = d.user_id\n            WHERE d.created_at >= $1\n              AND NOT ('anonymous' = ANY(u.roles))\n              AND u.email NOT LIKE '%@anonymous.local'\n        )\n        SELECT\n            (SELECT COUNT(DISTINCT user_id) FROM reqs)::bigint            AS \"people!\",\n            -- `session_id` is ON DELETE SET NULL, so a null is a session whose\n            -- row is gone, not a request that never had one. Excluded, or the\n            -- denominator counts them all as a single extra session.\n            (SELECT COUNT(DISTINCT session_id) FROM reqs\n              WHERE session_id IS NOT NULL AND session_id <> '')::bigint  AS \"sessions!\",\n            (SELECT COUNT(*) FROM reqs)::bigint                           AS \"requests!\",\n            (SELECT COALESCE(SUM(input_tokens), 0) FROM reqs)::bigint     AS \"input_tokens!\",\n            (SELECT COALESCE(SUM(output_tokens), 0) FROM reqs)::bigint    AS \"output_tokens!\",\n            (SELECT COALESCE(SUM(cost_microdollars), 0) FROM reqs)::bigint\n                                                                          AS \"cost_microdollars!\",\n            (SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY latency_ms)\n               FROM reqs WHERE latency_ms IS NOT NULL)                    AS \"latency_p50?: f64\",\n            (SELECT COUNT(*) FROM decisions WHERE decision = 'allow')::bigint\n                                                                          AS \"allowed!\",\n            (SELECT COUNT(*) FROM decisions WHERE decision = 'deny')::bigint\n                                                                          AS \"denied!\",\n            (SELECT COUNT(*) FROM user_activity ua\n               JOIN users u2 ON u2.id = ua.user_id\n              WHERE ua.created_at >= $1\n                AND ua.category = 'mcp_access' AND ua.action = 'used'\n                AND NOT ('anonymous' = ANY(u2.roles))\n                AND u2.email NOT LIKE '%@anonymous.local')::bigint        AS \"tool_calls!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "people!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "sessions!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "requests!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "input_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "output_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "cost_microdollars!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "latency_p50?: f64",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "allowed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "denied!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "tool_calls!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "bda889ed29f89a8a4a3a218abbe5a10935a375f4045a7d409b3a85a5a7e5ec06"
+}

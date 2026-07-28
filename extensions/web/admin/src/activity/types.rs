@@ -21,6 +21,7 @@ pub struct NewActivity {
     pub action: ActivityAction,
     pub entity: Option<ActivityEntityRef>,
     pub description: String,
+    // JSON: per-activity metadata JSONB column, stored without interpretation
     pub metadata: serde_json::Value,
 }
 

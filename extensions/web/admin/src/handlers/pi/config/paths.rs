@@ -32,6 +32,9 @@ pub(super) fn profile_base_url() -> String {
 
 pub(super) fn default_jail_binary() -> PathBuf {
     std::env::current_exe()
+        .inspect_err(|e| {
+            tracing::warn!(error = %e, "could not resolve the current exe; finding sp-pi-jail on PATH");
+        })
         .ok()
         .and_then(|exe| exe.parent().map(|dir| dir.join("sp-pi-jail")))
         .unwrap_or_else(|| PathBuf::from("sp-pi-jail"))

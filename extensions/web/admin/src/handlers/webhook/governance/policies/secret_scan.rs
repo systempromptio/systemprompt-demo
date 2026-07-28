@@ -113,6 +113,7 @@ impl GovernancePolicy for SecretScan {
     }
 }
 
+// JSON: the scanner walks arbitrary tool input — generic by nature
 fn collect_strings(value: &serde_json::Value, out: &mut Vec<String>) {
     match value {
         serde_json::Value::String(s) => out.push(s.clone()),

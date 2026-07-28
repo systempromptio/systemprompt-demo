@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO pi_conversation_events (conversation_id, seq, kind, body)\n        SELECT $1, s, k, b\n        FROM UNNEST($2::bigint[], $3::text[], $4::jsonb[]) AS t(s, k, b)\n        ON CONFLICT (conversation_id, seq) DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8Array",
+        "TextArray",
+        "JsonbArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "00b1bc97bbe8ef8d4796824f495c0cb763875f9e837bd9889f4ae961b83c3dda"
+}

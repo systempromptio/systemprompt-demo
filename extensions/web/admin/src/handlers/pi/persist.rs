@@ -22,6 +22,7 @@
 use std::sync::Arc;
 
 use sqlx::PgPool;
+use systemprompt::identifiers::ContextId;
 use tokio::sync::mpsc;
 
 use super::events::{PiEvent, PiEventBody};
@@ -36,13 +37,17 @@ const TITLE_LEN: usize = 60;
 
 pub(super) fn start(
     pool: Arc<PgPool>,
-    conversation_id: String,
+    conversation_id: ContextId,
     rx: mpsc::UnboundedReceiver<PiEvent>,
 ) {
     tokio::spawn(run(pool, conversation_id, rx));
 }
 
-async fn run(pool: Arc<PgPool>, conversation_id: String, mut rx: mpsc::UnboundedReceiver<PiEvent>) {
+async fn run(
+    pool: Arc<PgPool>,
+    conversation_id: ContextId,
+    mut rx: mpsc::UnboundedReceiver<PiEvent>,
+) {
     let mut pending: Vec<NewPiEvent> = Vec::new();
     let mut journal = Journal::default();
     let mut titled = false;
@@ -157,7 +162,9 @@ fn storable(event: &PiEvent) -> Option<NewPiEvent> {
     Some(NewPiEvent {
         seq: seq_of(event),
         kind: body.kind().to_owned(),
-        body: serde_json::to_value(event).ok()?,
+        body: serde_json::to_value(event)
+            .inspect_err(|e| tracing::warn!(error = %e, "dropped an unserialisable pi frame"))
+            .ok()?,
     })
 }
 
@@ -171,7 +178,7 @@ fn first_user_message(event: &PiEvent, titled: bool) -> Option<String> {
     }
 }
 
-async fn title(pool: &PgPool, conversation_id: &str, text: &str) {
+async fn title(pool: &PgPool, conversation_id: &ContextId, text: &str) {
     let first_line = text.lines().next().unwrap_or(text).trim();
     if first_line.is_empty() {
         return;
@@ -180,18 +187,18 @@ async fn title(pool: &PgPool, conversation_id: &str, text: &str) {
     if let Err(e) =
         conversations::update_conversation_title_if_unset(pool, conversation_id, &title).await
     {
-        tracing::warn!(error = %e, conversation_id, "could not auto-title a pi conversation");
+        tracing::warn!(error = %e, conversation_id = %conversation_id, "could not auto-title a pi conversation");
     }
 }
 
-async fn flush(pool: &PgPool, conversation_id: &str, pending: &mut Vec<NewPiEvent>) {
+async fn flush(pool: &PgPool, conversation_id: &ContextId, pending: &mut Vec<NewPiEvent>) {
     if pending.is_empty() {
         return;
     }
     if let Err(e) = event_repo::insert_conversation_events(pool, conversation_id, pending).await {
         tracing::error!(
             error = %e,
-            conversation_id,
+            conversation_id = %conversation_id,
             frames = pending.len(),
             "could not persist pi transcript frames"
         );

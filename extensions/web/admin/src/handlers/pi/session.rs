@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
-use systemprompt::identifiers::{SessionId, UserId};
+use systemprompt::identifiers::{ContextId, SessionId, UserId};
 use tokio::io::AsyncWriteExt as _;
 use tokio::process::{Child, ChildStdin};
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -25,7 +25,7 @@ pub(super) enum Verdict {
 }
 
 pub(super) struct PiSessionInit {
-    pub(super) conversation_id: String,
+    pub(super) conversation_id: ContextId,
     pub(super) user_id: UserId,
     pub(super) attested_session: SessionId,
     pub(super) api_key_id: String,
@@ -37,7 +37,7 @@ pub(super) struct PiSessionInit {
 }
 
 pub(super) struct PiSession {
-    pub(super) conversation_id: String,
+    pub(super) conversation_id: ContextId,
     pub(super) user_id: UserId,
     pub(super) attested_session: SessionId,
     pub(super) api_key_id: String,

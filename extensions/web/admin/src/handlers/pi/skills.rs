@@ -97,25 +97,42 @@ async fn read_all(source: &Path) -> Vec<Skill> {
     skills
 }
 
-async fn read_one(dir: &Path) -> Result<Option<Skill>, String> {
+#[derive(Debug, thiserror::Error)]
+enum SkillLoadError {
+    #[error("no `id:`")]
+    MissingId,
+    #[error("no `description:`")]
+    MissingDescription,
+    #[error("{file}: {source}")]
+    Read {
+        file: String,
+        #[source]
+        source: std::io::Error,
+    },
+}
+
+async fn read_one(dir: &Path) -> Result<Option<Skill>, SkillLoadError> {
     let config = dir.join("config.yaml");
     if !tokio::fs::try_exists(&config).await.unwrap_or(false) {
         return Ok(None);
     }
     let raw = tokio::fs::read_to_string(&config)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|source| SkillLoadError::Read {
+            file: "config.yaml".to_owned(),
+            source,
+        })?;
 
     if scalar(&raw, "enabled").as_deref() == Some("false") {
         return Ok(None);
     }
 
-    let id = scalar(&raw, "id").ok_or_else(|| "no `id:`".to_owned())?;
-    let description = scalar(&raw, "description").ok_or_else(|| "no `description:`".to_owned())?;
+    let id = scalar(&raw, "id").ok_or(SkillLoadError::MissingId)?;
+    let description = scalar(&raw, "description").ok_or(SkillLoadError::MissingDescription)?;
     let file = scalar(&raw, "file").unwrap_or_else(|| "SKILL.md".to_owned());
     let body = tokio::fs::read_to_string(dir.join(&file))
         .await
-        .map_err(|e| format!("{file}: {e}"))?;
+        .map_err(|source| SkillLoadError::Read { file, source })?;
 
     Ok(Some(Skill {
         slug: id.replace('_', "-"),

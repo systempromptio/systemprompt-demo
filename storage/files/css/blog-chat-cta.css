@@ -1,12 +1,12 @@
 .chat-cta {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-spacing-sm);
+  gap: var(--sp-space-2);
   padding: var(--sp-space-3) var(--sp-space-5);
   background: transparent;
   color: var(--sp-color-text-primary);
   border: 1px solid var(--sp-color-border);
-  border-radius: var(--sp-radius-round);
+  border-radius: var(--sp-radius-full);
   text-decoration: none;
   font-size: var(--sp-font-size-sm);
   font-weight: var(--sp-font-weight-medium);

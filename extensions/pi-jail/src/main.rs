@@ -26,8 +26,9 @@
 
 #![expect(clippy::print_stderr, reason = "the pre-exec jail has no logger")]
 
-mod args;
 mod jail;
+
+use systemprompt_pi_jail::args;
 
 use std::process::ExitCode;
 

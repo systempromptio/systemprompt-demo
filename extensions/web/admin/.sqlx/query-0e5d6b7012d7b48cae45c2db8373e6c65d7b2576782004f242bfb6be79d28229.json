@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.tool_name AS \"tool_name!\", COUNT(*)::bigint AS \"denials!\"\n           FROM governance_decisions d\n           WHERE d.created_at >= $1 AND d.decision = 'deny' AND d.tool_name <> ''\n           GROUP BY d.tool_name\n           ORDER BY COUNT(*) DESC\n           LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tool_name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "tool_name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "denials!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "0e5d6b7012d7b48cae45c2db8373e6c65d7b2576782004f242bfb6be79d28229"
+}

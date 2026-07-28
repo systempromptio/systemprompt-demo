@@ -26,6 +26,8 @@ sqlx.workspace = true
 
 rmcp.workspace = true
 
+reqwest.workspace = true
+
 axum.workspace = true
 
 schemars.workspace = true

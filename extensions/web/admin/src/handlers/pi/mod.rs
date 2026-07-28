@@ -74,7 +74,8 @@ pub(crate) mod format;
 mod gate;
 pub(crate) mod jail;
 pub(crate) mod mcp;
-mod normalize;
+mod models;
+pub(crate) mod normalize;
 pub(crate) mod persist;
 mod pulse;
 mod pump;
@@ -88,7 +89,8 @@ pub(crate) mod stage;
 mod stats;
 mod tier;
 pub(crate) mod token;
-mod transcript;
+pub(crate) mod transcript;
+mod watch;
 
 use std::sync::Arc;
 
@@ -127,9 +129,13 @@ pub(crate) fn pi_router(
             post(auth::issue_own_embed_token),
         )
         .route("/api/public/pi/session", post(api::create_session))
-        .route("/api/public/pi/stream/{conversation_id}", get(api::stream))
+        .route(
+            "/api/public/pi/stream/{conversation_id}",
+            get(watch::stream),
+        )
         .route("/api/public/pi/stats/{conversation_id}", get(stats::stats))
         .route("/api/public/pi/pulse", get(pulse::pulse))
+        .route("/api/public/pi/models", get(api::models))
         .route("/api/public/pi/prompt", post(commands::prompt))
         .route("/api/public/pi/steer", post(commands::steer))
         .route("/api/public/pi/follow-up", post(commands::follow_up))
@@ -138,7 +144,7 @@ pub(crate) fn pi_router(
         .route("/api/public/pi/mcp", post(mcp::call))
         .route(
             "/api/public/pi/commands/{conversation_id}",
-            get(api::commands),
+            get(watch::commands),
         )
         .route("/api/public/pi/conversations", get(conversations::list))
         .route(

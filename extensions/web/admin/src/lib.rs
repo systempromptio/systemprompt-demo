@@ -57,6 +57,9 @@ pub mod test_support {
     pub use crate::handlers::pi::jail::gateway_port;
     pub use crate::handlers::pi::mcp::FORWARDABLE;
     pub use crate::handlers::pi::mcp::render::{McpCallResult, first_frame, render};
+    pub use crate::handlers::pi::normalize::{
+        MIN_PEOPLE, bucket, bucket_tokens, window_is_publishable,
+    };
     pub use crate::handlers::pi::persist::Journal;
     pub use crate::handlers::pi::rpc::{
         GovernancePayload, PayloadKind, RpcCommand, RpcFrame, UiRequest, parse_frame,
@@ -65,7 +68,9 @@ pub mod test_support {
     pub use crate::handlers::pi::skills::{escape, scalar};
     pub use crate::handlers::pi::stage::PolicyStage;
     pub use crate::handlers::pi::token::{B64, Invalid, sign, verify};
+    pub use crate::handlers::pi::transcript::{MAX_CHARS, clamp, section};
     pub use crate::handlers::resolve_principal;
+    pub use crate::handlers::site_markdown::parse_md_path;
     pub use crate::handlers::ssr::bridge_downloads::{
         LINUX, MAC_ARM, MAC_INTEL, RELEASE_PAGE, WINDOWS,
     };
@@ -118,6 +123,19 @@ pub fn pi_terminal_router(
     let registry =
         handlers::pi::PiRegistry::new(cfg, Arc::clone(&pool), Arc::clone(&analytics_provider));
     handlers::pi::pi_router(pool, registry, session_service, analytics_provider)
+}
+
+/// The public page-markdown surface: `/index.md` and `/md/{section}/{slug}.md`.
+///
+/// Serves the site's `markdown_content` rows as raw markdown for agents — the
+/// site half of the terminal's live-content bridge (see
+/// `handlers::site_markdown`). Unauthenticated on purpose: it exposes nothing
+/// the prerendered HTML pages don't already publish.
+pub fn site_markdown_router(pool: Arc<PgPool>) -> Router {
+    Router::new()
+        .route("/index.md", get(handlers::site_markdown::index_handler))
+        .route("/md/{*path}", get(handlers::site_markdown::page_handler))
+        .with_state(pool)
 }
 
 pub fn share_manifest_router(pool: Arc<PgPool>) -> Router {

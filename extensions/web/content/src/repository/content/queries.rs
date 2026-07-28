@@ -17,7 +17,7 @@ impl ContentQueryRepository {
         Self { pool }
     }
 
-    pub(super) async fn get_by_id(&self, id: &ContentId) -> Result<Option<Content>, sqlx::Error> {
+    pub(super) async fn find_by_id(&self, id: &ContentId) -> Result<Option<Content>, sqlx::Error> {
         sqlx::query_as!(
             Content,
             r#"
@@ -42,7 +42,7 @@ impl ContentQueryRepository {
         .await
     }
 
-    pub(super) async fn get_by_slug(&self, slug: &str) -> Result<Option<Content>, sqlx::Error> {
+    pub(super) async fn find_by_slug(&self, slug: &str) -> Result<Option<Content>, sqlx::Error> {
         sqlx::query_as!(
             Content,
             r#"
@@ -67,7 +67,7 @@ impl ContentQueryRepository {
         .await
     }
 
-    pub(super) async fn get_by_source_and_slug(
+    pub(super) async fn find_by_source_and_slug(
         &self,
         source_id: &SourceId,
         slug: &str,
@@ -184,7 +184,7 @@ impl ContentQueryRepository {
         .await
     }
 
-    pub(super) async fn get_slugs_by_source(
+    pub(super) async fn list_slugs_by_source(
         &self,
         source_id: &SourceId,
     ) -> Result<Vec<String>, sqlx::Error> {

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use sqlx::PgPool;
-use systemprompt::identifiers::{SessionId, UserId};
+use systemprompt::identifiers::{ContextId, SessionId, UserId};
 use systemprompt::traits::AnalyticsProvider;
 
 use super::config::PiConfig;
@@ -27,7 +27,7 @@ struct Inner {
     cfg: PiConfig,
     pool: Arc<PgPool>,
     analytics: Arc<dyn AnalyticsProvider>,
-    sessions: Mutex<HashMap<String, Arc<PiSession>>>,
+    sessions: Mutex<HashMap<ContextId, Arc<PiSession>>>,
 }
 
 impl PiRegistry {
@@ -50,16 +50,19 @@ impl PiRegistry {
         &self.0.cfg
     }
 
-    pub(super) fn get(&self, conversation_id: &str) -> Option<Arc<PiSession>> {
+    pub(super) fn get(&self, conversation_id: &ContextId) -> Option<Arc<PiSession>> {
         self.0
             .sessions
             .lock()
+            .inspect_err(|_| {
+                tracing::error!("pi session registry mutex poisoned; every lookup will miss");
+            })
             .ok()?
             .get(conversation_id)
             .map(Arc::clone)
     }
 
-    pub(super) async fn remove(&self, conversation_id: &str, code: Option<i32>) {
+    pub(super) async fn remove(&self, conversation_id: &ContextId, code: Option<i32>) {
         let session = {
             let Ok(mut sessions) = self.0.sessions.lock() else {
                 return;
@@ -103,7 +106,7 @@ impl PiRegistry {
             let mut ticker = tokio::time::interval(std::time::Duration::from_secs(30));
             loop {
                 ticker.tick().await;
-                let expired: Vec<(String, &'static str)> = {
+                let expired: Vec<(ContextId, &'static str)> = {
                     let Ok(sessions) = registry.0.sessions.lock() else {
                         continue;
                     };
@@ -133,7 +136,7 @@ impl PiRegistry {
 }
 
 pub(super) struct CreateRequest<'a> {
-    pub(super) conversation_id: String,
+    pub(super) conversation_id: ContextId,
     pub(super) user_id: UserId,
     pub(super) attested_session: SessionId,
     pub(super) shim_source: &'a str,
@@ -141,6 +144,7 @@ pub(super) struct CreateRequest<'a> {
     pub(super) mcp_token: &'a str,
     pub(super) transcript: Option<&'a str>,
     pub(super) start_seq: u64,
+    pub(super) model: &'a str,
 }
 
 pub(super) struct SessionParts {

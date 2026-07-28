@@ -27,12 +27,11 @@
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/conversation-list.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-stage.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-marquee.css">
     <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
     <script src="{{JS_BASE_PATH}}/home-scene.js" defer></script>
-    <script src="{{JS_BASE_PATH}}/services/pi-render.js" defer></script>
-    <script src="{{JS_BASE_PATH}}/services/pi-gate-view.js" defer></script>
-    <script src="{{JS_BASE_PATH}}/services/sp-pi-terminal.js" defer></script>
-    <script src="{{JS_BASE_PATH}}/services/sp-conversation-list.js" defer></script>
+    <script type="module" src="{{JS_BASE_PATH}}/services/sp-pi-terminal.js"></script>
+    <script type="module" src="{{JS_BASE_PATH}}/services/sp-conversation-list.js"></script>
     <script type="module" src="{{JS_BASE_PATH}}/services/sp-auth-pane.js"></script>
 </head>
 <body class="home-split-body" data-scroll-header>
@@ -66,6 +65,91 @@
     </main>
 
     <!--
+      The compatibility band: who the gateway speaks to, sliding between the
+      hero and the band below. Adapted from systemprompt-web's deploy-marquee:
+      four identical groups and a -25% translate make the loop seamless; the
+      first group is the real content and the other three are aria-hidden
+      copies, so assistive tech reads the list exactly once. Items are spans,
+      not links — this band states compatibility, it does not send traffic.
+    -->
+    <aside class="compat-marquee" aria-label="Compatible agents and model providers">
+        <div class="compat-marquee-track">
+            <div class="compat-marquee-group">
+                <span class="compat-marquee-label">Compatible with</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
+                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-sep" aria-hidden="true"></span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
+                <span class="compat-marquee-item">Mistral</span>
+                <span class="compat-marquee-item">DeepSeek</span>
+                <span class="compat-marquee-item">Kimi</span>
+                <span class="compat-marquee-item">Qwen</span>
+                <span class="compat-marquee-item">Llama</span>
+            </div>
+            <div class="compat-marquee-group" aria-hidden="true">
+                <span class="compat-marquee-label">Compatible with</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
+                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-sep" aria-hidden="true"></span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
+                <span class="compat-marquee-item">Mistral</span>
+                <span class="compat-marquee-item">DeepSeek</span>
+                <span class="compat-marquee-item">Kimi</span>
+                <span class="compat-marquee-item">Qwen</span>
+                <span class="compat-marquee-item">Llama</span>
+            </div>
+            <div class="compat-marquee-group" aria-hidden="true">
+                <span class="compat-marquee-label">Compatible with</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
+                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-sep" aria-hidden="true"></span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
+                <span class="compat-marquee-item">Mistral</span>
+                <span class="compat-marquee-item">DeepSeek</span>
+                <span class="compat-marquee-item">Kimi</span>
+                <span class="compat-marquee-item">Qwen</span>
+                <span class="compat-marquee-item">Llama</span>
+            </div>
+            <div class="compat-marquee-group" aria-hidden="true">
+                <span class="compat-marquee-label">Compatible with</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
+                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-sep" aria-hidden="true"></span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
+                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
+                <span class="compat-marquee-item">Mistral</span>
+                <span class="compat-marquee-item">DeepSeek</span>
+                <span class="compat-marquee-item">Kimi</span>
+                <span class="compat-marquee-item">Qwen</span>
+                <span class="compat-marquee-item">Llama</span>
+            </div>
+        </div>
+    </aside>
+
+    <!--
       Below the fold: what the terminal above actually is, and the two other
       places the same gateway runs. The hosts converge on one pipeline because
       that is literally what happens — the governance stages do not know or care
@@ -75,10 +159,9 @@
         <div class="home-scene-inner">
             <p class="scene-eyebrow">Governance for your AI infrastructure</p>
             <h2 id="scene-title" class="scene-title">Your agents. Your infrastructure.<br>You own it.</h2>
-            <p class="scene-deck">systemprompt.io puts governance under the agents you already run. The
-                terminal above is our embedded web agent — a real session against the gateway, not a
-                recording. The bridge connects that same gateway to any first-class AI client,
-                proprietary or from the top labs, and every one of them answers to your policies.</p>
+            <p class="scene-deck">The terminal above is a real session against the gateway — not a
+                recording. The bridge signs any first-class AI client into that same
+                gateway, and every one of them answers to your policies.</p>
 
             <ul class="scene-verbs">
                 <li>Brand them</li>
@@ -104,7 +187,7 @@
                         <h3 class="scene-host-name">Claude Code</h3>
                         <span class="scene-host-tag">Bridge</span>
                     </div>
-                    <p class="scene-host-role">Your terminal, your repo, our policies. The bridge signs
+                    <p class="scene-host-role">Your terminal, your repo, your policies. The bridge signs
                         it into the account you are already using here.</p>
                     <span class="scene-host-via">Connected by the bridge</span>
                 </li>

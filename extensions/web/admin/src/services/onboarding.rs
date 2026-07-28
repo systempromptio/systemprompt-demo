@@ -1,9 +1,10 @@
 //! The two seams of the reviewed-signup funnel.
 //!
-//! [`registration_submitted`] fires when someone registers and puts the request
-//! in front of a reviewer. [`account_approved`] fires when a reviewer says yes,
-//! and is the only path that grants the 5,000,000 µ$ signup credit or sends the
-//! welcome email — registering alone earns neither.
+//! [`registration_submitted`] fires when someone registers and notifies the
+//! admins. [`account_approved`] is the only path that grants the 5,000,000 µ$
+//! signup credit or sends the welcome email. Signups are auto-approved, so
+//! registration calls it directly; the admin approve endpoint still calls it
+//! too, harmlessly, because the grant is idempotent.
 //!
 //! Both push their email out on a detached task so a slow or unconfigured SMTP
 //! relay can never fail the HTTP request that triggered it.
@@ -35,7 +36,7 @@ pub(crate) fn registration_submitted(
         company = %profile.company,
         role = %profile.role,
         team_size = %profile.team_size,
-        "registration submitted; awaiting approval"
+        "registration submitted; auto-approved"
     );
 
     let (email, name, profile) = (email.to_owned(), name.to_owned(), profile.clone());
@@ -59,8 +60,8 @@ pub(crate) fn registration_submitted(
 }
 
 // Why: grants the $5 signup credit idempotently, then fires the welcome email
-// in a detached task. Only an approval reaches here, so this credit is the
-// thing the manual review is actually gating.
+// in a detached task. Failures are logged and swallowed so the caller's HTTP
+// request never fails on a credit or email problem.
 pub(crate) async fn account_approved(pool: &PgPool, user_id: &UserId, email: &str, name: &str) {
     tracing::info!(user_id = %user_id, email, name, "account approved");
 

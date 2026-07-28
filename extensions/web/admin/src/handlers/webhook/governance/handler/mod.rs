@@ -79,6 +79,7 @@ pub(crate) async fn govern_tool_use(
     Extension(deps): Extension<GovernanceDeps>,
     headers: HeaderMap,
     Query(query): Query<GovernQuery>,
+    // JSON: hook bodies must never 422 — `from_value` degrades leniently
     Json(raw): Json<serde_json::Value>,
 ) -> Response {
     // lint-ok: http-error — a hook answers 200 with a decision; an error status

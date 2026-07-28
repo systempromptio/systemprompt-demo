@@ -2,9 +2,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-spacing-md);
-  margin-top: var(--sp-spacing-lg);
-  padding-top: var(--sp-spacing-lg);
+  gap: var(--sp-space-4);
+  margin-top: var(--sp-space-6);
+  padding-top: var(--sp-space-6);
   border-top: 1px solid var(--sp-color-border);
 }
 
@@ -20,7 +20,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: var(--sp-radius-round);
+  border-radius: var(--sp-radius-full);
   color: var(--sp-color-text-secondary);
   background: var(--sp-color-surface-variant);
   border: 1px solid var(--sp-color-border);
@@ -70,7 +70,7 @@
 .social-action-bar--hero {
   border-top: none;
   padding-top: 0;
-  margin-top: var(--sp-spacing-md);
+  margin-top: var(--sp-space-4);
 }
 
 .social-action-bar--hero .social-action-bar__link {

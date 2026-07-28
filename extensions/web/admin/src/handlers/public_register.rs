@@ -1,10 +1,11 @@
 //! Public self-registration: the company details, the one-shot setup token it
-//! issues, and the review request it opens.
+//! issues, and the auto-approved account it creates.
 //!
-//! Registration is open to anyone, but it grants nothing. It creates the
-//! account, records what the applicant says they are evaluating, and opens a
-//! `pending` review. Access to the admin plane and the signup credit both wait
-//! on a human approving that review.
+//! Registration is open to anyone. It creates the account, records what the
+//! applicant says they are evaluating, and approves it on the spot — the
+//! signup credit is granted immediately. The manual-review machinery (gate
+//! middleware, pending page, admin approve endpoint) stays wired but never
+//! triggers while signups are auto-approved.
 
 use std::sync::Arc;
 
@@ -23,7 +24,7 @@ use systemprompt::identifiers::{Email, UserId};
 use crate::error::{AdminError, AdminResult};
 use crate::repositories;
 use crate::repositories::users::registration::{APPROVAL_DENIED, RegistrationState};
-use crate::services::onboarding::{OnboardingProfile, registration_submitted};
+use crate::services::onboarding::{OnboardingProfile, account_approved, registration_submitted};
 use crate::types::CreateUserRequest;
 
 const TOKEN_PREFIX: &str = "sp_wst_";
@@ -57,10 +58,9 @@ pub(crate) struct PublicRegisterResponse {
     pub display_name: String,
 }
 
-pub(crate) async fn public_register_handler(
-    State(pool): State<Arc<PgPool>>,
-    Json(body): Json<PublicRegisterRequest>,
-) -> AdminResult<Response> {
+fn parse_registration(
+    body: &PublicRegisterRequest,
+) -> AdminResult<(String, String, Email, OnboardingProfile)> {
     let email_str = body.email.trim().to_lowercase();
     let name = required_field(&body.name, "Name")?;
 
@@ -83,6 +83,14 @@ pub(crate) async fn public_register_handler(
             .filter(|s| !s.is_empty())
             .map(ToOwned::to_owned),
     };
+    Ok((email_str, name, email, profile))
+}
+
+pub(crate) async fn public_register_handler(
+    State(pool): State<Arc<PgPool>>,
+    Json(body): Json<PublicRegisterRequest>,
+) -> AdminResult<Response> {
+    let (email_str, name, email, profile) = parse_registration(&body)?;
 
     check_rate_limit(&pool, &email_str).await?;
 
@@ -122,6 +130,10 @@ pub(crate) async fn public_register_handler(
     .await?;
 
     registration_submitted(&user_id, &email_str, &name, &profile);
+
+    // Why: signups are auto-approved, so the credit grant fires here rather
+    // than from the admin approve endpoint; idempotent, never fails the signup
+    account_approved(&pool, &user_id, &email_str, &name).await;
 
     Ok((
         StatusCode::OK,
@@ -196,7 +208,7 @@ async fn persist_registration(
     )
     .await?;
 
-    repositories::users::registration::insert_pending_approval(&mut *tx, user_id).await?;
+    repositories::users::registration::approve_on_signup(&mut *tx, user_id).await?;
 
     repositories::users::registration::insert_setup_token(
         &mut *tx,

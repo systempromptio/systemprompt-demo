@@ -164,6 +164,7 @@ impl Extension for WebExtension {
         );
         let secrets_api = admin::secrets_router(Arc::clone(&write_pool));
         let share_api = admin::share_manifest_router(Arc::clone(&pool));
+        let site_md_api = admin::site_markdown_router(Arc::clone(&pool));
         let links_router = api::router(Arc::clone(&pool), self.validated_config.clone());
 
         let api_router = Router::new()
@@ -199,6 +200,7 @@ impl Extension for WebExtension {
             .nest_service("/admin", ssr_router)
             .nest_service("/bridge-auth", bridge_auth_router)
             .merge(share_api)
+            .merge(site_md_api)
             .nest("/api/public", api_router)
             .merge(pi_api);
 

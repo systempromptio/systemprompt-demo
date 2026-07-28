@@ -30,12 +30,14 @@ mod docs;
 mod egress;
 mod governance_stats;
 mod safety_findings;
+pub(crate) mod site_pages;
 
 pub(super) use admin_audit_dump::AdminAuditDumpHandler;
 pub(super) use docs::{GetTopicHandler, ListTopicsHandler, SearchDocsHandler};
 pub(super) use egress::FetchRemoteDocsHandler;
 pub(super) use governance_stats::GovernanceStatsHandler;
 pub(super) use safety_findings::SafetyFindingsHandler;
+pub(super) use site_pages::{FetchSitePageHandler, ListSitePagesHandler};
 
 fn db_error(e: &sqlx::Error) -> McpError {
     tracing::error!(error = %e, "governance spine query failed");
@@ -86,6 +88,10 @@ pub(super) async fn authenticate_tool_request(
     }
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one match arm per tool; splitting the dispatch would hide the full tool list"
+)]
 pub(super) async fn dispatch_tool(
     executor: &McpToolExecutor,
     db_pool: &DbPool,
@@ -107,6 +113,16 @@ pub(super) async fn dispatch_tool(
         "search_docs" => {
             executor
                 .execute(&SearchDocsHandler, request, request_context)
+                .await
+        },
+        "list_site_pages" => {
+            executor
+                .execute(&ListSitePagesHandler, request, request_context)
+                .await
+        },
+        "fetch_site_page" => {
+            executor
+                .execute(&FetchSitePageHandler, request, request_context)
                 .await
         },
         "governance_stats" => {
@@ -150,9 +166,9 @@ pub(super) async fn dispatch_tool(
         _ => Err(McpError::invalid_params(
             format!(
                 "Unknown tool: '{tool_name}'. Available tools: list_topics, get_topic, \
-                 search_docs, governance_stats, safety_findings, admin_audit_dump, \
-                 fetch_remote_docs. Call `list_topics` first to see the documentation \
-                 topics."
+                 search_docs, list_site_pages, fetch_site_page, governance_stats, \
+                 safety_findings, admin_audit_dump, fetch_remote_docs. Call `list_topics` \
+                 first to see the documentation topics."
             ),
             None,
         )),

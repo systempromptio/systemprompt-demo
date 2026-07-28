@@ -236,6 +236,10 @@ test-contract:
 test: test-unit test-integration test-contract
 
 # Source gates ported from systemprompt-core (scripts/*.sh)
+# Front-end integrity: JS/CSS sources vs registrations vs template links
+check-frontend:
+    bash scripts/check-frontend.sh
+
 lint-gates:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -260,6 +264,7 @@ lint-gates:
     bash scripts/check-file-headers.sh
     bash scripts/check-file-size.sh
     bash scripts/check-function-size.sh
+    bash scripts/check-frontend.sh
 
 # Shared sources that differ from the sibling fork must be recorded in
 # .fork-divergence. Needs SIBLING_REPO; skips cleanly without it.

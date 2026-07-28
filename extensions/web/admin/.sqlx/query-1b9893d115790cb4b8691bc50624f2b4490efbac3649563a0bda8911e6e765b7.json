@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            (SELECT COUNT(DISTINCT session_id) FROM ai_requests\n              WHERE session_id IS NOT NULL AND session_id <> '')::bigint AS \"sessions!\",\n            (SELECT COUNT(*) FROM ai_requests)::bigint                   AS \"requests!\",\n            (SELECT COUNT(*) FROM user_activity\n              WHERE category = 'mcp_access' AND action = 'used')::bigint AS \"tool_calls!\",\n            (SELECT COUNT(*) FROM governance_decisions\n              WHERE decision = 'deny' AND policy = 'secret_scan')::bigint\n                                                                         AS \"secrets_caught!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "sessions!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "requests!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "tool_calls!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "secrets_caught!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "1b9893d115790cb4b8691bc50624f2b4490efbac3649563a0bda8911e6e765b7"
+}

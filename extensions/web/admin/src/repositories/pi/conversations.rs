@@ -10,11 +10,11 @@
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
-use systemprompt::identifiers::{SessionId, UserId};
+use systemprompt::identifiers::{ContextId, SessionId, UserId};
 
 #[derive(Debug, Clone)]
 pub struct PiConversationRow {
-    pub id: String,
+    pub id: ContextId,
     pub user_id: UserId,
     pub attested_session_id: SessionId,
     pub title: Option<String>,
@@ -24,7 +24,7 @@ pub struct PiConversationRow {
 
 #[derive(Debug, Clone)]
 pub struct PiConversationSummary {
-    pub id: String,
+    pub id: ContextId,
     pub title: Option<String>,
     pub last_seq: i64,
     pub created_at: DateTime<Utc>,
@@ -36,7 +36,7 @@ pub struct PiConversationSummary {
 
 pub async fn insert_conversation(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     user_id: &UserId,
     attested: &SessionId,
 ) -> Result<(), sqlx::Error> {
@@ -46,7 +46,7 @@ pub async fn insert_conversation(
         VALUES ($1, $2, $3)
         ON CONFLICT (id) DO NOTHING
         "#,
-        id,
+        id.as_str(),
         user_id.as_str(),
         attested.as_str()
     )
@@ -63,16 +63,16 @@ pub async fn insert_conversation(
 /// one is.
 pub async fn find_conversation(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     user_id: &UserId,
 ) -> Result<Option<PiConversationRow>, sqlx::Error> {
     let row = sqlx::query!(
         r#"
-        SELECT id, user_id, attested_session_id, title, last_seq, closed_at
+        SELECT id AS "id: ContextId", user_id, attested_session_id, title, last_seq, closed_at
         FROM pi_conversations
         WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
         "#,
-        id,
+        id.as_str(),
         user_id.as_str()
     )
     .fetch_optional(pool)
@@ -96,7 +96,7 @@ pub async fn list_conversations(
 ) -> Result<Vec<PiConversationSummary>, sqlx::Error> {
     let rows = sqlx::query!(
         r#"
-        SELECT id, title, last_seq, created_at, updated_at, closed_at
+        SELECT id AS "id: ContextId", title, last_seq, created_at, updated_at, closed_at
         FROM pi_conversations
         WHERE user_id = $1 AND deleted_at IS NULL
         ORDER BY updated_at DESC
@@ -127,7 +127,7 @@ pub async fn list_conversations(
 /// not exist.
 pub async fn update_conversation_title(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     user_id: &UserId,
     title: &str,
 ) -> Result<u64, sqlx::Error> {
@@ -137,7 +137,7 @@ pub async fn update_conversation_title(
         SET title = $3, updated_at = NOW()
         WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
         "#,
-        id,
+        id.as_str(),
         user_id.as_str(),
         title
     )
@@ -153,7 +153,7 @@ pub async fn update_conversation_title(
 /// statement, not in a read-then-write the writer task would race itself on.
 pub async fn update_conversation_title_if_unset(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     title: &str,
 ) -> Result<u64, sqlx::Error> {
     let done = sqlx::query!(
@@ -162,7 +162,7 @@ pub async fn update_conversation_title_if_unset(
         SET title = $2
         WHERE id = $1 AND title IS NULL
         "#,
-        id,
+        id.as_str(),
         title
     )
     .execute(pool)
@@ -176,7 +176,7 @@ pub async fn update_conversation_title_if_unset(
 /// showed it as ended would be lying about the child now attached to it.
 pub async fn update_conversation_session(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     attested: &SessionId,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
@@ -185,7 +185,7 @@ pub async fn update_conversation_session(
         SET attested_session_id = $2, closed_at = NULL, updated_at = NOW()
         WHERE id = $1
         "#,
-        id,
+        id.as_str(),
         attested.as_str()
     )
     .execute(pool)
@@ -193,14 +193,14 @@ pub async fn update_conversation_session(
     Ok(())
 }
 
-pub async fn update_conversation_closed(pool: &PgPool, id: &str) -> Result<(), sqlx::Error> {
+pub async fn update_conversation_closed(pool: &PgPool, id: &ContextId) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         UPDATE pi_conversations
         SET closed_at = NOW()
         WHERE id = $1 AND closed_at IS NULL
         "#,
-        id
+        id.as_str()
     )
     .execute(pool)
     .await?;
@@ -211,7 +211,7 @@ pub async fn update_conversation_closed(pool: &PgPool, id: &str) -> Result<(), s
 /// explains do — a conversation a user hid is not one the audit trail forgot.
 pub async fn delete_conversation(
     pool: &PgPool,
-    id: &str,
+    id: &ContextId,
     user_id: &UserId,
 ) -> Result<u64, sqlx::Error> {
     let done = sqlx::query!(
@@ -220,7 +220,7 @@ pub async fn delete_conversation(
         SET deleted_at = NOW()
         WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
         "#,
-        id,
+        id.as_str(),
         user_id.as_str()
     )
     .execute(pool)

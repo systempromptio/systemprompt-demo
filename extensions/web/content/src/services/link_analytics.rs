@@ -21,23 +21,23 @@ impl LinkAnalyticsService {
         }
     }
 
-    pub async fn get_campaign_performance(
+    pub async fn find_campaign_performance(
         &self,
         campaign_id: &str,
     ) -> Result<Option<CampaignPerformance>, BlogError> {
         let campaign_id = CampaignId::new(campaign_id.to_owned());
         self.repo
-            .get_campaign_performance(&campaign_id)
+            .find_campaign_performance(&campaign_id)
             .await
             .map_err(BlogError::from)
     }
 
-    pub async fn get_content_journey(
+    pub async fn list_content_journey(
         &self,
         content_id: &ContentId,
     ) -> Result<Vec<ContentJourneyNode>, BlogError> {
         self.repo
-            .get_content_journey(content_id)
+            .list_content_journey(content_id)
             .await
             .map_err(BlogError::from)
     }

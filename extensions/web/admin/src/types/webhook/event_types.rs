@@ -51,6 +51,7 @@ pub struct UserPromptSubmitData {
 pub struct PreToolUseData {
     #[serde(default, rename = "tool_name")]
     pub name: String,
+    // JSON: arbitrary tool arguments, shape owned by whichever tool was called
     #[serde(default, rename = "tool_input")]
     pub input: serde_json::Value,
     #[serde(default, rename = "tool_use_id")]
@@ -61,6 +62,7 @@ pub struct PreToolUseData {
 pub struct PostToolUseData {
     #[serde(default, rename = "tool_name")]
     pub name: String,
+    // JSON: tool arguments and result — shapes owned by whichever tool ran
     #[serde(default, rename = "tool_input")]
     pub input: serde_json::Value,
     #[serde(default, rename = "tool_response")]
@@ -73,6 +75,7 @@ pub struct PostToolUseData {
 pub struct PostToolUseFailureData {
     #[serde(default)]
     pub tool_name: String,
+    // JSON: arbitrary tool arguments, shape owned by whichever tool was called
     #[serde(default)]
     pub tool_input: serde_json::Value,
     #[serde(default)]
@@ -86,6 +89,8 @@ pub struct PostToolUseFailureData {
 pub struct PermissionRequestData {
     #[serde(default)]
     pub tool_name: String,
+    // JSON: tool arguments and Claude Code permission suggestions — external
+    // hook schema, stored verbatim for audit and never read field-by-field
     #[serde(default)]
     pub tool_input: serde_json::Value,
     pub permission_suggestions: Option<serde_json::Value>,
@@ -173,6 +178,7 @@ pub struct InstructionsLoadedData {
     pub memory_type: String,
     #[serde(default)]
     pub load_reason: String,
+    // JSON: Claude Code sends globs as string or array; stored verbatim
     pub globs: Option<serde_json::Value>,
     pub trigger_file_path: Option<String>,
     pub parent_file_path: Option<String>,

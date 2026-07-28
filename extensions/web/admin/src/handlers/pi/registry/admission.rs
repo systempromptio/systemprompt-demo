@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use systemprompt::identifiers::UserId;
+use systemprompt::identifiers::{ContextId, UserId};
 
 use super::super::credentials;
 use crate::handlers::pi::session::PiSession;
@@ -62,21 +62,12 @@ impl PiRegistry {
             mcp_token,
             transcript,
             start_seq,
+            model,
         } = req;
         self.make_room_for(&user_id).await;
         self.reserve(&user_id)?;
 
-        let key = match credentials::issue(
-            &self.0.pool,
-            &user_id,
-            &conversation_id,
-            self.0.cfg.max_lifetime,
-        )
-        .await
-        {
-            Ok(key) => key,
-            Err(e) => return Err(SpawnError::Credential(e)),
-        };
+        let key = self.issue_credential(&user_id, &conversation_id).await?;
 
         let started = self
             .start_child(
@@ -91,6 +82,7 @@ impl PiRegistry {
                     mcp_client_source,
                     mcp_token,
                     transcript,
+                    model,
                 },
             )
             .await?;
@@ -130,9 +122,24 @@ impl PiRegistry {
         })
     }
 
+    async fn issue_credential(
+        &self,
+        user_id: &UserId,
+        conversation_id: &systemprompt::identifiers::ContextId,
+    ) -> Result<IssuedApiKey, SpawnError> {
+        credentials::issue(
+            &self.0.pool,
+            user_id,
+            conversation_id,
+            self.0.cfg.max_lifetime,
+        )
+        .await
+        .map_err(SpawnError::Credential)
+    }
+
     async fn start_child(
         &self,
-        conversation_id: &str,
+        conversation_id: &ContextId,
         user_id: &UserId,
         key: &IssuedApiKey,
         req: &spawn::SpawnRequest<'_>,
@@ -162,7 +169,7 @@ impl PiRegistry {
         })
     }
 
-    async fn unwind(&self, conversation_id: &str, user_id: &UserId, key: &IssuedApiKey) {
+    async fn unwind(&self, conversation_id: &ContextId, user_id: &UserId, key: &IssuedApiKey) {
         self.release(conversation_id);
         credentials::revoke(&self.0.pool, user_id, &key.id).await;
     }
@@ -177,7 +184,7 @@ impl PiRegistry {
         }
     }
 
-    fn surplus_for(&self, user_id: &UserId) -> Vec<String> {
+    fn surplus_for(&self, user_id: &UserId) -> Vec<ContextId> {
         let Ok(sessions) = self.0.sessions.lock() else {
             return Vec::new();
         };
@@ -210,7 +217,7 @@ impl PiRegistry {
         Ok(())
     }
 
-    fn release(&self, conversation_id: &str) {
+    fn release(&self, conversation_id: &ContextId) {
         if let Ok(mut sessions) = self.0.sessions.lock() {
             sessions.remove(conversation_id);
         }

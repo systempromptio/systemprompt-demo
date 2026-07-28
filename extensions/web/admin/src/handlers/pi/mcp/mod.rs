@@ -63,6 +63,8 @@ pub const FORWARDABLE: &[&str] = &[
     "list_topics",
     "get_topic",
     "search_docs",
+    "list_site_pages",
+    "fetch_site_page",
     "governance_stats",
     "safety_findings",
     "admin_audit_dump",
@@ -78,8 +80,9 @@ const TOKEN_TTL_HOURS: i64 = 1;
 #[derive(Debug, Deserialize)]
 pub(super) struct McpCallBody {
     token: String,
-    conversation_id: String,
+    conversation_id: systemprompt::identifiers::ContextId,
     tool: String,
+    // JSON: forwarded verbatim to the hub tool, which owns its own schema
     #[serde(default)]
     arguments: serde_json::Value,
 }
@@ -103,7 +106,7 @@ pub(super) async fn call(
     }
 
     let tool_name = format!("mcp__systemprompt__{}", body.tool);
-    let agent_session = SessionId::new(session.conversation_id.clone());
+    let agent_session = SessionId::new(session.conversation_id.as_str().to_owned());
     let verdict = inproc::govern_call(
         &deps.pool,
         &deps.analytics,

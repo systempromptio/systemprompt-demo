@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-space-2xl) 0;
+  padding: var(--sp-space-12) 0;
   position: relative;
   overflow: hidden;
 }
@@ -45,7 +45,7 @@
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: var(--sp-color-primary);
-  margin-bottom: var(--sp-space-lg);
+  margin-bottom: var(--sp-space-6);
 }
 
 .hero-title {
@@ -54,7 +54,7 @@
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  margin-bottom: var(--sp-space-lg);
+  margin-bottom: var(--sp-space-6);
 }
 
 .hero-title .highlight {
@@ -73,7 +73,7 @@
 .hero-features-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--sp-space-lg);
+  gap: var(--sp-space-6);
   max-width: 1100px;
   margin: 0 auto;
 }
@@ -86,7 +86,7 @@
   background: linear-gradient(135deg, rgba(0, 113, 206, 0.08) 0%, transparent 60%);
   border: 1px solid var(--sp-brand-800);
   border-radius: var(--sp-card-radius);
-  padding: var(--sp-space-xl);
+  padding: var(--sp-space-8);
   transition: all var(--sp-transition-normal);
   position: relative;
 }
@@ -101,7 +101,7 @@
 .hero-feature-title {
   font-size: 1.125rem;
   font-weight: 600;
-  margin-bottom: var(--sp-space-sm);
+  margin-bottom: var(--sp-space-2);
   color: var(--sp-color-text);
 }
 
@@ -114,8 +114,8 @@
 
 .hero-feature-arrow {
   position: absolute;
-  bottom: var(--sp-space-lg);
-  right: var(--sp-space-lg);
+  bottom: var(--sp-space-6);
+  right: var(--sp-space-6);
   opacity: 0;
   transform: translateX(-8px);
   transition: all var(--sp-transition-normal);
@@ -150,7 +150,7 @@ body::before {
 @media (max-width: 768px) {
   .hero {
     min-height: auto;
-    padding: var(--sp-space-4xl) 0 var(--sp-space-2xl);
+    padding: var(--sp-space-4xl) 0 var(--sp-space-12);
   }
 
   .hero-content {
@@ -159,11 +159,11 @@ body::before {
 
   .hero-features-grid {
     grid-template-columns: 1fr;
-    gap: var(--sp-space-md);
+    gap: var(--sp-space-4);
   }
 
   .hero-feature-card {
-    padding: var(--sp-space-lg);
+    padding: var(--sp-space-6);
   }
 
   body::before {

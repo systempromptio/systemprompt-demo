@@ -59,7 +59,7 @@ impl LinkRepository {
         .await
     }
 
-    pub async fn get_link_by_short_code(
+    pub async fn find_link_by_short_code(
         &self,
         short_code: &str,
     ) -> Result<Option<CampaignLink>, sqlx::Error> {

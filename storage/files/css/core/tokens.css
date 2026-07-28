@@ -148,8 +148,27 @@
   --sp-bp-xl: 80rem;
 
   
+--sp-brand-hue: 28;
+  --sp-brand-50: hsl(var(--sp-brand-hue), 91%, 95%);
+  --sp-brand-200: hsl(var(--sp-brand-hue), 91%, 80%);
+  --sp-brand-300: hsl(var(--sp-brand-hue), 91%, 70%);
+  --sp-brand-400: hsl(var(--sp-brand-hue), 91%, 65%);
+  --sp-brand-500: hsl(var(--sp-brand-hue), 91%, 60%);
+  --sp-brand-600: hsl(var(--sp-brand-hue), 91%, 50%);
+  --sp-brand-800: hsl(var(--sp-brand-hue), 91%, 30%);
+
+  --sp-font-size-xs: 0.75rem;
+  --sp-font-size-sm: 0.875rem;
+  --sp-font-size-md: 0.9375rem;
+  --sp-font-size-lg: 1.125rem;
+  --sp-font-size-xl: 1.25rem;
+
+  --sp-animation-fast: 150ms;
+  --sp-animation-normal: 300ms;
+
   --sp-card-radius: var(--sp-corners-md);
 }
+
 
 [data-theme="dark"] {
   --sp-color-primary-rgb: 243, 152, 56;
