@@ -226,19 +226,28 @@ impl PiSession {
         }
     }
 
-    pub(super) async fn close(&self, code: Option<i32>) {
+    pub(super) async fn close(&self, code: Option<i32>) -> Option<i32> {
         if self.closed.swap(true, Ordering::SeqCst) {
-            return;
+            return code;
         }
         if let Ok(mut pending) = self.pending.lock() {
             pending.clear();
         }
         drop(self.stdin.lock().await.take());
         let child = self.child.lock().await.take();
+        let mut code = code;
         if let Some(mut child) = child {
+            // Why: the EOF path closes with no code, but a child that already
+            // exited has one — reap it before the kill would erase it.
+            if code.is_none()
+                && let Ok(Some(status)) = child.try_wait()
+            {
+                code = status.code();
+            }
             _ = child.kill().await;
         }
         self.emit(PiEventBody::Exit { code });
         super::spawn::cleanup(&self.workspace).await;
+        code
     }
 }

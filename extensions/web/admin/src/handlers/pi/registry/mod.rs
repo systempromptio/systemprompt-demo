@@ -155,18 +155,18 @@ impl PiRegistry {
 
     async fn tear_down(&self, conversation_id: &ContextId, slot: Option<Slot>, code: Option<i32>) {
         if let Some(session) = slot.as_ref().and_then(Slot::live).map(Arc::clone) {
-            if code.is_some()
-                && session.age() < std::time::Duration::from_secs(2)
-                && self.0.cfg.limits.address_space > 0
-            {
+            let fast_exit = session.age() < std::time::Duration::from_secs(2);
+            let code = session.close(code).await;
+            if fast_exit {
                 tracing::warn!(
                     conversation_id = %session.conversation_id,
-                    "pi child died within 2s of spawn; if this repeats, \
-                     limits.address_space in services/config/pi.yaml may be below \
-                     what node needs at startup — re-measure before lowering it"
+                    exit_code = ?code,
+                    "pi child died within 2s of spawn; its stderr lines above say \
+                     why — usual causes are sp-pi-jail refusing to run (no Landlock \
+                     in the kernel) or limits.* in services/config/pi.yaml below \
+                     what node needs at startup"
                 );
             }
-            session.close(code).await;
             if let Err(e) = crate::repositories::pi::conversations::update_conversation_closed(
                 &self.0.pool,
                 conversation_id,

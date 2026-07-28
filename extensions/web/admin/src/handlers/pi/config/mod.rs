@@ -189,7 +189,7 @@ impl PiConfig {
                 fsize: raw.limits.fsize,
                 address_space: raw.limits.address_space,
             },
-            sandbox: raw.sandbox,
+            sandbox: sandbox_mode(raw.sandbox),
             jail_binary: raw.jail_binary.unwrap_or_else(default_jail_binary),
             jail_read_paths: raw
                 .jail_read_paths
@@ -233,13 +233,34 @@ impl PiConfig {
     pub(crate) fn warn_if_unsandboxed(&self) {
         if self.sandbox == SandboxMode::Off {
             tracing::warn!(
-                "services/config/pi.yaml sets sandbox: off — pi children run with this \
+                "pi sandbox is off (services/config/pi.yaml or the SP_PI_SANDBOX \
+                 override) — pi children run with this \
                  process's filesystem access. The `read` tool can reach any file this uid \
                  can, including provider keys and the database URL. Only correct on a host \
                  without Landlock (Linux 5.13+), and only for a deployment nobody untrusted \
                  can sign into."
             );
         }
+    }
+}
+
+// Why: pi.yaml ships identically to every deployment, but whether Landlock
+// exists is a property of the host kernel — Fly's compiles it out entirely.
+// The override is deployment-explicit (a `sp_pi_sandbox` profile secret,
+// synced as this env var), never probed: a boundary that silently downgrades
+// is the failure SandboxMode's two-value design exists to prevent.
+fn sandbox_mode(configured: SandboxMode) -> SandboxMode {
+    match std::env::var("SP_PI_SANDBOX") {
+        Ok(v) if v.eq_ignore_ascii_case("off") => SandboxMode::Off,
+        Ok(v) if v.eq_ignore_ascii_case("required") => SandboxMode::Required,
+        Ok(v) => {
+            tracing::error!(
+                value = %v,
+                "SP_PI_SANDBOX must be `required` or `off`; keeping the configured mode"
+            );
+            configured
+        },
+        Err(_) => configured,
     }
 }
 

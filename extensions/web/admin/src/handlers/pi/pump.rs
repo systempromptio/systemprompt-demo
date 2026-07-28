@@ -134,6 +134,14 @@ async fn answer(session: &Arc<PiSession>, id: &str, allow: bool) {
 async fn read_stderr(session: Arc<PiSession>, stderr: ChildStderr) {
     let mut lines = BufReader::new(stderr).lines();
     while let Ok(Some(line)) = lines.next_line().await {
+        // Why: also logged, because a child that dies at spawn has no viewer
+        // attached yet — the broadcast frame reaches nobody, and this line is
+        // the only record of why it died.
+        tracing::warn!(
+            conversation_id = %session.conversation_id,
+            line = %line,
+            "pi child stderr"
+        );
         session.emit(PiEventBody::Stderr { line });
     }
 }

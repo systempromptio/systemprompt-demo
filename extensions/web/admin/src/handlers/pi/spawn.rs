@@ -205,7 +205,13 @@ fn ulimit_command(limits: ChildLimits, argv: Vec<String>) -> Command {
     if limits.nproc > 0 {
         if Path::new("/bin/bash").exists() {
             shell = "/bin/bash";
-            script.push_str(&format!("ulimit -u {};", limits.nproc));
+            // Why: a container's hard ceiling can sit below the configured
+            // value (Fly caps at 1720), and asking for more is EPERM — the
+            // fallback keeps a cap in effect at the tightest reachable value.
+            script.push_str(&format!(
+                "ulimit -u {} 2>/dev/null || ulimit -u \"$(ulimit -Hu)\" 2>/dev/null;",
+                limits.nproc
+            ));
         } else {
             tracing::warn!(
                 "limits.nproc is set but /bin/bash is absent; \

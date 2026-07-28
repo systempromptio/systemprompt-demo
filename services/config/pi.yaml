@@ -138,6 +138,12 @@ tools:
 # rule. Below 6.7 the child's network is unconfined and sp-pi-jail says so on
 # stderr. `off` is for older kernels and non-Linux dev hosts, logs one WARN at
 # startup, and is only safe where nobody untrusted can sign in.
+#
+# A deployment whose kernel lacks Landlock entirely (Fly compiles it out, so
+# sp-pi-jail exits 3 at every spawn) overrides this per profile: a
+# `sp_pi_sandbox: off` entry in that profile's secrets.json syncs as the
+# SP_PI_SANDBOX env var, which wins over this key. The file stays `required`
+# so no new deployment inherits an unjailed child by default.
 sandbox: required
 
 # Ask a human about every tool call, not just flagged ones. With a read-only
