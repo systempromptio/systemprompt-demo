@@ -25,7 +25,13 @@ pub struct TempDb {
 fn database_url() -> Option<String> {
     let raw = std::env::var("SYSTEMPROMPT_TEST_DATABASE_URL")
         .or_else(|_| std::env::var("DATABASE_URL"))
-        .ok()?;
+        .ok();
+    assert!(
+        !(raw.is_none() && std::env::var("CI").is_ok()),
+        "no SYSTEMPROMPT_TEST_DATABASE_URL or DATABASE_URL in CI — the MCP integration \
+         suite must not be skipped there"
+    );
+    let raw = raw?;
     let parsed = Url::parse(&raw).expect("test database URL must be a valid URL");
     let db_name = parsed.path().trim_start_matches('/');
     let allowed = db_name == "test" || db_name == "postgres" || db_name.ends_with("_test");

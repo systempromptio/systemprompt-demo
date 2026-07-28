@@ -86,12 +86,11 @@ jobs:
       - name: Check for tests workspace
         id: tests
         run: |
-          if [ -f tests/Cargo.toml ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::tests/Cargo.toml not present yet; skipping test job."
+          if [ ! -f tests/Cargo.toml ]; then
+            echo "::error::tests/Cargo.toml missing — the test workspace is required."
+            exit 1
           fi
+          echo "present=true" >> "$GITHUB_OUTPUT"
 
       - uses: dtolnay/rust-toolchain@stable
         if: steps.tests.outputs.present == 'true'
