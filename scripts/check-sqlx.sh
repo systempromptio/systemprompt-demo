@@ -15,10 +15,17 @@ allowlist=(
 allowlist_re=$(IFS='|'; echo "${allowlist[*]}")
 
 # Drop lines that match the verified macro form (query!(), query_as!(), etc).
+# Without the fallback a missing rg would empty `hits` and pass the gate
+# silently — the grep branch keeps the check honest on machines without it.
+if command -v rg >/dev/null 2>&1; then
+    raw=$(rg -n "$pattern" extensions/ src/ --glob '*.rs' || true)
+else
+    raw=$(grep -rEn --include='*.rs' "$pattern" extensions/ src/ || true)
+fi
 hits=$(
-    { rg -n "$pattern" extensions/ src/ --glob '*.rs' 2>/dev/null \
+    { echo "$raw" \
         | grep -Ev "^(${allowlist_re})" \
-        | grep -Ev 'sqlx::query[a-z_]*!' || true; }
+        | grep -Ev 'sqlx::query[a-z_]*!' | grep -v '^$' || true; }
 )
 
 if [[ -n "${hits}" ]]; then

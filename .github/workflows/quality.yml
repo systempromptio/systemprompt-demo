@@ -48,9 +48,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
-      # The five structural gate scripts ported from systemprompt-core, plus the
-      # inlined no-synthesis guard (kept inline so this job does not depend on
-      # `just` being installed).
+      # The structural gate scripts ported from systemprompt-core. Every gate
+      # is a script under scripts/ so this job and `just lint-gates` run the
+      # identical file and cannot drift.
       - run: bash scripts/lint-schema.sh
       - run: bash scripts/lint-extensions.sh
       - run: bash scripts/check-sqlx.sh
@@ -80,21 +80,7 @@ jobs:
       - name: Every production source has a `//!` module head
         run: bash scripts/check-file-headers.sh
       - name: No synthesized principals (UserId::new with string literal)
-        run: |
-          hits=$(grep -rEn 'UserId::new\("' extensions/ \
-              --include='*.rs' \
-              --exclude-dir=tests \
-              --exclude-dir=bootstrap \
-              || true)
-          if [ -n "$hits" ]; then
-            echo "error: forbidden synthesized principal — UserId::new with string literal"
-            echo "$hits"
-            echo
-            echo "UserId::new must take a validated identifier (cookie, query, JWT"
-            echo "claim, or DB row), never a hard-coded literal. Legitimate bootstrap"
-            echo "code belongs under extensions/**/bootstrap/."
-            exit 1
-          fi
+        run: bash scripts/check-no-synthesis.sh
 
   file-size:
     name: Source file size guard

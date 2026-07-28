@@ -18,3 +18,6 @@ services/skills/**/assets/**    linguist-vendored
 # Preserve skill metadata as primary content
 services/skills/**/*.yaml       -linguist-generated
 services/skills/**/*.md         -linguist-generated
+
+# Generated sqlx offline query caches — hide from diffs and language stats
+**/.sqlx/** linguist-generated -diff
