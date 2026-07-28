@@ -6,10 +6,12 @@
 //! router is attached with `nest_service`, so testing the groups in isolation
 //! would exercise a path shape no request ever has.
 
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Body;
+use axum::extract::ConnectInfo;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt as _;
 use sqlx::PgPool;
@@ -54,6 +56,44 @@ impl App {
             router,
             credentials,
         }
+    }
+
+    // Issue one request from a named peer address, returning its status and
+    // body.
+    //
+    // `oneshot` bypasses the `ConnectInfo` layer the served router installs, so
+    // without this extension core's client-IP resolver reports no address at
+    // all and every per-IP limit fails open. Setting it here is what makes
+    // those limits reachable from a test.
+    pub async fn send_json_from(
+        &self,
+        method: &str,
+        path: &str,
+        peer: SocketAddr,
+        body: &str,
+    ) -> (StatusCode, String) {
+        let request = Request::builder()
+            .method(method.to_uppercase().as_str())
+            .uri(path)
+            .header("content-type", "application/json")
+            .extension(ConnectInfo(peer))
+            .body(Body::from(body.to_owned()))
+            .expect("build request");
+
+        let response = self
+            .router
+            .clone()
+            .oneshot(request)
+            .await
+            .expect("router is infallible");
+        let status = response.status();
+        let bytes = response
+            .into_body()
+            .collect()
+            .await
+            .map(http_body_util::Collected::to_bytes)
+            .unwrap_or_default();
+        (status, String::from_utf8_lossy(&bytes).into_owned())
     }
 
     // Issue one request, returning its status and — only when the status is a

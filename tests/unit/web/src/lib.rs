@@ -13,6 +13,8 @@ mod bridge_downloads;
 #[cfg(test)]
 mod campaign_link_full_url;
 #[cfg(test)]
+mod client_address_private_range;
+#[cfg(test)]
 mod config_base_url;
 #[cfg(test)]
 mod governance_rate_limit;

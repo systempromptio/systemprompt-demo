@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM registration_attempts\n         WHERE ip_address = $1 AND created_at < NOW() - INTERVAL '7 days'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "57559b33bc1ad5a8ebec0510896d7e1646baa49d08cb648a8e03f0a52d7bb070"
+}

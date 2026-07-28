@@ -28,14 +28,14 @@ pub(crate) async fn approve_user_handler(
         return Err(AdminError::Forbidden("Admin access required".to_owned()));
     }
 
-    let applicant = repositories::users::registration::find_applicant(&pool, &user_id)
+    let applicant = repositories::users::approvals::find_applicant(&pool, &user_id)
         .await
         .ok_or_else(|| AdminError::NotFound("No pending registration for user".to_owned()))?;
 
-    repositories::users::registration::set_approval_status(
+    repositories::users::approvals::set_approval_status(
         &pool,
         &user_id,
-        repositories::users::registration::APPROVAL_APPROVED,
+        repositories::users::approvals::APPROVAL_APPROVED,
         user_ctx.user_id.as_str(),
     )
     .await?;

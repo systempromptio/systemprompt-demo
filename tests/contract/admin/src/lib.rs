@@ -31,6 +31,8 @@ mod globals;
 #[cfg(test)]
 mod principal;
 #[cfg(test)]
+mod registration_ip_limit;
+#[cfg(test)]
 mod route_source;
 #[cfg(test)]
 mod status_contract;

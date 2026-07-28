@@ -14,12 +14,6 @@ use crate::palette::{
 const FONT: &str =
     "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 
-// Why: bump the bridge-v* tag in both URLs on every bridge release. The bridge
-// ships under its own `bridge-v*` tag, so `releases/latest` resolves to the
-// gateway release and 404s here.
-pub const BRIDGE_MAC_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip";
-pub const BRIDGE_WINDOWS_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe";
-
 pub const DEMO_URL: &str = "https://demo.systemprompt.io";
 
 const SUBJECT: &str = "Your $1 systemprompt credit is ready";
@@ -67,23 +61,15 @@ fn build_plain_body(display_name: &str, site_url: &str) -> String {
         "{greeting}\n\n\
          You've been given $1 of credit to explore systemprompt in the web demo.\n\
          No card, no setup — open it, run agents, and interrogate every decision\n\
-         the gateway makes. Here's how:\n\n\
-         1. OPEN THE WEB DEMO\n\
+         the gateway makes.\n\n\
+         OPEN THE WEB DEMO\n\
          Head to {demo} and sign in. Your $1 credit is applied to\n\
          every request through the governed gateway.\n\n\
-         2. PREFER CLAUDE DESKTOP?\n\
-         The Systemprompt Bridge connects Claude Desktop (or Cowork) to your account.\n\
-         Mac:     {mac}\n\
-         Windows: {win}\n\
-         Open {setup_url} and copy your one-time bridge sign-in code,\n\
-         then paste it into the bridge on first launch.\n\n\
          ---\n\n\
          systemprompt.io | the governed gateway for AI agents\n\
          Setup guide: {setup_url}",
         greeting = greeting(display_name),
         demo = DEMO_URL,
-        mac = BRIDGE_MAC_URL,
-        win = BRIDGE_WINDOWS_URL,
         setup_url = setup_url,
     )
 }
@@ -152,40 +138,19 @@ systemprompt.io | the governed gateway for AI agents
 </body>
 </html>"#,
         greeting = greeting(display_name),
-        steps = html_steps(&setup_url),
+        steps = html_cta(),
     )
 }
 
-fn html_steps(setup_url: &str) -> String {
-    let step1 = html_step(
-        "1",
-        "Open the web demo",
-        &format!(
-            r#"Head to <a href="{DEMO_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">demo.systemprompt.io</a> and sign in. Your $1 credit is applied to every request through the governed gateway."#,
-        ),
-    );
-    let step2 = html_step(
-        "2",
-        "Prefer Claude Desktop?",
-        &format!(
-            r#"The Systemprompt Bridge connects Claude Desktop (or Cowork) to your account.<br>
-<a href="{BRIDGE_MAC_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">Download for Mac &#8594;</a> &nbsp; <a href="{BRIDGE_WINDOWS_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">Download for Windows &#8594;</a><br>
-Open your <a href="{setup_url}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">setup page</a>, copy your one-time bridge sign-in code, and paste it into the bridge on first launch."#,
-        ),
-    );
-    format!("{step1}\n{step2}")
-}
-
-fn html_step(number: &str, title: &str, body: &str) -> String {
+fn html_cta() -> String {
     format!(
         r#"<tr>
 <td style="padding:24px 48px 0 48px;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
 <tr>
-<td width="28" valign="top" style="font-family:{FONT};font-size:15px;font-weight:700;color:{BRAND_ORANGE};line-height:1.7;">{number}.</td>
 <td style="font-family:{FONT};font-size:15px;line-height:1.7;color:{TEXT_BODY};">
-<span style="font-weight:600;color:{TEXT_PRIMARY};">{title}</span><br>
-{body}
+<span style="font-weight:600;color:{TEXT_PRIMARY};">Open the web demo</span><br>
+Head to <a href="{DEMO_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">demo.systemprompt.io</a> and sign in. Your $1 credit is applied to every request through the governed gateway.
 </td>
 </tr>
 </table>

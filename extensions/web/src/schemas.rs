@@ -15,6 +15,8 @@ pub(crate) const SCHEMA_WEB_SIDE_TABLES: &str = include_str!("../schema/13_web_s
 pub(crate) const SCHEMA_AUDIT_EVENT_NOTIFY: &str =
     include_str!("../schema/14_audit_event_notify.sql");
 pub(crate) const SCHEMA_PI_CONVERSATIONS: &str = include_str!("../schema/15_pi_conversations.sql");
+pub(crate) const SCHEMA_REGISTRATION_ATTEMPTS: &str =
+    include_str!("../schema/16_registration_attempts.sql");
 
 pub(crate) fn schema_definitions() -> Vec<SchemaDefinition> {
     vec![
@@ -26,6 +28,7 @@ pub(crate) fn schema_definitions() -> Vec<SchemaDefinition> {
         SchemaDefinition::new("", SCHEMA_WEB_SIDE_TABLES),
         SchemaDefinition::new("", SCHEMA_AUDIT_EVENT_NOTIFY),
         SchemaDefinition::new("", SCHEMA_PI_CONVERSATIONS),
+        SchemaDefinition::new("", SCHEMA_REGISTRATION_ATTEMPTS),
     ]
 }
 

@@ -85,7 +85,7 @@ pub(crate) async fn create_demo_user_handler(
     repositories::users::mutations::create_user(&*pool, &create_req).await?;
     // Why: the demo flow is admin-driven provisioning, not a request for
     // access — these accounts must not queue up behind a manual review.
-    repositories::users::registration::approve_on_create(&pool, &user_id, &user_ctx.user_id).await;
+    repositories::users::approvals::approve_on_create(&pool, &user_id, &user_ctx.user_id).await;
 
     let raw_token = magic_links::create_magic_link_token(&pool, &email_str, None)
         .await

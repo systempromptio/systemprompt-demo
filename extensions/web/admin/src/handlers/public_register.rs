@@ -6,7 +6,14 @@
 //! signup credit is granted immediately. The manual-review machinery (gate
 //! middleware, pending page, admin approve endpoint) stays wired but never
 //! triggers while signups are auto-approved.
+//!
+//! Two limiters stand in for that missing review, and they are orthogonal: the
+//! email-keyed one slows a single address retrying, and the IP-keyed one caps
+//! how many accounts — and therefore how much credit — one network can mint in
+//! a day. Neither is an authorisation boundary; both exist to make farming the
+//! signup credit tedious rather than impossible.
 
+use std::net::IpAddr;
 use std::sync::Arc;
 
 use axum::Json;
@@ -19,15 +26,23 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
+use systemprompt::api::services::middleware::client_addr::ClientIp;
 use systemprompt::identifiers::{Email, UserId};
 
 use crate::error::{AdminError, AdminResult};
 use crate::repositories;
-use crate::repositories::users::registration::{APPROVAL_DENIED, RegistrationState};
+use crate::repositories::users::approvals::APPROVAL_DENIED;
+use crate::repositories::users::registration::RegistrationState;
 use crate::services::onboarding::{OnboardingProfile, account_approved, registration_submitted};
 use crate::types::CreateUserRequest;
+use crate::util::client_address::is_private_range;
 
 const TOKEN_PREFIX: &str = "sp_wst_";
+
+const REGISTRATIONS_PER_IP_PER_DAY: i64 = 3;
+
+const IP_RATE_LIMITED_MESSAGE: &str = "This network has reached the signup limit for today. Please try again tomorrow, or contact \
+     ed@systemprompt.io if you need access sooner.";
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct PublicRegisterRequest {
@@ -88,6 +103,7 @@ fn parse_registration(
 
 pub(crate) async fn public_register_handler(
     State(pool): State<Arc<PgPool>>,
+    ClientIp(client_ip): ClientIp,
     Json(body): Json<PublicRegisterRequest>,
 ) -> AdminResult<Response> {
     let (email_str, name, email, profile) = parse_registration(&body)?;
@@ -110,6 +126,11 @@ pub(crate) async fn public_register_handler(
         return Ok(already_registered_response(&email_str, &name));
     }
 
+    // Why: deliberately after the branch above. That branch writes nothing and
+    // grants nothing, so people behind one office NAT re-submitting an address
+    // that already has an account must not spend the network's quota on it.
+    check_ip_rate_limit(&pool, client_ip).await?;
+
     let user_id = existing.map_or_else(
         || UserId::new(uuid::Uuid::new_v4().to_string()),
         |state| state.user_id,
@@ -128,6 +149,13 @@ pub(crate) async fn public_register_handler(
         },
     )
     .await?;
+
+    // Why: outside the transaction above, and only once it has committed — a
+    // registration that failed must not spend quota, and a failed write here
+    // must not undo a signup that succeeded.
+    if let Some(ip) = client_ip.filter(|ip| !is_private_range(*ip)) {
+        repositories::users::registration::insert_registration_attempt(&pool, ip, &email_str).await;
+    }
 
     registration_submitted(&user_id, &email_str, &name, &profile);
 
@@ -208,7 +236,7 @@ async fn persist_registration(
     )
     .await?;
 
-    repositories::users::registration::approve_on_signup(&mut *tx, user_id).await?;
+    repositories::users::approvals::approve_on_signup(&mut *tx, user_id).await?;
 
     repositories::users::registration::insert_setup_token(
         &mut *tx,
@@ -238,6 +266,33 @@ async fn check_rate_limit(pool: &PgPool, email_str: &str) -> AdminResult<()> {
         return Err(AdminError::RateLimited(
             "Too many registration attempts. Please try again later.".to_owned(),
         ));
+    }
+    Ok(())
+}
+
+async fn check_ip_rate_limit(pool: &PgPool, ip: Option<IpAddr>) -> AdminResult<()> {
+    let Some(ip) = ip else {
+        // Why: `None` means the request carried no peer address, which the
+        // served router always supplies — only an in-process caller reaches
+        // this. Failing closed here would 429 every signup rather than the
+        // handful this limit exists to slow down.
+        tracing::warn!("registration ip limit skipped: client address unresolved");
+        return Ok(());
+    };
+
+    if is_private_range(ip) {
+        tracing::warn!(
+            ip = %ip,
+            "registration ip limit skipped: client resolved to a private address"
+        );
+        return Ok(());
+    }
+
+    let count =
+        repositories::users::registration::count_recent_registration_attempts(pool, ip).await;
+
+    if count >= REGISTRATIONS_PER_IP_PER_DAY {
+        return Err(AdminError::RateLimited(IP_RATE_LIMITED_MESSAGE.to_owned()));
     }
     Ok(())
 }

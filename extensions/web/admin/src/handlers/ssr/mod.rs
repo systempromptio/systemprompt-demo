@@ -47,7 +47,7 @@ pub(crate) async fn pending_page(
     }
 
     let applicant =
-        crate::repositories::users::registration::find_applicant(&pool, &user_ctx.user_id).await;
+        crate::repositories::users::approvals::find_applicant(&pool, &user_ctx.user_id).await;
 
     let mut ctx = branding_context(&engine);
     if let Some(obj) = ctx.as_object_mut() {

@@ -116,7 +116,7 @@ pub(crate) async fn create_user_handler(
     // Why: an admin creating an account by hand has already made the decision
     // the review gate exists to capture, so it is approved on the spot rather
     // than landing in its creator's own queue.
-    repositories::users::registration::approve_on_create(&pool, &user.user_id, &user_ctx.user_id)
+    repositories::users::approvals::approve_on_create(&pool, &user.user_id, &user_ctx.user_id)
         .await;
     let p = Arc::clone(&pool);
     let uid = user_ctx.user_id.clone();

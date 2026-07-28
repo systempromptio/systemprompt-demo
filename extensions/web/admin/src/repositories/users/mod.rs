@@ -2,6 +2,7 @@
 
 pub mod access_control;
 pub mod activity;
+pub mod approvals;
 pub mod magic_links;
 pub mod mutations;
 pub mod queries;

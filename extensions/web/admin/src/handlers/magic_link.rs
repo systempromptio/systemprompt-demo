@@ -4,11 +4,12 @@ use std::sync::Arc;
 
 use axum::Json;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
+use systemprompt::api::services::middleware::client_addr::ClientIp;
 use systemprompt::identifiers::Email;
 
 use crate::repositories::users::magic_links;
@@ -38,7 +39,7 @@ const RATE_LIMITED_MESSAGE: &str =
 
 pub(crate) async fn request_magic_link(
     State(pool): State<Arc<PgPool>>,
-    req_headers: HeaderMap,
+    ClientIp(client_ip): ClientIp,
     Json(body): Json<MagicLinkRequest>,
 ) -> impl IntoResponse {
     // lint-ok: http-error — answers identically whether or not the account exists,
@@ -68,27 +69,25 @@ pub(crate) async fn request_magic_link(
         );
     }
 
-    let ip_address = req_headers
-        .get("x-forwarded-for")
-        .or_else(|| req_headers.get("x-real-ip"))
-        .and_then(|v| v.to_str().ok())
-        .map_or_else(
-            || "unknown".to_owned(),
-            |s| s.split(',').next().unwrap_or(s).trim().to_owned(),
-        );
+    // Why: an address the trust-gated resolver could not establish is left out
+    // of the count and off the stored token rather than bucketed under a
+    // sentinel, which would merge every such caller into one shared limit.
+    let ip_address = client_ip.map(|ip| ip.to_string());
 
-    let ip_count = magic_links::count_recent_tokens_by_ip(&pool, &ip_address)
-        .await
-        .unwrap_or(0);
+    if let Some(ref ip) = ip_address {
+        let ip_count = magic_links::count_recent_tokens_by_ip(&pool, ip)
+            .await
+            .unwrap_or(0);
 
-    if ip_count >= 10 {
-        return (
-            StatusCode::OK,
-            Json(MagicLinkRequestResult::Ok(MagicLinkResponse {
-                ok: true,
-                message: RATE_LIMITED_MESSAGE.to_owned(),
-            })),
-        );
+        if ip_count >= 10 {
+            return (
+                StatusCode::OK,
+                Json(MagicLinkRequestResult::Ok(MagicLinkResponse {
+                    ok: true,
+                    message: RATE_LIMITED_MESSAGE.to_owned(),
+                })),
+            );
+        }
     }
 
     let user_exists = magic_links::user_exists_by_email(&pool, &email)
@@ -97,7 +96,7 @@ pub(crate) async fn request_magic_link(
 
     if user_exists
         && let Ok(_raw_token) =
-            magic_links::create_magic_link_token(&pool, &email, Some(&ip_address)).await
+            magic_links::create_magic_link_token(&pool, &email, ip_address.as_deref()).await
     {
         tracing::info!(email = %email, "Magic link token created (email sending not configured in this deployment)");
     }
