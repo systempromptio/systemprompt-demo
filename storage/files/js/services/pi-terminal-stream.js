@@ -4,11 +4,6 @@ import { onFrame } from './pi-terminal-frames.js';
 import { meters } from './pi-terminal-meters.js';
 import { degrade } from './pi-terminal-canned.js';
 
-// The composer is enabled only by the stream's session_ready frame, so a stream
-// that never attaches leaves a terminal nobody can type into. Past this many
-// consecutive failures, say so instead of retrying behind a "reconnecting" label.
-const MAX_FAILS = 4;
-
 export function openStream(el) {
   const url = el._endpoint + '/stream/' + encodeURIComponent(el._conversationId)
     + '?token=' + encodeURIComponent(el._token)
@@ -19,28 +14,12 @@ export function openStream(el) {
   el._source.onmessage = (e) => onFrame(el, e.data);
   el._source.onopen = () => {
     el._reconnectMs = RECONNECT_MIN_MS;
-    el._streamFails = 0;
     el._status('live');
   };
   el._source.onerror = () => {
     if (el._closed) return;
     el._teardownStream();
-    el._streamFails = (el._streamFails || 0) + 1;
-    // A 404 means the session this stream names is gone; no number of
-    // reconnects can bring it back, but a fresh POST /session can. Tried once,
-    // so a server that keeps dropping the session cannot become a spawn loop.
-    if (el._streamFails === 1 && !el._streamRecovered) {
-      el._streamRecovered = true;
-      void recover(el, url);
-      return;
-    }
-    if (el._streamFails >= MAX_FAILS) {
-      degrade(el, 'stream');
-      return;
-    }
-    el._status('reconnecting');
-    el._reconnectTimer = setTimeout(() => openStream(el), jitter(el));
-    el._reconnectMs = Math.min(el._reconnectMs * 2, RECONNECT_MAX_MS);
+    void onStreamError(el, url);
   };
 
   // There is deliberately no visibilitychange handler. has_viewers() is a
@@ -54,28 +33,44 @@ function jitter(el) {
 }
 
 /**
- * Re-open the conversation when the stream says its session no longer exists.
+ * Decide whether a dropped stream is worth reconnecting to.
  *
  * EventSource reports every failure identically, so the status has to be read
- * with a plain fetch. Anything other than a 404 is a transport problem a
- * reconnect can still solve, and falls back to the backoff.
+ * with a plain fetch. A transport failure — a redeploy, a sleeping laptop —
+ * still deserves the indefinite backoff this has always had. A 404 does not:
+ * the session the URL names is gone, and only a fresh POST /session can
+ * produce another. Retrying that forever is what leaves a terminal disabled
+ * behind a "reconnecting" label nobody can act on.
  */
-async function recover(el, url) {
+async function onStreamError(el, url) {
   const conversationId = el._conversationId;
-  let gone = false;
-  try {
-    const res = await fetch(url, { headers: { accept: 'text/event-stream' } });
-    gone = res.status === 404;
-    if (res.body) await res.body.cancel();
-  } catch (_) {
-    gone = false;
-  }
-  if (el._closed) return;
-  if (gone) {
-    const { restart } = await import('./pi-terminal-session.js');
-    await restart(el, conversationId);
+  if (!(await sessionGone(url)) || el._closed) {
+    backoff(el);
     return;
   }
+  // Re-opened once. If the replacement session is missing too, the server is
+  // refusing to hold one, and a second attempt would only be a spawn loop.
+  if (el._streamRecovered) {
+    degrade(el, 'stream');
+    return;
+  }
+  el._streamRecovered = true;
+  const { restart } = await import('./pi-terminal-session.js');
+  await restart(el, conversationId);
+}
+
+async function sessionGone(url) {
+  try {
+    const res = await fetch(url, { headers: { accept: 'text/event-stream' } });
+    if (res.body) await res.body.cancel();
+    return res.status === 404;
+  } catch (_) {
+    return false;
+  }
+}
+
+function backoff(el) {
+  if (el._closed) return;
   el._status('reconnecting');
   el._reconnectTimer = setTimeout(() => openStream(el), jitter(el));
   el._reconnectMs = Math.min(el._reconnectMs * 2, RECONNECT_MAX_MS);

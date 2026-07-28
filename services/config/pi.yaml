@@ -77,10 +77,10 @@ models:
   - claude-haiku-4-5-20251001    # Anthropic: latest Haiku
   - gpt-5.1                      # OpenAI: latest flagship
   - gpt-5-mini                   # OpenAI: latest mini
-  # Gemini is withheld for now: pi's Anthropic client drops the per-turn
-  # thoughtSignature Gemini requires on replayed functionCall parts, so every
-  # second turn is rejected upstream. Restore once the gateway re-injects
-  # cached signatures server-side.
+  # Gemini is withheld: pi's Anthropic client drops the per-turn
+  # thoughtSignature Gemini requires on replayed functionCall parts. Core now
+  # re-injects cached signatures server-side; restore once that fix is
+  # committed, published, and verified end-to-end from this repo.
 
 # Who the agent says it is. Omitted here on purpose: it defaults to
 # services/config/pi-persona.md, which is compiled into the binary — the child

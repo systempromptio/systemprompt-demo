@@ -96,7 +96,7 @@ impl PiRegistry {
             model,
         } = req;
         self.version_gate().await.map_err(SpawnError::Version)?;
-        self.make_room_for(&user_id).await;
+        self.make_room_for(&user_id, &conversation_id).await;
         let mut reservation = self.reserve(conversation_id.clone(), &user_id)?;
 
         let key = self.issue_credential(&user_id, &conversation_id).await?;
@@ -206,8 +206,14 @@ impl PiRegistry {
         credentials::revoke(&self.0.pool, user_id, &key.id).await;
     }
 
-    async fn make_room_for(&self, user_id: &UserId) {
-        for stale in self.surplus_for(user_id) {
+    // Why: resuming retires the conversation's own predecessor in place — it is
+    // a replacement, not a surplus, so counting it against the per-user cap
+    // would evict a second, unrelated session for no reason. Retiring it here
+    // also orders the old child's workspace cleanup before the new spawn
+    // recreates that same directory.
+    async fn make_room_for(&self, user_id: &UserId, incoming: &ContextId) {
+        self.remove(incoming, None).await;
+        for stale in self.surplus_for(user_id, incoming) {
             tracing::info!(
                 conversation_id = %stale,
                 "displacing a pi session for a new one from the same user"
@@ -216,7 +222,7 @@ impl PiRegistry {
         }
     }
 
-    fn surplus_for(&self, user_id: &UserId) -> Vec<ContextId> {
+    fn surplus_for(&self, user_id: &UserId, incoming: &ContextId) -> Vec<ContextId> {
         let Ok(sessions) = self.0.sessions.lock() else {
             return Vec::new();
         };
@@ -224,7 +230,7 @@ impl PiRegistry {
         let mut mine: Vec<&Arc<PiSession>> = sessions
             .values()
             .filter_map(Slot::live)
-            .filter(|s| s.user_id == *user_id)
+            .filter(|s| s.user_id == *user_id && s.conversation_id != *incoming)
             .collect();
         mine.sort_by_key(|s| std::cmp::Reverse(s.age()));
         let surplus = mine.len().saturating_sub(keep);

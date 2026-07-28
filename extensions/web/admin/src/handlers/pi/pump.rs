@@ -53,7 +53,9 @@ async fn read_stdout(
             },
         }
     }
-    registry.remove(&session.conversation_id, None).await;
+    registry
+        .remove_if(&session.conversation_id, &session, None)
+        .await;
 }
 
 fn handle_line(deps: &Arc<PiDeps>, session: &Arc<PiSession>, line: &str) {

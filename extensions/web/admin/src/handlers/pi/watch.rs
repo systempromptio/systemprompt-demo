@@ -34,14 +34,16 @@ impl TokenQuery {
     }
 }
 
+// Why: the catalogue is static and conversation-independent, so ownership of
+// the row is the whole requirement — gating on a live child made a restarted
+// or not-yet-attached session read as an expired token.
 pub(super) async fn commands(
     State(pool): State<Arc<PgPool>>,
-    Extension(registry): Extension<PiRegistry>,
     Path(conversation_id): Path<ContextId>,
     Query(q): Query<TokenQuery>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
-    if super::auth::authorize_session(&pool, &registry, &q.token, &conversation_id)
+    if super::auth::authorize_conversation(&pool, &q.token, &conversation_id)
         .await
         .is_none()
     {
