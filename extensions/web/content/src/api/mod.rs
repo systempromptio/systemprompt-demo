@@ -40,12 +40,6 @@ pub fn router(pool: Arc<PgPool>, config: Option<Arc<BlogConfigValidated>>) -> Ro
         .with_state(state)
 }
 
-pub fn redirect_router(pool: Arc<PgPool>) -> Router {
-    Router::new()
-        .route("/{short_code}", get(handlers::redirect_handler))
-        .with_state(pool)
-}
-
 #[derive(Clone, Debug)]
 pub struct BlogState {
     pub pool: Arc<PgPool>,

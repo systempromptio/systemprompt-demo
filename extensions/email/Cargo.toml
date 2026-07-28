@@ -4,7 +4,11 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 description = "Email extension for systemprompt.io — SMTP transport and the welcome/credit email."
-license = "MIT"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 
 [lints]
 workspace = true

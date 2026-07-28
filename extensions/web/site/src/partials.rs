@@ -23,151 +23,84 @@ pub use super::partials_animations::{
     RustMeshAnimationPartialRenderer,
 };
 
-#[derive(Debug, Clone, Copy)]
-pub struct HeadAssetsPartialRenderer;
+/// Generates a zero-state [`ComponentRenderer`] whose only job is to expose an
+/// embedded partial template: the render step contributes an empty variable and
+/// the engine substitutes the partial body at the declared name.
+macro_rules! static_partial {
+    ($ty:ident, $id:literal, $var:literal, $partial:literal, $template:literal, $priority:expr) => {
+        #[derive(Debug, Clone, Copy)]
+        pub struct $ty;
 
-impl HeadAssetsPartialRenderer {
-    const TEMPLATE: &str =
-        include_str!("../../../../services/web/templates/partials/head-assets.html");
+        impl $ty {
+            const TEMPLATE: &str = include_str!($template);
+        }
+
+        #[async_trait]
+        impl ComponentRenderer for $ty {
+            fn component_id(&self) -> &'static str {
+                $id
+            }
+
+            fn variable_name(&self) -> &'static str {
+                $var
+            }
+
+            fn applies_to(&self) -> Vec<String> {
+                vec![]
+            }
+
+            fn partial_template(&self) -> Option<PartialTemplate> {
+                Some(PartialTemplate::embedded($partial, Self::TEMPLATE))
+            }
+
+            async fn render(
+                &self,
+                _ctx: &ComponentContext<'_>,
+            ) -> Result<RenderedComponent, ProviderError> {
+                Ok(RenderedComponent::new(self.variable_name(), ""))
+            }
+
+            fn priority(&self) -> u32 {
+                $priority
+            }
+        }
+    };
 }
 
-#[async_trait]
-impl ComponentRenderer for HeadAssetsPartialRenderer {
-    fn component_id(&self) -> &'static str {
-        "web:head-assets-partial"
-    }
+pub(crate) use static_partial;
 
-    fn variable_name(&self) -> &'static str {
-        "HEAD_ASSETS"
-    }
+static_partial!(
+    HeadAssetsPartialRenderer,
+    "web:head-assets-partial",
+    "HEAD_ASSETS",
+    "head-assets",
+    "../../../../services/web/templates/partials/head-assets.html",
+    PRIORITY_CRITICAL
+);
 
-    fn applies_to(&self) -> Vec<String> {
-        vec![]
-    }
+static_partial!(
+    HeaderPartialRenderer,
+    "web:header-partial",
+    "HEADER",
+    "header",
+    "../../../../services/web/templates/partials/header.html",
+    PRIORITY_HIGH
+);
 
-    fn partial_template(&self) -> Option<PartialTemplate> {
-        Some(PartialTemplate::embedded("head-assets", Self::TEMPLATE))
-    }
+static_partial!(
+    FooterPartialRenderer,
+    "web:footer-partial",
+    "FOOTER",
+    "footer",
+    "../../../../services/web/templates/partials/footer.html",
+    PRIORITY_LOW
+);
 
-    async fn render(
-        &self,
-        _ctx: &ComponentContext<'_>,
-    ) -> Result<RenderedComponent, ProviderError> {
-        Ok(RenderedComponent::new(self.variable_name(), ""))
-    }
-
-    fn priority(&self) -> u32 {
-        PRIORITY_CRITICAL
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct HeaderPartialRenderer;
-
-impl HeaderPartialRenderer {
-    const TEMPLATE: &str = include_str!("../../../../services/web/templates/partials/header.html");
-}
-
-#[async_trait]
-impl ComponentRenderer for HeaderPartialRenderer {
-    fn component_id(&self) -> &'static str {
-        "web:header-partial"
-    }
-
-    fn variable_name(&self) -> &'static str {
-        "HEADER"
-    }
-
-    fn applies_to(&self) -> Vec<String> {
-        vec![]
-    }
-
-    fn partial_template(&self) -> Option<PartialTemplate> {
-        Some(PartialTemplate::embedded("header", Self::TEMPLATE))
-    }
-
-    async fn render(
-        &self,
-        _ctx: &ComponentContext<'_>,
-    ) -> Result<RenderedComponent, ProviderError> {
-        Ok(RenderedComponent::new(self.variable_name(), ""))
-    }
-
-    fn priority(&self) -> u32 {
-        PRIORITY_HIGH
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct FooterPartialRenderer;
-
-impl FooterPartialRenderer {
-    const TEMPLATE: &str = include_str!("../../../../services/web/templates/partials/footer.html");
-}
-
-#[async_trait]
-impl ComponentRenderer for FooterPartialRenderer {
-    fn component_id(&self) -> &'static str {
-        "web:footer-partial"
-    }
-
-    fn variable_name(&self) -> &'static str {
-        "FOOTER"
-    }
-
-    fn applies_to(&self) -> Vec<String> {
-        vec![]
-    }
-
-    fn partial_template(&self) -> Option<PartialTemplate> {
-        Some(PartialTemplate::embedded("footer", Self::TEMPLATE))
-    }
-
-    async fn render(
-        &self,
-        _ctx: &ComponentContext<'_>,
-    ) -> Result<RenderedComponent, ProviderError> {
-        Ok(RenderedComponent::new(self.variable_name(), ""))
-    }
-
-    fn priority(&self) -> u32 {
-        PRIORITY_LOW
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct ScriptsPartialRenderer;
-
-impl ScriptsPartialRenderer {
-    const TEMPLATE: &str = include_str!("../../../../services/web/templates/partials/scripts.html");
-}
-
-#[async_trait]
-impl ComponentRenderer for ScriptsPartialRenderer {
-    fn component_id(&self) -> &'static str {
-        "web:scripts-partial"
-    }
-
-    fn variable_name(&self) -> &'static str {
-        "SCRIPTS"
-    }
-
-    fn applies_to(&self) -> Vec<String> {
-        vec![]
-    }
-
-    fn partial_template(&self) -> Option<PartialTemplate> {
-        Some(PartialTemplate::embedded("scripts", Self::TEMPLATE))
-    }
-
-    async fn render(
-        &self,
-        _ctx: &ComponentContext<'_>,
-    ) -> Result<RenderedComponent, ProviderError> {
-        Ok(RenderedComponent::new(self.variable_name(), ""))
-    }
-
-    fn priority(&self) -> u32 {
-        PRIORITY_LAST
-    }
-}
+static_partial!(
+    ScriptsPartialRenderer,
+    "web:scripts-partial",
+    "SCRIPTS",
+    "scripts",
+    "../../../../services/web/templates/partials/scripts.html",
+    PRIORITY_LAST
+);

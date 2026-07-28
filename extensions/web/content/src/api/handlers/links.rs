@@ -1,13 +1,12 @@
-//! HTTP handlers for campaign links, click recording, and redirects.
+//! HTTP handlers for campaign links and click recording.
 
 use std::sync::Arc;
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::response::{IntoResponse, Response};
 use chrono::Utc;
-use sqlx::PgPool;
 use systemprompt::identifiers::{LinkClickId, LinkId, SessionId};
 use url::Url;
 
@@ -180,31 +179,6 @@ pub async fn content_journey_handler(
         Err(e) => {
             tracing::error!(error = %e, "Failed to get content journey");
             error_response(StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
-        },
-    }
-}
-
-pub async fn redirect_handler(
-    State(pool): State<Arc<PgPool>>,
-    Path(short_code): Path<String>,
-) -> Response {
-    let service = LinkService::new(pool);
-
-    let session_id = SessionId::new(uuid::Uuid::new_v4().to_string());
-
-    match service
-        .process_redirect(&short_code, session_id, None, None)
-        .await
-    {
-        Ok(target_url) => {
-            if validate_url_protocol(&target_url).is_err() {
-                return error_response(StatusCode::BAD_REQUEST, "Invalid redirect target");
-            }
-            Redirect::temporary(&target_url).into_response()
-        },
-        Err(e) => {
-            tracing::warn!(short_code = %short_code, error = %e, "Redirect failed");
-            error_response(StatusCode::NOT_FOUND, "Link not found")
         },
     }
 }

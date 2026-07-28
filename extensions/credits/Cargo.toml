@@ -4,7 +4,11 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 description = "Credit ledger extension for systemprompt.io — signup grants, balance, and gateway enforcement."
-license = "MIT"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 
 [lints]
 workspace = true

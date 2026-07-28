@@ -48,7 +48,7 @@ pub use config::{
 };
 pub use docs::{ChildDoc, DocsContentDataProvider, DocsPageDataProvider};
 pub use error::BlogError;
-pub use extension::{BlogExtension, WebExtension};
+pub use extension::WebExtension;
 pub use features::{
     FeatureCta, FeaturePage, FeaturePagePrerenderer, FeaturePagesConfig, FeatureSection,
     FeatureSectionItem,

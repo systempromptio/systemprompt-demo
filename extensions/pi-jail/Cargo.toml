@@ -4,7 +4,11 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 description = "Landlock jail that confines a governed pi child to its workspace, then execs it."
-license = "MIT"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
 
 [[bin]]
 name = "sp-pi-jail"

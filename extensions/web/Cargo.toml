@@ -22,8 +22,6 @@ workspace = true
 # Audit: uses ai, database, extension, loader, models, traits — requires `full`
 # (ai + loader are gated by the `full` feature).
 systemprompt = { workspace = true, features = ["full"] }
-# Audit: uses ai, database, extension, loader, models, traits — requires `full`
-# (ai + loader are gated by full; database/extension/traits/models are lower).
 
 # Local sub-crates
 systemprompt-web-shared = { workspace = true }
@@ -37,25 +35,10 @@ systemprompt-web-jobs = { workspace = true }
 systemprompt-extension = "0.26.0"
 inventory = { workspace = true }
 
-# Database access
-
-# Web framework
 axum = { workspace = true }
-
-# Async
-
-# Serialization
 serde_yaml = { workspace = true }
-
-# Markdown processing
-
-# Utilities
 thiserror = { workspace = true }
 tracing = { workspace = true }
-
-# SSE streaming
-
-# Archive extraction
 
 [build-dependencies]
 systemprompt-extension = "0.26.0"

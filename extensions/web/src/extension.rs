@@ -110,4 +110,3 @@ systemprompt::mcp::register_artifact_theme!(
     name = "systemprompt.io"
 );
 
-pub type BlogExtension = WebExtension;
