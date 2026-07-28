@@ -65,7 +65,9 @@ pub(crate) async fn pending_page(
         );
         obj.insert(
             "support_email".to_owned(),
-            systemprompt_email_extension::configured_admin_email().into(),
+            systemprompt_email_extension::configured_admin_email()
+                .unwrap_or_default()
+                .into(),
         );
     }
 

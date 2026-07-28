@@ -41,30 +41,43 @@ pub async fn send_registration_notice(
     let Some(service) = EmailService::from_secrets() else {
         tracing::info!(
             signup = %notice.email,
-            notify = %configured_admin_email(),
             "email not configured; skipping registration notice (no-op)"
         );
         return Ok(());
     };
+    let Some(notify) = configured_admin_email() else {
+        tracing::warn!(
+            signup = %notice.email,
+            "admin_notify_email secret not set; skipping registration notice"
+        );
+        return Ok(());
+    };
     service
-        .send_registration_notice(&configured_admin_email(), notice, site_url)
+        .send_registration_notice(&notify, notice, site_url)
         .await
 }
 
 /// The public site URL links in outbound email are built against, resolved
-/// from the `site_url` secret, defaulting to production.
+/// from the `site_url` secret, falling back to this deployment's own
+/// `api_external_url` so a fork never mails links to someone else's domain.
 #[must_use]
 pub fn configured_site_url() -> String {
-    service::secret("site_url").unwrap_or_else(|| "https://systemprompt.io".to_owned())
+    service::secret("site_url").unwrap_or_else(|| {
+        systemprompt::models::Config::get().map_or_else(
+            |_| String::new(),
+            |c| c.api_external_url.trim_end_matches('/').to_owned(),
+        )
+    })
 }
 
 /// Who reviews new accounts, and the address applicants are told to contact.
 ///
 /// Resolved from the `admin_notify_email` secret so a deployment can redirect
-/// the queue without a rebuild.
+/// the queue without a rebuild. `None` means no reviewer is configured —
+/// callers skip the notice rather than mailing a hardcoded stranger.
 #[must_use]
-pub fn configured_admin_email() -> String {
-    service::secret("admin_notify_email").unwrap_or_else(|| "ed@systemprompt.io".to_owned())
+pub fn configured_admin_email() -> Option<String> {
+    service::secret("admin_notify_email")
 }
 
 #[derive(Debug, Default, Clone, Copy)]
