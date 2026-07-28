@@ -53,10 +53,10 @@ fn core_css(p: &Path) -> Vec<AssetDefinition> {
 
 fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "homepage-hero.css"),
-        css!(p, "homepage-showreel.css"),
-        css!(p, "homepage-getting-started.css"),
-        css!(p, "homepage-sections-titles.css"),
+        css!(p, "homepage/hero.css"),
+        css!(p, "homepage/showreel.css"),
+        css!(p, "homepage/getting-started.css"),
+        css!(p, "homepage/sections-titles.css"),
         css!(p, "components/pi-terminal-shell.css"),
         css!(p, "components/pi-terminal-header.css"),
         css!(p, "components/pi-terminal-capacity.css"),
@@ -87,67 +87,67 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
 
 fn blog_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "blog-variables.css"),
-        css!(p, "blog-background.css"),
-        css!(p, "blog-base.css"),
-        css!(p, "blog-post-header.css"),
-        css!(p, "blog-social-bar.css"),
-        css!(p, "blog-featured-image.css"),
-        css!(p, "blog-post-content.css"),
-        css!(p, "blog-breadcrumb.css"),
-        css!(p, "blog-page-header.css"),
-        css!(p, "blog-list-controls.css"),
-        css!(p, "blog-cards.css"),
-        css!(p, "blog-footer.css"),
-        css!(p, "blog-references.css"),
-        css!(p, "blog-related.css"),
-        css!(p, "blog-banner.css"),
-        css!(p, "blog-chat-cta.css"),
-        css!(p, "blog-social-content.css"),
-        css!(p, "blog-hero.css"),
-        css!(p, "blog-homepage.css"),
-        css!(p, "blog-platforms.css"),
-        css!(p, "blog-ai-badges.css"),
-        css!(p, "blog-content-sections.css"),
-        css!(p, "blog-content-cards.css"),
-        css!(p, "blog-provenance-panel.css"),
-        css!(p, "blog-provenance-sections.css"),
-        css!(p, "blog-provenance-header.css"),
-        css!(p, "blog-workflow.css"),
-        css!(p, "blog-provenance-details.css"),
-        css!(p, "blog-responsive.css"),
+        css!(p, "blog/utilities.css"),
+        css!(p, "blog/background.css"),
+        css!(p, "blog/base.css"),
+        css!(p, "blog/post-header.css"),
+        css!(p, "blog/social-bar.css"),
+        css!(p, "blog/featured-image.css"),
+        css!(p, "blog/post-content.css"),
+        css!(p, "blog/breadcrumb.css"),
+        css!(p, "blog/page-header.css"),
+        css!(p, "blog/list-controls.css"),
+        css!(p, "blog/cards.css"),
+        css!(p, "blog/footer.css"),
+        css!(p, "blog/references.css"),
+        css!(p, "blog/related.css"),
+        css!(p, "blog/banner.css"),
+        css!(p, "blog/chat-cta.css"),
+        css!(p, "blog/social-content.css"),
+        css!(p, "blog/hero.css"),
+        css!(p, "blog/homepage.css"),
+        css!(p, "blog/platforms.css"),
+        css!(p, "blog/ai-badges.css"),
+        css!(p, "blog/content-sections.css"),
+        css!(p, "blog/content-cards.css"),
+        css!(p, "blog/provenance-panel.css"),
+        css!(p, "blog/provenance-sections.css"),
+        css!(p, "blog/provenance-header.css"),
+        css!(p, "blog/workflow.css"),
+        css!(p, "blog/provenance-details.css"),
+        css!(p, "blog/responsive.css"),
     ]
 }
 
 fn docs_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "docs-layout.css"),
-        css!(p, "docs-header.css"),
-        css!(p, "docs-content.css"),
-        css!(p, "docs-pagination.css"),
-        css!(p, "docs-toc.css"),
-        css!(p, "docs-responsive.css"),
-        css!(p, "docs-sidebar-links.css"),
+        css!(p, "docs/layout.css"),
+        css!(p, "docs/header.css"),
+        css!(p, "docs/content.css"),
+        css!(p, "docs/pagination.css"),
+        css!(p, "docs/toc.css"),
+        css!(p, "docs/responsive.css"),
+        css!(p, "docs/sidebar-links.css"),
     ]
 }
 
 fn feature_page_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "feature-page-hero.css"),
-        css!(p, "feature-page-content.css"),
-        css!(p, "feature-page-responsive.css"),
+        css!(p, "feature/page-hero.css"),
+        css!(p, "feature/page-content.css"),
+        css!(p, "feature/page-responsive.css"),
     ]
 }
 
 fn feature_base_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "feature-base-hero.css"),
-        css!(p, "feature-base-sections.css"),
-        css!(p, "feature-base-cta.css"),
-        css!(p, "feature-base-details.css"),
-        css!(p, "content-cards-base.css"),
-        css!(p, "content-cards-categories.css"),
-        css!(p, "content-cards-list.css"),
+        css!(p, "feature/base-hero.css"),
+        css!(p, "feature/base-sections.css"),
+        css!(p, "feature/base-cta.css"),
+        css!(p, "feature/base-details.css"),
+        css!(p, "content/cards-base.css"),
+        css!(p, "content/cards-categories.css"),
+        css!(p, "content/cards-list.css"),
     ]
 }
 
