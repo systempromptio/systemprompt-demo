@@ -5,7 +5,7 @@
 //! in this module changes what is allowed, only what was decided.
 //!
 //! The configured side of that pairing — gateway routes, agent definitions,
-//! the access-control YAML — lives in [`super::config`].
+//! the access-control YAML — lives in `super::config`.
 
 pub mod audit;
 pub mod demo_trace;

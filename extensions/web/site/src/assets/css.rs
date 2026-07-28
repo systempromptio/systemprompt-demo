@@ -22,15 +22,17 @@ pub(super) fn css_assets(storage_css: &Path) -> Vec<AssetDefinition> {
 
 // Why: emitted by the bundle_public_css job, which runs immediately before the
 // asset copy — the sources stay registered because the bundles are built from
-// them on every publish, not checked in.
+// them on every publish, not checked in. Optional because a fresh container
+// validates assets at startup before its first publish has generated them;
+// the bundle job itself hard-fails the pipeline if one cannot be built.
 fn bundle_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "bundles/core-bundle.css"),
-        css!(p, "bundles/blog-bundle.css"),
-        css!(p, "bundles/blog-list-bundle.css"),
-        css!(p, "bundles/docs-bundle.css"),
-        css!(p, "bundles/homepage-bundle.css"),
-        css!(p, "bundles/resources-bundle.css"),
+        AssetDefinition::builder(p.join("bundles/core-bundle.css"), "css/bundles/core-bundle.css", systemprompt::extension::AssetType::Css).optional().build(),
+        AssetDefinition::builder(p.join("bundles/blog-bundle.css"), "css/bundles/blog-bundle.css", systemprompt::extension::AssetType::Css).optional().build(),
+        AssetDefinition::builder(p.join("bundles/blog-list-bundle.css"), "css/bundles/blog-list-bundle.css", systemprompt::extension::AssetType::Css).optional().build(),
+        AssetDefinition::builder(p.join("bundles/docs-bundle.css"), "css/bundles/docs-bundle.css", systemprompt::extension::AssetType::Css).optional().build(),
+        AssetDefinition::builder(p.join("bundles/homepage-bundle.css"), "css/bundles/homepage-bundle.css", systemprompt::extension::AssetType::Css).optional().build(),
+        AssetDefinition::builder(p.join("bundles/resources-bundle.css"), "css/bundles/resources-bundle.css", systemprompt::extension::AssetType::Css).optional().build(),
     ]
 }
 

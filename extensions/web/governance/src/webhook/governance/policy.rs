@@ -1,7 +1,7 @@
 //! Modular governance policy framework — template side.
 //!
 //! Policies implement [`systemprompt_security::policy::GovernancePolicy`]
-//! from core and return the shared [`Decision`] / [`DenyReason`] types, so
+//! from core and return the shared `Decision` / `DenyReason` types, so
 //! the audit row shape and CLI view are identical to the user→entity authz
 //! plane. The template owns three concerns that core's plain
 //! [`systemprompt_security::policy::GovernanceChain`] doesn't:
@@ -11,8 +11,8 @@
 //! 2. **Per-policy YAML config** from `services/governance/config.yaml`
 //!    (enabled flag, per-policy params).
 //!
-//! Each entry carries the resolved [`PolicyConfig`] alongside the boxed
-//! `GovernancePolicy` impl. The pipeline driver in [`super::rules_runner`]
+//! Each entry carries the resolved `PolicyConfig` alongside the boxed
+//! `GovernancePolicy` impl. The pipeline driver in `super::rules_runner`
 //! iterates entries, honours `enabled`, and emits a per-entry trace for the
 //! audit row.
 

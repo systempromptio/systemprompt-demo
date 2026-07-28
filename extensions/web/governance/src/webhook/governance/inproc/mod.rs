@@ -8,8 +8,8 @@
 //! already have typed, and — the reason that settles it — accepting a
 //! decision-shaped answer with nowhere to suspend for a human.
 //!
-//! So this module is the seam: the same [`evaluate`] chain and the same
-//! [`DecisionAudit`] row, reached by function call, with the human round-trip
+//! So this module is the seam: the same `evaluate` chain and the same
+//! `DecisionAudit` row, reached by function call, with the human round-trip
 //! layered on top by the caller.
 //!
 //! Nothing here decides *whether* to ask a human — that is the proxy's job.

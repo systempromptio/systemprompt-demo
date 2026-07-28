@@ -21,22 +21,22 @@
 //!   shell command with no `tool_call` hook firing at all. Only
 //!   [`rpc::RpcCommand`]'s variants are ever constructed here, and no client
 //!   string reaches pi as a command type — relaying raw RPC would hand every
-//!   viewer a shell. See [`commands`].
+//!   viewer a shell. See `commands`.
 //! - **The gateway credential belongs to the conversation's own user.** The
 //!   gateway attests `x-session-id` against the identity that authenticated and
 //!   refuses a mismatch, so a shared PAT works for exactly one account.
-//!   [`registry`] mints a PAT per conversation for that conversation's user and
+//!   `registry` mints a PAT per conversation for that conversation's user and
 //!   revokes it, with the attested session, when the conversation ends.
 //!   Teardown revokes rather than waiting out an expiry because the gateway's
 //!   session lookup filters on `revoked_at` and ignores `expires_at`.
 //! - **pi confines nothing itself.** Its tools run with the process's own
 //!   permissions and its `read` applies no path containment, and the child runs
 //!   the server's uid — so confinement is this module's job, in two independent
-//!   layers. Every child starts through [`spawn`]'s `sp-pi-jail` wrapper, which
+//!   layers. Every child starts through `spawn`'s `sp-pi-jail` wrapper, which
 //!   applies a Landlock ruleset to itself and `exec`s pi: read-write on the
 //!   session workspace, read-execute on the interpreter and its libraries,
 //!   `connect()` on the gateway's port, and nothing else — no `/proc`, so
-//!   `/proc/<server-pid>/environ` stays unreadable. And [`scope`] rejects
+//!   `/proc/<server-pid>/environ` stays unreadable. And `scope` rejects
 //!   out-of-workspace path arguments before a human is ever asked, so a denial
 //!   is a `workspace_scope` audit row and a legible card rather than a bare
 //!   `EACCES`.
