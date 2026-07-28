@@ -175,6 +175,9 @@
 .home-split-body .logo-dark { display: none; }
 .home-split-body .logo-video { display: block; }
 
+/* The muted grey the tagline uses elsewhere is unreadable on the dark field. */
+.home-split-body .logo-tagline { color: var(--sp-stage-text-muted); }
+
 /* ── header ─────────────────────────────────────────────────────────────── */
 
 /* Over the stage the header is a logo and nothing else: it dissolves into the

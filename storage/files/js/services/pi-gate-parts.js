@@ -83,13 +83,25 @@ export function settledRecord(card, frame) {
   }), more);
 
   record.append(head, card);
-  record.addEventListener('toggle', () => {
-    if (!record.open || !record.parentElement) return;
-    record.parentElement
-      .querySelectorAll('details.pi-approval-record[open]')
-      .forEach((other) => { if (other !== record) other.open = false; });
-  });
+  soleOpen(record);
   return record;
+}
+
+/**
+ * One expanded at a time.
+ *
+ * The gate emits records faster than anyone reads them, and every one of them
+ * is expandable. Left to itself the transcript becomes a stack of open cards
+ * with the conversation somewhere below it, so opening one closes its
+ * siblings — the record being read is the only one taking up room.
+ */
+export function soleOpen(details) {
+  details.addEventListener('toggle', () => {
+    if (!details.open || !details.parentElement) return;
+    details.parentElement
+      .querySelectorAll(':scope > details.pi-approval-record[open], :scope > details.pi-gate-group[open]')
+      .forEach((other) => { if (other !== details) other.open = false; });
+  });
 }
 
 /** One small true fact, as a pill. */

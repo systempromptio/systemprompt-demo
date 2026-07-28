@@ -32,6 +32,7 @@ export async function restart(el, resume) {
   el._approvalsEl.replaceChildren();
   el._body.replaceChildren();
   el._toolRows.clear();
+  el._gateRun = null;
   closeArtifact(el);
   resetArtifacts(el);
   hidePalette(el);

@@ -174,6 +174,7 @@ Unknown YAML keys cause loud errors at load time (`#[serde(deny_unknown_fields)]
 
 ## Critical Rules
 
+0. **Load `development:rust-coding-standards` before writing Rust** — mandatory for every agent and subagent, before creating or editing any `.rs` file. Invoke it with the Skill tool first; don't write Rust from memory of the conventions. Spawned subagents that touch Rust must be told to load it too.
 1. **Core is a crate dependency** — consumed from crates.io; the sibling `../systemprompt-core` checkout IS editable for cross-repo work via the `[patch.crates-io]` toggle (publish + bump + re-comment before landing).
 2. **Rust code -> `extensions/`** — All `.rs` files live here.
 3. **Config only -> `services/`** — YAML/Markdown only. No Rust code.

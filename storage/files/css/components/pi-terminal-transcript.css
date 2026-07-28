@@ -104,6 +104,17 @@
   border-left: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 40%, transparent);
 }
 
+/* The replay stops here rather than looping, so the button is the last thing
+   in the transcript — sitting in the same indented column as the agent's half
+   of the exchange it just finished. */
+.pi-terminal.is-replay .terminal-body .pi-replay-end {
+  margin: var(--sp-space-3) 0 var(--sp-space-2) var(--sp-space-4);
+}
+
+.pi-terminal .pi-replay-restart {
+  font-size: 0.78rem;
+}
+
 .pi-terminal .command {
   color: var(--sp-color-terminal-text);
 }

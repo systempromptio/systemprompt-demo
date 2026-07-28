@@ -1,5 +1,6 @@
 import { MAX_LINES, TRIM_BATCH, INPUT_MAX_ROWS, INPUT_ROW_PX } from './pi-constants.js';
 import { approxTokens } from './pi-format.js';
+import { endGateRun } from './pi-gate-runs.js';
 
 /**
  * How the transcript grows, scrolls, and stops growing.
@@ -10,6 +11,9 @@ import { approxTokens } from './pi-format.js';
  */
 
 export function echo(el, message) {
+  // A new prompt divides one run of tool calls from the next, so the records
+  // either side of it are counted separately.
+  endGateRun(el);
   const line = document.createElement('div');
   // pi-turn-user marks the line as an act boundary: every exchange opens with
   // a prompt, so a rule above each one is all the grouping the transcript needs.

@@ -58,8 +58,9 @@ export const CANNED = [
       'The narrow waist between your organisation and AI. Every agent request '
       + 'passes through one control plane you host and own, and it answers four '
       + 'questions on every call: who is asking, what they may do, what it '
-      + 'costs, and what happened. Claude Code, Cowork, any Anthropic SDK '
-      + 'client, any MCP server. Same waist, same rules.',
+      + 'costs, and what happened. Claude Code, Cowork, your own '
+      + 'scripts, any MCP server — any agent, any client, any provider. Same '
+      + 'waist, same rules.',
     meters: { calls: 0, blocked: 0, tokens: 640, cost: '$0.01' } },
   { cls: 'note', text: 'Identity, policy, approval, audit. Watch each one.', ms: 2000 },
 
@@ -135,8 +136,9 @@ export const CANNED = [
       + 'record compounds. You host it. You own it.' },
 ];
 
-/** Dwell before the script restarts. Long enough to read the closing line, short
- *  enough that a visitor who arrived late still sees act 1. */
+/** Dwell after the closing line before the replay offers to play again. It
+ *  stops there rather than looping: a transcript that wipes itself mid-read
+ *  cannot be studied, and the visitor is the one being asked to read it. */
 export const CANNED_LOOP_MS = 4000;
 
 /** Fallback dwell for a step that does not name its own. */

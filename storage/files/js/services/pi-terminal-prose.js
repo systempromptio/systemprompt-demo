@@ -1,6 +1,7 @@
 import { markdown } from './pi-markdown.js';
 import { approxTokens, countFences } from './pi-format.js';
 import { append, nudge, working, workingSync } from './pi-terminal-dom.js';
+import { endGateRun } from './pi-gate-runs.js';
 import { orphanRail } from './pi-terminal-rail.js';
 
 /**
@@ -64,6 +65,9 @@ export function revealComplete(el) {
 /** Render one finished unit of markdown into the transcript. */
 export function renderProse(el, md) {
   orphanRail(el);
+  // Prose divides one run of tool calls from the next, so the records either
+  // side of it are counted separately.
+  endGateRun(el);
   const host = document.createElement('div');
   host.className = 'pi-prose pi-reveal';
   host.append(markdown(md));

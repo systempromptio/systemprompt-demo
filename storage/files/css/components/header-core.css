@@ -59,6 +59,22 @@
   width: auto;
 }
 
+/* `margin-right: auto` rather than a wrapper: .site-nav is space-between, so a
+   bare third child would be spread to the centre instead of sitting with the
+   logo. Below the split threshold there is no room for it beside the burger. */
+.logo-tagline {
+  margin-right: auto;
+  padding-left: var(--sp-space-4);
+  color: var(--sp-color-text-muted);
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .logo-tagline { display: none; }
+}
+
 
 .logo-container {
   display: flex;

@@ -4,6 +4,7 @@ import { markdown } from './pi-markdown.js';
 import { motionOk } from './pi-gate-view.js';
 import { approvalCard } from './pi-gate-cards.js';
 import { blockedRow } from './pi-gate-records.js';
+import { endGateRun, gateRecord } from './pi-gate-runs.js';
 import { append, line, echo } from './pi-terminal-dom.js';
 import { policyStages } from './pi-terminal-rail.js';
 import { toolRow } from './pi-terminal-gate.js';
@@ -58,7 +59,7 @@ export function degrade(el, reason, info) {
 }
 
 /**
- * Play the script, then play it again.
+ * Play the script once, then stop and offer to play it again.
  *
  * Scheduled on a running clock rather than a fixed cadence: a paragraph and a
  * tool row do not deserve the same dwell, and the whole point of the replay is
@@ -66,14 +67,16 @@ export function degrade(el, reason, info) {
  * sign up, so they should see the chain resolve the way a real one does — the
  * pacing is the argument.
  *
- * Looping matters for the same reason: the visitor who arrives during act 3
- * would otherwise never be told what any of it is.
+ * It ends on a button rather than looping back to act 1: the finished
+ * transcript is the thing worth reading — scrolling back through the refusal
+ * and the approval record is how a visitor engages with it — and a script that
+ * wipes itself on a timer takes that away.
  */
 function cannedPlay(el) {
-  // Reduced motion gets the whole script at once, and no loop — a transcript
-  // that rewrites itself on a timer is exactly what was asked to stop.
+  // Reduced motion gets the whole script at once, already ended.
   if (!motionOk()) {
     CANNED.forEach((s) => cannedStep(el, s));
+    cannedEnd(el);
     return;
   }
   let at = 0;
@@ -81,12 +84,25 @@ function cannedPlay(el) {
     el._cannedTimers.push(setTimeout(() => cannedStep(el, s), at));
     at += typeof s.ms === 'number' ? s.ms : CANNED_STEP_MS;
   });
-  el._cannedTimers.push(setTimeout(() => {
-    // A disconnected or since-credentialled element must not keep looping.
-    if (!el.isConnected || !el.classList.contains('is-replay')) return;
+  el._cannedTimers.push(setTimeout(() => cannedEnd(el), at + CANNED_LOOP_MS));
+}
+
+/** Close the pass with the control that starts the next one. */
+function cannedEnd(el) {
+  // A disconnected or since-credentialled element has no replay to restart.
+  if (!el.isConnected || !el.classList.contains('is-replay')) return;
+  const foot = document.createElement('div');
+  foot.className = 'pi-replay-end';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pi-btn pi-replay-restart';
+  btn.textContent = 'Play again';
+  btn.addEventListener('click', () => {
     cannedReset(el);
     cannedPlay(el);
-  }, at + CANNED_LOOP_MS));
+  });
+  foot.append(btn);
+  append(el, foot);
 }
 
 /** Wipe what the last pass drew, leaving the chrome and the gate blurb. */
@@ -100,6 +116,7 @@ function cannedReset(el) {
   el._approvalsEl.replaceChildren();
   el._body.replaceChildren();
   el._toolRows.clear();
+  el._gateRun = null;
   el._cannedRow = null;
   el._railFor = null;
   el._railDecision = null;
@@ -141,7 +158,7 @@ function cannedStep(el, step) {
       row.icon.textContent = TOOL_ICON.blocked;
       row.state.textContent = 'blocked';
     }
-    append(el, blockedRow(step.frame));
+    gateRecord(el, 'blocked', blockedRow(step.frame), step.name || step.tool || 'tool');
     return;
   }
   if (step.cls === 'note') {
@@ -173,6 +190,9 @@ function cannedStep(el, step) {
     return;
   }
   if (step.cls === 'output') {
+    // Prose divides one run of tool calls from the next, the same as the live
+    // path's renderProse.
+    endGateRun(el);
     const host = document.createElement('div');
     host.className = 'pi-prose';
     host.append(markdown(step.text));
@@ -200,7 +220,10 @@ function cannedResolve(el, handle, step) {
     });
     // No transcript echo: the folded record already carries the verdict, the
     // name and the time on its summary line.
-    if (record) append(el, record);
+    if (record) {
+      gateRecord(el, step.resolve.action === 'approved' ? 'ok' : 'blocked',
+        record, step.tool);
+    }
   };
   if (!motionOk()) {
     finish();

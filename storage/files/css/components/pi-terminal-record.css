@@ -89,3 +89,92 @@
 @media (prefers-reduced-motion: reduce) {
   .pi-approval-record-more::before { transition: none; }
 }
+
+/* ── aggregated runs ────────────────────────────────────────────────────────
+   A chain of tool calls with nothing between them collapses to one card per
+   verdict. The tally is the glance version; the records are inside it. */
+.pi-gate-group {
+  --pi-record-edge: var(--sp-color-success);
+
+  margin: var(--sp-space-1) 0;
+  border: 1px solid color-mix(in oklch, var(--pi-record-edge) 22%, transparent);
+  border-left-width: 2px;
+  border-left-color: var(--pi-record-edge);
+  border-radius: var(--sp-radius-sm);
+  background: color-mix(in oklch, var(--sp-color-terminal-header) 55%, transparent);
+}
+
+/* Blocked calls never sit in the same tally as calls that got through. */
+.pi-gate-group[data-kind='blocked'] {
+  --pi-record-edge: var(--sp-color-error);
+}
+
+.pi-gate-group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  padding: 0.35rem var(--sp-space-3);
+  cursor: pointer;
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  color: var(--sp-color-terminal-text-dim);
+  list-style: none;
+}
+
+.pi-gate-group-head::-webkit-details-marker { display: none; }
+
+.pi-gate-group-head:hover,
+.pi-gate-group[open] > .pi-gate-group-head {
+  background: color-mix(in oklch, var(--sp-color-terminal-header) 85%, transparent);
+}
+
+.pi-gate-group-mark {
+  flex: none;
+  color: var(--pi-record-edge);
+}
+
+.pi-gate-group-count {
+  color: var(--sp-color-terminal-text);
+  font-weight: 600;
+}
+
+/* Which tools, and how many of each — the one fact a tally of calls is missing. */
+.pi-gate-group-tools {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pi-gate-group-more::before {
+  content: '▸';
+  display: inline-block;
+  color: var(--sp-color-terminal-text-dim);
+  transition: transform 0.15s ease;
+}
+
+.pi-gate-group-more {
+  margin-left: auto;
+}
+
+.pi-gate-group[open] .pi-gate-group-more::before {
+  transform: rotate(90deg);
+}
+
+.pi-gate-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1);
+  padding: var(--sp-space-2);
+  border-top: 1px solid color-mix(in oklch, var(--pi-record-edge) 18%, transparent);
+}
+
+/* Inside a tally the members drop their own outer margin — the group spaces them. */
+.pi-gate-group-body > .pi-approval-record,
+.pi-gate-group-body > .pi-blocked {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pi-gate-group-more::before { transition: none; }
+}

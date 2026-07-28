@@ -30,6 +30,7 @@ class SpPiTerminal extends HTMLElement {
     this._source = null;
     this._lastSeq = 0;
     this._toolRows = new Map();
+    this._gateRun = null;
     this._approvals = new Map();
     this._artifacts = new Map();
     this._reconnectMs = RECONNECT_MIN_MS;

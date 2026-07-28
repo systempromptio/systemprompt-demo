@@ -2,6 +2,7 @@ import { TOOL_ICON } from './pi-constants.js';
 import { summarise, pretty } from './pi-format.js';
 import { approvalCard } from './pi-gate-cards.js';
 import { autoApprovedCard, blockedRow } from './pi-gate-records.js';
+import { gateRecord } from './pi-gate-runs.js';
 import { append, line, nudge } from './pi-terminal-dom.js';
 import { railEl } from './pi-terminal-rail.js';
 import { flushStream } from './pi-terminal-prose.js';
@@ -90,7 +91,7 @@ export function toolBlocked(el, f) {
     row.icon.textContent = TOOL_ICON.blocked;
     row.state.textContent = 'blocked';
   }
-  append(el, blockedRow(f));
+  gateRecord(el, 'blocked', blockedRow(f), f.tool_name);
 }
 
 export function promptBlocked(el, f) {
@@ -140,7 +141,7 @@ export function approvalRequest(el, f) {
  * approval queue — nothing is pending and nothing needs focus.
  */
 export function approvalAuto(el, f) {
-  append(el, autoApprovedCard(f));
+  gateRecord(el, 'ok', autoApprovedCard(f), f.tool_name);
 }
 
 async function decide(el, approvalId, decision) {
@@ -160,7 +161,10 @@ function settle(el, approvalId, outcome, frame) {
   const entry = el._approvals.get(approvalId);
   if (!entry) return;
   const record = entry.settle(frame);
-  if (record) append(el, record);
+  if (record) {
+    gateRecord(el, outcome === 'approved' ? 'ok' : 'blocked', record,
+      (frame && frame.tool_name) || 'tool');
+  }
   el._approvals.delete(approvalId);
   // The record carries the verdict, the name and the time on its own summary
   // line. A transcript line saying the same thing again is the noise, not the
