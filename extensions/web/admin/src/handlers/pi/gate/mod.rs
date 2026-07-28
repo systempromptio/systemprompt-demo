@@ -118,7 +118,16 @@ pub(super) async fn decide(
         return false;
     }
 
-    if payload.kind == PayloadKind::Prompt || !needs_human(&deps.cfg, &tool_name) {
+    if payload.kind == PayloadKind::Prompt {
+        return true;
+    }
+
+    if !needs_human(&deps.cfg, &tool_name) {
+        session.emit(PiEventBody::ApprovalAuto {
+            tool_name,
+            tool_input: governed_input.unwrap_or(serde_json::Value::Null),
+            policy_chain: cleared_policies(&stages),
+        });
         return true;
     }
 

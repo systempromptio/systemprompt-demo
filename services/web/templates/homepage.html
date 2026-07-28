@@ -178,9 +178,10 @@
         <div class="home-scene-inner">
             <p class="scene-eyebrow">Governance for your AI infrastructure</p>
             <h2 id="scene-title" class="scene-title">Your agents. Your infrastructure.<br>You own it.</h2>
-            <p class="scene-deck">The terminal above is a real session against the gateway — not a
-                recording. The bridge signs any first-class AI client into that same
-                gateway, and every one of them answers to your policies.</p>
+            <p class="scene-deck">systemprompt.io is the governance layer between your organisation
+                and AI. Self hosted, self run: the bridge signs any first-class AI client into
+                one gateway, every one of them answers to your policies, and every call lands
+                in a record you own.</p>
 
             <ul class="scene-verbs">
                 <li>Brand them</li>
@@ -235,7 +236,7 @@
                 </li>
                 <li class="scene-stage">
                     <span class="scene-stage-name">Secret scan</span>
-                    <span class="scene-stage-note">35+ patterns, before the call leaves.</span>
+                    <span class="scene-stage-note">32 patterns plus an entropy check, before the call leaves.</span>
                 </li>
                 <li class="scene-stage">
                     <span class="scene-stage-name">Blocklist</span>
@@ -254,7 +255,7 @@
             <div class="scene-offer">
                 <p class="scene-offer-copy"><strong>One binary. One account.</strong> The bridge is a Mac
                     and Windows app that signs Claude Code and Cowork into the same identity as the web
-                    agent above — same policies, same audit trail, no second login.</p>
+                    agent above. Same policies, same audit trail, no second login.</p>
                 <div class="scene-offer-actions">
                     <!--
                       Pinned to the bridge's own tag, not `releases/latest`, which
@@ -294,6 +295,15 @@
         document.addEventListener('sp-auth:signed-out', function () {
             var t = document.querySelector('sp-pi-terminal');
             if (t && t.restart) t.restart();
+        });
+        // The site header stays hidden over the anonymous replay and appears
+        // once an identity exists. `sp-auth:identified` fires both on a fresh
+        // sign-in and when a returning visitor's session is recognised on load.
+        document.addEventListener('sp-auth:identified', function () {
+            document.body.setAttribute('data-authed', '');
+        });
+        document.addEventListener('sp-auth:signed-out', function () {
+            document.body.removeAttribute('data-authed');
         });
     </script>
 

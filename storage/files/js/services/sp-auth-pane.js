@@ -79,6 +79,12 @@ class SpAuthPane extends HTMLElement {
   }
 
   _renderProfile() {
+    // Fires on both paths into the profile view: a fresh sign-in and a session
+    // recognised on load. `sp-auth:authenticated` only covers the first, and
+    // the page hides the site header until an identity exists either way.
+    this.dispatchEvent(new CustomEvent('sp-auth:identified', {
+      detail: this._who, bubbles: true,
+    }));
     const who = this._who || {};
     const pending = who.is_approved === false;
     this.innerHTML = profileHtml(pending);
@@ -128,6 +134,9 @@ class SpAuthPane extends HTMLElement {
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
     this._pollMs = POLL_MS;
     if (this._who) this._startPolling();
+    // The pulse needs the embed token this event just delivered; asking now
+    // beats waiting out up to a minute of no-op polls.
+    pollPulse(this);
   }
 
   /**
@@ -175,14 +184,11 @@ class SpAuthPane extends HTMLElement {
   }
 
   /**
-   * The platform pulse runs on its own timer, an order of magnitude slower than
-   * the session poll: the aggregate is cached server-side for a minute, so
-   * asking every three seconds would be twenty requests for one answer.
-   *
-   * Separate from [`_startPolling`] because the two have different
-   * preconditions. Session telemetry needs a conversation; the pulse needs
-   * nothing at all, and is the only thing on this pane an anonymous visitor
-   * ever sees.
+   * The platform pulse runs on its own, much slower timer: the aggregate is
+   * cached server-side for a minute, so asking every three seconds would be
+   * twenty requests for one answer. It stops itself the first time the server
+   * answers without the admin detail — for everyone but an operator, the
+   * Platform tab never exists and neither does the polling.
    */
   _startPulsePolling() {
     this._stopPulsePolling();

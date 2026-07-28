@@ -153,6 +153,60 @@ export function approvalCard(frame, onDecide) {
   return handle;
 }
 
+/**
+ * A call the gate cleared without asking anyone — approve_all is off, so policy
+ * alone decided. A compact, non-interactive record: the same facts the human
+ * card shows (tool, args, cleared chain), minus the question.
+ */
+export function autoApprovedCard(frame) {
+  const card = document.createElement('div');
+  card.className = 'pi-approval-card pi-approval-card--auto';
+
+  const head = document.createElement('div');
+  head.className = 'pi-approval-head';
+  const mark = document.createElement('span');
+  mark.className = 'pi-auto-mark';
+  mark.textContent = '✓';
+  mark.setAttribute('aria-hidden', 'true');
+  const title = document.createElement('div');
+  title.className = 'pi-approval-title';
+  const tool = document.createElement('strong');
+  tool.textContent = frame.tool_name;
+  const sub = document.createElement('span');
+  sub.className = 'pi-approval-sub';
+  sub.textContent = 'ran — policy cleared it, no human asked';
+  title.append(tool, sub);
+  head.append(mark, title);
+
+  const args = kvArgs(frame.tool_input);
+
+  const chain = (frame.policy_chain || []);
+  const cleared = document.createElement('div');
+  cleared.className = 'pi-approval-cleared';
+  const clearedLabel = document.createElement('span');
+  clearedLabel.className = 'pi-approval-cleared-label';
+  clearedLabel.textContent = 'cleared';
+  cleared.append(clearedLabel);
+  cleared.append(chainRail(
+    chain.map((p) => ({ policy: p, result: 'pass', detail: EXPLAIN[p] || '' })),
+    { compact: true },
+  ));
+
+  const grid = document.createElement('div');
+  grid.className = 'pi-approval-grid';
+  grid.append(args, cleared);
+
+  const meta = document.createElement('div');
+  meta.className = 'pi-detail-row';
+  if (chain.length) {
+    meta.append(detailChip(chain.length + '/' + chain.length + ' policies passed'));
+  }
+  meta.append(detailChip('auto-approved'));
+
+  card.append(head, grid, meta);
+  return card;
+}
+
 /** A blocked call, given the weight it deserves. */
 export function blockedRow(frame) {
   const box = document.createElement('div');
@@ -221,9 +275,18 @@ function detailChip(text) {
  * about.
  */
 function kvArgs(input) {
-  const flat = input && typeof input === 'object' && !Array.isArray(input)
+  // A tool with no parameters is a fact worth stating, not a `{}` to decode.
+  const empty = input == null || (typeof input === 'object' && !Array.isArray(input)
+    && !Object.keys(input).length);
+  if (empty) {
+    const none = document.createElement('p');
+    none.className = 'pi-approval-noargs';
+    none.textContent = 'no arguments';
+    return none;
+  }
+  const flat = typeof input === 'object' && !Array.isArray(input)
     && Object.values(input).every((v) => ['string', 'number', 'boolean'].includes(typeof v));
-  if (!flat || !Object.keys(input).length) {
+  if (!flat) {
     const pre = document.createElement('pre');
     pre.className = 'pi-approval-input';
     pre.textContent = pretty(input);

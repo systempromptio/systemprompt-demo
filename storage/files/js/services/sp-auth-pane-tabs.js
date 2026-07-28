@@ -10,14 +10,17 @@ export function wireTabs(pane) {
   pane.querySelector('.pane-tabs--stats').addEventListener('keydown', (e) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
-    const current = pane._tabs.findIndex((t) => t.dataset.tab === pane._activeTab);
+    // Hidden tabs (the admin-only Platform tab before it is revealed) are not
+    // part of the arrow-key cycle.
+    const tabs = pane._tabs.filter((t) => !t.hidden);
+    const current = tabs.findIndex((t) => t.dataset.tab === pane._activeTab);
     let next = current;
-    if (e.key === 'ArrowLeft') next = (current - 1 + pane._tabs.length) % pane._tabs.length;
-    else if (e.key === 'ArrowRight') next = (current + 1) % pane._tabs.length;
+    if (e.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'ArrowRight') next = (current + 1) % tabs.length;
     else if (e.key === 'Home') next = 0;
-    else next = pane._tabs.length - 1;
-    selectTab(pane, pane._tabs[next].dataset.tab);
-    pane._tabs[next].focus();
+    else next = tabs.length - 1;
+    selectTab(pane, tabs[next].dataset.tab);
+    tabs[next].focus();
   });
   // Survives a re-render (sign-out/in, re-auth): the last chosen tab is
   // restored rather than snapping back to Overview.

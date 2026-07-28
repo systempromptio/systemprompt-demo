@@ -104,6 +104,17 @@
   flex: none;
 }
 
+/* ── the header, gated on identity ──────────────────────────────────────── */
+
+/* An anonymous visitor gets the replay with no site chrome over it; the real
+   header appears once the auth pane announces an identity (`sp-auth:identified`
+   sets `data-authed` on the body, sign-out removes it). The header is
+   `position: fixed`, so nothing else moves. Home page only — every other page
+   keeps the always-on header. */
+.home-split-body:not([data-authed]) .site-header {
+  display: none;
+}
+
 /* ── narrow ─────────────────────────────────────────────────────────────── */
 
 /* Below the split threshold the two halves stack, terminal first: it is the

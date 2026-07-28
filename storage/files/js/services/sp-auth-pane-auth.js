@@ -78,10 +78,6 @@ export function renderAuth(pane) {
       + 'Firefox, Safari, or Edge.', 'error');
     pane.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; });
   }
-
-  pane._pulse = pane.querySelector('[data-role="pulse"]');
-  pane._pulseAdmin = null;
-  pane._startPulsePolling();
 }
 
 export async function doSignIn(pane) {

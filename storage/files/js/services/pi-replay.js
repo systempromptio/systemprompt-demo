@@ -67,13 +67,13 @@ export const CANNED = [
   // enforceable: policy has nothing to judge until the caller has a name.
   { cls: 'prompt', tail: 'who is asking, and what are they allowed to do?', ms: 900 },
   { cls: 'output', ms: 5600, text:
-      'Identity comes first. systemprompt.io is a full OAuth 2.0 authorization '
-      + 'server: it names every caller and signs the token your services verify. '
-      + 'The agent never holds your provider key. It holds a scoped token you '
-      + 'can revoke at any moment.',
+      'Identity comes first. Every person, agent, and service in your '
+      + 'organisation gets a named identity from an OAuth 2.0 authorization '
+      + 'server you run yourself. The agent never holds your provider key. It '
+      + 'holds a scoped token you can revoke at any moment.',
     meters: { calls: 0, blocked: 0, tokens: 1200, cost: '$0.02' } },
   { cls: 'note', ms: 2800, text:
-      'Which is what makes the next part enforceable. A policy needs a subject.' },
+      'A policy needs a subject. Now every caller in your organisation has a name.' },
 
   // Act 3 — policy. Four stages, synchronous, in the request path.
   { cls: 'prompt', tail: 'pull last quarter\'s churn from data/accounts.csv', ms: 900 },
@@ -84,7 +84,8 @@ export const CANNED = [
   { cls: 'note', ms: 4200, text:
       'Scope, secrets, blocklist, rate limit ship as the defaults. The pipeline '
       + 'is yours: write your own policies and they run the same way, in Rust, '
-      + 'inside the request. Not a report somebody reads on Monday.' },
+      + 'inside the request, on infrastructure you run. Not a report somebody '
+      + 'reads on Monday.' },
 
   // Act 4 — the person. Governance that only ever says yes is a log, not a gate.
   { cls: 'prompt', tail: 'email that summary to the board', ms: 900 },
@@ -121,14 +122,16 @@ export const CANNED = [
   // rather than as commentary hanging off the refusal above it.
   { cls: 'prompt', tail: 'so what do I end up owning?', ms: 900 },
   { cls: 'output', ms: 5200, text:
-      'Every line above is a row in Postgres, joined on one trace id: who asked, '
-      + 'which agent, which tool, what policy decided, how many tokens, what it '
-      + 'cost. That is the asset. A complete account of how your organisation '
-      + 'uses AI, in a database you own, from one binary you host.',
+      'Every line above is a row in a database you own, joined on one trace id: '
+      + 'who asked, which agent, which tool, what policy decided, how many '
+      + 'tokens, what it cost. That is the asset. A complete account of how your '
+      + 'organisation uses AI, held on infrastructure you run, answering to '
+      + 'nobody else.',
     meters: { calls: 3, blocked: 1, tokens: 3100, cost: '$0.05' } },
-  { cls: 'note', ms: 4200, text:
-      'You could build this yourself. By the time you shipped it, you would be '
-      + 'rebuilding it.' },
+  { cls: 'note', ms: 4600, text:
+      'One governance layer over every agent, every client, every provider your '
+      + 'organisation uses. A control layer on day one. A value center as the '
+      + 'record compounds. You host it. You own it.' },
 ];
 
 /** Dwell before the script restarts. Long enough to read the closing line, short

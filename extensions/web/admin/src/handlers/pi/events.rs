@@ -51,6 +51,7 @@ impl PiEventBody {
             Self::PromptBlocked { .. } => "prompt_blocked",
             Self::PolicyStages { .. } => "policy_stages",
             Self::ApprovalRequest { .. } => "approval_request",
+            Self::ApprovalAuto { .. } => "approval_auto",
             Self::ApprovalResolved { .. } => "approval_resolved",
             Self::TurnEnd => "turn_end",
             Self::Stderr { .. } => "stderr",
@@ -117,6 +118,15 @@ pub enum PiEventBody {
     ApprovalResolved {
         approval_id: String,
         outcome: &'static str,
+    },
+    /// A call the gate cleared without asking anyone — `approve_all` is off, so
+    /// policy alone decided. Emitted so the transcript still shows what ran and
+    /// under which chain, instead of the call passing silently.
+    ApprovalAuto {
+        tool_name: String,
+        // JSON: arbitrary tool arguments, rendered to the viewer as-is
+        tool_input: serde_json::Value,
+        policy_chain: Vec<String>,
     },
     TurnEnd,
     Stderr {

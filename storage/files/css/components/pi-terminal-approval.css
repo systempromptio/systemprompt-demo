@@ -81,6 +81,40 @@
   opacity: 0.62;
 }
 
+/* A call the gate cleared on its own: same facts as the human card, but green
+   instead of amber, quieter, and with nothing to click. */
+.pi-approval-card--auto {
+  padding: var(--sp-space-1) var(--sp-space-3) var(--sp-space-2);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--sp-color-success) 7%, var(--sp-color-terminal-header)),
+    var(--sp-color-terminal-header)
+  );
+  border-color: color-mix(in oklch, var(--sp-color-success) 25%, transparent);
+}
+
+.pi-auto-mark {
+  flex: none;
+  color: var(--sp-color-success);
+  font-size: 0.85rem;
+}
+
+.pi-approval-card--auto .pi-detail-chip:last-child {
+  border-color: color-mix(in oklch, var(--sp-color-success) 45%, transparent);
+  color: var(--sp-color-success);
+}
+
+/* A tool with no parameters, stated as a fact instead of an empty blob. */
+.pi-approval-noargs {
+  margin: 0;
+  padding: var(--sp-space-2);
+  background: color-mix(in oklch, var(--sp-color-terminal-bg) 70%, transparent);
+  border-radius: var(--sp-radius-sm);
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.7rem;
+  font-style: italic;
+}
+
 .pi-approval-card.is-settling {
   opacity: 0.5;
 }

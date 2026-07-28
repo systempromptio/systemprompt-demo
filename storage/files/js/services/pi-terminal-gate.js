@@ -1,6 +1,6 @@
 import { TOOL_ICON } from './pi-constants.js';
 import { summarise, pretty } from './pi-format.js';
-import { approvalCard, blockedRow } from './pi-gate-cards.js';
+import { approvalCard, autoApprovedCard, blockedRow } from './pi-gate-cards.js';
 import { append, line, nudge } from './pi-terminal-dom.js';
 import { railEl } from './pi-terminal-rail.js';
 import { flushStream } from './pi-terminal-prose.js';
@@ -128,6 +128,14 @@ export function approvalRequest(el, f) {
   // the operator's attention should not have to be recruited by a colour.
   handle.focus();
   nudge(el);
+}
+
+/**
+ * A call the gate cleared on its own. It goes into the transcript, not the
+ * approval queue — nothing is pending and nothing needs focus.
+ */
+export function approvalAuto(el, f) {
+  append(el, autoApprovedCard(f));
 }
 
 async function decide(el, approvalId, decision) {

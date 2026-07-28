@@ -48,6 +48,18 @@
     }
   }
 
+  /* The auto-approved variant is settled, not pending: it arrives, but the
+     amber sweep that says "waiting on you" would be a lie on it. */
+  .pi-approval-card--auto {
+    border-color: color-mix(in oklch, var(--sp-color-success) 25%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--sp-color-success) 7%, var(--sp-color-terminal-header)),
+      var(--sp-color-terminal-header)
+    );
+    animation: pi-card-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   .pi-blocked.is-arriving {
     animation: pi-block-in 300ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
   }

@@ -10,6 +10,10 @@ const TABS = [
   { id: 'traffic', label: 'Traffic' },
   { id: 'usage', label: 'Usage' },
   { id: 'governance', label: 'Governance' },
+  // Hidden until the pulse endpoint answers with the admin detail block. The
+  // server never tells the client its role — the payload shape is the tier —
+  // so the tab appears only once there is admin data to put behind it.
+  { id: 'platform', label: 'Platform', hidden: true },
 ];
 
 export function tabsHtml() {
@@ -19,7 +23,7 @@ export function tabsHtml() {
       return '<button type="button" class="pane-tab' + (active ? ' is-active' : '')
         + '" role="tab" id="ap-tab-' + t.id + '" aria-controls="ap-panel-' + t.id
         + '" aria-selected="' + active + '" tabindex="' + (active ? '0' : '-1')
-        + '" data-tab="' + t.id + '">' + t.label
+        + '" data-tab="' + t.id + '"' + (t.hidden ? ' hidden' : '') + '>' + t.label
         + (t.id === 'governance'
           ? '<span class="pane-tab-chip" data-role="gov-chip" hidden></span>'
           : '')
@@ -121,6 +125,21 @@ export function governanceHtml() {
     + '<li class="pane-feed-empty">Ask the agent to read a file. Every decision it '
     + 'triggers is recorded here.</li>'
     + '</ol>'
+    + '</section>';
+}
+
+/**
+ * The admin-only Platform tab: the deployment counted across everyone.
+ * Rendered for every signed-in visitor but reachable only once the tab is
+ * revealed, which happens when the pulse arrives carrying the admin detail.
+ */
+export function platformHtml() {
+  return '<section class="pane-section pane-section--pulse" data-role="pulse">'
+    + '<h3 class="pane-h3">Across the platform '
+    + '<span class="pane-h3-sub" data-role="pulse-window"></span></h3>'
+    + '<dl class="pane-stats pane-stats--pulse" data-role="pulse-stats"></dl>'
+    + '<p class="pane-pulse-note" data-role="pulse-models"></p>'
+    + '<p class="pane-pulse-note" data-role="pulse-all-time"></p>'
     + '</section>';
 }
 

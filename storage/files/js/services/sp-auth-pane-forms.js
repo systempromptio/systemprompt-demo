@@ -6,6 +6,7 @@
 
 import {
   tabsHtml, panelHtml, overviewHtml, trafficHtml, usageHtml, governanceHtml,
+  platformHtml,
 } from './sp-auth-pane-view.js';
 
 const TEAM_SIZES = ['1–10', '11–50', '51–200', '201–1000', '1000+'];
@@ -85,15 +86,6 @@ export function authHtml() {
     + '<span data-role="busy-text"></span></div>'
     + signinFormHtml()
     + registerFormHtml()
-    // Lifetime totals only, and only once they arrive. A visitor who has not
-    // signed in is shown that the deployment has governed real traffic — the
-    // one claim worth making before they have any numbers of their own — and
-    // nothing narrow enough to be about a person.
-    + '<section class="pane-section pane-section--pulse" data-role="pulse" hidden>'
-    + '<h3 class="pane-h3">Across the platform '
-    + '<span class="pane-h3-sub" data-role="pulse-window"></span></h3>'
-    + '<p class="pane-pulse-note" data-role="pulse-all-time"></p>'
-    + '</section>'
     + '</div>';
 }
 
@@ -139,15 +131,7 @@ export function profileHtml(pending) {
     + panelHtml('traffic', trafficHtml(), true)
     + panelHtml('usage', usageHtml(), true)
     + panelHtml('governance', governanceHtml(), true)
-    // Hidden until the pulse arrives. A visitor's own numbers prove we record
-    // them; this proves the machinery is not a diorama built for one person.
-    + '<section class="pane-section pane-section--pulse" data-role="pulse" hidden>'
-    + '<h3 class="pane-h3">Across the platform '
-    + '<span class="pane-h3-sub" data-role="pulse-window"></span></h3>'
-    + '<dl class="pane-stats pane-stats--pulse" data-role="pulse-stats"></dl>'
-    + '<p class="pane-pulse-note" data-role="pulse-models"></p>'
-    + '<p class="pane-pulse-note" data-role="pulse-all-time"></p>'
-    + '</section>'
+    + panelHtml('platform', platformHtml(), true)
     + '<footer class="pane-foot">'
     + '<button type="button" class="pane-link" data-role="signout">Sign out</button>'
     + '</footer>'

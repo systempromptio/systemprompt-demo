@@ -3,6 +3,7 @@ import { delta, flushStream } from './pi-terminal-prose.js';
 import { orphanRail, policyStages } from './pi-terminal-rail.js';
 import {
   toolStart, toolEnd, toolBlocked, promptBlocked, approvalRequest, approvalResolved,
+  approvalAuto,
 } from './pi-terminal-gate.js';
 import { remember } from './pi-terminal-input.js';
 
@@ -50,6 +51,7 @@ export function onFrame(el, raw) {
     case 'tool_blocked': return toolBlocked(el, f);
     case 'prompt_blocked': return promptBlocked(el, f);
     case 'approval_request': return approvalRequest(el, f);
+    case 'approval_auto': return approvalAuto(el, f);
     case 'approval_resolved': return approvalResolved(el, f);
     case 'turn_end': return turnEnd(el);
     case 'stderr': return stderr(el, f.line);
