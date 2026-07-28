@@ -5261,7 +5261,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "systemprompt-credits-extension"
+name = "systemprompt-credits"
 version = "0.25.0"
 dependencies = [
  "async-trait",
@@ -5300,7 +5300,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "systemprompt-email-extension"
+name = "systemprompt-email"
 version = "0.25.0"
 dependencies = [
  "inventory",
@@ -5846,8 +5846,8 @@ dependencies = [
  "sha2 0.10.9",
  "sqlx",
  "systemprompt",
- "systemprompt-credits-extension",
- "systemprompt-email-extension",
+ "systemprompt-credits",
+ "systemprompt-email",
  "systemprompt-security",
  "systemprompt-web-governance",
  "systemprompt-web-pi",
@@ -5971,7 +5971,7 @@ dependencies = [
  "sha2 0.10.9",
  "sqlx",
  "systemprompt",
- "systemprompt-credits-extension",
+ "systemprompt-credits",
  "systemprompt-security",
  "systemprompt-web-governance",
  "systemprompt-web-shared",

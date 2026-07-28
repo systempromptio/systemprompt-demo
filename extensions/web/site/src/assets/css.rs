@@ -15,9 +15,8 @@ pub(super) fn css_assets(storage_css: &Path) -> Vec<AssetDefinition> {
     v.extend(homepage_css(storage_css));
     v.extend(blog_css(storage_css));
     v.extend(docs_css(storage_css));
-    v.extend(feature_page_css(storage_css));
+    v.extend(content_cards_css(storage_css));
     v.extend(syntax_css(storage_css));
-    v.extend(feature_base_css(storage_css));
     v
 }
 
@@ -30,7 +29,6 @@ fn bundle_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "bundles/blog-bundle.css"),
         css!(p, "bundles/blog-list-bundle.css"),
         css!(p, "bundles/docs-bundle.css"),
-        css!(p, "bundles/feature-bundle.css"),
         css!(p, "bundles/homepage-bundle.css"),
         css!(p, "bundles/resources-bundle.css"),
     ]
@@ -131,26 +129,14 @@ fn docs_css(p: &Path) -> Vec<AssetDefinition> {
     ]
 }
 
-fn feature_page_css(p: &Path) -> Vec<AssetDefinition> {
-    vec![
-        css!(p, "feature/page-hero.css"),
-        css!(p, "feature/page-content.css"),
-        css!(p, "feature/page-responsive.css"),
-    ]
+fn syntax_css(p: &Path) -> Vec<AssetDefinition> {
+    vec![css!(p, "syntax-highlight.css")]
 }
 
-fn feature_base_css(p: &Path) -> Vec<AssetDefinition> {
+fn content_cards_css(p: &Path) -> Vec<AssetDefinition> {
     vec![
-        css!(p, "feature/base-hero.css"),
-        css!(p, "feature/base-sections.css"),
-        css!(p, "feature/base-cta.css"),
-        css!(p, "feature/base-details.css"),
         css!(p, "content/cards-base.css"),
         css!(p, "content/cards-categories.css"),
         css!(p, "content/cards-list.css"),
     ]
-}
-
-fn syntax_css(p: &Path) -> Vec<AssetDefinition> {
-    vec![css!(p, "syntax-highlight.css")]
 }

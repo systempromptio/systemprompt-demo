@@ -19,7 +19,6 @@ use crate::assets::web_assets;
 use crate::blog::{BlogListPageDataProvider, BlogPostPageDataProvider};
 use crate::docs::{DocsContentDataProvider, DocsPageDataProvider};
 use crate::extenders::OrgUrlExtender;
-use crate::features::FeaturePagePrerenderer;
 use crate::homepage::{HomepagePageDataProvider, HomepagePrerenderer};
 use crate::jobs::{
     BundleAdminCssJob, ContentAnalyticsAggregationJob, ContentIngestionJob, ContentPrerenderJob,
@@ -84,11 +83,6 @@ impl Extension for WebExtension {
 
         prerenderers.push(Arc::new(ResourcesPrerenderer));
 
-        if let Some(config) = Self::features_config() {
-            for page in &config.pages {
-                prerenderers.push(Arc::new(FeaturePagePrerenderer::new(page.clone())));
-            }
-        }
 
         prerenderers
     }

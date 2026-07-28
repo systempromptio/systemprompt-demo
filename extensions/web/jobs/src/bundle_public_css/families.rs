@@ -27,10 +27,6 @@ pub(super) const FAMILIES: &[Family] = &[
         files: DOCS,
     },
     Family {
-        name: "feature",
-        files: FEATURE,
-    },
-    Family {
         name: "homepage",
         files: HOMEPAGE,
     },
@@ -130,16 +126,6 @@ const DOCS: &[&str] = &[
     "docs/sidebar-links.css",
     "docs/responsive.css",
     "syntax-highlight.css",
-];
-
-const FEATURE: &[&str] = &[
-    "feature/page-hero.css",
-    "feature/page-content.css",
-    "feature/page-responsive.css",
-    "feature/base-hero.css",
-    "feature/base-sections.css",
-    "feature/base-cta.css",
-    "feature/base-details.css",
 ];
 
 const HOMEPAGE: &[&str] = &[

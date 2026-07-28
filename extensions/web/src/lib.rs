@@ -37,7 +37,7 @@ pub use systemprompt_web_shared::{
     BrandingConfig, config, config_errors, error, html_escape, models,
 };
 pub use systemprompt_web_site::{
-    assets, blog, docs, extenders, features, homepage, navigation, partials, resources,
+    assets, blog, docs, extenders, homepage, navigation, partials, resources,
 };
 pub mod utils {
     pub use systemprompt_web_shared::html_escape;
@@ -51,10 +51,6 @@ pub use config::{
 pub use docs::{ChildDoc, DocsContentDataProvider, DocsPageDataProvider};
 pub use error::BlogError;
 pub use extension::WebExtension;
-pub use features::{
-    FeatureCta, FeaturePage, FeaturePagePrerenderer, FeaturePagesConfig, FeatureSection,
-    FeatureSectionItem,
-};
 pub use homepage::{
     ComparisonConfig, ComparisonItem, ComparisonSide, DifferentiatorConfig, DifferentiatorItem,
     ExtensionTrait, ExtensionsConfig, FaqConfig, FaqItem, Feature, FeatureCategory, FinalCtaConfig,
