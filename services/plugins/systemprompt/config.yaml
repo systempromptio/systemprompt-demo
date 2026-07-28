@@ -28,13 +28,7 @@ plugin:
     source: explicit
     include:
       - explain_systemprompt
-      - browse_site_content
       - demonstrate_governance
-      - demonstrate_tool_rejection
-      - demonstrate_scope_rejection
-      - demonstrate_gateway_safety
-      - analyse_governance_stats
-      - demonstrate_artifacts
     exclude: []
 
   agents:

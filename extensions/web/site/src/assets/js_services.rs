@@ -22,6 +22,10 @@ pub(super) fn public_js_assets(storage_js: &Path) -> Vec<AssetDefinition> {
         AssetDefinition::js(storage_js.join("blog-images.js"), "js/blog-images.js"),
         AssetDefinition::js(storage_js.join("hero-header.js"), "js/hero-header.js"),
         AssetDefinition::js(storage_js.join("home-scene.js"), "js/home-scene.js"),
+        AssetDefinition::js(
+            storage_js.join("components/video-modal.js"),
+            "js/components/video-modal.js",
+        ),
     ]
 }
 

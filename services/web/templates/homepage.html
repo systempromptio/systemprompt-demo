@@ -43,7 +43,9 @@
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene-lanes.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene-offer.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-marquee.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/video-modal.css">
     <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
+    <script type="module" src="{{JS_BASE_PATH}}/components/video-modal.js"></script>
     <script src="{{JS_BASE_PATH}}/home-scene.js" defer></script>
     <script type="module" src="{{JS_BASE_PATH}}/services/sp-pi-terminal.js"></script>
     <script type="module" src="{{JS_BASE_PATH}}/services/sp-conversation-list.js"></script>
@@ -261,8 +263,19 @@
                     agent above. Same policies, same audit trail, no second login.</p>
                 <div class="scene-offer-actions">
                     <a class="cta-button" href="https://systemprompt.io/#demo-request" target="_blank" rel="noopener noreferrer">Book a live demo</a>
-                    <a class="scene-offer-link" href="https://www.youtube.com/watch?v=Tup3ClQM0bo" target="_blank" rel="noopener noreferrer">Watch the platform demo</a>
-                    <a class="scene-offer-link" href="https://www.youtube.com/watch?v=pbHArVcCGFY&amp;t=41s" target="_blank" rel="noopener noreferrer">Watch the Bridge demo</a>
+                    <a class="scene-offer-link"
+                       href="https://www.youtube.com/watch?v=Tup3ClQM0bo"
+                       target="_blank" rel="noopener noreferrer"
+                       data-video-id="Tup3ClQM0bo"
+                       data-video-title="The platform demo"
+                       data-video-source="home-scene-offer">Watch the platform demo</a>
+                    <a class="scene-offer-link"
+                       href="https://www.youtube.com/watch?v=pbHArVcCGFY&amp;t=41s"
+                       target="_blank" rel="noopener noreferrer"
+                       data-video-id="pbHArVcCGFY"
+                       data-video-start="41"
+                       data-video-title="The Bridge demo"
+                       data-video-source="home-scene-offer">Watch the Bridge demo</a>
                 </div>
             </div>
         </div>

@@ -9,8 +9,7 @@ use crate::topics;
 use rmcp::ErrorData as McpError;
 use std::future::{self, Future};
 use systemprompt::identifiers::McpExecutionId;
-use systemprompt::mcp::McpToolHandler;
-use systemprompt::mcp::WEBSITE_URL;
+use systemprompt::mcp::{McpToolHandler, WEBSITE_URL};
 use systemprompt::models::artifacts::{CliArtifact, ListArtifact, ListItem};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 
@@ -135,8 +134,11 @@ impl McpToolHandler for SearchDocsHandler {
         let items: Vec<ListItem> = hits
             .iter()
             .map(|hit| {
-                let description =
-                    format!("{} — {}", hit.topic.summary, topics::excerpt(hit.topic, &terms));
+                let description = format!(
+                    "{} — {}",
+                    hit.topic.summary,
+                    topics::excerpt(hit.topic, &terms)
+                );
                 topic_item(hit.topic, &description)
             })
             .collect();

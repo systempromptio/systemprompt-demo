@@ -147,18 +147,21 @@ pub(super) async fn spine_dashboard(
         icon: None,
         status: None,
     };
-    let metrics =
-        DashboardSection::new("spine-metrics", "Session at a glance", SectionType::MetricsCards)
-            .with_data(MetricsCardsData::new(vec![
-                card("Verdicts allowed", allowed.to_string()),
-                card("Verdicts denied", denied.to_string()),
-                card("Provider requests", spend.requests.to_string()),
-                card(
-                    "Cost (USD)",
-                    format!("${:.4}", spend.cost_microdollars as f64 / 1_000_000.0),
-                ),
-            ]))
-            .map_err(|e| McpError::internal_error(format!("dashboard data: {e}"), None))?;
+    let metrics = DashboardSection::new(
+        "spine-metrics",
+        "Session at a glance",
+        SectionType::MetricsCards,
+    )
+    .with_data(MetricsCardsData::new(vec![
+        card("Verdicts allowed", allowed.to_string()),
+        card("Verdicts denied", denied.to_string()),
+        card("Provider requests", spend.requests.to_string()),
+        card(
+            "Cost (USD)",
+            format!("${:.4}", spend.cost_microdollars as f64 / 1_000_000.0),
+        ),
+    ]))
+    .map_err(|e| McpError::internal_error(format!("dashboard data: {e}"), None))?;
 
     let stage = |name: &str| ServiceStatus {
         name: name.to_owned(),

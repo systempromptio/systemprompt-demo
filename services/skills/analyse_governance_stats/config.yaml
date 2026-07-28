@@ -1,7 +1,7 @@
 id: analyse_governance_stats
 name: Analyse Governance Statistics
 description: "Read back this session's own governance spine - model spend, latency, policy verdicts and tool fires - through the systemprompt MCP hub, and explain what the numbers say about how the agent behaved"
-enabled: true
+enabled: false
 file: SKILL.md
 tags:
   - governance

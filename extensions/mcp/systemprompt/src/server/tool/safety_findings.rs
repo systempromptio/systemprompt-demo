@@ -17,11 +17,11 @@
 use crate::repositories::{self, DECISION_LIMIT};
 use crate::tool_inputs::SafetyFindingsInput;
 use rmcp::ErrorData as McpError;
+use serde_json::json;
 use std::future::Future;
 use systemprompt::database::DbPool;
 use systemprompt::identifiers::McpExecutionId;
 use systemprompt::mcp::McpToolHandler;
-use serde_json::json;
 use systemprompt::models::artifacts::{CliArtifact, Column, ColumnType, TableArtifact};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 

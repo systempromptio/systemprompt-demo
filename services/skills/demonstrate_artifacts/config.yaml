@@ -1,7 +1,7 @@
 id: demonstrate_artifacts
 name: Demonstrate Artifact Rendering
 description: "Render each artifact type - table, chart, dashboard, list, card, message, copy-paste text, and text - through the governed render_artifact tool so the terminal's artifact shelf can be seen working end to end"
-enabled: true
+enabled: false
 file: SKILL.md
 tags:
   - artifacts

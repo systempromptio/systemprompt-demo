@@ -60,6 +60,7 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/home-scene-lanes.css"),
         css!(p, "components/home-scene-offer.css"),
         css!(p, "components/home-marquee.css"),
+        css!(p, "components/video-modal.css"),
         css!(p, "components/auth-pane-core.css"),
         css!(p, "components/auth-pane-offer.css"),
         css!(p, "components/auth-pane-telemetry.css"),

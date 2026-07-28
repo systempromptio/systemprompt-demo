@@ -1,7 +1,7 @@
 id: demonstrate_tool_rejection
 name: Demonstrate Tool Rejection
 description: "Attempt a tool call the policy chain refuses - an egress tool matching the blocklist - and read back the audited denial, proving the call was stopped before it executed rather than after"
-enabled: true
+enabled: false
 file: SKILL.md
 tags:
   - governance
