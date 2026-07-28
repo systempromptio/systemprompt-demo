@@ -79,6 +79,16 @@ impl HookEventPayload {
         }
     }
 
+    /// The submitted prompt, for the one event that carries free text the user
+    /// typed rather than arguments an agent assembled.
+    #[must_use]
+    pub fn prompt(&self) -> Option<&str> {
+        match &self.event {
+            HookEvent::UserPromptSubmit(d) if !d.prompt.is_empty() => Some(&d.prompt),
+            _ => None,
+        }
+    }
+
     #[must_use]
     pub fn model(&self) -> Option<&str> {
         match &self.event {

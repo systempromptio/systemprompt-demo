@@ -1,6 +1,8 @@
-//! `secret_scan`: refuse tool calls whose `tool_input` contains a plaintext
-//! credential matching one of the built-in patterns. The pattern list ships
-//! with the binary; per-deployment additions go in
+//! `secret_scan`: refuse governed input containing a plaintext credential
+//! matching one of the built-in patterns. That input is a tool call's arguments
+//! or, for a prompt submission, the prompt itself — a key pasted into the chat
+//! reaches the model exactly as one passed as a tool argument would. The
+//! pattern list ships with the binary; per-deployment additions go in
 //! `services/governance/config.yaml ->
 //! policies[id=secret_scan].extra_patterns`.
 
@@ -13,6 +15,7 @@ use systemprompt_security::policy::{GovernancePolicy, PolicyContext, SecretLocat
 
 use super::super::policy::PolicyRegistration;
 use super::super::secrets::detect_secrets;
+use super::PROMPT_INPUT_KEY;
 
 const ID: &str = "secret_scan";
 
@@ -75,17 +78,18 @@ impl GovernancePolicy for SecretScan {
         "Secret Scan"
     }
     fn description(&self) -> &'static str {
-        "Block tool calls whose input contains an AWS key, GitHub PAT, PEM block, \
-         connection string, or other plaintext credential pattern."
+        "Block a tool call or submitted prompt containing an AWS key, GitHub PAT, \
+         PEM block, connection string, or other plaintext credential pattern."
     }
     fn evaluate(&self, ctx: &PolicyContext<'_>) -> Decision {
         let tool_input_value = ctx.tool_input.as_value();
+        let location = location_of(tool_input_value);
         if let Some((pattern, redacted)) = detect_secrets(Some(tool_input_value)) {
             return Decision::Deny {
                 reason: DenyReason::SecretLeak {
                     pattern_id: SecretPatternId::new(pattern.id),
                     pattern_name: Cow::Borrowed(pattern.name),
-                    location: SecretLocation::new("tool_input", redacted),
+                    location: SecretLocation::new(location, redacted),
                 },
             };
         }
@@ -98,7 +102,7 @@ impl GovernancePolicy for SecretScan {
                         reason: DenyReason::SecretLeak {
                             pattern_id: SecretPatternId::new(extra.id.clone()),
                             pattern_name: Cow::Owned(extra.name.clone()),
-                            location: SecretLocation::new("tool_input", "custom_pattern"),
+                            location: SecretLocation::new(location, "custom_pattern"),
                         },
                     };
                 }
@@ -107,9 +111,16 @@ impl GovernancePolicy for SecretScan {
         Decision::Allow {
             matched_by: MatchedBy::PolicyAllow {
                 policy_id: PolicyId::new(ID),
-                detail: Cow::Borrowed("No plaintext secrets detected in tool input"),
+                detail: Cow::Borrowed("No plaintext secrets detected in governed input"),
             },
         }
+    }
+}
+
+fn location_of(input: &serde_json::Value) -> &'static str {
+    match input.as_object() {
+        Some(map) if map.len() == 1 && map.contains_key(PROMPT_INPUT_KEY) => PROMPT_INPUT_KEY,
+        _ => "tool_input",
     }
 }
 

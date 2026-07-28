@@ -222,12 +222,17 @@ if [[ "$SECOND_CONV" == "$CONV" ]]; then
   exit 1
 fi
 
-# The point of the cap: the first is gone, not running beside it. A 404 here is
-# the registry having dropped it, which is also what revoked its PAT and session.
+# The point of the cap: the first is gone, not running beside it. Tearing it
+# down revokes its PAT before it drops the registry entry, and the endpoint
+# authenticates before it looks a conversation up — so the observable proof is
+# 401, not 404. The credential died with the session, which is the stronger
+# statement: the displaced conversation cannot be spoken to even by the caller
+# that owned it. Asking for 404 here would mean answering "does this
+# conversation exist?" for a caller holding a dead token.
 FIRST_NOW=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
   "${BASE_URL}/api/public/pi/prompt" -H 'content-type: application/json' \
   -d "{\"token\":\"$TOK\",\"conversation_id\":\"$CONV\",\"message\":\"still there?\"}")
-assert_eq "$FIRST_NOW" "404" "the displaced conversation is gone, not running beside it"
+assert_eq "$FIRST_NOW" "401" "the displaced conversation's credential is revoked with it"
 
 # So the cleanup trap tears down the one that is actually live.
 CONV="$SECOND_CONV"

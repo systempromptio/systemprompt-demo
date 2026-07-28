@@ -19,6 +19,7 @@ use systemprompt_security::policy::types::AccessScope;
 
 use crate::types::webhook::{GovernQuery, HookEventPayload};
 
+use super::policies::{PROMPT_INPUT_KEY, PROMPT_TOOL_NAME};
 use super::types::{
     AuditOrigin, AuditTarget, AuthDenialParams, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
     GovernanceDecision, GovernanceDeps, GovernanceResponse, HookSpecificOutput, PrincipalSnapshot,
@@ -90,7 +91,15 @@ pub async fn govern_tool_use(
         analytics,
     } = deps;
 
-    let tool_name = payload.tool_name().unwrap_or("unknown");
+    // Why: a prompt submission has no tool, but it is still a governed target
+    // and the audit has to name it as something an operator can query for.
+    let tool_name = payload.tool_name().unwrap_or_else(|| {
+        if payload.prompt().is_some() {
+            PROMPT_TOOL_NAME
+        } else {
+            "unknown"
+        }
+    });
     let agent_session = SessionId::new(payload.session_id());
     let agent_id = payload.common.agent_id.as_ref();
     let plugin_id = query.plugin_id.as_ref();
@@ -124,12 +133,18 @@ pub async fn govern_tool_use(
     // Why: one POST is one call, and this hook is the only point that sees it —
     // an out-of-process agent has no second enforcement point to inherit from.
     let call_id = CallId::generate();
+    // Why: a prompt is governed input too — a credential pasted into the chat
+    // reaches the model exactly as one passed through a tool argument. It is
+    // presented under `prompt` so a deny names where the secret actually was.
+    let prompt_input = payload
+        .prompt()
+        .map(|p| serde_json::json!({ PROMPT_INPUT_KEY: p }));
     let (decision, chain) = evaluate(&EvaluateInput {
         tool_name,
         session_id: &agent_session,
         user_id: &user_id,
         access_scope,
-        tool_input: payload.tool_input(),
+        tool_input: payload.tool_input().or(prompt_input.as_ref()),
         call_id: &call_id,
     });
 

@@ -219,12 +219,16 @@ govern_event "TOOL GATE: destructive custom tool (tool_blocklist)" "$SCOPED_EXPE
 }'
 
 # ── 5. Admin-only tool — scope check ────────────────────────────────────────
+# The prefix in services/governance/config.yaml is `mcp__systemprompt__admin_`,
+# not the whole hub: the four ordinary hub tools are open to any signed-in user,
+# and only the audit dump is admin-only. Naming a non-admin hub tool here would
+# assert nothing — it is allowed by design.
 govern_event "TOOL GATE: admin-only MCP tool (scope_check)" "$SCOPED_EXPECT" '{
   "hook_event_name": "PreToolUse",
   "session_id": "'"$SESSION"'",
   "cwd": "/var/www/html/systemprompt-template",
   "agent_id": "pi_agent",
-  "tool_name": "mcp__systemprompt__list_agents",
+  "tool_name": "mcp__systemprompt__admin_audit_dump",
   "tool_input": {}
 }'
 
