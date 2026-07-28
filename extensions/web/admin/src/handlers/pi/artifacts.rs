@@ -112,11 +112,11 @@ pub(super) async fn show_ui(
             // Why: the global security middleware stamps X-Frame-Options: DENY
             // sitewide and ignores a raw header; this marker is the sanctioned
             // way to say "the terminal may iframe this, others may not".
-            response.extensions_mut().insert(
-                systemprompt::extension::FrameOptionsOverride(
+            response
+                .extensions_mut()
+                .insert(systemprompt::extension::FrameOptionsOverride(
                     systemprompt::extension::FrameOptions::SameOrigin,
-                ),
-            );
+                ));
             response
         },
         Err(e) => {

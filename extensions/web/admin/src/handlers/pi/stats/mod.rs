@@ -34,8 +34,8 @@ mod facets;
 mod push;
 
 use facets::{Facets, credit_position, facets, model_mix, policy_stages, trace_counts};
-pub(super) use push::{push_soon, snapshot};
 use push::{cached_body, store_body};
+pub(super) use push::{push_soon, snapshot};
 
 use super::auth::{authorize_conversation, problem};
 use super::format;

@@ -7,11 +7,11 @@
 //! are one call, and a policy that counts calls must not count it twice.
 //!
 //! The identity is minted here rather than accepted from the caller. A child
-//! holding `SP_PI_MCP_TOKEN` can reach the proxy directly, and an id it supplied
-//! would be an id it could replay to stay uncounted forever. So the proxy never
-//! names a call: it describes one, and may only claim an entry the gate itself
-//! wrote. Riding one means first making the gate govern an identical call, which
-//! was charged when it did.
+//! holding `SP_PI_MCP_TOKEN` can reach the proxy directly, and an id it
+//! supplied would be an id it could replay to stay uncounted forever. So the
+//! proxy never names a call: it describes one, and may only claim an entry the
+//! gate itself wrote. Riding one means first making the gate govern an
+//! identical call, which was charged when it did.
 //!
 //! Entries are claim-once and short-lived. A description that matches nothing
 //! mints a fresh identity, so the failure direction is to charge twice rather

@@ -8,7 +8,7 @@
 use systemprompt::identifiers::ContextId;
 
 use super::super::credentials;
-use super::{PiRegistry, Slot, STALE_RESERVATION};
+use super::{PiRegistry, STALE_RESERVATION, Slot};
 
 impl PiRegistry {
     // Why: clean closes remove their own workspace directory; this catches
