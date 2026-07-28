@@ -19,7 +19,6 @@ pub(super) fn public_js_assets(storage_js: &Path) -> Vec<AssetDefinition> {
         AssetDefinition::js(storage_js.join("docs.js"), "js/docs.js"),
         AssetDefinition::js(storage_js.join("mobile-menu.js"), "js/mobile-menu.js"),
         AssetDefinition::js(storage_js.join("terminal-demo.js"), "js/terminal-demo.js"),
-        AssetDefinition::js(storage_js.join("blog-images.js"), "js/blog-images.js"),
         AssetDefinition::js(storage_js.join("hero-header.js"), "js/hero-header.js"),
         AssetDefinition::js(storage_js.join("home-scene.js"), "js/home-scene.js"),
         AssetDefinition::js(
@@ -32,8 +31,6 @@ pub(super) fn public_js_assets(storage_js: &Path) -> Vec<AssetDefinition> {
 pub(super) fn service_js_assets(storage_js: &Path) -> Vec<AssetDefinition> {
     let p = storage_js.join("services");
     let mut v = service_core_js(&p);
-    v.extend(service_plugin_js(&p));
-    v.extend(service_skill_js(&p));
     v.extend(service_webauthn_js(&p));
     v.extend(service_utils_js(storage_js));
     v
@@ -43,13 +40,11 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
     vec![
         svc_js!(p, "api.js"),
         svc_js!(p, "auth.js"),
-        svc_js!(p, "bootstrap.js"),
         svc_js!(p, "confirm.js"),
         svc_js!(p, "dropdown.js"),
         svc_js!(p, "events.js"),
         svc_js!(p, "header-actions.js"),
         svc_js!(p, "header-search.js"),
-        svc_js!(p, "list-page.js"),
         svc_js!(p, "sidebar.js"),
         svc_js!(p, "table-sort.js"),
         svc_js!(p, "theme.js"),
@@ -98,24 +93,10 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
         svc_js!(p, "sp-conversation-list.js"),
         svc_js!(p, "sp-toast.js"),
         svc_js!(p, "toast.js"),
-        svc_js!(p, "toc-highlight.js"),
     ]
 }
 
-fn service_plugin_js(p: &Path) -> Vec<AssetDefinition> {
-    vec![
-        svc_js!(p, "plugin-details-ui.js"),
-        svc_js!(p, "plugin-details.js"),
-        svc_js!(p, "plugin-env-ui.js"),
-        svc_js!(p, "plugin-env.js"),
-        svc_js!(p, "plugin-resources-helpers.js"),
-        svc_js!(p, "plugin-resources.js"),
-    ]
-}
 
-fn service_skill_js(p: &Path) -> Vec<AssetDefinition> {
-    vec![svc_js!(p, "skill-files.js")]
-}
 
 fn service_webauthn_js(p: &Path) -> Vec<AssetDefinition> {
     vec![

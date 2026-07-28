@@ -134,6 +134,40 @@ if unprefixed:
     warn(f'{unprefixed} custom properties without an --sp- or --pi- prefix - '
          'rename toward the token convention as files are touched')
 
+# Reachability: a registered JS file must be referenced somewhere — a template
+# script tag, another reachable JS module's import, or a Rust handler that
+# builds the tag server-side. Registration alone only proves the file is
+# *served*; this proves something *loads* it. The inverse of the incident in
+# the header: files that stay registered after their last consumer is deleted
+# ship dead bytes forever.
+referencers = {}
+for t in templates:
+    referencers[str(t)] = t.read_text()
+for r in glob.glob('extensions/**/*.rs', recursive=True):
+    if '.sqlx' not in r:
+        referencers[r] = pathlib.Path(r).read_text()
+
+import_re = re.compile(r'''import\s+(?:[^'"]*?from\s+)?['"]\./([\w./-]+\.js)['"]''')
+reachable = set()
+frontier = []
+for p in js_sources:
+    base = p.rsplit('/', 1)[1]
+    if any(base in text for text in referencers.values()):
+        frontier.append(p)
+while frontier:
+    p = frontier.pop()
+    if p in reachable:
+        continue
+    reachable.add(p)
+    d = pathlib.Path(p).parent
+    for rel in import_re.findall(pathlib.Path(p).read_text()):
+        dep = str((d / rel))
+        if dep in js_sources and dep not in reachable:
+            frontier.append(dep)
+for p in sorted(js_sources - reachable):
+    err(f'{p} is registered and served but nothing references it - delete it '
+        'or wire it to a template')
+
 for p, cap, hard in [*((s, 150, 300) for s in js_sources), *((s, 200, 400) for s in css_sources)]:
     if p in GENERATED:
         continue

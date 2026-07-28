@@ -31,7 +31,6 @@ fn core_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/header-dropdown.css"),
         css!(p, "components/footer.css"),
         css!(p, "components/mobile-menu.css"),
-        css!(p, "components/cta-buttons.css"),
         css!(p, "components/header-upgrade.css"),
     ]
 }
