@@ -13,8 +13,8 @@
 //!   resolution and public manifest sharing.
 //!
 //! [`repositories`] owns every `sqlx` call; handlers/services never touch
-//! the DB directly. Errors normalise on `error::MarketplaceError` via the
-//! `MarketplaceError` re-export in [`systemprompt_web_shared`].
+//! the DB directly. Errors normalise on `error::WebError` via the
+//! `WebError` re-export in [`systemprompt_web_shared`].
 
 pub mod activity;
 pub mod audit_event_bus;

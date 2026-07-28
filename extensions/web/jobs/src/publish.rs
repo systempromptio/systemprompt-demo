@@ -17,7 +17,7 @@ use super::{
     LlmsTxtGenerationJob, RobotsTxtGenerationJob, SitemapGenerationJob,
 };
 use crate::error::JobError;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Default)]
 struct PipelineStats {
@@ -229,12 +229,12 @@ impl PublishPipelineJob {
     async fn execute_inner(&self, ctx: &JobContext) -> Result<JobResult, JobError> {
         let start_time = std::time::Instant::now();
 
-        let db_pool = ctx.db_pool::<DbPool>().ok_or(MarketplaceError::Internal(
+        let db_pool = ctx.db_pool::<DbPool>().ok_or(WebError::Internal(
             "Database not available in job context".to_owned(),
         ))?;
         let paths = ctx
             .app_paths::<Arc<AppPaths>>()
-            .ok_or(MarketplaceError::Internal(
+            .ok_or(WebError::Internal(
                 "AppPaths not available in job context".to_owned(),
             ))?
             .as_ref();

@@ -3,7 +3,7 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::{SessionId, UserId};
 
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Debug, Clone, Copy)]
 pub struct UsageEventParams<'a> {
@@ -23,7 +23,7 @@ pub struct UsageEventParams<'a> {
 pub async fn insert_plugin_usage_event(
     pool: &PgPool,
     params: &UsageEventParams<'_>,
-) -> Result<bool, MarketplaceError> {
+) -> Result<bool, WebError> {
     let id = uuid::Uuid::new_v4().to_string();
 
     let result = sqlx::query!(

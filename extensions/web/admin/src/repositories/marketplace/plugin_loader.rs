@@ -6,25 +6,24 @@ use systemprompt::config::ProfileBootstrap;
 use systemprompt::models::PluginConfigFile;
 
 use crate::types::PlatformPluginConfig;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
-fn plugins_dir() -> Result<PathBuf, MarketplaceError> {
+fn plugins_dir() -> Result<PathBuf, WebError> {
     let profile = ProfileBootstrap::get().map_err(|e| {
         tracing::error!(error = %e, "Failed to get profile bootstrap");
-        MarketplaceError::Internal(format!("Failed to get profile bootstrap: {e}"))
+        WebError::Internal(format!("Failed to get profile bootstrap: {e}"))
     })?;
     Ok(PathBuf::from(&profile.paths.services).join("plugins"))
 }
 
-fn parse_plugin_config_file(path: &std::path::Path) -> Result<PluginConfigFile, MarketplaceError> {
-    let content = std::fs::read_to_string(path).map_err(|e| {
-        MarketplaceError::Internal(format!("Failed to read {}: {e}", path.display()))
-    })?;
+fn parse_plugin_config_file(path: &std::path::Path) -> Result<PluginConfigFile, WebError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| WebError::Internal(format!("Failed to read {}: {e}", path.display())))?;
     serde_yaml::from_str::<PluginConfigFile>(&content)
-        .map_err(|e| MarketplaceError::Internal(format!("Failed to parse {}: {e}", path.display())))
+        .map_err(|e| WebError::Internal(format!("Failed to parse {}: {e}", path.display())))
 }
 
-pub(crate) fn load_all_plugins() -> Result<Vec<(String, PlatformPluginConfig)>, MarketplaceError> {
+pub(crate) fn load_all_plugins() -> Result<Vec<(String, PlatformPluginConfig)>, WebError> {
     Ok(load_all_plugins_with_paths()?
         .into_iter()
         .map(|(id, cfg, _path)| (id, cfg))
@@ -32,15 +31,14 @@ pub(crate) fn load_all_plugins() -> Result<Vec<(String, PlatformPluginConfig)>, 
 }
 
 pub(crate) fn load_all_plugins_with_paths()
--> Result<Vec<(String, PlatformPluginConfig, String)>, MarketplaceError> {
+-> Result<Vec<(String, PlatformPluginConfig, String)>, WebError> {
     let dir = plugins_dir()?;
     if !dir.exists() {
         return Ok(Vec::new());
     }
 
-    let entries = std::fs::read_dir(&dir).map_err(|e| {
-        MarketplaceError::Internal(format!("Failed to read {}: {e}", dir.display()))
-    })?;
+    let entries = std::fs::read_dir(&dir)
+        .map_err(|e| WebError::Internal(format!("Failed to read {}: {e}", dir.display())))?;
 
     let services_dir = dir.parent().map(std::path::Path::to_path_buf);
 

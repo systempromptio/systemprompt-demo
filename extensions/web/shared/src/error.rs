@@ -5,7 +5,7 @@ use systemprompt::traits::ExtensionError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum MarketplaceError {
+pub enum WebError {
     #[error("Internal error: {0}")]
     Internal(String),
 
@@ -31,7 +31,22 @@ pub enum MarketplaceError {
     Crypto(String),
 }
 
-impl ExtensionError for MarketplaceError {
+impl WebError {
+    #[must_use]
+    pub fn public_message(&self) -> String {
+        match self {
+            Self::BadRequest(msg) | Self::NotFound(msg) => msg.clone(),
+            Self::Internal(_)
+            | Self::Database(_)
+            | Self::Io(_)
+            | Self::Yaml(_)
+            | Self::Json(_)
+            | Self::Crypto(_) => "Internal server error".to_owned(),
+        }
+    }
+}
+
+impl ExtensionError for WebError {
     fn code(&self) -> &'static str {
         match self {
             Self::Internal(_) => "INTERNAL_ERROR",

@@ -2,7 +2,7 @@
 
 use systemprompt::generator::PublishError;
 use systemprompt::traits::ProviderError;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -29,7 +29,7 @@ pub enum JobError {
     Json(#[from] serde_json::Error),
 
     #[error("Marketplace error: {0}")]
-    Marketplace(#[from] MarketplaceError),
+    Marketplace(#[from] WebError),
 
     #[error("Publish error: {0}")]
     Publish(#[from] PublishError),

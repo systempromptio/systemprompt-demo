@@ -4,7 +4,7 @@ use systemprompt_web_admin::repositories::config::gateway::{
     synthesize_route_id, validate_route,
 };
 use systemprompt_web_admin::types::GatewayRouteView;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 const TWO_ROUTE_PROFILE: &str = r"gateway:
   enabled: true
@@ -147,7 +147,7 @@ fn create_route_rejects_duplicate_id() -> anyhow::Result<()> {
     create_route(&path, &route)?;
     assert!(matches!(
         create_route(&path, &route),
-        Err(MarketplaceError::BadRequest(_))
+        Err(WebError::BadRequest(_))
     ));
     Ok(())
 }

@@ -8,11 +8,9 @@ use systemprompt::identifiers::{AgentId, McpServerId, SkillId};
 use crate::repositories::marketplace::plugin_loader;
 use crate::repositories::marketplace::plugin_resolvers::resolve_all_plugin_skill_ids;
 use crate::types::{AgentCatalogEntry, SkillCatalogEntry};
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
-pub fn list_skill_catalog(
-    services_path: &Path,
-) -> Result<Vec<SkillCatalogEntry>, MarketplaceError> {
+pub fn list_skill_catalog(services_path: &Path) -> Result<Vec<SkillCatalogEntry>, WebError> {
     let skills_path = services_path.join("skills");
     let mut out: Vec<SkillCatalogEntry> = Vec::new();
     if !skills_path.exists() {
@@ -85,9 +83,7 @@ pub fn list_skill_catalog(
     Ok(out)
 }
 
-pub fn list_agent_catalog(
-    services_path: &Path,
-) -> Result<Vec<AgentCatalogEntry>, MarketplaceError> {
+pub fn list_agent_catalog(services_path: &Path) -> Result<Vec<AgentCatalogEntry>, WebError> {
     let agents_path = services_path.join("agents");
     let mut out: Vec<AgentCatalogEntry> = Vec::new();
     if !agents_path.exists() {
@@ -156,7 +152,7 @@ pub fn list_agent_catalog(
 
 pub fn list_plugin_catalog(
     services_path: &Path,
-) -> Result<Vec<crate::types::PluginDetail>, MarketplaceError> {
+) -> Result<Vec<crate::types::PluginDetail>, WebError> {
     use crate::types::PluginDetail;
     let skills_path = services_path.join("skills");
     let agents_path = services_path.join("agents");

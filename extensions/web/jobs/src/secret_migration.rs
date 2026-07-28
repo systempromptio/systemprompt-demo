@@ -6,7 +6,7 @@ use systemprompt::traits::{Job, JobContext, JobResult};
 
 use crate::error::JobError;
 use systemprompt_web_admin::repositories::secrets::{secret_crypto, secret_keys, secret_migration};
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SecretMigrationJob;
@@ -39,11 +39,11 @@ async fn execute_inner(ctx: &JobContext) -> Result<JobResult, JobError> {
         return Ok(JobResult::success().with_stats(0, 0).with_duration(0));
     };
 
-    let db = ctx.db_pool::<DbPool>().ok_or(MarketplaceError::Internal(
+    let db = ctx.db_pool::<DbPool>().ok_or(WebError::Internal(
         "Database not available in job context".to_owned(),
     ))?;
 
-    let pool = db.pool().ok_or(MarketplaceError::Internal(
+    let pool = db.pool().ok_or(WebError::Internal(
         "PgPool not available from database".to_owned(),
     ))?;
 
@@ -51,7 +51,7 @@ async fn execute_inner(ctx: &JobContext) -> Result<JobResult, JobError> {
 
     let rows = secret_migration::list_unencrypted_secrets(pool.as_ref())
         .await
-        .map_err(MarketplaceError::Database)?;
+        .map_err(WebError::Database)?;
 
     if rows.is_empty() {
         let duration_ms = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
@@ -109,14 +109,14 @@ async fn encrypt_and_store_secret(
     row: &secret_migration::UnencryptedSecret,
     master_key: &[u8; 32],
     actor: &UserId,
-) -> Result<(), MarketplaceError> {
+) -> Result<(), WebError> {
     let dek = secret_keys::get_or_create_user_dek(pool, &UserId::new(&row.user_id), master_key)
         .await
-        .map_err(|e| MarketplaceError::Crypto(format!("DEK error: {e}")))?;
+        .map_err(|e| WebError::Crypto(format!("DEK error: {e}")))?;
 
     let nonce = secret_crypto::generate_nonce();
     let encrypted = secret_crypto::encrypt(&dek, &nonce, row.var_value.as_bytes())
-        .map_err(|e| MarketplaceError::Crypto(format!("Encryption error: {e}")))?;
+        .map_err(|e| WebError::Crypto(format!("Encryption error: {e}")))?;
 
     let key_version = secret_migration::get_key_version(pool.as_ref(), &row.user_id).await;
 

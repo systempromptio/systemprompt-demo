@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use serde_yaml::Value;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 use crate::types::{GatewayConfigView, UpdateGatewaySettingsRequest};
 
@@ -14,7 +14,7 @@ use super::yaml_io::{ensure_gateway_mut, read_profile, route_from_yaml, write_pr
 const DEFAULT_AUTH_SCHEME: &str = "bearer";
 const DEFAULT_INFERENCE_PATH_PREFIX: &str = "/v1";
 
-pub fn get_gateway_config(profile_path: &Path) -> Result<GatewayConfigView, MarketplaceError> {
+pub fn get_gateway_config(profile_path: &Path) -> Result<GatewayConfigView, WebError> {
     ensure_route_ids(profile_path)?;
     let doc = read_profile(profile_path)?;
     let gateway = doc.get("gateway");
@@ -51,7 +51,7 @@ pub fn get_gateway_config(profile_path: &Path) -> Result<GatewayConfigView, Mark
 pub fn update_gateway_settings(
     profile_path: &Path,
     req: &UpdateGatewaySettingsRequest,
-) -> Result<GatewayConfigView, MarketplaceError> {
+) -> Result<GatewayConfigView, WebError> {
     let mut doc = read_profile(profile_path)?;
     {
         let gw = ensure_gateway_mut(&mut doc)?;
@@ -63,7 +63,7 @@ pub fn update_gateway_settings(
         }
         if let Some(prefix) = &req.inference_path_prefix {
             if !prefix.starts_with('/') {
-                return Err(MarketplaceError::BadRequest(
+                return Err(WebError::BadRequest(
                     "inference_path_prefix must start with '/'".into(),
                 ));
             }

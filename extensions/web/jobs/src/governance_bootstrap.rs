@@ -24,7 +24,7 @@ use systemprompt::traits::{Job, JobContext, JobResult};
 
 use crate::error::JobError;
 use systemprompt_web_admin::repositories::config::acl_yaml_loader;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct GovernanceBootstrapJob;
@@ -55,19 +55,19 @@ impl Job for GovernanceBootstrapJob {
 async fn execute_inner(ctx: &JobContext) -> Result<JobResult, JobError> {
     let start = std::time::Instant::now();
 
-    let db_pool = ctx.db_pool::<DbPool>().ok_or(MarketplaceError::Internal(
+    let db_pool = ctx.db_pool::<DbPool>().ok_or(WebError::Internal(
         "Database not available in job context".to_owned(),
     ))?;
     let paths = ctx
         .app_paths::<Arc<AppPaths>>()
-        .ok_or(MarketplaceError::Internal(
+        .ok_or(WebError::Internal(
             "AppPaths not available in job context".to_owned(),
         ))?;
     let services_path = paths.system().services().to_path_buf();
 
     let registered = bootstrap_gateway_entities(db_pool).await?;
 
-    let pool = db_pool.pool().ok_or(MarketplaceError::Internal(
+    let pool = db_pool.pool().ok_or(WebError::Internal(
         "PgPool not available from database".to_owned(),
     ))?;
     acl_yaml_loader::load_from_yaml(&pool, &services_path)
@@ -76,7 +76,7 @@ async fn execute_inner(ctx: &JobContext) -> Result<JobResult, JobError> {
 
     let policy = systemprompt::ai::load_gateway_policies_from_yaml(db_pool, &services_path)
         .await
-        .map_err(|e| JobError::from(MarketplaceError::Internal(e.to_string())))?;
+        .map_err(|e| JobError::from(WebError::Internal(e.to_string())))?;
 
     let duration_ms = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
     tracing::info!(
@@ -90,9 +90,9 @@ async fn execute_inner(ctx: &JobContext) -> Result<JobResult, JobError> {
 
 async fn bootstrap_gateway_entities(db_pool: &DbPool) -> Result<usize, JobError> {
     let profile = systemprompt::config::ProfileBootstrap::get()
-        .map_err(|e| MarketplaceError::Internal(format!("profile unavailable: {e}")))?;
+        .map_err(|e| WebError::Internal(format!("profile unavailable: {e}")))?;
     let profile_path = systemprompt::config::ProfileBootstrap::get_path()
-        .map_err(|e| MarketplaceError::Internal(format!("profile path unavailable: {e}")))?;
+        .map_err(|e| WebError::Internal(format!("profile path unavailable: {e}")))?;
 
     let route_ids = profile
         .gateway
@@ -106,10 +106,10 @@ async fn bootstrap_gateway_entities(db_pool: &DbPool) -> Result<usize, JobError>
 
     let source = format!("profile:{profile_path}");
     let repo = systemprompt::security::authz::AccessControlRepository::new(db_pool)
-        .map_err(|e| MarketplaceError::Internal(e.to_string()))?;
+        .map_err(|e| WebError::Internal(e.to_string()))?;
     systemprompt::security::authz::reconcile_gateway_entities(&repo, &id_refs, &source)
         .await
-        .map_err(|e| JobError::from(MarketplaceError::Internal(e.to_string())))
+        .map_err(|e| JobError::from(WebError::Internal(e.to_string())))
 }
 
 systemprompt::traits::submit_job!(&GovernanceBootstrapJob);

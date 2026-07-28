@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use serde::Serialize;
 use sqlx::PgPool;
 use systemprompt_security::authz::{Access, EntityKind, RuleType};
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Serialize)]
 struct EntityKey {
@@ -27,7 +27,7 @@ struct Snapshot {
     rules: Vec<EntityKey>,
 }
 
-pub async fn render_yaml_snapshot(pool: &PgPool) -> Result<String, MarketplaceError> {
+pub async fn render_yaml_snapshot(pool: &PgPool) -> Result<String, WebError> {
     let rows = sqlx::query!(
         r#"SELECT r.entity_type,
                   r.entity_id,
@@ -46,9 +46,10 @@ pub async fn render_yaml_snapshot(pool: &PgPool) -> Result<String, MarketplaceEr
 
     let mut by_key: BTreeMap<(String, String, String), EntityKey> = BTreeMap::new();
     for row in rows {
-        let entity_type: EntityKind = row.entity_type.parse().map_err(|e| {
-            MarketplaceError::Internal(format!("unknown entity_type in DB row: {e}"))
-        })?;
+        let entity_type: EntityKind = row
+            .entity_type
+            .parse()
+            .map_err(|e| WebError::Internal(format!("unknown entity_type in DB row: {e}")))?;
         let key = (
             entity_type.as_str().to_owned(),
             row.entity_id.clone(),
@@ -73,5 +74,5 @@ pub async fn render_yaml_snapshot(pool: &PgPool) -> Result<String, MarketplaceEr
     let snap = Snapshot {
         rules: by_key.into_values().collect(),
     };
-    serde_yaml::to_string(&snap).map_err(MarketplaceError::Yaml)
+    serde_yaml::to_string(&snap).map_err(WebError::Yaml)
 }

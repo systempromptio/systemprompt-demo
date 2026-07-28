@@ -85,11 +85,11 @@ pub fn resolve_principal(
 
 fn load_plugin_variable_defs(
     plugin_id: &PluginId,
-) -> Result<Vec<PluginVariableDef>, systemprompt_web_shared::error::MarketplaceError> {
+) -> Result<Vec<PluginVariableDef>, systemprompt_web_shared::error::WebError> {
     let services_path = ProfileBootstrap::get()
         .map(|p| std::path::PathBuf::from(&p.paths.services))
         .map_err(|e| {
-            systemprompt_web_shared::error::MarketplaceError::Internal(format!(
+            systemprompt_web_shared::error::WebError::Internal(format!(
                 "Failed to load profile: {e}"
             ))
         })?;

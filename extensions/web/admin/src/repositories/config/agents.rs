@@ -10,9 +10,9 @@ use std::path::Path;
 use crate::repositories::marketplace::plugins::list_skill_catalog;
 use crate::types::{AgentDetail, AgentSkillInfo};
 use systemprompt::identifiers::{AgentId, McpServerId};
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
-pub fn list_agents(services_path: &Path) -> Result<Vec<AgentDetail>, MarketplaceError> {
+pub fn list_agents(services_path: &Path) -> Result<Vec<AgentDetail>, WebError> {
     let agents_dir = services_path.join("agents");
     let mut agents = Vec::new();
     if !agents_dir.exists() {
@@ -133,7 +133,7 @@ fn parse_agent_detail(
 pub fn find_agent(
     services_path: &Path,
     agent_id: &AgentId,
-) -> Result<Option<AgentDetail>, MarketplaceError> {
+) -> Result<Option<AgentDetail>, WebError> {
     let agents = list_agents(services_path)?;
     Ok(agents
         .into_iter()

@@ -109,4 +109,3 @@ systemprompt::mcp::register_artifact_theme!(
     crate::artifact_theme::systemprompt_theme,
     name = "systemprompt.io"
 );
-

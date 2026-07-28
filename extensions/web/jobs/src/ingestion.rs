@@ -10,7 +10,7 @@ use systemprompt::traits::{Job, JobContext, JobResult};
 use crate::error::JobError;
 use systemprompt_web_content::services::IngestionService;
 use systemprompt_web_shared::config::BlogConfigValidated;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 use systemprompt_web_shared::models::IngestionOptions;
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -20,7 +20,7 @@ impl ContentIngestionJob {
     pub async fn execute_with_config(
         pool: Arc<PgPool>,
         config: &BlogConfigValidated,
-    ) -> Result<JobResult, MarketplaceError> {
+    ) -> Result<JobResult, WebError> {
         Self::execute_with_options(pool, config, IngestionOptions::default()).await
     }
 
@@ -28,7 +28,7 @@ impl ContentIngestionJob {
         pool: Arc<PgPool>,
         config: &BlogConfigValidated,
         options: IngestionOptions,
-    ) -> Result<JobResult, MarketplaceError> {
+    ) -> Result<JobResult, WebError> {
         let start = std::time::Instant::now();
 
         tracing::info!(
@@ -95,16 +95,16 @@ impl Job for ContentIngestionJob {
 }
 
 async fn execute_inner(ctx: &JobContext) -> Result<JobResult, JobError> {
-    let db = ctx.db_pool::<DbPool>().ok_or(MarketplaceError::Internal(
+    let db = ctx.db_pool::<DbPool>().ok_or(WebError::Internal(
         "Database not available in job context".to_owned(),
     ))?;
 
-    let pool = db.write_pool().ok_or(MarketplaceError::Internal(
+    let pool = db.write_pool().ok_or(WebError::Internal(
         "Write PgPool not available from database".to_owned(),
     ))?;
 
     let Some(config) = BlogConfigValidated::load_from_env_or_none()
-        .map_err(|e| MarketplaceError::Internal(format!("Failed to load blog config: {e}")))?
+        .map_err(|e| WebError::Internal(format!("Failed to load blog config: {e}")))?
     else {
         tracing::debug!(
             "Blog content ingestion skipped: no blog config configured for this profile"

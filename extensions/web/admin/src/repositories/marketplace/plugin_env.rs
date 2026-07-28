@@ -3,7 +3,7 @@
 use serde::Serialize;
 use sqlx::PgPool;
 use systemprompt::identifiers::{PluginId, UserId};
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct PluginEnvVar {
@@ -18,7 +18,7 @@ pub async fn list_plugin_env_vars(
     pool: &PgPool,
     user_id: &UserId,
     plugin_id: &PluginId,
-) -> Result<Vec<PluginEnvVar>, MarketplaceError> {
+) -> Result<Vec<PluginEnvVar>, WebError> {
     let rows = sqlx::query_as!(
         PluginEnvVar,
         "SELECT id, plugin_id AS \"plugin_id: PluginId\", var_name, var_value, is_secret \

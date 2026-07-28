@@ -4,21 +4,19 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use serde_yaml::Value;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 use crate::types::GatewayRouteView;
 
 use super::matching::synthesize_route_id;
 use super::yaml_io::{read_profile, route_to_yaml, routes_seq_mut, write_profile};
 
-pub fn validate_route(route: &GatewayRouteView) -> Result<(), MarketplaceError> {
+pub fn validate_route(route: &GatewayRouteView) -> Result<(), WebError> {
     if route.model_pattern.trim().is_empty() {
-        return Err(MarketplaceError::BadRequest(
-            "model_pattern is required".into(),
-        ));
+        return Err(WebError::BadRequest("model_pattern is required".into()));
     }
     if route.provider.trim().is_empty() {
-        return Err(MarketplaceError::BadRequest("provider is required".into()));
+        return Err(WebError::BadRequest("provider is required".into()));
     }
     Ok(())
 }
@@ -26,7 +24,7 @@ pub fn validate_route(route: &GatewayRouteView) -> Result<(), MarketplaceError> 
 /// Ensure every route in the profile has an explicit stable `id`, persisting
 /// synthesized ids back to disk if any were missing. Returns true when the
 /// profile was rewritten.
-pub fn ensure_route_ids(profile_path: &Path) -> Result<bool, MarketplaceError> {
+pub fn ensure_route_ids(profile_path: &Path) -> Result<bool, WebError> {
     let mut doc = read_profile(profile_path)?;
     let mut changed = false;
     let Some(gateway) = doc
@@ -73,10 +71,7 @@ pub fn ensure_route_ids(profile_path: &Path) -> Result<bool, MarketplaceError> {
     Ok(changed)
 }
 
-pub fn create_route(
-    profile_path: &Path,
-    route: &GatewayRouteView,
-) -> Result<usize, MarketplaceError> {
+pub fn create_route(profile_path: &Path, route: &GatewayRouteView) -> Result<usize, WebError> {
     validate_route(route)?;
     ensure_route_ids(profile_path)?;
     let mut to_insert = route.clone();
@@ -93,7 +88,7 @@ pub fn create_route(
                 .and_then(Value::as_str)
                 == Some(to_insert.id.as_str())
             {
-                return Err(MarketplaceError::BadRequest(format!(
+                return Err(WebError::BadRequest(format!(
                     "route id `{}` already exists",
                     to_insert.id
                 )));
@@ -110,7 +105,7 @@ pub fn update_route(
     profile_path: &Path,
     index: usize,
     route: &GatewayRouteView,
-) -> Result<bool, MarketplaceError> {
+) -> Result<bool, WebError> {
     validate_route(route)?;
     let mut doc = read_profile(profile_path)?;
     {
@@ -124,7 +119,7 @@ pub fn update_route(
     Ok(true)
 }
 
-pub fn delete_route(profile_path: &Path, index: usize) -> Result<bool, MarketplaceError> {
+pub fn delete_route(profile_path: &Path, index: usize) -> Result<bool, WebError> {
     let mut doc = read_profile(profile_path)?;
     {
         let routes = routes_seq_mut(&mut doc)?;
@@ -137,13 +132,13 @@ pub fn delete_route(profile_path: &Path, index: usize) -> Result<bool, Marketpla
     Ok(true)
 }
 
-pub fn reorder_routes(profile_path: &Path, order: &[usize]) -> Result<(), MarketplaceError> {
+pub fn reorder_routes(profile_path: &Path, order: &[usize]) -> Result<(), WebError> {
     let mut doc = read_profile(profile_path)?;
     {
         let routes = routes_seq_mut(&mut doc)?;
         let n = routes.len();
         if order.len() != n {
-            return Err(MarketplaceError::BadRequest(format!(
+            return Err(WebError::BadRequest(format!(
                 "order has {} entries but there are {n} routes",
                 order.len()
             )));
@@ -151,7 +146,7 @@ pub fn reorder_routes(profile_path: &Path, order: &[usize]) -> Result<(), Market
         let mut seen = vec![false; n];
         for &i in order {
             if i >= n || seen[i] {
-                return Err(MarketplaceError::BadRequest(
+                return Err(WebError::BadRequest(
                     "order must be a permutation of route indices".into(),
                 ));
             }

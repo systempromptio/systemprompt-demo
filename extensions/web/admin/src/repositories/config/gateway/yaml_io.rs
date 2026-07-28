@@ -7,22 +7,22 @@
 use std::path::Path;
 
 use serde_yaml::{Mapping, Value};
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 use crate::types::GatewayRouteView;
 
 use super::matching::synthesize_route_id;
 
-pub(super) fn read_profile(profile_path: &Path) -> Result<Value, MarketplaceError> {
+pub(super) fn read_profile(profile_path: &Path) -> Result<Value, WebError> {
     let content = std::fs::read_to_string(profile_path)?;
     let doc: Value = serde_yaml::from_str(&content)?;
     Ok(doc)
 }
 
-pub(super) fn write_profile(profile_path: &Path, doc: &Value) -> Result<(), MarketplaceError> {
+pub(super) fn write_profile(profile_path: &Path, doc: &Value) -> Result<(), WebError> {
     let yaml_str = serde_yaml::to_string(doc)?;
     std::fs::write(profile_path, yaml_str).map_err(|e| {
-        MarketplaceError::Internal(format!(
+        WebError::Internal(format!(
             "Failed to write profile {}: {e}",
             profile_path.display()
         ))
@@ -89,24 +89,24 @@ pub(super) fn route_to_yaml(route: &GatewayRouteView) -> Value {
     Value::Mapping(map)
 }
 
-pub(super) fn ensure_gateway_mut(doc: &mut Value) -> Result<&mut Mapping, MarketplaceError> {
+pub(super) fn ensure_gateway_mut(doc: &mut Value) -> Result<&mut Mapping, WebError> {
     let root = doc
         .as_mapping_mut()
-        .ok_or_else(|| MarketplaceError::Internal("profile YAML root is not a mapping".into()))?;
+        .ok_or_else(|| WebError::Internal("profile YAML root is not a mapping".into()))?;
     if !root.contains_key(Value::from("gateway")) {
         root.insert(Value::from("gateway"), Value::Mapping(Mapping::new()));
     }
     root.get_mut(Value::from("gateway"))
         .and_then(Value::as_mapping_mut)
-        .ok_or_else(|| MarketplaceError::Internal("gateway block is not a mapping".into()))
+        .ok_or_else(|| WebError::Internal("gateway block is not a mapping".into()))
 }
 
-pub(super) fn routes_seq_mut(doc: &mut Value) -> Result<&mut Vec<Value>, MarketplaceError> {
+pub(super) fn routes_seq_mut(doc: &mut Value) -> Result<&mut Vec<Value>, WebError> {
     let gw = ensure_gateway_mut(doc)?;
     if !gw.contains_key(Value::from("routes")) {
         gw.insert(Value::from("routes"), Value::Sequence(Vec::new()));
     }
     gw.get_mut(Value::from("routes"))
         .and_then(Value::as_sequence_mut)
-        .ok_or_else(|| MarketplaceError::Internal("gateway.routes is not a sequence".into()))
+        .ok_or_else(|| WebError::Internal("gateway.routes is not a sequence".into()))
 }

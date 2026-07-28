@@ -11,13 +11,13 @@ use crate::repositories::secrets::secret_crypto;
 
 use crate::repositories::secrets::secret_keys;
 
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 pub async fn create_resolution_token(
     pool: &PgPool,
     user_id: &UserId,
     plugin_id: &PluginId,
-) -> Result<String, MarketplaceError> {
+) -> Result<String, WebError> {
     let raw_token = uuid::Uuid::new_v4().to_string();
     let token_hash = hex::encode(Sha256::digest(raw_token.as_bytes()));
     let id = uuid::Uuid::new_v4().to_string();
@@ -40,7 +40,7 @@ pub async fn create_resolution_token(
 pub async fn validate_and_consume_token(
     pool: &PgPool,
     raw_token: &str,
-) -> Result<(UserId, PluginId), MarketplaceError> {
+) -> Result<(UserId, PluginId), WebError> {
     let token_hash = hex::encode(Sha256::digest(raw_token.as_bytes()));
 
     let row = sqlx::query!(
@@ -57,9 +57,7 @@ pub async fn validate_and_consume_token(
             tracing::debug!(user_id = %r.user_id, plugin_id = %r.plugin_id, "Consumed resolution token");
             Ok((r.user_id, r.plugin_id))
         },
-        None => Err(MarketplaceError::Internal(
-            "Invalid or expired token".to_owned(),
-        )),
+        None => Err(WebError::Internal("Invalid or expired token".to_owned())),
     }
 }
 
@@ -68,10 +66,10 @@ pub async fn resolve_secrets_for_plugin(
     user_id: &UserId,
     plugin_id: &PluginId,
     master_key: &[u8; 32],
-) -> Result<HashMap<String, String>, MarketplaceError> {
+) -> Result<HashMap<String, String>, WebError> {
     let dek = secret_keys::get_or_create_user_dek(pool, user_id, master_key)
         .await
-        .map_err(|e| MarketplaceError::Crypto(e.to_string()))?;
+        .map_err(|e| WebError::Crypto(e.to_string()))?;
 
     let rows = sqlx::query!(
         "SELECT var_name, encrypted_value, value_nonce, key_version \
@@ -92,16 +90,15 @@ pub async fn resolve_secrets_for_plugin(
             value_nonce
                 .try_into()
                 .map_err(|e: std::array::TryFromSliceError| {
-                    MarketplaceError::Internal(format!(
+                    WebError::Internal(format!(
                         "Invalid nonce length for var {}: {e}",
                         row.var_name
                     ))
                 })?;
         let plaintext = secret_crypto::decrypt(&dek, &nonce, encrypted_value)
-            .map_err(|e| MarketplaceError::Crypto(e.to_string()))?;
-        let value = String::from_utf8(plaintext).map_err(|e| {
-            MarketplaceError::Internal(format!("Decrypted value is not valid UTF-8: {e}"))
-        })?;
+            .map_err(|e| WebError::Crypto(e.to_string()))?;
+        let value = String::from_utf8(plaintext)
+            .map_err(|e| WebError::Internal(format!("Decrypted value is not valid UTF-8: {e}")))?;
         secrets.insert(row.var_name.clone(), value);
     }
 

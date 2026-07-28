@@ -24,17 +24,14 @@ use sqlx::PgPool;
 use systemprompt_security::authz::{
     AccessControlConfig, AccessControlIngestionService, IngestOptions,
 };
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 use super::acl_yaml_types::{DepartmentsDoc, LoadReport, YamlDepartment};
 
 const ROLES_FILE: &str = "access-control/roles.yaml";
 const DEPARTMENTS_FILE: &str = "access-control/departments.yaml";
 
-pub async fn load_from_yaml(
-    pool: &PgPool,
-    services_path: &Path,
-) -> Result<LoadReport, MarketplaceError> {
+pub async fn load_from_yaml(pool: &PgPool, services_path: &Path) -> Result<LoadReport, WebError> {
     let mut report = LoadReport::default();
 
     load_departments_file(pool, services_path, &mut report).await?;
@@ -51,13 +48,13 @@ pub async fn load_from_yaml(
 async fn read_yaml<T: for<'de> Deserialize<'de> + Default>(
     services_path: &Path,
     rel: &str,
-) -> Result<Option<T>, MarketplaceError> {
+) -> Result<Option<T>, WebError> {
     let path = services_path.join(rel);
     match tokio::fs::read_to_string(&path).await {
         Ok(s) if s.trim().is_empty() => Ok(Some(T::default())),
         Ok(s) => serde_yaml::from_str::<T>(&s)
             .map(Some)
-            .map_err(|e| MarketplaceError::Internal(format!("{rel}: {e}"))),
+            .map_err(|e| WebError::Internal(format!("{rel}: {e}"))),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(e) => Err(e.into()),
     }
@@ -67,7 +64,7 @@ async fn load_departments_file(
     pool: &PgPool,
     services_path: &Path,
     report: &mut LoadReport,
-) -> Result<(), MarketplaceError> {
+) -> Result<(), WebError> {
     let Some(doc) = read_yaml::<DepartmentsDoc>(services_path, DEPARTMENTS_FILE).await? else {
         return Ok(());
     };
@@ -83,7 +80,7 @@ async fn load_roles_file(
     pool: &PgPool,
     services_path: &Path,
     report: &mut LoadReport,
-) -> Result<(), MarketplaceError> {
+) -> Result<(), WebError> {
     let Some(cfg) = read_yaml::<AccessControlConfig>(services_path, ROLES_FILE).await? else {
         return Ok(());
     };
@@ -98,12 +95,12 @@ async fn load_roles_file(
             },
         )
         .await
-        .map_err(|e| MarketplaceError::Internal(e.to_string()))?;
+        .map_err(|e| WebError::Internal(e.to_string()))?;
     report.rules_upserted = ingested.inserted + ingested.updated;
     Ok(())
 }
 
-async fn upsert_department(pool: &PgPool, dept: &YamlDepartment) -> Result<(), MarketplaceError> {
+async fn upsert_department(pool: &PgPool, dept: &YamlDepartment) -> Result<(), WebError> {
     sqlx::query!(
         "INSERT INTO departments (name, description)
          VALUES ($1, $2)

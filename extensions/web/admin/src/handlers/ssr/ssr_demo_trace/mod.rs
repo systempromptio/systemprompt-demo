@@ -98,7 +98,8 @@ pub(crate) async fn demo_trace_page(
         let messages = transcript::message_views(&stored);
         let events_value =
             serde_json::to_value(&events).unwrap_or_else(|_| serde_json::Value::Array(vec![]));
-        let digest = transcript::integrity_digest(&row.id, attested.as_str(), &messages, &events_value);
+        let digest =
+            transcript::integrity_digest(&row.id, attested.as_str(), &messages, &events_value);
 
         obj.insert("has_session".to_owned(), true.into());
         obj.insert("username".to_owned(), owner_name.into());

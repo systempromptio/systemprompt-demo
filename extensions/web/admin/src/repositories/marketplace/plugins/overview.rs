@@ -10,7 +10,7 @@ use crate::repositories::marketplace::plugin_resolvers::{
 };
 use crate::types::{PluginOverview, ROLE_ADMIN};
 use std::path::Path;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Debug, Clone, Copy)]
 pub struct MarketplaceCounts {
@@ -23,7 +23,7 @@ pub struct MarketplaceCounts {
 pub fn count_marketplace_items(
     services_path: &Path,
     roles: &[String],
-) -> Result<MarketplaceCounts, MarketplaceError> {
+) -> Result<MarketplaceCounts, WebError> {
     let skills_path = services_path.join("skills");
     let agents_path = services_path.join("agents");
     let mut counts = MarketplaceCounts {
@@ -55,14 +55,14 @@ pub fn count_marketplace_items(
 pub fn list_plugins_for_roles(
     services_path: &Path,
     roles: &[String],
-) -> Result<Vec<PluginOverview>, MarketplaceError> {
+) -> Result<Vec<PluginOverview>, WebError> {
     list_plugins_for_roles_full(services_path, roles)
 }
 
 pub fn list_plugins_for_roles_full(
     services_path: &Path,
     roles: &[String],
-) -> Result<Vec<PluginOverview>, MarketplaceError> {
+) -> Result<Vec<PluginOverview>, WebError> {
     let skills_path = services_path.join("skills");
     let agents_path = services_path.join("agents");
     let is_admin = roles.iter().any(|r| r == ROLE_ADMIN);

@@ -4,11 +4,11 @@ use std::path::Path;
 
 use crate::types::McpServerDetail;
 use systemprompt::identifiers::McpServerId;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt_web_shared::error::WebError;
 
 const DEFAULT_MCP_PORT: u16 = 5000;
 
-pub fn list_mcp_servers(services_path: &Path) -> Result<Vec<McpServerDetail>, MarketplaceError> {
+pub fn list_mcp_servers(services_path: &Path) -> Result<Vec<McpServerDetail>, WebError> {
     let mcp_dir = services_path.join("mcp");
     let mut servers = Vec::new();
     if !mcp_dir.exists() {

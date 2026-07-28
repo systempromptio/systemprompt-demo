@@ -6,7 +6,7 @@
 //! - [`config`] / [`config_errors`] — typed YAML schemas with
 //!   `#[serde(deny_unknown_fields)]` plus the error type that surfaces
 //!   misconfigurations at startup.
-//! - [`error::MarketplaceError`] — the unified error sink for admin/jobs code;
+//! - [`error::WebError`] — the unified error sink for admin/jobs code;
 //!   implements `IntoResponse` for axum handlers.
 //! - [`ids`] — newtype wrappers around `String` for entity IDs that escape the
 //!   web layer (`MarketplaceId`, `PluginId`, `TraceId`, etc.). For identifiers

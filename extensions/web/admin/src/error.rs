@@ -13,7 +13,8 @@ use thiserror::Error;
 use crate::handlers::shared::ErrorBody;
 use crate::repositories::bridge::BridgeRepoError;
 use crate::repositories::secrets::secret_crypto::SecretCryptoError;
-use systemprompt_web_shared::error::MarketplaceError;
+use systemprompt::traits::ExtensionError;
+use systemprompt_web_shared::error::WebError;
 
 #[derive(Debug, Error)]
 pub enum AdminError {
@@ -51,7 +52,7 @@ pub enum AdminError {
     BridgeRepo(BridgeRepoError),
 
     #[error("Marketplace error: {0}")]
-    Marketplace(MarketplaceError),
+    Marketplace(WebError),
 
     #[error("Crypto error: {0}")]
     Crypto(#[from] SecretCryptoError),
@@ -70,25 +71,21 @@ impl AdminError {
     }
 
     #[must_use]
-    pub const fn status(&self) -> StatusCode {
+    pub fn status(&self) -> StatusCode {
         match self {
-            Self::NotFound(_) | Self::Marketplace(MarketplaceError::NotFound(_)) => {
-                StatusCode::NOT_FOUND
-            },
-            Self::BadRequest(_)
-            | Self::BridgeRepo(BridgeRepoError::Validation(_))
-            | Self::Marketplace(MarketplaceError::BadRequest(_)) => StatusCode::BAD_REQUEST,
+            Self::NotFound(_) => StatusCode::NOT_FOUND,
+            Self::BadRequest(_) => StatusCode::BAD_REQUEST,
             Self::Unauthorized(_) | Self::Unauthenticated(_) => StatusCode::UNAUTHORIZED,
             Self::Forbidden(_) => StatusCode::FORBIDDEN,
             Self::Conflict(_) => StatusCode::CONFLICT,
             Self::RateLimited(_) => StatusCode::TOO_MANY_REQUESTS,
             Self::Unavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::Upstream(_) => StatusCode::BAD_GATEWAY,
-            Self::Database(_)
-            | Self::BridgeRepo(_)
-            | Self::Marketplace(_)
-            | Self::Crypto(_)
-            | Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::BridgeRepo(e) => e.status(),
+            Self::Marketplace(e) => ExtensionError::status(e),
+            Self::Database(_) | Self::Crypto(_) | Self::Internal(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            },
         }
     }
 
@@ -100,17 +97,13 @@ impl AdminError {
             | Self::Forbidden(msg)
             | Self::Conflict(msg)
             | Self::RateLimited(msg)
-            | Self::Unavailable(msg)
-            | Self::BridgeRepo(BridgeRepoError::Validation(msg))
-            | Self::Marketplace(
-                MarketplaceError::BadRequest(msg) | MarketplaceError::NotFound(msg),
-            ) => msg.clone(),
+            | Self::Unavailable(msg) => msg.clone(),
+            Self::BridgeRepo(e) => e.public_message(),
+            Self::Marketplace(e) => e.public_message(),
             Self::Upstream(_) => "Upstream service error".to_owned(),
             Self::Unauthenticated(_) => "Unauthorized".to_owned(),
             Self::Crypto(_) => "Internal configuration error".to_owned(),
-            Self::Database(_) | Self::BridgeRepo(_) | Self::Marketplace(_) | Self::Internal(_) => {
-                "Internal server error".to_owned()
-            },
+            Self::Database(_) | Self::Internal(_) => "Internal server error".to_owned(),
         }
     }
 }
@@ -121,8 +114,8 @@ impl From<BridgeRepoError> for AdminError {
     }
 }
 
-impl From<MarketplaceError> for AdminError {
-    fn from(value: MarketplaceError) -> Self {
+impl From<WebError> for AdminError {
+    fn from(value: WebError) -> Self {
         Self::Marketplace(value)
     }
 }
