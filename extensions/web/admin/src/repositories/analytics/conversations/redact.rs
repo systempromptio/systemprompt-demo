@@ -1,5 +1,7 @@
 //! Credential redactor for transcript bodies heading to the DOM.
 
+use crate::handlers::webhook::governance::secrets::find_high_entropy_token;
+
 /// Defense-in-depth text redactor for prompts/responses heading to the DOM.
 ///
 /// Catches the common high-entropy / well-prefixed credential shapes; not a
@@ -57,6 +59,15 @@ pub fn redact_text(input: &str) -> (String, u32) {
             out.push_str(&input[idx..idx + ch]);
             idx += ch;
         }
+    }
+    // Why: prefix-less key material the list above cannot name; same detector
+    // the secret_scan policy and gateway scanner run.
+    while let Some((start, end)) = find_high_entropy_token(&out).map(|token| {
+        let start = token.as_ptr() as usize - out.as_ptr() as usize;
+        (start, start + token.len())
+    }) {
+        out.replace_range(start..end, "[REDACTED:high_entropy_token]");
+        count = count.saturating_add(1);
     }
     (out, count)
 }
