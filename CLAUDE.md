@@ -186,6 +186,16 @@ Unknown YAML keys cause loud errors at load time (`#[serde(deny_unknown_fields)]
 
 ---
 
+## Database
+
+**Postgres-only, by design.** Repositories take `PgPool` and use compile-time-checked
+`sqlx::query!` macros against the committed `.sqlx/` offline caches; `DbPool`
+(`Arc<Database>`, from core) is the handle extensions receive at their wiring seams.
+Do not abstract repositories over the backend — portability would cost the
+compile-time query verification and the offline-cache workflow that gate this repo.
+
+---
+
 ## Repository Naming Convention
 
 Every function under `extensions/web/admin/src/repositories/` is named for what

@@ -80,9 +80,6 @@ impl ExtensionError for WebError {
 
 #[derive(Error, Debug)]
 pub enum BlogError {
-    #[error("Database must be PostgreSQL")]
-    DatabaseNotPostgres,
-
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
 
@@ -114,7 +111,6 @@ pub enum BlogError {
 impl ExtensionError for BlogError {
     fn code(&self) -> &'static str {
         match self {
-            Self::DatabaseNotPostgres => "DATABASE_NOT_POSTGRES",
             Self::Database(_) => "DATABASE_ERROR",
             Self::ContentNotFound(_) => "CONTENT_NOT_FOUND",
             Self::LinkNotFound(_) => "LINK_NOT_FOUND",
@@ -133,8 +129,7 @@ impl ExtensionError for BlogError {
             Self::InvalidRequest(_) | Self::Validation(_) | Self::Parse(_) => {
                 StatusCode::BAD_REQUEST
             },
-            Self::DatabaseNotPostgres
-            | Self::Database(_)
+            Self::Database(_)
             | Self::Serialization(_)
             | Self::Io(_)
             | Self::Yaml(_) => StatusCode::INTERNAL_SERVER_ERROR,
