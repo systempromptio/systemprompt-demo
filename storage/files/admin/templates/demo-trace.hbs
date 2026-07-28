@@ -33,6 +33,28 @@
             <div class="trace-stat"><b>{{summary.cost_display}}</b><span>cost</span></div>
         </section>
 
+        {{#if has_artifacts}}
+        <section class="trace-artifacts" aria-label="Artifacts this session produced">
+            <h2 class="trace-section-title">Artifacts</h2>
+            <table class="trace-stages">
+                <thead>
+                    <tr><th>title</th><th>type</th><th>tool</th><th>created</th><th>view</th></tr>
+                </thead>
+                <tbody>
+                    {{#each artifacts}}
+                    <tr>
+                        <td>{{title}}</td>
+                        <td>{{artifact_type}}</td>
+                        <td class="trace-stage-policy">{{server_name}}</td>
+                        <td class="trace-stage-ms">{{at}}</td>
+                        <td><a href="{{ui_href}}" target="_blank" rel="noopener">open →</a></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+        {{/if}}
+
         <section class="trace-timeline" aria-label="Time-ordered trace">
             {{#each events}}
             <article class="trace-event{{#if is_denied}} is-denied{{/if}}{{#if is_focus}} is-focus{{/if}}"

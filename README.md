@@ -8,7 +8,7 @@
 
 # Private, managed Claude Cowork. Five minutes from sign-up.
 
-**Sign up, get $5 of credit, download the Bridge, and Claude Cowork and Claude Desktop are configured for you automatically.** Every request runs through a gateway you can see into: every prompt, every tool call, every cent, one audit trail. Most AI access is a black box someone else operates. This one shows you every row.
+**Sign up, get $1 of credit, download the Bridge, and Claude Cowork and Claude Desktop are configured for you automatically.** Every request runs through a gateway you can see into: every prompt, every tool call, every cent, one audit trail. Most AI access is a black box someone else operates. This one shows you every row.
 
 [![Built on systemprompt-core](https://img.shields.io/badge/built%20on-systemprompt--core-2b6cb0?style=flat-square)](https://github.com/systempromptio/systemprompt-core)
 [![Template · MIT](https://img.shields.io/badge/template-MIT-16a34a?style=flat-square)](LICENSE)
@@ -34,11 +34,11 @@ This repository is the source of **demo.systemprompt.io**, the hosted demo of [s
 
 ## From landing page to governed Claude in five steps
 
-The hosted demo lives at **[demo.systemprompt.io](https://demo.systemprompt.io)** (launching soon). This is the exact flow. No sales call, no credit card, no API key of your own: the $5 credit covers your usage.
+The hosted demo lives at **[demo.systemprompt.io](https://demo.systemprompt.io)** (launching soon). This is the exact flow. No sales call, no credit card, no API key of your own: the $1 credit covers your usage.
 
 1. **Create your account with a passkey.** Touch ID, Windows Hello, or a security key. No password to leak.
 2. **Tell us about yourself.** A 30-second form.
-3. **Check your email.** $5 of credit is waiting on your account.
+3. **Check your email.** $1 of credit is waiting on your account.
 4. **Download the Systemprompt Bridge** for [macOS (Apple Silicon)](https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip) or [Windows](https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe).
 5. **Sign in with a one-time code** from your setup page. The Bridge writes the MCP configuration for Claude Cowork, Claude Desktop, and Claude Code. You are done.
 
@@ -61,7 +61,7 @@ Every inference request and every MCP tool call passes a synchronous four-stage 
 
 - **Your keys cannot enter the model's context.** Credentials are decrypted from an encrypted store and injected into the tool subprocess environment only. The process that owns the LLM context never writes the value, and the secret scan denies any tool call that tries to smuggle one through arguments. The recording above is that denial happening.
 - **Your usage is a query, not a mystery.** `systemprompt infra logs request list` shows every gateway request with model, tokens, cost, and latency. `systemprompt infra logs audit <id> --full` reconstructs one request end to end.
-- **Your $5 is enforced at the gateway.** Cost is metered per request in microdollars. When the credit is gone, the gateway returns a clean 429 instead of a surprise bill.
+- **Your $1 is enforced at the gateway.** Cost is metered per request in microdollars. When the credit is gone, the gateway returns a clean 429 instead of a surprise bill.
 
 <details>
 <summary><strong>The pipeline, in one screen</strong></summary>
@@ -92,7 +92,7 @@ The gateway speaks the Anthropic wire format at `POST /v1/messages`, so any Anth
 
 ## Or host the whole funnel yourself
 
-This repository is the source of demo.systemprompt.io. You can run the entire funnel, from splash page to credit-exhaustion 429, on your own machine. One difference from the hosted demo: locally there is no funded gateway behind you, so `setup-local` asks for your own AI provider key and inference is billed to it. The $5 credit mechanics still work, they just meter spend against your key.
+This repository is the source of demo.systemprompt.io. You can run the entire funnel, from splash page to credit-exhaustion 429, on your own machine. One difference from the hosted demo: locally there is no funded gateway behind you, so `setup-local` asks for your own AI provider key and inference is billed to it. The $1 credit mechanics still work, they just meter spend against your key.
 
 ```bash
 git clone https://github.com/systempromptio/systemprompt-demo
@@ -121,6 +121,6 @@ You will need Docker, Rust 1.75+, [`just`](https://just.systems/), and at least 
 
 [![systemprompt.io](https://img.shields.io/badge/systemprompt.io-2b6cb0?style=for-the-badge)](https://systemprompt.io) &nbsp; [![Core](https://img.shields.io/badge/systemprompt--core-2b6cb0?style=for-the-badge)](https://github.com/systempromptio/systemprompt-core) &nbsp; [![Documentation](https://img.shields.io/badge/documentation-16a34a?style=for-the-badge)](https://systemprompt.io/documentation/) &nbsp; [![Guides](https://img.shields.io/badge/guides-f97316?style=for-the-badge)](https://systemprompt.io/guides) &nbsp; [![Discord](https://img.shields.io/badge/discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/wkAbSuPWpr)
 
-<sub>Sign up. Spend the $5. Read your own audit trail. Then decide who should operate your AI layer.</sub>
+<sub>Sign up. Spend the $1. Read your own audit trail. Then decide who should operate your AI layer.</sub>
 
 </div>

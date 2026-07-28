@@ -169,9 +169,26 @@ fn started_response(
 fn spawn_error_response(e: &registry::SpawnError) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
     match e {
-        registry::SpawnError::PerUserCap(_) | registry::SpawnError::TotalCap(_) => {
+        registry::SpawnError::PerUserCap(_) => {
             problem(StatusCode::TOO_MANY_REQUESTS, "session limit reached")
         },
+        // Why: a full server is not opaque — the body carries the caller's
+        // place in line so the widget can render "#N in line" and keep the
+        // spot warm by polling /capacity.
+        registry::SpawnError::Waitlisted {
+            position,
+            queue_len,
+        } => (
+            StatusCode::TOO_MANY_REQUESTS,
+            [(axum::http::header::RETRY_AFTER, "5")],
+            Json(serde_json::json!({
+                "error": "server at capacity",
+                "reason": "waitlisted",
+                "position": position,
+                "queue_len": queue_len,
+            })),
+        )
+            .into_response(),
         registry::SpawnError::Credential(e) => {
             tracing::error!(error = %e, "could not mint a gateway credential for a pi conversation");
             problem(StatusCode::INTERNAL_SERVER_ERROR, "could not start pi") // lint-ok: http-error — logged above; the client is told nothing about why
@@ -179,6 +196,16 @@ fn spawn_error_response(e: &registry::SpawnError) -> Response {
         registry::SpawnError::Io(e) => {
             tracing::error!(error = %e, "could not spawn pi");
             problem(StatusCode::INTERNAL_SERVER_ERROR, "could not start pi") // lint-ok: http-error — logged above; the client is told nothing about why
+        },
+        registry::SpawnError::Version(e) => {
+            tracing::error!(error = %e, "pi version gate refused to spawn");
+            // Why: unlike the opaque errors above, this one names its fix —
+            // it can only be seen by the operator whose install drifted.
+            problem(
+                StatusCode::INTERNAL_SERVER_ERROR, /* lint-ok: http-error — deliberate
+                                                    * operator-facing 500 */
+                "pi version mismatch — align the install with services/config/pi.yaml",
+            )
         },
     }
 }

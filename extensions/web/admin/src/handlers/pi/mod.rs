@@ -49,7 +49,9 @@
 //!   execution.
 
 mod api;
+mod artifacts;
 mod auth;
+mod capacity;
 mod commands;
 pub(crate) mod config;
 pub(crate) mod conversations;
@@ -73,9 +75,11 @@ pub(crate) mod skills;
 mod spawn;
 pub(crate) mod stage;
 mod stats;
+mod throttle;
 mod tier;
 pub(crate) mod token;
 pub(crate) mod transcript;
+pub(crate) mod version;
 mod watch;
 
 use std::sync::Arc;
@@ -109,18 +113,34 @@ pub(crate) fn pi_router(
         session_service,
         cfg: registry.config().clone(),
     });
+    // Why: only the two minting endpoints are throttled — everything else
+    // already requires their output. Separate lanes, so token floods and
+    // session floods each hit their own budget.
+    let cfg = registry.config();
+    let embed_lane = throttle::Lane::new(cfg.throttle_embed_token_per_ip, cfg.throttle_window);
+    let session_lane = throttle::Lane::new(cfg.throttle_session_per_ip, cfg.throttle_window);
     Router::new()
         .route(
             "/api/public/pi/embed-token",
-            post(auth::issue_own_embed_token),
+            post(auth::issue_own_embed_token).route_layer(axum::middleware::from_fn_with_state(
+                embed_lane,
+                throttle::per_ip,
+            )),
         )
-        .route("/api/public/pi/session", post(api::create_session))
+        .route(
+            "/api/public/pi/session",
+            post(api::create_session).route_layer(axum::middleware::from_fn_with_state(
+                session_lane,
+                throttle::per_ip,
+            )),
+        )
         .route(
             "/api/public/pi/stream/{conversation_id}",
             get(watch::stream),
         )
         .route("/api/public/pi/stats/{conversation_id}", get(stats::stats))
         .route("/api/public/pi/pulse", get(pulse::pulse))
+        .route("/api/public/pi/capacity", get(capacity::capacity))
         .route("/api/public/pi/models", get(api::models))
         .route("/api/public/pi/prompt", post(commands::prompt))
         .route("/api/public/pi/steer", post(commands::steer))
@@ -128,6 +148,14 @@ pub(crate) fn pi_router(
         .route("/api/public/pi/abort", post(commands::abort))
         .route("/api/public/pi/approve", post(commands::approve))
         .route("/api/public/pi/mcp", post(mcp::call))
+        .route(
+            "/api/public/pi/artifacts/{artifact_id}",
+            get(artifacts::show),
+        )
+        .route(
+            "/api/public/pi/artifacts/{artifact_id}/ui",
+            get(artifacts::show_ui),
+        )
         .route(
             "/api/public/pi/commands/{conversation_id}",
             get(watch::commands),

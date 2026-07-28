@@ -14,7 +14,7 @@ use systemprompt::oauth::services::{
     JwtConfig, JwtSigningParams, generate_access_token_jti, generate_jwt,
 };
 
-use super::render::{McpCallResult, first_frame, render};
+use super::render::{self, McpCallResult, first_frame, render};
 use super::{AGENT_NAME, PROTOCOL_VERSION, TOKEN_TTL_HOURS};
 use crate::handlers::pi::session::PiSession;
 
@@ -23,7 +23,7 @@ pub(super) async fn forward(
     session: &Arc<PiSession>,
     tool: &str,
     arguments: &serde_json::Value,
-) -> Result<McpCallResult, String> {
+) -> Result<(McpCallResult, Option<String>), String> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
@@ -86,7 +86,7 @@ pub(super) async fn forward(
     let payload = called
         .payload
         .ok_or_else(|| "hub returned no JSON-RPC frame".to_owned())?;
-    Ok(render(&payload))
+    Ok((render(&payload), render::artifact_id(&payload)))
 }
 
 struct Identity<'a> {
@@ -137,7 +137,7 @@ struct HubReply {
     // Why: an opaque MCP-transport token whose format is owned by the MCP
     // spec and the hub, so it deliberately stays a String, not a typed id
     mcp_session_id: Option<String>,
-    payload: Option<super::render::McpResponseFrame>,
+    payload: Option<render::McpResponseFrame>,
 }
 
 async fn post(

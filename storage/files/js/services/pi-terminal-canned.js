@@ -2,7 +2,8 @@ import { TOOL_ICON } from './pi-constants.js';
 import { CANNED, CANNED_LOOP_MS, CANNED_STEP_MS } from './pi-replay.js';
 import { markdown } from './pi-markdown.js';
 import { motionOk } from './pi-gate-view.js';
-import { approvalCard, blockedRow } from './pi-gate-cards.js';
+import { approvalCard } from './pi-gate-cards.js';
+import { blockedRow } from './pi-gate-records.js';
 import { append, line, echo } from './pi-terminal-dom.js';
 import { policyStages } from './pi-terminal-rail.js';
 import { toolRow } from './pi-terminal-gate.js';
@@ -10,9 +11,9 @@ import { cannedMeters } from './pi-terminal-stream.js';
 
 /** Without a usable credential the terminal plays a scripted pass instead, so a
  *  public page can embed it unconditionally. */
-export function degrade(el, reason) {
+export function degrade(el, reason, info) {
   el.classList.add('is-replay');
-  el._status(reason === 'busy' ? 'session in use' : 'replay');
+  el._status(reason === 'busy' ? 'session in use' : (reason === 'queued' ? 'in line' : 'replay'));
   el._input.disabled = true;
   el._sendBtn.disabled = true;
 
@@ -20,7 +21,18 @@ export function degrade(el, reason) {
 
   el._gateEl.hidden = false;
   const blurb = document.createElement('p');
-  if (reason === 'busy') {
+  if (reason === 'queued') {
+    // The replay plays below so the wait is not a blank screen; the number
+    // here is kept current by the capacity heartbeat, and the reconnect is
+    // automatic — the one thing the visitor must not do is leave.
+    const pos = document.createElement('strong');
+    pos.dataset.role = 'queue-pos';
+    pos.textContent = '#' + ((info && typeof info.position === 'number')
+      ? info.position + 1 : 1);
+    blurb.append('Every live slot on this server is taken. You are ', pos,
+      ' in line — this terminal will connect automatically when a slot frees. '
+      + 'Meanwhile, a replay:');
+  } else if (reason === 'busy') {
     // Not "you already have one": a second conversation from the same
     // account displaces the first, so the only 429 left is the server-wide
     // cap, which no action of this user's can clear.

@@ -6,6 +6,7 @@ use systemprompt_web_admin::test_support::{cost, cost_round, median};
 /// measurement of it.
 #[test]
 fn a_grant_loses_its_trailing_zeros() {
+    assert_eq!(cost_round(1_000_000), "$1");
     assert_eq!(cost_round(5_000_000), "$5");
     assert_eq!(cost_round(2_500_000), "$2.5");
     assert_eq!(cost_round(0), "$0");

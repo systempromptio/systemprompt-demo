@@ -10,10 +10,11 @@ use std::sync::Arc;
 use crate::handlers::webhook::governance::inproc::{
     self, GovernedCall, HumanOutcome, PolicyVerdict,
 };
+use crate::handlers::webhook::governance::types::ApproverStamp;
 
 use super::super::events::PiEventBody;
 use super::super::rpc::GovernancePayload;
-use super::super::session::{PiSession, Verdict};
+use super::super::session::{Attribution, PiSession, Verdict};
 use super::PiDeps;
 
 const ABANDON_CHECK: std::time::Duration = std::time::Duration::from_secs(5);
@@ -41,12 +42,21 @@ pub(super) async fn human_gate(
             .unwrap_or(serde_json::Value::Null),
     });
 
-    let outcome = ask_human(deps, session, ask).await;
-    inproc::record_human_decision(&deps.pool, call, verdict, outcome).await;
+    let (outcome, attribution) = ask_human(deps, session, ask).await;
+    let stamp = attribution.map(|a| ApproverStamp {
+        user_id: a.user_id,
+        username: a.username,
+        decided_at: a.decided_at,
+        action: outcome_label(outcome),
+    });
     session.emit(PiEventBody::ApprovalResolved {
         approval_id,
         outcome: outcome_label(outcome),
+        approved_by: stamp.as_ref().map(|s| s.username.clone()),
+        decided_at: stamp.as_ref().map(|s| s.decided_at.to_rfc3339()),
+        actor: if stamp.is_some() { "user" } else { "system" },
     });
+    inproc::record_human_decision(&deps.pool, call, verdict, outcome, stamp).await;
 
     if outcome.allowed() {
         return true;
@@ -67,7 +77,11 @@ pub(super) struct ApprovalAsk<'a> {
     pub(super) cleared: Vec<String>,
 }
 
-async fn ask_human(deps: &PiDeps, session: &Arc<PiSession>, ask: ApprovalAsk<'_>) -> HumanOutcome {
+async fn ask_human(
+    deps: &PiDeps,
+    session: &Arc<PiSession>,
+    ask: ApprovalAsk<'_>,
+) -> (HumanOutcome, Option<Attribution>) {
     let ApprovalAsk {
         approval_id,
         payload,
@@ -95,14 +109,14 @@ async fn ask_human(deps: &PiDeps, session: &Arc<PiSession>, ask: ApprovalAsk<'_>
             biased;
             answer = &mut rx => {
                 return match answer {
-                    Ok(Verdict::Allow) => HumanOutcome::Approved,
-                    Ok(Verdict::Deny) => HumanOutcome::Denied,
-                    Err(_) => HumanOutcome::Abandoned,
+                    Ok(Verdict::Allow(a)) => (HumanOutcome::Approved, Some(a)),
+                    Ok(Verdict::Deny(a)) => (HumanOutcome::Denied, Some(a)),
+                    Err(_) => (HumanOutcome::Abandoned, None),
                 };
             }
             () = tokio::time::sleep_until(deadline) => {
                 session.forget_approval(approval_id);
-                return HumanOutcome::TimedOut;
+                return (HumanOutcome::TimedOut, None);
             }
             () = tokio::time::sleep(ABANDON_CHECK) => {
                 if session.has_viewers() {
@@ -111,7 +125,7 @@ async fn ask_human(deps: &PiDeps, session: &Arc<PiSession>, ask: ApprovalAsk<'_>
                     let since = *viewerless_since.get_or_insert_with(tokio::time::Instant::now);
                     if since.elapsed() >= ABANDON_GRACE {
                         session.forget_approval(approval_id);
-                        return HumanOutcome::Abandoned;
+                        return (HumanOutcome::Abandoned, None);
                     }
                 }
             }

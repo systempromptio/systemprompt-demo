@@ -23,13 +23,15 @@ use std::time::Duration;
 use systemprompt_web_shared::config_errors::ExtensionConfigErrors;
 
 use paths::{config_path, default_jail_binary, profile_base_url};
-pub use raw::SandboxMode;
 use raw::{DEFAULT_JAIL_READ_PATHS, PiConfigRaw};
+pub use raw::{SandboxMode, VersionCheckMode};
 
 
 #[derive(Debug, Clone)]
 pub struct PiConfig {
     pub(super) binary: String,
+    pub(super) expected_version: Option<String>,
+    pub(super) version_check: VersionCheckMode,
     pub(super) workspace_root: PathBuf,
     pub(super) base_url: String,
     pub(super) provider: String,
@@ -44,6 +46,9 @@ pub struct PiConfig {
     pub(super) max_lifetime: Duration,
     pub(super) max_sessions_per_user: usize,
     pub(super) max_sessions_total: usize,
+    pub(super) throttle_session_per_ip: usize,
+    pub(super) throttle_embed_token_per_ip: usize,
+    pub(super) throttle_window: Duration,
     pub(super) limits: ChildLimits,
     pub(super) sandbox: SandboxMode,
     pub(super) jail_binary: PathBuf,
@@ -147,6 +152,11 @@ impl PiConfig {
     fn from_raw(raw: PiConfigRaw) -> Self {
         Self {
             binary: raw.binary,
+            expected_version: raw
+                .expected_version
+                .map(|v| v.trim().to_owned())
+                .filter(|v| !v.is_empty()),
+            version_check: raw.version_check,
             workspace_root: raw.workspace_root,
             base_url: raw.base_url.unwrap_or_else(profile_base_url),
             provider: raw.provider,
@@ -171,6 +181,9 @@ impl PiConfig {
             max_lifetime: Duration::from_secs(raw.timeouts.max_lifetime_secs),
             max_sessions_per_user: raw.sessions.max_per_user,
             max_sessions_total: raw.sessions.max_total,
+            throttle_session_per_ip: raw.throttle.session_per_ip,
+            throttle_embed_token_per_ip: raw.throttle.embed_token_per_ip,
+            throttle_window: Duration::from_secs(raw.throttle.window_secs.max(1)),
             limits: ChildLimits {
                 nproc: raw.limits.nproc,
                 fsize: raw.limits.fsize,

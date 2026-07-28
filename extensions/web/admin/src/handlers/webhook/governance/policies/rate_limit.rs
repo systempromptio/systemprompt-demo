@@ -48,12 +48,24 @@ struct SlidingWindow {
     buckets: HashMap<String, Vec<Instant>>,
 }
 
+// Why: keys are `{session}:{user}` and a session is minted per conversation,
+// so without an idle-bucket sweep the map gains one entry per conversation
+// for the life of the process.
+const SWEEP_AT: usize = 1024;
+
 impl SlidingWindow {
     fn check_and_record(&mut self, key: &str, window_secs: u64, limit: usize) -> usize {
         let now = Instant::now();
         let cutoff = now
             .checked_sub(Duration::from_secs(window_secs))
             .unwrap_or(now);
+
+        if self.buckets.len() > SWEEP_AT {
+            self.buckets.retain(|_, ts| {
+                ts.retain(|t| *t > cutoff);
+                !ts.is_empty()
+            });
+        }
 
         let timestamps = self.buckets.entry(key.to_owned()).or_default();
         timestamps.retain(|t| *t > cutoff);

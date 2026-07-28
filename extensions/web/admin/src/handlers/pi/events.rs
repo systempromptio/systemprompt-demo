@@ -6,6 +6,7 @@
 //! a frame by accident.
 
 use serde::{Deserialize as _, Serialize};
+use systemprompt::identifiers::ArtifactId;
 
 pub use super::events_error::{
     CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind,
@@ -52,6 +53,7 @@ impl PiEventBody {
             Self::PolicyStages { .. } => "policy_stages",
             Self::ApprovalRequest { .. } => "approval_request",
             Self::ApprovalAuto { .. } => "approval_auto",
+            Self::ToolArtifact { .. } => "tool_artifact",
             Self::ApprovalResolved { .. } => "approval_resolved",
             Self::TurnEnd => "turn_end",
             Self::Stderr { .. } => "stderr",
@@ -118,6 +120,25 @@ pub enum PiEventBody {
     ApprovalResolved {
         approval_id: String,
         outcome: &'static str,
+        /// Display name of the human who answered; absent on system paths
+        /// (timeout, abandonment) so the UI can style attribution honestly.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        approved_by: Option<String>,
+        /// RFC 3339 click instant — the moment the human decided, not the
+        /// moment the audit row landed.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        decided_at: Option<String>,
+        actor: &'static str,
+    },
+    /// The structured artifact a tool's response was persisted as. The hub
+    /// stores one per successful call; this frame is the pointer the widget
+    /// needs to offer "view result" without carrying the payload itself.
+    ToolArtifact {
+        tool_name: String,
+        artifact_id: ArtifactId,
+        artifact_type: String,
+        title: Option<String>,
+        server_name: String,
     },
     /// A call the gate cleared without asking anyone — `approve_all` is off, so
     /// policy alone decided. Emitted so the transcript still shows what ran and

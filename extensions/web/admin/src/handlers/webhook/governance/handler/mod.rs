@@ -144,6 +144,7 @@ pub(crate) async fn govern_tool_use(
             plugin_id: plugin_id.cloned(),
         },
         chain,
+        approver: None,
     };
     spawn_audit_recording(&pool, audit);
 
@@ -206,6 +207,7 @@ fn spawn_auth_denial(params: &AuthDenialParams<'_>, reason: &str) {
                 detail: reason,
                 duration_ms: 0.0,
             }],
+            approver: None,
         };
         if let Err(e) = audit::record_decision(&pool, &audit).await {
             tracing::error!(

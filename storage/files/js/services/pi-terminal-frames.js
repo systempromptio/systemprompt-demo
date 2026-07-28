@@ -5,6 +5,7 @@ import {
   toolStart, toolEnd, toolBlocked, promptBlocked, approvalRequest, approvalResolved,
   approvalAuto,
 } from './pi-terminal-gate.js';
+import { toolArtifact } from './pi-terminal-artifacts.js';
 import { remember } from './pi-terminal-input.js';
 
 /** The one dispatcher every frame goes through, live or replayed. */
@@ -48,6 +49,7 @@ export function onFrame(el, raw) {
     case 'policy_stages': return policyStages(el, f);
     case 'tool_start': return toolStart(el, f);
     case 'tool_end': return toolEnd(el, f);
+    case 'tool_artifact': return toolArtifact(el, f);
     case 'tool_blocked': return toolBlocked(el, f);
     case 'prompt_blocked': return promptBlocked(el, f);
     case 'approval_request': return approvalRequest(el, f);
@@ -109,15 +111,13 @@ function enable(el) {
   el._input.disabled = false;
   el._sendBtn.disabled = false;
   // The session is established, so the header can now say — truthfully —
-  // whose identity every call is signed to, and offer to clear the
-  // conversation that identity owns.
+  // whose identity every call is signed to.
   if (el._who && el._who.email) {
     el._userNameEl.textContent = el._who.email;
     el._userEl.title = 'Signed in as ' + el._who.email
       + ' — every call this session makes is signed to this identity';
     el._userEl.hidden = false;
   }
-  el._clearBtn.hidden = false;
 }
 
 function turnStart(el) {

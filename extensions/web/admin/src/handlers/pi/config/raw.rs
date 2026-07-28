@@ -54,11 +54,29 @@ pub enum SandboxMode {
     Off,
 }
 
+/// What a `pi --version` mismatch does to session creation.
+///
+/// The pinned version is load-bearing security, not compatibility hygiene:
+/// the skills story depends on `--skill` staying additive under
+/// `--no-skills`, and the RPC frame shapes this module parses are unversioned
+/// on the wire. An operator upgrading the global npm install changes both
+/// silently — `required` (the default) refuses to spawn rather than find out
+/// mid-conversation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum VersionCheckMode {
+    Required,
+    Warn,
+    Off,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub(super) struct PiConfigRaw {
     pub(super) binary: String,
     pub(super) child_path: String,
+    pub(super) expected_version: Option<String>,
+    pub(super) version_check: VersionCheckMode,
     pub(super) workspace_root: PathBuf,
     pub(super) base_url: Option<String>,
     pub(super) provider: String,
@@ -70,6 +88,7 @@ pub(super) struct PiConfigRaw {
     pub(super) approve_all: bool,
     pub(super) timeouts: TimeoutsRaw,
     pub(super) sessions: SessionsRaw,
+    pub(super) throttle: ThrottleRaw,
     pub(super) limits: LimitsRaw,
     pub(super) jail_binary: Option<PathBuf>,
     pub(super) jail_read_paths: Option<Vec<PathBuf>>,
@@ -97,6 +116,24 @@ pub(super) struct SessionsRaw {
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(default, deny_unknown_fields)]
+pub(super) struct ThrottleRaw {
+    pub(super) session_per_ip: usize,
+    pub(super) embed_token_per_ip: usize,
+    pub(super) window_secs: u64,
+}
+
+impl Default for ThrottleRaw {
+    fn default() -> Self {
+        Self {
+            session_per_ip: 5,
+            embed_token_per_ip: 10,
+            window_secs: 60,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub(super) struct LimitsRaw {
     pub(super) nproc: u64,
     pub(super) fsize: u64,
@@ -108,6 +145,8 @@ impl Default for PiConfigRaw {
         Self {
             binary: "pi".to_owned(),
             child_path: "/usr/local/bin:/usr/bin:/bin".to_owned(),
+            expected_version: None,
+            version_check: VersionCheckMode::Required,
             workspace_root: PathBuf::from("/tmp/systemprompt-pi-sessions"),
             base_url: None,
             provider: "systemprompt".to_owned(),
@@ -119,6 +158,7 @@ impl Default for PiConfigRaw {
             approve_all: true,
             timeouts: TimeoutsRaw::default(),
             sessions: SessionsRaw::default(),
+            throttle: ThrottleRaw::default(),
             limits: LimitsRaw::default(),
             jail_binary: None,
             jail_read_paths: None,

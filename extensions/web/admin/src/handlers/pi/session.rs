@@ -18,10 +18,19 @@ const REPLAY_CAPACITY: usize = 200;
 
 const BROADCAST_CAPACITY: usize = 512;
 
-#[derive(Debug, Clone, Copy)]
+// Why: who answered an approval, and when they clicked — captured at the HTTP
+// handler where the embed token was verified, not at audit-write time.
+#[derive(Debug, Clone)]
+pub(crate) struct Attribution {
+    pub(crate) user_id: UserId,
+    pub(crate) username: String,
+    pub(crate) decided_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone)]
 pub(super) enum Verdict {
-    Allow,
-    Deny,
+    Allow(Attribution),
+    Deny(Attribution),
 }
 
 pub(super) struct PiSessionInit {

@@ -138,10 +138,24 @@ pub(super) async fn approve(
         return unauthorized();
     };
     session.touch();
+    // Why: the click instant, not the audit-write instant — the stamp the
+    // trail shows.
+    let decided_at = chrono::Utc::now();
+    let user_id = session.user_id.clone();
+    let username = crate::repositories::users::queries::find_display_name(&pool, &user_id)
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_else(|| user_id.to_string());
+    let attribution = session::Attribution {
+        user_id,
+        username,
+        decided_at,
+    };
     let verdict = if body.decision == "allow" {
-        Verdict::Allow
+        Verdict::Allow(attribution)
     } else {
-        Verdict::Deny
+        Verdict::Deny(attribution)
     };
     if session.resolve_approval(&body.approval_id, verdict) {
         StatusCode::NO_CONTENT.into_response()

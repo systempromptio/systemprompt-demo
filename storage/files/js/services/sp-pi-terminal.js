@@ -31,6 +31,7 @@ class SpPiTerminal extends HTMLElement {
     this._lastSeq = 0;
     this._toolRows = new Map();
     this._approvals = new Map();
+    this._artifacts = new Map();
     this._reconnectMs = RECONNECT_MIN_MS;
     this._reconnectTimer = null;
     this._turnLive = false;
@@ -41,6 +42,8 @@ class SpPiTerminal extends HTMLElement {
     this._history = [];
     this._historyAt = -1;
     this._statsTimer = null;
+    this._capTimer = null;
+    this._queued = false;
     this._cannedTimers = [];
     this._cannedCards = [];
     this._cannedRow = null;
@@ -66,6 +69,7 @@ class SpPiTerminal extends HTMLElement {
     this._teardownStream();
     if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
     if (this._statsTimer) clearInterval(this._statsTimer);
+    if (this._capTimer) clearTimeout(this._capTimer);
     this._cannedTimers.forEach(clearTimeout);
     this._cannedCards.forEach((c) => c.settle());
     this._approvals.forEach((a) => a.settle());

@@ -41,6 +41,50 @@ use crate::repositories::governance::{demo_trace, stages};
 
 const TRACE_LIMIT: i64 = 120;
 
+// Why: every viewer polls this endpoint on a 3s timer, and each uncached hit
+// is half a dozen queries. A 2s TTL means one collection per conversation per
+// poll interval no matter how many tabs watch it. The ownership check still
+// runs per request — only the collection is shared.
+const CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(2);
+const CACHE_SWEEP_AT: usize = 64;
+const CACHE_STALE: std::time::Duration = std::time::Duration::from_secs(60);
+
+static CACHE: std::sync::LazyLock<
+    std::sync::Mutex<std::collections::HashMap<String, (std::time::Instant, String)>>,
+> = std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+
+fn cached_body(conversation_id: &ContextId) -> Option<String> {
+    let cache = CACHE.lock().ok()?;
+    cache
+        .get(conversation_id.as_str())
+        .filter(|(at, _)| at.elapsed() < CACHE_TTL)
+        .map(|(_, body)| body.clone())
+}
+
+fn store_body(conversation_id: &ContextId, body: String) {
+    if let Ok(mut cache) = CACHE.lock() {
+        if cache.len() > CACHE_SWEEP_AT {
+            cache.retain(|_, (at, _)| at.elapsed() < CACHE_STALE);
+        }
+        cache.insert(
+            conversation_id.as_str().to_owned(),
+            (std::time::Instant::now(), body),
+        );
+    }
+}
+
+fn json_body(body: String) -> Response {
+    // lint-ok: http-error — a widget-facing endpoint answers in its own shape
+    (
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "application/json; charset=utf-8",
+        )],
+        body,
+    )
+        .into_response()
+}
+
 #[derive(Debug, Serialize)]
 struct PiStats {
     conversation_id: ContextId,
@@ -122,6 +166,10 @@ pub(super) async fn stats(
         return problem(StatusCode::NOT_FOUND, "no such conversation");
     };
 
+    if let Some(body) = cached_body(&conversation_id) {
+        return json_body(body);
+    }
+
     match collect(
         &pool,
         &conversation_id,
@@ -130,7 +178,13 @@ pub(super) async fn stats(
     )
     .await
     {
-        Ok(stats) => Json(stats).into_response(),
+        Ok(stats) => match serde_json::to_string(&stats) {
+            Ok(body) => {
+                store_body(&conversation_id, body.clone());
+                json_body(body)
+            },
+            Err(_) => Json(stats).into_response(),
+        },
         Err(e) => {
             tracing::error!(error = %e, "could not read pi session stats");
             problem(StatusCode::INTERNAL_SERVER_ERROR, "could not read stats") // lint-ok: http-error — logged above; the client is told nothing about why

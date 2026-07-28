@@ -53,7 +53,7 @@ export function registerFormHtml() {
     + '<button type="button" class="pane-btn pane-btn--ghost" data-role="back">Back</button>'
     + '<button type="submit" class="pane-btn pane-btn--primary">Create account</button>'
     + '</div>'
-    + '<p class="pane-note">The terminal, your $5 credit, and the Bridge are '
+    + '<p class="pane-note">The terminal, your $1 credit, and the Bridge are '
     + 'yours the moment you register.</p>'
     + '</fieldset>'
     + '</form>';
@@ -66,7 +66,7 @@ export function authHtml() {
     // It is the reason to complete the form, and a visitor who reads only one
     // element on this half of the page should read this one.
     + '<div class="pane-offer">'
-    + '<strong class="pane-offer-amount">$5 of free AI</strong>'
+    + '<strong class="pane-offer-amount">$1 of free AI</strong>'
     + '<span class="pane-offer-line">on us, to learn what systemprompt.io does</span>'
     + '<span class="pane-offer-fine">No card. Passkey only. Spend it in the terminal '
     + 'on the left and watch every cent land in your own audit trail.</span>'
@@ -102,7 +102,7 @@ export function profileHtml(pending) {
     + '</header>'
     + (pending
       ? '<p class="pane-note pane-note--pending">Your account is under review. '
-        + 'The terminal is yours now; the $5 credit and the Bridge unlock once a '
+        + 'The terminal is yours now; the $1 credit and the Bridge unlock once a '
         + 'human approves it.</p>'
       : '')
     // The credit meter sits above the tabs, not inside one: it is the one

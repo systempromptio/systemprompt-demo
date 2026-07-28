@@ -6,6 +6,9 @@ import { flushStream } from './pi-terminal-prose.js';
 import { onFrame } from './pi-terminal-frames.js';
 import { openStream, startStats } from './pi-terminal-stream.js';
 import { degrade } from './pi-terminal-canned.js';
+import { enterQueue } from './pi-terminal-capacity.js';
+import { closeArtifact } from './pi-artifact-overlay.js';
+import { resetArtifacts } from './pi-terminal-artifacts.js';
 
 /**
  * Re-run the whole start sequence against whatever credential now exists.
@@ -16,6 +19,7 @@ import { degrade } from './pi-terminal-canned.js';
  * anonymous.
  */
 export async function restart(el, resume) {
+  el._queued = false;
   el._teardownStream();
   if (el._reconnectTimer) clearTimeout(el._reconnectTimer);
   if (el._statsTimer) clearInterval(el._statsTimer);
@@ -29,6 +33,8 @@ export async function restart(el, resume) {
   el._approvalsEl.replaceChildren();
   el._body.replaceChildren();
   el._toolRows.clear();
+  closeArtifact(el);
+  resetArtifacts(el);
   hidePalette(el);
   el._conversationId = null;
   el._lastSeq = 0;
@@ -48,7 +54,6 @@ export async function restart(el, resume) {
   el._metersEl.hidden = true;
   el._traceEl.hidden = true;
   el._userEl.hidden = true;
-  el._clearBtn.hidden = true;
   el._gateEl.hidden = true;
   el._gateEl.replaceChildren();
   el.classList.remove('is-replay');
@@ -83,8 +88,15 @@ export async function start(el, resume) {
   }
   const res = await postJson(el._endpoint + '/session', create);
   if (!res.ok) {
-    // 429 is by far the likeliest and is not an error the visitor caused.
-    return degrade(el, res.status === 429 ? 'busy' : 'anonymous');
+    // 429 is by far the likeliest and is not an error the visitor caused. A
+    // waitlisted body means the server put us in line — enter queue mode and
+    // let the capacity heartbeat reconnect us when a slot frees.
+    if (res.status === 429) {
+      const info = await res.json().catch(() => null);
+      if (info && info.reason === 'waitlisted') return enterQueue(el, info);
+      return degrade(el, 'busy');
+    }
+    return degrade(el, 'anonymous');
   }
   const body = await res.json();
   el._conversationId = body.conversation_id;

@@ -1,6 +1,6 @@
 //! Credit ledger extension for systemprompt.io.
 //!
-//! Grants a one-time $5 signup credit and enforces the resulting balance at the
+//! Grants a one-time $1 signup credit and enforces the resulting balance at the
 //! gateway. Balance is `SUM(credit_grants) −
 //! SUM(ai_requests.cost_microdollars)` for the user; when it reaches zero the
 //! registered [gateway guard] denies further requests.
@@ -12,7 +12,7 @@ pub use guard::CreditBalanceGuard;
 
 use systemprompt::extension::prelude::*;
 
-pub const SIGNUP_CREDIT_MICRODOLLARS: i64 = 5_000_000;
+pub const SIGNUP_CREDIT_MICRODOLLARS: i64 = 1_000_000;
 const SIGNUP_REASON: &str = "signup";
 
 pub const MICRODOLLARS_PER_USD: i64 = 1_000_000;

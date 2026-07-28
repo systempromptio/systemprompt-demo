@@ -118,6 +118,19 @@ pub fn render(frame: &McpResponseFrame) -> McpCallResult {
     }
 }
 
+// Why: only the id is read from the frame — title and type live on the stored
+// row, so the caller looks those up rather than trusting what the hub echoed.
+pub(crate) fn artifact_id(frame: &McpResponseFrame) -> Option<String> {
+    frame
+        .result
+        .as_ref()?
+        .structured_content
+        .as_ref()?
+        .get("artifact_id")?
+        .as_str()
+        .map(str::to_owned)
+}
+
 fn artifact_body(value: &serde_json::Value) -> Option<String> {
     match value {
         serde_json::Value::Object(map) => {

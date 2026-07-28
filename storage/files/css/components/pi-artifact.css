@@ -1,0 +1,204 @@
+/* ── artifacts: the results tools left behind ───────────────────────────── */
+
+/* The "view result" affordance on a finished tool row. */
+.pi-tool-artifact {
+  margin-left: auto;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-success) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  background: transparent;
+  color: var(--sp-color-success);
+  font-family: var(--sp-font-mono);
+  font-size: 0.62rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pi-tool-artifact:hover,
+.pi-tool-artifact:focus-visible {
+  background: color-mix(in oklch, var(--sp-color-success) 12%, transparent);
+}
+
+/* A no-arg call states the fact instead of asking the eye to parse `{}`. */
+.pi-tool-body--empty {
+  color: var(--sp-color-terminal-text-dim);
+  font-style: italic;
+}
+
+/* ── header chip + gallery panel ────────────────────────────────────────── */
+
+.pi-art {
+  position: relative;
+  display: inline-flex;
+}
+
+.pi-art-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-radius-full);
+  background: transparent;
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+
+.pi-art-chip:hover,
+.pi-art-chip[aria-expanded="true"] {
+  color: var(--sp-color-terminal-text);
+  border-color: color-mix(in oklch, var(--sp-color-success) 45%, transparent);
+}
+
+.pi-art-count {
+  color: var(--sp-color-success);
+  font-weight: 700;
+}
+
+.pi-art-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  min-width: 16rem;
+  max-width: 22rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  padding: var(--sp-space-2);
+  background: var(--sp-color-terminal-header);
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-corners-inner-md);
+  box-shadow: var(--sp-shadow-lift);
+  scrollbar-width: thin;
+}
+
+.pi-art-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pi-art-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: var(--sp-radius-sm);
+  background: transparent;
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pi-art-item:hover,
+.pi-art-item:focus-visible {
+  background: color-mix(in oklch, var(--sp-color-terminal-bg) 70%, transparent);
+}
+
+.pi-art-item-title {
+  font-weight: 600;
+}
+
+.pi-art-item-kind {
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.62rem;
+}
+
+/* ── the viewer: floating over the transcript, never a modal ────────────── */
+
+.pi-artifact-overlay {
+  position: absolute;
+  inset: var(--sp-space-3);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--sp-color-terminal-header);
+  border: 1px solid color-mix(in oklch, var(--sp-color-success) 30%, transparent);
+  border-radius: var(--sp-corners-inner-md);
+  box-shadow: var(--sp-shadow-lift);
+  overflow: hidden;
+}
+
+.pi-artifact-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-2) var(--sp-space-3);
+  border-bottom: 1px solid var(--sp-color-terminal-border);
+  font-family: var(--sp-font-mono);
+}
+
+.pi-artifact-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sp-color-terminal-text);
+  font-size: 0.8rem;
+}
+
+.pi-artifact-tabs {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.pi-artifact-tab {
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-radius-full);
+  background: transparent;
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+
+.pi-artifact-tab[aria-selected="true"] {
+  color: var(--sp-color-terminal-text);
+  border-color: color-mix(in oklch, var(--sp-color-success) 45%, transparent);
+  background: color-mix(in oklch, var(--sp-color-success) 10%, transparent);
+}
+
+.pi-artifact-close {
+  padding: 0.1rem 0.4rem;
+  border: 0;
+  background: transparent;
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.pi-artifact-close:hover,
+.pi-artifact-close:focus-visible {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-artifact-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: var(--sp-color-terminal-bg);
+}
+
+.pi-artifact-raw {
+  flex: 1;
+  margin: 0;
+  padding: var(--sp-space-3);
+  overflow: auto;
+  background: var(--sp-color-terminal-bg);
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
+}

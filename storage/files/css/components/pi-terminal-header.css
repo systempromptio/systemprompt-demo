@@ -136,14 +136,6 @@
   display: none;
 }
 
-/* Clear sits in the composer with Run and Stop — it is a conversation
-   control, so it lives with the conversation controls. Ghost weight: it must
-   never compete with Run for the eye. */
-.pi-btn--clear:hover {
-  color: var(--sp-color-terminal-text);
-  border-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 70%, transparent);
-}
-
 /* In replay the composer takes no input, so buttons that cannot act are not
    drawn at all — dead controls read as a broken page, not a demo. */
 .pi-terminal.is-replay .pi-btn--send,

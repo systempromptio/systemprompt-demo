@@ -103,6 +103,18 @@ pub(super) struct AuditTarget {
     pub plugin_id: Option<PluginId>,
 }
 
+// Why: the human who answered an approval gate is a distinct actor from the
+// session principal, stamped with the click instant rather than the
+// audit-write instant.
+#[derive(Debug, Serialize, Clone)]
+pub(crate) struct ApproverStamp {
+    pub user_id: UserId,
+    pub username: String,
+    pub decided_at: chrono::DateTime<chrono::Utc>,
+    /// `"approved"` or `"denied"`.
+    pub action: &'static str,
+}
+
 // Why: the `decision` and `reason` columns are populated from this same
 // blob by the repository layer before it lands in `evaluated_rules`.
 #[derive(Debug, Serialize, Clone)]
@@ -115,6 +127,8 @@ pub(super) struct DecisionAudit {
     pub principal: PrincipalSnapshot,
     pub target: AuditTarget,
     pub chain: Vec<ChainEntryOutcome>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub approver: Option<ApproverStamp>,
 }
 
 // Why: the two services the governance webhook needs, layered as one

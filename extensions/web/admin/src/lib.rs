@@ -49,7 +49,7 @@ pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary,
 /// list explicit and reviewable instead of widening each item in place.
 pub mod test_support {
     pub use crate::handlers::pi::SHIM_SOURCE;
-    pub use crate::handlers::pi::config::{PiConfig, SandboxMode};
+    pub use crate::handlers::pi::config::{PiConfig, SandboxMode, VersionCheckMode};
     pub use crate::handlers::pi::conversations::collapse_duplicate_errors;
     pub use crate::handlers::pi::events::{
         CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind, PiEvent,
@@ -71,6 +71,7 @@ pub mod test_support {
     pub use crate::handlers::pi::stage::PolicyStage;
     pub use crate::handlers::pi::token::{B64, Invalid, sign, verify};
     pub use crate::handlers::pi::transcript::{MAX_CHARS, clamp, section};
+    pub use crate::handlers::pi::version::extract_version;
     pub use crate::handlers::resolve_principal;
     pub use crate::handlers::site_markdown::parse_md_path;
     pub use crate::handlers::ssr::bridge_downloads::{

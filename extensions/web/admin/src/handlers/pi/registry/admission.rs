@@ -14,7 +14,30 @@ use crate::handlers::pi::session::PiSession;
 use crate::handlers::pi::{persist, session, spawn};
 use crate::repositories::bridge::IssuedApiKey;
 
-use super::{CreateRequest, PiRegistry, SessionParts};
+use super::{CreateRequest, PiRegistry, SessionParts, Slot};
+
+// Why: holds a claimed slot until the session is live — dropped on any error
+// path, which vacates the slot; `defuse` disarms it once the live session has
+// replaced the placeholder.
+struct Reservation<'a> {
+    registry: &'a PiRegistry,
+    conversation_id: ContextId,
+    armed: bool,
+}
+
+impl Reservation<'_> {
+    const fn defuse(&mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for Reservation<'_> {
+    fn drop(&mut self) {
+        if self.armed {
+            self.registry.release(&self.conversation_id);
+        }
+    }
+}
 
 struct StartedChild {
     spawned: spawn::Spawned,
@@ -28,18 +51,26 @@ struct StartedChild {
 #[derive(Debug)]
 pub(in crate::handlers::pi) enum SpawnError {
     PerUserCap(usize),
-    TotalCap(usize),
+    Waitlisted { position: usize, queue_len: usize },
     Credential(String),
     Io(std::io::Error),
+    Version(String),
 }
 
 impl std::fmt::Display for SpawnError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::PerUserCap(n) => write!(f, "you already have {n} pi session(s) running"),
-            Self::TotalCap(n) => write!(f, "the server is at its limit of {n} pi sessions"),
+            Self::Waitlisted { position, .. } => {
+                write!(
+                    f,
+                    "the server is at capacity; you are #{} in line",
+                    position + 1
+                )
+            },
             Self::Credential(e) => write!(f, "could not mint a gateway credential: {e}"),
             Self::Io(e) => write!(f, "could not start pi: {e}"),
+            Self::Version(e) => write!(f, "{e}"),
         }
     }
 }
@@ -64,14 +95,14 @@ impl PiRegistry {
             start_seq,
             model,
         } = req;
+        self.version_gate().await.map_err(SpawnError::Version)?;
         self.make_room_for(&user_id).await;
-        self.reserve(&user_id)?;
+        let mut reservation = self.reserve(conversation_id.clone(), &user_id)?;
 
         let key = self.issue_credential(&user_id, &conversation_id).await?;
 
         let started = self
             .start_child(
-                &conversation_id,
                 &user_id,
                 &key,
                 &spawn::SpawnRequest {
@@ -113,8 +144,9 @@ impl PiRegistry {
         }));
 
         if let Ok(mut sessions) = self.0.sessions.lock() {
-            sessions.insert(conversation_id, Arc::clone(&session));
+            sessions.insert(conversation_id, Slot::Live(Arc::clone(&session)));
         }
+        reservation.defuse();
         Ok(SessionParts {
             session,
             stdout,
@@ -139,7 +171,6 @@ impl PiRegistry {
 
     async fn start_child(
         &self,
-        conversation_id: &ContextId,
         user_id: &UserId,
         key: &IssuedApiKey,
         req: &spawn::SpawnRequest<'_>,
@@ -147,13 +178,13 @@ impl PiRegistry {
         let mut spawned = match spawn::spawn(&self.0.cfg, req).await {
             Ok(s) => s,
             Err(e) => {
-                self.unwind(conversation_id, user_id, key).await;
+                self.unwind(user_id, key).await;
                 return Err(SpawnError::Io(e));
             },
         };
 
         let Some(stdin) = spawned.child.stdin.take() else {
-            self.unwind(conversation_id, user_id, key).await;
+            self.unwind(user_id, key).await;
             _ = spawned.child.kill().await;
             return Err(SpawnError::Io(std::io::Error::other(
                 "pi child has no stdin",
@@ -169,8 +200,9 @@ impl PiRegistry {
         })
     }
 
-    async fn unwind(&self, conversation_id: &ContextId, user_id: &UserId, key: &IssuedApiKey) {
-        self.release(conversation_id);
+    // Why: only the credential needs unwinding here — the claimed slot is
+    // vacated by the `Reservation` guard when `create` returns the error.
+    async fn unwind(&self, user_id: &UserId, key: &IssuedApiKey) {
         credentials::revoke(&self.0.pool, user_id, &key.id).await;
     }
 
@@ -191,6 +223,7 @@ impl PiRegistry {
         let keep = self.0.cfg.max_sessions_per_user.saturating_sub(1);
         let mut mine: Vec<&Arc<PiSession>> = sessions
             .values()
+            .filter_map(Slot::live)
             .filter(|s| s.user_id == *user_id)
             .collect();
         mine.sort_by_key(|s| std::cmp::Reverse(s.age()));
@@ -201,20 +234,56 @@ impl PiRegistry {
             .collect()
     }
 
-    fn reserve(&self, user_id: &UserId) -> Result<(), SpawnError> {
-        let Ok(sessions) = self.0.sessions.lock() else {
+    // Why: the cap check and the slot claim happen under one lock acquisition,
+    // so two requests racing at capacity-minus-one cannot both pass — the
+    // loser sees the winner's placeholder.
+    fn reserve(
+        &self,
+        conversation_id: ContextId,
+        user_id: &UserId,
+    ) -> Result<Reservation<'_>, SpawnError> {
+        let Ok(mut sessions) = self.0.sessions.lock() else {
             return Err(SpawnError::Io(std::io::Error::other(
                 "session registry poisoned",
             )));
         };
-        if sessions.len() >= self.0.cfg.max_sessions_total {
-            return Err(SpawnError::TotalCap(self.0.cfg.max_sessions_total));
-        }
-        let mine = sessions.values().filter(|s| s.user_id == *user_id).count();
+        let others = sessions.keys().filter(|id| **id != conversation_id).count();
+        let mine = sessions
+            .iter()
+            .filter(|(id, slot)| **id != conversation_id && *slot.user_id() == *user_id)
+            .count();
         if mine >= self.0.cfg.max_sessions_per_user {
             return Err(SpawnError::PerUserCap(self.0.cfg.max_sessions_per_user));
         }
-        Ok(())
+        // Why: at the capacity boundary, admission is FIFO — a free slot goes
+        // to the front of the wait line, and a newcomer joins the back rather
+        // than racing it.
+        let free = self.0.cfg.max_sessions_total.saturating_sub(others);
+        match self.waitlist_gate(user_id, free) {
+            super::waitlist::Gate::Admit => {},
+            super::waitlist::Gate::Wait {
+                position,
+                queue_len,
+            } => {
+                return Err(SpawnError::Waitlisted {
+                    position,
+                    queue_len,
+                });
+            },
+        }
+        sessions.insert(
+            conversation_id.clone(),
+            Slot::Reserving {
+                user_id: user_id.clone(),
+                at: std::time::Instant::now(),
+            },
+        );
+        drop(sessions);
+        Ok(Reservation {
+            registry: self,
+            conversation_id,
+            armed: true,
+        })
     }
 
     fn release(&self, conversation_id: &ContextId) {

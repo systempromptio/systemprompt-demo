@@ -40,12 +40,14 @@ class SpConversationList extends HTMLElement {
     document.addEventListener('pi-session', (e) => {
       this._token = e.detail && e.detail.token;
       this._current = e.detail && e.detail.conversation_id;
+      this._clearBtn.hidden = !this._current;
       void this.refresh();
     });
     document.addEventListener('pi-conversations-changed', () => void this.refresh());
     document.addEventListener('sp-auth:signed-out', () => {
       this._token = null;
       this._current = null;
+      this._clearBtn.hidden = true;
       this._render([]);
     });
   }
@@ -65,13 +67,28 @@ class SpConversationList extends HTMLElement {
     label.className = 'conv-title';
     label.textContent = 'Conversations';
 
+    // Clear acts on the conversation that is open in the terminal — it moved
+    // here from the composer so every conversation control shares one home.
+    // Hidden until the terminal announces a session, because until then there
+    // is nothing to clear.
+    this._clearBtn = document.createElement('button');
+    this._clearBtn.type = 'button';
+    this._clearBtn.className = 'conv-new';
+    this._clearBtn.textContent = 'Clear';
+    this._clearBtn.title = 'Clear this conversation and start a new one';
+    this._clearBtn.hidden = true;
+    this._clearBtn.addEventListener('click', () => void this._new());
+
     this._newBtn = document.createElement('button');
     this._newBtn.type = 'button';
     this._newBtn.className = 'conv-new';
     this._newBtn.textContent = 'New';
     this._newBtn.addEventListener('click', () => void this._new());
 
-    head.append(label, this._newBtn);
+    const actions = document.createElement('div');
+    actions.className = 'conv-head-actions';
+    actions.append(this._clearBtn, this._newBtn);
+    head.append(label, actions);
 
     this._listEl = document.createElement('ul');
     this._listEl.className = 'conv-list';

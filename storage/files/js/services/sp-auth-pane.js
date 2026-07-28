@@ -22,7 +22,7 @@ import { whoami } from './pi-transport.js';
 import { renderAuth } from './sp-auth-pane-auth.js';
 import { profileHtml } from './sp-auth-pane-forms.js';
 import { wireTabs, selectTab } from './sp-auth-pane-tabs.js';
-import { pollPulse, PULSE_POLL_MS } from './sp-auth-pane-pulse.js';
+import { createPulse } from './sp-auth-pane-pulse.js';
 import { poll, setStat, POLL_MS } from './sp-auth-pane-stats.js';
 import { applyStages, pushFeed, syncFeedPreview, IDLE_STAGES } from './sp-auth-pane-governance.js';
 
@@ -33,7 +33,7 @@ class SpAuthPane extends HTMLElement {
     this._conversation = null;
     this._token = null;
     this._pollTimer = null;
-    this._pulseTimer = null;
+    this._pulse = null;
     this._lastFrameAt = 0;
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
   }
@@ -55,6 +55,7 @@ class SpAuthPane extends HTMLElement {
 
   disconnectedCallback() {
     this._stopPolling();
+    if (this._pulse) this._pulse.stop();
   }
 
   // ── identity ──────────────────────────────────────────────────────────────
@@ -105,7 +106,6 @@ class SpAuthPane extends HTMLElement {
     this._stageSub = this.querySelector('[data-role="stage-sub"]');
     this._stageMini = this.querySelector('[data-role="stage-mini"]');
     this._govChip = this.querySelector('[data-role="gov-chip"]');
-    this._pulse = this.querySelector('[data-role="pulse"]');
     wireTabs(this);
     const viewGov = this.querySelector('[data-role="view-gov"]');
     if (viewGov) viewGov.addEventListener('click', () => selectTab(this, 'governance'));
@@ -116,11 +116,13 @@ class SpAuthPane extends HTMLElement {
     applyStages(this, IDLE_STAGES);
     this.querySelector('[data-role="signout"]').addEventListener('click', () => this._signOut());
 
-    // The admin block is rebuilt from scratch on each render, so drop the stale
-    // reference rather than pointing at a node that is no longer in the tree.
-    this._pulseAdmin = null;
     if (this._conversation) this._startPolling();
-    this._startPulsePolling();
+    // The Platform tab is a self-contained unit: it owns its own timer,
+    // elements, and reveal decision. A render replaces the DOM it points at,
+    // so the old unit is retired and a fresh one built over the new tree.
+    if (this._pulse) this._pulse.stop();
+    this._pulse = createPulse(this);
+    if (this._token) this._pulse.setToken(this._token);
   }
 
   // ── session ───────────────────────────────────────────────────────────────
@@ -134,9 +136,7 @@ class SpAuthPane extends HTMLElement {
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
     this._pollMs = POLL_MS;
     if (this._who) this._startPolling();
-    // The pulse needs the embed token this event just delivered; asking now
-    // beats waiting out up to a minute of no-op polls.
-    pollPulse(this);
+    if (this._pulse) this._pulse.setToken(this._token);
   }
 
   /**
@@ -170,41 +170,14 @@ class SpAuthPane extends HTMLElement {
   // ── timers ────────────────────────────────────────────────────────────────
 
   _startPolling() {
-    // Clears only the session timer. Calling the full `_stopPolling` here would
-    // take the pulse down with it and never bring it back — the pulse is
-    // started once per render, not once per conversation.
-    this._stopSessionPolling();
+    this._stopPolling();
     poll(this);
     this._pollTimer = setInterval(() => poll(this), POLL_MS);
   }
 
-  _stopSessionPolling() {
+  _stopPolling() {
     if (this._pollTimer) clearInterval(this._pollTimer);
     this._pollTimer = null;
-  }
-
-  /**
-   * The platform pulse runs on its own, much slower timer: the aggregate is
-   * cached server-side for a minute, so asking every three seconds would be
-   * twenty requests for one answer. It stops itself the first time the server
-   * answers without the admin detail — for everyone but an operator, the
-   * Platform tab never exists and neither does the polling.
-   */
-  _startPulsePolling() {
-    this._stopPulsePolling();
-    pollPulse(this);
-    this._pulseTimer = setInterval(() => pollPulse(this), PULSE_POLL_MS);
-  }
-
-  _stopPulsePolling() {
-    if (this._pulseTimer) clearInterval(this._pulseTimer);
-    this._pulseTimer = null;
-  }
-
-  /** Everything, for disconnect. */
-  _stopPolling() {
-    this._stopSessionPolling();
-    this._stopPulsePolling();
   }
 
   async _signOut() {
@@ -215,6 +188,8 @@ class SpAuthPane extends HTMLElement {
       // gone or about to be rejected, and leaving a stale profile up is worse.
     }
     this._stopPolling();
+    if (this._pulse) this._pulse.stop();
+    this._pulse = null;
     this._who = null;
     this._conversation = null;
     this._token = null;

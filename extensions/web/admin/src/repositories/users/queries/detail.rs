@@ -6,6 +6,20 @@ use systemprompt::identifiers::{Email, UserId};
 use crate::activity;
 use crate::types::{EventTypeCount, ToolUsageCount, UserSession, UserSummary};
 
+pub async fn find_display_name(
+    pool: &PgPool,
+    user_id: &UserId,
+) -> Result<Option<String>, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"SELECT COALESCE(u.display_name, u.full_name, u.name) AS name
+           FROM users u WHERE u.id = $1"#,
+        user_id.as_str(),
+    )
+    .fetch_optional(pool)
+    .await
+    .map(Option::flatten)
+}
+
 pub async fn find_user_detail(
     pool: &PgPool,
     user_id: &UserId,

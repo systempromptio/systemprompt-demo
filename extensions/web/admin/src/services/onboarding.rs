@@ -59,7 +59,7 @@ pub(crate) fn registration_submitted(
     });
 }
 
-// Why: grants the $5 signup credit idempotently, then fires the welcome email
+// Why: grants the $1 signup credit idempotently, then fires the welcome email
 // in a detached task. Failures are logged and swallowed so the caller's HTTP
 // request never fails on a credit or email problem.
 pub(crate) async fn account_approved(pool: &PgPool, user_id: &UserId, email: &str, name: &str) {

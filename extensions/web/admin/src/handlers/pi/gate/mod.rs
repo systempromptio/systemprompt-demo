@@ -101,20 +101,17 @@ pub(super) async fn decide(
         && let Some(detail) =
             super::scope::escape_reason(&session.workspace, governed_input.as_ref())
     {
-        inproc::record_policy_denial(
-            &deps.pool,
-            &call,
-            &verdict,
-            &workspace_scope_policy(),
-            &detail,
+        deny_workspace_escape(
+            deps,
+            session,
+            payload,
+            EscapeDenial {
+                call: &call,
+                verdict: &verdict,
+                detail: &detail,
+            },
         )
         .await;
-        session.emit(PiEventBody::ToolBlocked {
-            tool_use_id: payload.tool_use_id.clone(),
-            tool_name,
-            reason: format!("[GOVERNANCE] {detail}"),
-            policy: Some(WORKSPACE_SCOPE.to_owned()),
-        });
         return false;
     }
 
@@ -124,8 +121,8 @@ pub(super) async fn decide(
 
     if !needs_human(&deps.cfg, &tool_name) {
         session.emit(PiEventBody::ApprovalAuto {
-            tool_name,
-            tool_input: governed_input.unwrap_or(serde_json::Value::Null),
+            tool_name: tool_name.clone(),
+            tool_input: governed_input.clone().unwrap_or(serde_json::Value::Null),
             policy_chain: cleared_policies(&stages),
         });
         return true;
@@ -144,6 +141,35 @@ pub(super) async fn decide(
         &verdict,
     )
     .await
+}
+
+struct EscapeDenial<'a> {
+    call: &'a GovernedCall<'a>,
+    verdict: &'a PolicyVerdict,
+    detail: &'a str,
+}
+
+// Why: policy passed but the path escapes the session workspace — recorded as
+// a denial under its own policy id so the audit shows which floor tripped.
+async fn deny_workspace_escape(
+    deps: &PiDeps,
+    session: &Arc<PiSession>,
+    payload: &GovernancePayload,
+    denial: EscapeDenial<'_>,
+) {
+    let EscapeDenial {
+        call,
+        verdict,
+        detail,
+    } = denial;
+    inproc::record_policy_denial(&deps.pool, call, verdict, &workspace_scope_policy(), detail)
+        .await;
+    session.emit(PiEventBody::ToolBlocked {
+        tool_use_id: payload.tool_use_id.clone(),
+        tool_name: call.tool_name.to_owned(),
+        reason: format!("[GOVERNANCE] {detail}"),
+        policy: Some(WORKSPACE_SCOPE.to_owned()),
+    });
 }
 
 fn emit_stages(

@@ -1,6 +1,7 @@
 import { TOOL_ICON } from './pi-constants.js';
 import { summarise, pretty } from './pi-format.js';
-import { approvalCard, autoApprovedCard, blockedRow } from './pi-gate-cards.js';
+import { approvalCard } from './pi-gate-cards.js';
+import { autoApprovedCard, blockedRow } from './pi-gate-records.js';
 import { append, line, nudge } from './pi-terminal-dom.js';
 import { railEl } from './pi-terminal-rail.js';
 import { flushStream } from './pi-terminal-prose.js';
@@ -62,7 +63,11 @@ export function toolRow(el, name, arg, input) {
 
   const body = document.createElement('pre');
   body.className = 'pi-tool-body';
-  body.textContent = pretty(input);
+  // A tool with no parameters is a fact worth stating, not a `{}` to decode.
+  const empty = input == null || (typeof input === 'object' && !Array.isArray(input)
+    && !Object.keys(input).length);
+  if (empty) body.classList.add('pi-tool-body--empty');
+  body.textContent = empty ? 'no arguments' : pretty(input);
   details.append(summary, body);
 
   append(el, details);

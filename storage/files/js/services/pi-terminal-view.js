@@ -18,6 +18,13 @@ chrome.innerHTML = ''
   + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
   + '<span class="pi-status" data-role="status"></span></span>'
   + '<span class="pi-jail-chip" data-role="jail" hidden></span>'
+  // Live slot occupancy, server-wide: one pip per session slot. The demo's
+  // capacity story rendered as a meter rather than discovered as a 429.
+  + '<span class="pi-cap" data-role="cap" hidden'
+  + ' title="Live agent sessions on this server">'
+  + '<span class="pi-cap-pips" data-role="cap-pips" aria-hidden="true"></span>'
+  + '<span class="pi-cap-count" data-role="cap-count"></span>'
+  + '</span>'
   // Who this session is signed to. The padlock is the claim: every request
   // this terminal makes carries a token minted for exactly this identity, so
   // the badge only exists once a session is actually established.
@@ -38,6 +45,15 @@ chrome.innerHTML = ''
   + ' aria-haspopup="true" aria-expanded="false"'
   + ' title="Your conversations">Conversations</button>'
   + '<div class="pi-conv-panel" data-role="conv-panel" hidden></div>'
+  + '</span>'
+  // Every structured result this conversation's tools produced. Hidden until
+  // the first artifact exists — an empty gallery is a promise, not a fact.
+  + '<span class="pi-art" data-role="art-wrap" hidden>'
+  + '<button type="button" class="pi-art-chip" data-role="art-chip"'
+  + ' aria-haspopup="true" aria-expanded="false"'
+  + ' title="Structured results this conversation produced">'
+  + 'Artifacts <b class="pi-art-count" data-role="art-count">0</b></button>'
+  + '<div class="pi-art-panel" data-role="art-panel" hidden></div>'
   + '</span>'
   // Hidden until the catalogue arrives with more than one entry; a picker
   // with one option is furniture.
@@ -76,20 +92,12 @@ chrome.innerHTML = ''
   + ' placeholder="Ask the agent something, or type / for skills…"'
   + ' role="combobox" aria-expanded="false" aria-controls="pi-palette-list"'
   + ' aria-autocomplete="list" disabled></textarea>'
-  // Conversation controls, quietest to loudest: Clear (ghost, session up),
-  // Stop (mid-turn only), Send (primary, at the edge where the eye expects
-  // the commit action). Send wears the return glyph because that is the key
-  // that does the same thing — the button and the hint state one contract.
-  + '<button type="button" class="pi-btn pi-btn--ghost pi-btn--clear" data-role="clear" hidden'
-  + ' title="Clear this conversation and start a new one">'
-  + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
-  + '<path d="M2.5 4.5a4 4 0 1 1-.4 3" fill="none" stroke="currentColor"'
-  + ' stroke-width="1.4" stroke-linecap="round"/>'
-  + '<path d="M2.1 2.2v2.5h2.5" fill="none" stroke="currentColor"'
-  + ' stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>'
-  + '</svg>'
-  + '<span class="pi-btn__label">Clear</span>'
-  + '</button>'
+  // Composer controls, quietest to loudest: Stop (mid-turn only), Send
+  // (primary, at the edge where the eye expects the commit action). Send
+  // wears the return glyph because that is the key that does the same thing
+  // — the button and the hint state one contract. Clearing a conversation
+  // lives with the rest of the conversation management, in the header's
+  // <sp-conversation-list> dropdown.
   + '<button type="button" class="pi-btn pi-btn--ghost pi-btn--stop" data-role="stop" hidden>'
   + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
   + '<rect x="3" y="3" width="6" height="6" rx="1" fill="currentColor"/></svg>'

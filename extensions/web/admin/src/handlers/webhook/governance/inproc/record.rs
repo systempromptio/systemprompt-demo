@@ -16,7 +16,8 @@ use systemprompt_security::authz::{Decision, MatchedBy};
 
 use crate::handlers::webhook::governance::audit;
 use crate::handlers::webhook::governance::types::{
-    AuditTarget, ChainEntryOutcome, ChainEntryResult, DecisionAudit, PrincipalSnapshot,
+    ApproverStamp, AuditTarget, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
+    PrincipalSnapshot,
 };
 
 use super::{GovernedCall, PI_AGENT_ID, PI_PLUGIN_ID, PolicyVerdict};
@@ -26,6 +27,7 @@ pub(crate) async fn record_human_decision(
     call: &GovernedCall<'_>,
     verdict: &PolicyVerdict,
     outcome: HumanOutcome,
+    approver: Option<ApproverStamp>,
 ) {
     let agent_id = AgentId::new(PI_AGENT_ID);
     let decision = match outcome {
@@ -59,9 +61,13 @@ pub(crate) async fn record_human_decision(
                 HumanOutcome::Approved => ChainEntryResult::Pass,
                 _ => ChainEntryResult::Fail,
             },
-            detail: outcome.reason().to_owned(),
+            detail: approver.as_ref().map_or_else(
+                || outcome.reason().to_owned(),
+                |a| format!("{} by {}", a.action, a.username),
+            ),
             duration_ms: 0.0,
         }],
+        approver,
     };
     if outcome.allowed() {
         spawn_write(pool, audit);
@@ -102,6 +108,7 @@ pub(crate) async fn record_policy_denial(
             detail: detail.to_owned(),
             duration_ms: 0.0,
         }],
+        approver: None,
     };
     write_now(pool, audit).await;
 }
@@ -150,6 +157,7 @@ pub(super) async fn record(
             plugin_id: Some(PluginId::new(PI_PLUGIN_ID)),
         },
         chain: verdict.chain.clone(),
+        approver: None,
     };
     if verdict.allowed {
         spawn_write(pool, audit);

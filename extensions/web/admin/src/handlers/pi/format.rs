@@ -19,7 +19,7 @@ pub fn cost(microdollars: i64) -> String {
 /// Microdollars as a dollar string with trailing zeros trimmed.
 ///
 /// For a *grant* rather than a spend. A grant is a round figure someone chose —
-/// five dollars — and rendering it as `$5.0000` makes a deliberate round number
+/// one dollar — and rendering it as `$1.0000` makes a deliberate round number
 /// look like a measurement. Spend keeps its decimals, because there the digits
 /// are the point.
 pub fn cost_round(microdollars: i64) -> String {

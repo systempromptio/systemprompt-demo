@@ -27,6 +27,16 @@
 binary: /home/ejb503/.nvm/versions/node/v22.19.0/bin/pi
 child_path: /home/ejb503/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin
 
+# The pin is asserted by running `pi --version` once at first spawn. It is
+# load-bearing security, not compatibility hygiene: the RPC frame shapes this
+# server parses are unversioned on the wire, and the skills story depends on
+# `--skill` staying additive under `--no-skills` — both track whatever
+# `npm install -g` last wrote to `binary`. `required` refuses to spawn on a
+# mismatch (POST /session 500s); `warn` logs and continues; `off` disables.
+# After a deliberate upgrade, re-verify those two behaviours and move the pin.
+expected_version: "0.82.0"
+version_check: required
+
 # Put this on a size-capped tmpfs in production.
 workspace_root: /tmp/systemprompt-pi-sessions
 
@@ -35,7 +45,12 @@ workspace_root: /tmp/systemprompt-pi-sessions
 # them. Set it only to point them somewhere else.
 
 provider: systemprompt
-model: claude-sonnet-4-6
+# Default model: gpt-oss-120b served via the Cerebras backend route — picked
+# for first-token speed, which is what a demo terminal lives or dies on. The
+# registry entry is `surface: backend`, so it is offered here only because an
+# explicit gateway route (`gpt-oss-120b -> cerebras`) exists. Claude, GPT and
+# Gemini stay one click away in the picker below.
+model: gpt-oss-120b
 
 # The models a visitor may pick in the terminal come from the profile's
 # provider registry — the same catalogue the gateway routes by — so every
@@ -53,14 +68,14 @@ model: claude-sonnet-4-6
 # class's latest wins; superseded versions stay in the registry and still
 # route, they are just not offered here.
 models:
+  - gpt-oss-120b                 # Cerebras: open-weights flagship (default)
   - claude-opus-4-8              # Anthropic: latest Opus
-  - claude-sonnet-4-6            # Anthropic: latest Sonnet (default)
+  - claude-sonnet-4-6            # Anthropic: latest Sonnet
   - claude-haiku-4-5-20251001    # Anthropic: latest Haiku
   - gpt-5.1                      # OpenAI: latest flagship
   - gpt-5-mini                   # OpenAI: latest mini
   - gemini-3.1-pro-preview       # Google: latest Pro
   - gemini-3.5-flash             # Google: latest Flash
-  - gpt-oss-120b                 # Cerebras: open-weights flagship
 
 # Who the agent says it is. Omitted here on purpose: it defaults to
 # services/config/pi-persona.md, which is compiled into the binary — the child
@@ -129,16 +144,42 @@ timeouts:
 sessions:
   max_per_user: 1          # a request past this closes the account's oldest
   max_total: 8
+  # Sizing max_total: each session is one Node process — typically 100–300 MiB
+  # RSS, hard-ceilinged at `address_space` below. 8 sessions ≈ ~2.5 GiB RSS
+  # worst case (16 GiB VSZ ceiling); 16 sessions doubles that. Raise only on a
+  # host with that much headroom left over after Postgres and the gateway.
 
-# Child resource ceilings. Only fsize is on by default — see ChildLimits in
-# config.rs: RLIMIT_NPROC counts every process the *uid* owns rather than the
-# child's descendants, and needs bash (dash has no `ulimit -u`); RLIMIT_AS
-# kills V8 at startup unless measured. Both are worth setting once the child
-# has its own uid. Zero means unset.
+# Per-IP limits on the two endpoints that mint things: POST /session (spawns
+# a process) and POST /embed-token (mints a credential). Everything else on
+# /api/public/pi/* requires one of those to have succeeded first. Counted per
+# x-forwarded-for address in a sliding window; zero disables a lane. NAT
+# caveat: many visitors behind one address share a budget — raise these before
+# demoing to a room on one network.
+throttle:
+  session_per_ip: 5
+  embed_token_per_ip: 10
+  window_secs: 60
+
+# Child resource ceilings. Zero means unset.
+# - RLIMIT_AS: measured against pi 0.82.0 / node 22 — the child starts under a
+#   2 GiB ceiling and dies under 1 GiB (V8 reserves its pointer cage up
+#   front), so 2 GiB is the floor. Re-measure when moving the version pin: a
+#   too-low value kills the child at startup, which the server logs as a
+#   fast-exit hint.
+# - RLIMIT_NPROC counts every process the *uid* owns rather than the child's
+#   descendants, and needs bash (dash has no `ulimit -u`) — a blunt but real
+#   fork-bomb backstop until the child has its own uid. Because it is
+#   per-uid, the value must sit ABOVE the uid's steady-state thread count or
+#   node dies at startup on uv_thread_create (measured: a shared dev box idles
+#   at 800+ threads, so 128 killed every child; 2048 still stops a fork bomb).
 limits:
-  nproc: 0
+  nproc: 2048
   fsize: 67108864          # 64 MiB per file
-  address_space: 0
+  # Measured floor for node 22 `fetch`: undici instantiates llhttp Wasm, whose
+  # guard regions reserve ~10 GiB of *virtual* space — 8 GiB dies, 12 GiB
+  # works (`ulimit -v N; node -e "fetch(...)"`). Virtual, not resident: RSS
+  # stays 100–300 MiB per session regardless.
+  address_space: 17179869184 # 16 GiB
 
 # Where the systemprompt MCP hub answers. Called server-side by the proxy in
 # handlers/pi/mcp.rs — never by the child, which cannot reach this port. The

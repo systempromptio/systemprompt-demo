@@ -1,0 +1,53 @@
+/* The header's slot meter: one pip per live-session slot, server-wide.
+   Dressed as a chip so the header stays one family with the jail and identity
+   chips beside it. Colour states are the reading order — green means walk in,
+   amber means nearly full, red means you will be queued. */
+
+.pi-cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-success) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-success);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.pi-cap[data-state="warn"] {
+  border-color: color-mix(in oklch, var(--sp-color-warning) 45%, transparent);
+  color: var(--sp-color-warning);
+}
+
+.pi-cap[data-state="full"] {
+  border-color: color-mix(in oklch, var(--sp-color-error) 45%, transparent);
+  color: var(--sp-color-error);
+}
+
+.pi-cap-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.pi-cap-pip {
+  width: 4px;
+  height: 9px;
+  border-radius: 1px;
+  background: color-mix(in oklch, currentColor 22%, transparent);
+}
+
+.pi-cap-pip[data-filled="true"] {
+  background: currentColor;
+}
+
+.pi-cap-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Queued is a waiting state, not a failure: the live dot goes amber, matching
+   the reconnecting treatment in pi-terminal-header.css. */
+.pi-live[data-state="in line"] .pi-live-dot {
+  background: var(--sp-color-warning);
+}

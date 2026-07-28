@@ -37,7 +37,6 @@ pub(crate) struct TraceQuery {
     call: Option<String>,
 }
 
-/// One policy stage as the template renders it.
 #[derive(Debug, Serialize)]
 struct StageView {
     policy: String,
@@ -59,6 +58,15 @@ struct EventView {
     is_focus: bool,
     stages: Vec<StageView>,
     has_stages: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct ArtifactView {
+    artifact_type: String,
+    title: String,
+    server_name: String,
+    at: String,
+    ui_href: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -108,6 +116,8 @@ pub(crate) async fn demo_trace_page(
             // lint-ok: http-error — every read failure on this page is a 500.
             .map_err(|e| AdminHtmlError::internal(format!("demo trace kpi read failed: {e:?}")))?;
 
+        insert_artifacts(obj, &pool, attested, &user_ctx).await?;
+
         let events: Vec<EventView> = trace
             .iter()
             .map(|r| event_view(r, q.call.as_deref()))
@@ -147,6 +157,41 @@ pub(crate) async fn demo_trace_page(
     Ok(Html(html).into_response())
 }
 
+// Why: same session key as the trace; rendered by the same viewer routes the
+// terminal uses (cookie auth), not a parallel scheme.
+async fn insert_artifacts(
+    obj: &mut serde_json::Map<String, serde_json::Value>,
+    pool: &PgPool,
+    attested: &systemprompt::identifiers::SessionId,
+    user_ctx: &UserContext,
+) -> AdminHtmlResult<()> {
+    let artifacts: Vec<ArtifactView> =
+        crate::repositories::pi::artifacts::list_artifacts_for_session(
+            pool,
+            attested,
+            &user_ctx.user_id,
+            TRACE_LIMIT,
+        )
+        .await
+        // lint-ok: http-error — every read failure on this page is a 500.
+        .map_err(|e| AdminHtmlError::internal(format!("demo trace artifact read failed: {e:?}")))?
+        .into_iter()
+        .map(|a| ArtifactView {
+            ui_href: format!("/api/public/pi/artifacts/{}/ui", a.artifact_id),
+            title: a.title.unwrap_or_else(|| a.server_name.clone()),
+            artifact_type: a.artifact_type,
+            server_name: a.server_name,
+            at: a.created_at.format("%Y-%m-%d %H:%M:%S%.3f UTC").to_string(),
+        })
+        .collect();
+    obj.insert("has_artifacts".to_owned(), (!artifacts.is_empty()).into());
+    obj.insert(
+        "artifacts".to_owned(),
+        serde_json::to_value(artifacts).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
+    );
+    Ok(())
+}
+
 fn event_view(row: &DemoTraceRow, focus: Option<&str>) -> EventView {
     let stages = row
         .evaluated_rules
@@ -171,9 +216,9 @@ fn event_view(row: &DemoTraceRow, focus: Option<&str>) -> EventView {
     }
 }
 
-/// The persisted `DecisionAudit` blob, read leniently: rows written before the
-/// chain carried timings have no `duration_ms`, and those render as `—` rather
-/// than a fabricated zero.
+// Why: the persisted `DecisionAudit` blob is read leniently — rows written
+// before the chain carried timings have no `duration_ms`, and those render as
+// `—` rather than a fabricated zero.
 fn stage_views(evaluated_rules: &serde_json::Value) -> Vec<StageView> {
     let Some(chain) = evaluated_rules.get("chain").and_then(|c| c.as_array()) else {
         return Vec::new();

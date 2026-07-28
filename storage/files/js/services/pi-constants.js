@@ -25,6 +25,12 @@ export const TRIM_BATCH = 200;
 /** Stats poll. Matches the interval the pane beside this one already uses. */
 export const STATS_MS = 3000;
 
+/** Capacity meter poll. The queued cadence doubles as the waitlist heartbeat —
+ *  the server drops a waiter it has not heard from in 30s, so this must stay
+ *  well inside that. */
+export const CAPACITY_MS = 10000;
+export const CAPACITY_QUEUE_MS = 5000;
+
 /** Prompts kept for ↑/↓ recall. In memory only — a governed transcript is not
  *  something to leave in localStorage on a shared machine. */
 export const HISTORY_MAX = 50;

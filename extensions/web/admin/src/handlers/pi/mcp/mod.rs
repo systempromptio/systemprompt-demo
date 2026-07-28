@@ -44,7 +44,7 @@ use axum::{Extension, Json};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use systemprompt::identifiers::SessionId;
+use systemprompt::identifiers::{ArtifactId, SessionId};
 use systemprompt_security::policy::types::AccessScope;
 
 use super::auth::{authorize_session, problem, unauthorized};
@@ -139,7 +139,12 @@ pub(super) async fn call(
 
     let endpoint = registry.config().mcp_url.clone();
     match hub::forward(&endpoint, &session, &body.tool, &body.arguments).await {
-        Ok(result) => Json(result).into_response(),
+        Ok((result, artifact_id)) => {
+            if let Some(id) = artifact_id {
+                emit_artifact(&deps.pool, &session, &tool_name, &ArtifactId::new(id)).await;
+            }
+            Json(result).into_response()
+        },
         Err(e) => {
             tracing::warn!(
                 tool = %body.tool,
@@ -153,4 +158,36 @@ pub(super) async fn call(
             )
         },
     }
+}
+
+// Why: the row is read back rather than trusting the frame, so the emitted
+// title and type are whatever the hub actually stored, and an id the hub
+// named but never persisted emits nothing.
+async fn emit_artifact(
+    pool: &PgPool,
+    session: &Arc<super::session::PiSession>,
+    tool_name: &str,
+    artifact_id: &ArtifactId,
+) {
+    let row = match crate::repositories::pi::artifacts::find_artifact_for_user(
+        pool,
+        artifact_id,
+        &session.user_id,
+    )
+    .await
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => return,
+        Err(e) => {
+            tracing::warn!(error = %e, artifact_id = %artifact_id, "could not read back a tool artifact");
+            return;
+        },
+    };
+    session.emit(super::events::PiEventBody::ToolArtifact {
+        tool_name: tool_name.to_owned(),
+        artifact_id: row.artifact_id,
+        artifact_type: row.artifact_type,
+        title: row.title,
+        server_name: row.server_name,
+    });
 }
