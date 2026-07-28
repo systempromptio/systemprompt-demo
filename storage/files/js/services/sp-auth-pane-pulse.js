@@ -16,12 +16,11 @@ const POLL_MS = 60000;
  *
  * There is no role check here, and deliberately no way to ask for one: the
  * shape of the payload *is* the tier. The `detail` block arrives only for an
- * operator, and its presence is what reveals the tab. The first answer
- * without it retires the whole unit — for everyone but an admin the tab
- * never exists, and neither does the polling.
+ * operator, and its presence is what promotes the header badge to the Admin
+ * door. The first answer without it retires the whole unit — for everyone but
+ * an admin the panel stays unreachable and the polling stops.
  */
 export function createPulse(pane) {
-  const tab = pane.querySelector('[data-tab="platform"]');
   const section = pane.querySelector('[data-role="pulse"]');
   const heading = pane.querySelector('[data-role="pulse-window"]');
   const stats = pane.querySelector('[data-role="pulse-stats"]');
@@ -68,7 +67,7 @@ export function createPulse(pane) {
       stop();
       return;
     }
-    if (tab) tab.hidden = false;
+    pane._promoteAdminBadge();
     if (heading) heading.textContent = p.window ? 'last ' + (p.window_hours || 24) + 'h' : 'all time';
     renderWindow(p.window);
     renderAllTime(p.all_time || {});

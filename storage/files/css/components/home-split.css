@@ -41,18 +41,18 @@
 
 /* Both halves are one sheet of glass, so they need one top edge and one bottom
    edge. The terminal already fills its column; this is the account card doing
-   the same. Its content stays where it is — top-aligned in a tall card reads as
-   deliberate, content distributed down the height does not. */
+   the same. `flex-shrink: 0`, never `1`: the signed-in card is taller than the
+   column and the half scrolls it — letting it shrink instead squashes every
+   section into the next (tabs printed over the credit figure, request rows
+   pushed through the bottom radius). */
 .home-split-pane--profile .auth-pane {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 0 auto;
 }
 
 .home-split-pane--profile .auth-pane .pane {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 0 auto;
 }
 
 /* ── the terminal, filling its half ─────────────────────────────────────── */

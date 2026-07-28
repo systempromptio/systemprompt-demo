@@ -175,8 +175,12 @@
 .home-split-body .logo-dark { display: none; }
 .home-split-body .logo-video { display: block; }
 
-/* The muted grey the tagline uses elsewhere is unreadable on the dark field. */
-.home-split-body .logo-tagline { color: var(--sp-stage-text-muted); }
+/* The muted grey the tagline uses elsewhere is unreadable on the dark field,
+   and its hairline needs the glass border rather than the light-theme one. */
+.home-split-body .logo-tagline {
+  color: var(--sp-stage-text-muted);
+  border-left-color: var(--sp-stage-glass-border);
+}
 
 /* ── header ─────────────────────────────────────────────────────────────── */
 
@@ -190,6 +194,12 @@
   box-shadow: none;
 }
 
+/* The brand hairline belongs to the glass bar, not to the dissolved one. */
+.home-split-body .site-header::after { opacity: 0; }
+[data-scrolled] .home-split-body .site-header::after { opacity: 0.55; }
+
+.home-split-body .hamburger-line { background: var(--sp-stage-text); }
+
 /* Once the hero has scrolled past, the header needs its own surface again or
    the logo lands on top of the band's content. `hero-header.js` sets the
    attribute on <html>. */
@@ -202,8 +212,11 @@
 
 /* `display: none` rather than visual hiding: the nav is genuinely gone here,
    so it leaves the tab order and the a11y tree with it. The same links live in
-   the band below, built from the same config. */
+   the band below, built from the same config. Auth actions too — the pane owns
+   sign-in and sign-out entirely, so the header carries the wordmark and
+   nothing else. */
 .home-split-body .nav-links,
+.home-split-body .nav-actions,
 .home-split-body .mobile-menu-toggle,
 .home-split-body .mobile-menu-overlay { display: none; }
 

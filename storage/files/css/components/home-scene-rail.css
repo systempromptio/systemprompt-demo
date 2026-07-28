@@ -9,7 +9,7 @@
  * No palette of its own. Every colour here is a `--sp-stage-*` token declared
  * on `body.home-split-body` in `home-stage.css`, so the band cannot drift away
  * from the glass panes above it. Buttons come from `header-core.css`
- * (`a.cta-button`, `a.download-badge`) rather than being restyled here.
+ * (`a.cta-button`) rather than being restyled here.
  *
  * The pips move on `transform` and `opacity` alone; the only other animated
  * property is the fill of five 9px nodes, which is not worth a compositor

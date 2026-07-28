@@ -2,6 +2,7 @@ import { PI_API_BASE, RECONNECT_MIN_MS } from './pi-constants.js';
 import { postJson } from './pi-transport.js';
 import { build } from './pi-terminal-setup.js';
 import { start, restart } from './pi-terminal-session.js';
+import { degrade } from './pi-terminal-canned.js';
 
 /**
  * <sp-pi-terminal endpoint="/api/public/pi" [token="..."]>
@@ -60,7 +61,13 @@ class SpPiTerminal extends HTMLElement {
     this._built = true;
     this._endpoint = (this.getAttribute('endpoint') || PI_API_BASE).replace(/\/$/, '');
     build(this);
-    start(this);
+    // The composer ships disabled and only a session_ready frame clears it, so
+    // a rejection here would otherwise present as a terminal that silently
+    // ignores clicks.
+    start(this).catch((e) => {
+      console.error('pi terminal failed to start', e);
+      degrade(this, 'stream');
+    });
   }
 
   disconnectedCallback() {

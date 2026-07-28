@@ -14,7 +14,9 @@ import { cannedMeters } from './pi-terminal-meters.js';
  *  public page can embed it unconditionally. */
 export function degrade(el, reason, info) {
   el.classList.add('is-replay');
-  el._status(reason === 'busy' ? 'session in use' : (reason === 'queued' ? 'in line' : 'replay'));
+  el._status(reason === 'busy' ? 'session in use'
+    : (reason === 'queued' ? 'in line'
+      : (reason === 'stream' ? 'disconnected' : 'replay')));
   el._input.disabled = true;
   el._sendBtn.disabled = true;
 
@@ -33,6 +35,17 @@ export function degrade(el, reason, info) {
     blurb.append('Every live slot on this server is taken. You are ', pos,
       ' in line — this terminal will connect automatically when a slot frees. '
       + 'Meanwhile, a replay:');
+  } else if (reason === 'stream') {
+    // The composer is dead either way; what it must not do is stay dead behind
+    // a "reconnecting" label that implies the wait is doing something.
+    blurb.append('Lost the connection to this session and could not get it '
+      + 'back. ');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pi-btn';
+    btn.textContent = 'Reconnect';
+    btn.addEventListener('click', () => { void el.restart(null); });
+    blurb.append(btn, ' to start a fresh one. Meanwhile, a replay:');
   } else if (reason === 'busy') {
     // Not "you already have one": a second conversation from the same
     // account displaces the first, so the only 429 left is the server-wide

@@ -260,26 +260,9 @@
                     and Windows app that signs Claude Code and Cowork into the same identity as the web
                     agent above. Same policies, same audit trail, no second login.</p>
                 <div class="scene-offer-actions">
-                    <!--
-                      Pinned to the bridge's own tag, not `releases/latest`, which
-                      resolves to whichever release published last. These URLs are
-                      copies — `extensions/web/admin/src/handlers/ssr/bridge_downloads.rs`
-                      is the source of truth and header.html holds the other copy.
-                      Bump all three together.
-                    -->
-                    <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip" class="download-badge" download target="_blank" rel="noopener noreferrer">
-                        <span class="download-badge-text">
-                            <span class="download-badge-prefix">Download the bridge</span>
-                            <span class="download-badge-platform">Mac</span>
-                        </span>
-                    </a>
-                    <a href="https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe" class="download-badge" download target="_blank" rel="noopener noreferrer">
-                        <span class="download-badge-text">
-                            <span class="download-badge-prefix">Download the bridge</span>
-                            <span class="download-badge-platform">Windows</span>
-                        </span>
-                    </a>
-                    <a class="cta-button" href="mailto:ed@systemprompt.io?subject=Live%20demo%20request&amp;body=Hi%20Ed%2C%0A%0AI%27d%20like%20a%20live%20demo%20of%20systemprompt.io.%0A%0AWhat%20we%20run%20today%3A%0AWhat%20we%27re%20trying%20to%20govern%3A%0A%0AThanks%2C%0A">Book a live demo</a>
+                    <a class="cta-button" href="https://systemprompt.io/#demo-request" target="_blank" rel="noopener noreferrer">Book a live demo</a>
+                    <a class="scene-offer-link" href="https://www.youtube.com/watch?v=Tup3ClQM0bo" target="_blank" rel="noopener noreferrer">Watch the platform demo</a>
+                    <a class="scene-offer-link" href="https://www.youtube.com/watch?v=pbHArVcCGFY&amp;t=41s" target="_blank" rel="noopener noreferrer">Watch the Bridge demo</a>
                 </div>
             </div>
         </div>
@@ -298,15 +281,6 @@
         document.addEventListener('sp-auth:signed-out', function () {
             var t = document.querySelector('sp-pi-terminal');
             if (t && t.restart) t.restart();
-        });
-        // The site header stays hidden over the anonymous replay and appears
-        // once an identity exists. `sp-auth:identified` fires both on a fresh
-        // sign-in and when a returning visitor's session is recognised on load.
-        document.addEventListener('sp-auth:identified', function () {
-            document.body.setAttribute('data-authed', '');
-        });
-        document.addEventListener('sp-auth:signed-out', function () {
-            document.body.removeAttribute('data-authed');
         });
     </script>
 

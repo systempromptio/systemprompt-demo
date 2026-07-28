@@ -36,6 +36,9 @@
   flex-direction: column;
   gap: var(--sp-space-5);
   padding: var(--sp-space-5);
+  /* Children respect the rounded corners — without this a request row can
+     paint past the pane's bottom radius. */
+  overflow: clip;
   background: var(--sp-ap-glass);
   backdrop-filter: blur(var(--sp-stage-blur, 16px)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--sp-stage-blur, 16px)) saturate(140%);
@@ -109,18 +112,48 @@
   text-overflow: ellipsis;
 }
 
+/* A <button> because for an admin it opens the Platform panel; for everyone
+   else it stays disabled and reads as the plain role chip it always was. */
 .auth-pane .pane-badge {
   flex: none;
   padding: 0.2rem var(--sp-space-3);
+  background: transparent;
   border: 1px solid currentcolor;
   border-radius: var(--sp-radius-full);
+  font: inherit;
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
+.auth-pane .pane-badge:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
 .auth-pane .pane-badge--ok { color: var(--sp-color-success); }
 .auth-pane .pane-badge--pending { color: var(--sp-color-warning); }
+
+/* The admin role is a door, and it should look like one. */
+.auth-pane .pane-badge--admin {
+  color: var(--sp-color-primary-text, var(--sp-color-primary));
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.auth-pane .pane-badge--admin:hover {
+  background: rgb(var(--sp-color-primary-rgb) / 0.12);
+}
+
+.auth-pane .pane-badge--admin.is-active {
+  background: rgb(var(--sp-color-primary-rgb) / 0.18);
+  box-shadow: 0 0 0 2px rgb(var(--sp-color-primary-rgb) / 0.2);
+}
+
+.auth-pane .pane-badge--admin:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 1px;
+}
 
 /* ── tabs ───────────────────────────────────────────────────────────────── */
 

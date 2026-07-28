@@ -96,11 +96,9 @@
    the DOM — switching toggles `hidden` — so the counters inside a hidden tab
    are already current the instant it is shown. */
 
-.auth-pane .pane-tabs--stats {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
+/* Deliberately not sticky: a bar that pins itself while the credit header
+   slides underneath reads as a glitch, and the Governance chip already
+   carries the one signal worth seeing from any scroll position. */
 
 .auth-pane .pane-tab {
   display: inline-flex;
@@ -297,6 +295,69 @@
 .auth-pane .pane-feed--preview {
   max-height: none;
   overflow: visible;
+}
+
+/* ── governance filter ──────────────────────────────────────────────────────
+   A smaller sibling of the tablist. Filtering is one CSS rule per mode keyed
+   on the list's data-filter, so entries pushed live obey the active filter. */
+
+.auth-pane .pane-filter {
+  display: flex;
+  gap: var(--sp-space-1);
+  padding: 0.2rem;
+  background: var(--sp-ap-well);
+  border-radius: var(--sp-radius-sm);
+}
+
+.auth-pane .pane-filter-btn {
+  flex: 1;
+  padding: 0.25rem var(--sp-space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--sp-radius-sm);
+  color: var(--sp-ap-text-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.auth-pane .pane-filter-btn.is-active {
+  background: var(--sp-ap-raise);
+  color: var(--sp-ap-text);
+}
+
+.auth-pane .pane-filter-btn:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 1px;
+}
+
+.auth-pane .pane-feed[data-filter="blocked"] .pane-feed-item:not([data-outcome="deny"]),
+.auth-pane .pane-feed[data-filter="tool"]
+  .pane-feed-item:not([data-kind="tool"]):not([data-kind="fire"]),
+.auth-pane .pane-feed[data-filter="request"]
+  .pane-feed-item:not([data-kind="request"]):not([data-kind="route"]) {
+  display: none;
+}
+
+/* A denial is the one thing this feed exists to surface — let it be loud. */
+.auth-pane .pane-feed-item--deny {
+  background: color-mix(in oklch, var(--sp-color-error) 12%, var(--sp-ap-well));
+}
+
+.auth-pane .pane-feed-item--deny .pane-feed-head {
+  color: var(--sp-color-error);
+  font-weight: 600;
+}
+
+/* Per-model speed and spend under each mix bar. */
+.auth-pane .pane-mix-meta {
+  margin-top: -0.25rem;
+  padding-left: 5.5rem;
+  color: var(--sp-ap-text-muted);
+  font-family: var(--sp-font-mono);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .auth-pane .pane-link--sm {

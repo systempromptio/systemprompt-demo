@@ -76,6 +76,7 @@ struct PiStats {
     cost_per_request_display: String,
     latency_p50_ms: Option<i32>,
     latency_p95_ms: Option<i32>,
+    latency_avg_ms: Option<i32>,
     latency_last_ms: Option<i32>,
     allowed: i64,
     denied: i64,
@@ -103,6 +104,8 @@ struct PiModelShare {
     model: String,
     requests: i64,
     percent: i64,
+    avg_latency_ms: Option<i32>,
+    cost_display: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -187,6 +190,7 @@ async fn collect(
         latency_last_ms,
         latency_p50_ms,
         latency_p95_ms,
+        latency_avg_ms,
         model,
         provider,
         route_match,
@@ -224,6 +228,7 @@ async fn collect(
         cost_per_request_display,
         latency_p50_ms,
         latency_p95_ms,
+        latency_avg_ms,
         latency_last_ms,
         secrets_caught: counts.secret_breaches,
         policy_stages: policy_stages(&stage_rows),
@@ -234,20 +239,24 @@ async fn collect(
         tools_blocked: counts_from_trace.tools_blocked,
         tool_calls: counts_from_trace.tool_calls,
         credit,
-        events: trace
-            .into_iter()
-            .map(|r| PiStatEvent {
-                approver: approver_field(r.evaluated_rules.as_ref(), "username"),
-                approver_action: approver_field(r.evaluated_rules.as_ref(), "action"),
-                approver_at: approver_field(r.evaluated_rules.as_ref(), "decided_at"),
-                id: r.id,
-                at: r.at,
-                kind: r.kind,
-                subject: r.subject,
-                outcome: r.outcome,
-                policy: r.policy,
-                detail: r.detail,
-            })
-            .collect(),
+        events: stat_events(trace),
     })
+}
+
+fn stat_events(trace: Vec<demo_trace::DemoTraceRow>) -> Vec<PiStatEvent> {
+    trace
+        .into_iter()
+        .map(|r| PiStatEvent {
+            approver: approver_field(r.evaluated_rules.as_ref(), "username"),
+            approver_action: approver_field(r.evaluated_rules.as_ref(), "action"),
+            approver_at: approver_field(r.evaluated_rules.as_ref(), "decided_at"),
+            id: r.id,
+            at: r.at,
+            kind: r.kind,
+            subject: r.subject,
+            outcome: r.outcome,
+            policy: r.policy,
+            detail: r.detail,
+        })
+        .collect()
 }

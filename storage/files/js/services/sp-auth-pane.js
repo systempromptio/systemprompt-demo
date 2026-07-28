@@ -84,8 +84,7 @@ class SpAuthPane extends HTMLElement {
 
   _renderProfile() {
     // Fires on both paths into the profile view: a fresh sign-in and a session
-    // recognised on load. `sp-auth:authenticated` only covers the first, and
-    // the page hides the site header until an identity exists either way.
+    // recognised on load. `sp-auth:authenticated` only covers the first.
     this.dispatchEvent(new CustomEvent('sp-auth:identified', {
       detail: this._who, bubbles: true,
     }));
@@ -93,13 +92,24 @@ class SpAuthPane extends HTMLElement {
     const pending = who.is_approved === false;
     this.innerHTML = profileHtml(pending);
 
-    const name = who.username || (who.email || '').split('@')[0] || 'You';
+    // Registration stores the email as the username, so an unchanged username
+    // would print the email twice; the local part is the readable name.
+    const name = (who.username && who.username !== who.email ? who.username : '')
+      || (who.email || '').split('@')[0] || 'You';
     this.querySelector('[data-role="name"]').textContent = name;
     this.querySelector('[data-role="email"]').textContent = who.email || '';
     this.querySelector('[data-role="avatar"]').textContent = name.slice(0, 1).toUpperCase();
+    // The badge is a state flag, not a membership trophy: 'Under review' while
+    // pending, 'Admin' for admins, and nothing at all for an approved member.
     const badge = this.querySelector('[data-role="badge"]');
-    badge.textContent = pending ? 'Under review' : 'Approved';
-    badge.classList.add(pending ? 'pane-badge--pending' : 'pane-badge--ok');
+    if (pending) {
+      badge.textContent = 'Under review';
+      badge.classList.add('pane-badge--pending');
+    } else if ((who.roles || []).includes('admin')) {
+      this._promoteAdminBadge();
+    } else {
+      badge.hidden = true;
+    }
 
     this._feed = this.querySelector('[data-role="feed"]');
     this._feedCount = this.querySelector('[data-role="feed-count"]');
@@ -112,6 +122,7 @@ class SpAuthPane extends HTMLElement {
     wireTabs(this);
     const viewGov = this.querySelector('[data-role="view-gov"]');
     if (viewGov) viewGov.addEventListener('click', () => selectTab(this, 'governance'));
+    this._wireGovFilter();
     syncFeedPreview(this);
     // Render the four stages at zero straight away. Waiting for the first poll
     // would mean the pipeline appears to come into existence once something
@@ -126,6 +137,42 @@ class SpAuthPane extends HTMLElement {
     if (this._pulse) this._pulse.stop();
     this._pulse = createPulse(this);
     if (this._token) this._pulse.setToken(this._token);
+  }
+
+  /**
+   * Reached from `roles` on /admin/auth/me at render time, or from the pulse
+   * answering with the admin detail block. The badge becomes the door to the
+   * Platform panel, which has no tab of its own.
+   */
+  _promoteAdminBadge() {
+    const badge = this.querySelector('[data-role="badge"]');
+    if (!badge || badge.classList.contains('pane-badge--admin')) return;
+    badge.hidden = false;
+    badge.textContent = 'Admin';
+    badge.classList.remove('pane-badge--ok', 'pane-badge--pending');
+    badge.classList.add('pane-badge--admin');
+    badge.disabled = false;
+    badge.setAttribute('aria-label', 'Admin — open the platform panel');
+    badge.addEventListener('click', () => selectTab(this, 'platform'));
+  }
+
+  /**
+   * Filtering is a class on the list, not a re-render: entries pushed live
+   * while a filter is active obey it through the same CSS rule.
+   */
+  _wireGovFilter() {
+    const group = this.querySelector('[data-role="gov-filter"]');
+    if (!group || !this._feed) return;
+    group.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-filter]');
+      if (!btn) return;
+      this._feed.dataset.filter = btn.dataset.filter;
+      group.querySelectorAll('[data-filter]').forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    });
   }
 
   // ── session ───────────────────────────────────────────────────────────────

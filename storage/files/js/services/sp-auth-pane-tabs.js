@@ -10,9 +10,7 @@ export function wireTabs(pane) {
   pane.querySelector('.pane-tabs--stats').addEventListener('keydown', (e) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
-    // Hidden tabs (the admin-only Platform tab before it is revealed) are not
-    // part of the arrow-key cycle.
-    const tabs = pane._tabs.filter((t) => !t.hidden);
+    const tabs = pane._tabs;
     const current = tabs.findIndex((t) => t.dataset.tab === pane._activeTab);
     let next = current;
     if (e.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
@@ -36,4 +34,8 @@ export function selectTab(pane, id) {
     tab.tabIndex = active ? 0 : -1;
   });
   pane._panels.forEach((p) => { p.hidden = p.id !== 'ap-panel-' + id; });
+  // The Platform panel has no tab — it opens from the admin badge, which
+  // mirrors the selection state the tablist would otherwise carry.
+  const badge = pane.querySelector('.pane-badge--admin');
+  if (badge) badge.classList.toggle('is-active', id === 'platform');
 }

@@ -65,29 +65,53 @@ pub(super) fn policy_stages(
 }
 
 
+#[derive(Default)]
+struct ModelTally {
+    requests: i64,
+    latency_sum_ms: i64,
+    latency_count: i64,
+    cost_microdollars: i64,
+}
+
 pub(super) fn model_mix(requests: &[session_detail::SessionRequestRow]) -> Vec<PiModelShare> {
     // Why: a request rejected before routing has no model, and counting it in
     // the denominator would make the shares of the models that did run add up
     // to less than 100% with nothing on screen to explain the shortfall.
-    let mut tally: Vec<(String, i64)> = Vec::new();
+    let mut tally: Vec<(String, ModelTally)> = Vec::new();
     let mut total = 0i64;
-    for model in requests.iter().filter_map(|r| r.model.as_ref()) {
+    for row in requests {
+        let Some(model) = row.model.as_ref() else {
+            continue;
+        };
         total += 1;
-        match tally.iter_mut().find(|(m, _)| m == model) {
-            Some((_, n)) => *n += 1,
-            None => tally.push((model.clone(), 1)),
+        let idx = tally
+            .iter()
+            .position(|(m, _)| m == model)
+            .unwrap_or_else(|| {
+                tally.push((model.clone(), ModelTally::default()));
+                tally.len() - 1
+            });
+        let entry = &mut tally[idx].1;
+        entry.requests += 1;
+        entry.cost_microdollars += row.cost_microdollars;
+        if let Some(latency) = row.latency_ms {
+            entry.latency_sum_ms += i64::from(latency);
+            entry.latency_count += 1;
         }
     }
     if total == 0 {
         return Vec::new();
     }
-    tally.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+    tally.sort_by_key(|(_, t)| std::cmp::Reverse(t.requests));
     tally
         .into_iter()
-        .map(|(model, requests)| PiModelShare {
+        .map(|(model, t)| PiModelShare {
             model,
-            percent: requests.saturating_mul(100) / total,
-            requests,
+            percent: t.requests.saturating_mul(100) / total,
+            requests: t.requests,
+            avg_latency_ms: (t.latency_count > 0)
+                .then(|| i32::try_from(t.latency_sum_ms / t.latency_count).unwrap_or(i32::MAX)),
+            cost_display: format::cost(t.cost_microdollars),
         })
         .collect()
 }
@@ -121,6 +145,7 @@ pub(super) struct Facets {
     pub(super) latency_last_ms: Option<i32>,
     pub(super) latency_p50_ms: Option<i32>,
     pub(super) latency_p95_ms: Option<i32>,
+    pub(super) latency_avg_ms: Option<i32>,
     pub(super) model: Option<String>,
     pub(super) provider: Option<String>,
     pub(super) route_match: Option<String>,
@@ -130,11 +155,16 @@ pub(super) struct Facets {
 pub(super) fn facets(requests: &[session_detail::SessionRequestRow]) -> Facets {
     let latest = requests.first();
     let latencies: Vec<i32> = requests.iter().filter_map(|r| r.latency_ms).collect();
+    let latency_avg_ms = (!latencies.is_empty()).then(|| {
+        let sum: i64 = latencies.iter().copied().map(i64::from).sum();
+        i32::try_from(sum / latencies.len() as i64).unwrap_or(i32::MAX)
+    });
     let model = latest.and_then(|r| r.model.clone());
     Facets {
         latency_last_ms: latest.and_then(|r| r.latency_ms),
         latency_p50_ms: format::median(latencies.clone()),
         latency_p95_ms: format::percentile(latencies, 95),
+        latency_avg_ms,
         provider: latest.and_then(|r| r.provider.clone()),
         route_match: latest.and_then(|r| r.route_match.clone()),
         requested_model: latest

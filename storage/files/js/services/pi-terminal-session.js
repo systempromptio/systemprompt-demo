@@ -39,6 +39,7 @@ export async function restart(el, resume) {
   el._conversationId = null;
   el._lastSeq = 0;
   el._reconnectMs = RECONNECT_MIN_MS;
+  el._streamFails = 0;
   el._turnLive = false;
   el._closed = false;
   el._who = null;

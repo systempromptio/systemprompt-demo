@@ -10,9 +10,9 @@
 }
 
 .trace-shell {
-  max-width: 60rem;
+  max-width: 90rem;
   margin: 0 auto;
-  padding: var(--sp-space-6, 2rem) var(--sp-space-4, 1rem) var(--sp-space-8, 3rem);
+  padding: var(--sp-space-6, 2rem) clamp(1rem, 4vw, 3rem) var(--sp-space-8, 3rem);
 }
 
 .trace-eyebrow {
@@ -25,7 +25,7 @@
 
 .trace-head h1 {
   margin: 0 0 0.75rem;
-  font-size: 1.4rem;
+  font-size: 1.7rem;
 }
 
 .trace-identity {
@@ -49,18 +49,23 @@
 }
 
 .trace-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  padding: 0.75rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.75rem;
   margin-bottom: 1.5rem;
+}
+
+.trace-stat {
+  padding: 0.75rem 1rem;
+  background: color-mix(in oklch, var(--sp-text-primary) 3%, transparent);
   border: 1px solid var(--sp-border-subtle);
   border-radius: 6px;
 }
 
 .trace-stat b {
   display: block;
-  font-size: 1rem;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .trace-stat span {
@@ -81,14 +86,16 @@
 }
 
 .trace-event {
+  background: color-mix(in oklch, var(--sp-text-primary) 2%, transparent);
   border: 1px solid var(--sp-border-subtle);
   border-left-width: 3px;
   border-radius: 6px;
-  padding: 0.6rem 0.9rem;
+  padding: 0.75rem 1rem;
 }
 
 .trace-event.is-denied {
   border-left-color: var(--sp-status-error, #c0392b);
+  background: color-mix(in oklch, var(--sp-status-error, #c0392b) 6%, transparent);
 }
 
 .trace-event:target {
@@ -102,7 +109,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.6rem;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 .trace-kind {
@@ -137,7 +144,8 @@
 
 .trace-detail {
   margin: 0.4rem 0 0;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
   color: var(--sp-text-secondary);
   overflow-wrap: anywhere;
 }

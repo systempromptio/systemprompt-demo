@@ -2,8 +2,11 @@
 
 .pi-terminal .terminal-header {
   display: flex;
+  /* The chips are all nowrap chrome; when the row runs out of width they must
+     wrap to a second line, not shrink to zero and paint over each other. */
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-space-3);
+  gap: var(--sp-space-1) var(--sp-space-3);
   padding: var(--sp-space-2) var(--sp-space-4);
   background: var(--sp-color-terminal-header);
   border-bottom: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
@@ -86,7 +89,7 @@
 .pi-conv {
   position: relative;
   display: inline-flex;
-  min-width: 0;
+  flex: none;
 }
 
 .pi-conv-chip {

@@ -86,7 +86,10 @@ export function applyStageMini(pane, stages) {
 }
 
 export function renderFeed(pane, events) {
-  pane._feedCount.textContent = events.length ? events.length + ' recorded' : '';
+  const denied = events.filter((e) => e.outcome === 'deny').length;
+  pane._feedCount.textContent = events.length
+    ? events.length + ' recorded' + (denied ? ' · ' + denied + ' blocked' : '')
+    : '';
   if (!events.length) return;
   pane._feed.innerHTML = '';
   // Newest first: the pane is short, and the thing that just happened is the
@@ -100,6 +103,8 @@ export function renderFeed(pane, events) {
       audit.className = 'pane-link pane-link--sm pane-feed-audit';
       audit.href = '/trace/' + encodeURIComponent(pane._conversation)
         + '#call-' + encodeURIComponent(e.id);
+      audit.target = '_blank';
+      audit.rel = 'noopener';
       audit.textContent = 'audit →';
       li.append(audit);
     }

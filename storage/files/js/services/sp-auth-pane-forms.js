@@ -98,7 +98,7 @@ export function profileHtml(pending) {
     + '<div><strong class="pane-name" data-role="name"></strong>'
     + '<span class="pane-email" data-role="email"></span></div>'
     + '</div>'
-    + '<span class="pane-badge" data-role="badge"></span>'
+    + '<button type="button" class="pane-badge" data-role="badge" disabled></button>'
     + '</header>'
     + (pending
       ? '<p class="pane-note pane-note--pending">Your account is under review. '
@@ -135,7 +135,8 @@ export function profileHtml(pending) {
     + panelHtml('governance', governanceHtml(), true)
     + panelHtml('platform', platformHtml(), true)
     + '<footer class="pane-foot">'
-    + '<button type="button" class="pane-link" data-role="signout">Sign out</button>'
+    + '<button type="button" class="pane-btn pane-btn--ghost pane-btn--signout"'
+    + ' data-role="signout">Sign out</button>'
     + '</footer>'
     + '</div>';
 }

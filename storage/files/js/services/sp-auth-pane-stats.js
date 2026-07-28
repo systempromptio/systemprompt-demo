@@ -82,6 +82,7 @@ export function applyStats(pane, s) {
 
   setStat(pane, 'latency', ms(s.latency_p50_ms));
   setStat(pane, 'latency95', ms(s.latency_p95_ms));
+  setStat(pane, 'latencyAvg', ms(s.latency_avg_ms));
   setStat(pane, 'latencyLast', ms(s.latency_last_ms));
   applyLatencyBars(pane, s);
 
@@ -114,6 +115,7 @@ export function applyLatencyBars(pane, s) {
   const vals = {
     latency: s.latency_p50_ms,
     latency95: s.latency_p95_ms,
+    latencyAvg: s.latency_avg_ms,
     latencyLast: s.latency_last_ms,
   };
   const max = Math.max(...Object.values(vals).map((v) => Number(v) || 0), 1);
@@ -152,6 +154,20 @@ export function applyModelMix(pane, mix) {
     share.textContent = pct(m.percent);
     row.append(label, bar, share);
     list.append(row);
+    // Speed and spend per model, when the server is new enough to send them —
+    // the comparison "which model is faster" is made on this line.
+    const facts = [
+      m.requests !== undefined ? m.requests + ' req' : null,
+      m.avg_latency_ms !== undefined && m.avg_latency_ms !== null
+        ? 'avg ' + ms(m.avg_latency_ms) : null,
+      m.cost_display || null,
+    ].filter(Boolean);
+    if (facts.length) {
+      const meta = document.createElement('div');
+      meta.className = 'pane-mix-meta';
+      meta.textContent = facts.join(' · ');
+      list.append(meta);
+    }
   });
 }
 

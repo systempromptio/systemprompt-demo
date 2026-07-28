@@ -5,16 +5,16 @@ export function statHtml(key, label, initial) {
     + '<dd data-stat="' + key + '">' + initial + '</dd></div>';
 }
 
+// The admin-only Platform panel has no tab here: it opens from the role badge
+// in the header, which the pulse endpoint promotes to "Admin" when its answer
+// carries the admin detail block. The server never tells the client its role —
+// the payload shape is the tier.
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'traffic', label: 'Traffic' },
   { id: 'usage', label: 'Usage' },
   { id: 'activity', label: 'Activity' },
   { id: 'governance', label: 'Governance' },
-  // Hidden until the pulse endpoint answers with the admin detail block. The
-  // server never tells the client its role — the payload shape is the tier —
-  // so the tab appears only once there is admin data to put behind it.
-  { id: 'platform', label: 'Platform', hidden: true },
 ];
 
 export function tabsHtml() {
@@ -24,7 +24,7 @@ export function tabsHtml() {
       return '<button type="button" class="pane-tab' + (active ? ' is-active' : '')
         + '" role="tab" id="ap-tab-' + t.id + '" aria-controls="ap-panel-' + t.id
         + '" aria-selected="' + active + '" tabindex="' + (active ? '0' : '-1')
-        + '" data-tab="' + t.id + '"' + (t.hidden ? ' hidden' : '') + '>' + t.label
+        + '" data-tab="' + t.id + '">' + t.label
         + (t.id === 'governance'
           ? '<span class="pane-tab-chip" data-role="gov-chip" hidden></span>'
           : '')
@@ -50,6 +50,8 @@ export function overviewHtml() {
     + statHtml('tools', 'Tool calls', '0')
     + statHtml('blocked', 'Blocked', '0')
     + statHtml('cost', 'Session cost', '$0')
+    + statHtml('latencyAvg', 'Avg latency', '—')
+    + statHtml('costPer', 'Per request', '$0')
     + '</dl>'
     + '<p class="pane-model-line"><span data-stat="model">—</span>'
     + '<span class="pane-model-sep">·</span><span data-stat="provider">—</span>'
@@ -79,6 +81,7 @@ export function trafficHtml() {
   + '<div class="pane-lat">'
   + latencyRowHtml('latency', 'p50')
   + latencyRowHtml('latency95', 'p95')
+  + latencyRowHtml('latencyAvg', 'Average')
   + latencyRowHtml('latencyLast', 'Last turn')
   + '</div>'
   + '</section>'
@@ -162,7 +165,13 @@ export function governanceHtml() {
     + '</section>'
     + '<section class="pane-section pane-section--feed">'
     + '<h3 class="pane-h3">Governance <span class="pane-h3-sub" data-role="feed-count"></span></h3>'
-    + '<ol class="pane-feed" data-role="feed">'
+    + '<div class="pane-filter" role="group" aria-label="Filter decisions" data-role="gov-filter">'
+    + [['all', 'All'], ['blocked', 'Blocked'], ['tool', 'Tools'], ['request', 'Requests']]
+      .map(([id, label], i) => '<button type="button" class="pane-filter-btn'
+        + (i === 0 ? ' is-active' : '') + '" data-filter="' + id + '" aria-pressed="'
+        + (i === 0) + '">' + label + '</button>').join('')
+    + '</div>'
+    + '<ol class="pane-feed" data-filter="all" data-role="feed">'
     + '<li class="pane-feed-empty">Ask the agent to read a file. Every decision it '
     + 'triggers is recorded here.</li>'
     + '</ol>'

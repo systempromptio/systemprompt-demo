@@ -25,6 +25,10 @@ export function compactTokens(n) {
 export function feedItem(e) {
   const li = document.createElement('li');
   li.className = 'pane-feed-item pane-feed-item--' + (e.outcome === 'deny' ? 'deny' : 'allow');
+  // The Governance filter is a CSS rule keyed on these — items pushed live
+  // while a filter is active obey it with no re-render.
+  li.dataset.kind = e.kind || 'event';
+  li.dataset.outcome = e.outcome || '';
   const head = document.createElement('span');
   head.className = 'pane-feed-head';
   head.textContent = (e.kind || 'event') + ' · ' + (e.subject || '');

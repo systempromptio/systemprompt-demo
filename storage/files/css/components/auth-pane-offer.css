@@ -190,8 +190,23 @@
 }
 
 .auth-pane .pane-foot {
+  display: flex;
+  justify-content: flex-end;
   padding-top: var(--sp-space-3);
   border-top: 1px solid var(--sp-ap-border);
+}
+
+/* Leaving is a quiet action: a compact ghost button in the pane's own
+   language, not an orange link shouting from the footer. */
+.auth-pane .pane-btn--signout {
+  padding: var(--sp-space-2) var(--sp-space-4);
+  font-size: 0.8rem;
+  color: var(--sp-ap-text-muted);
+}
+
+.auth-pane .pane-btn--signout:hover {
+  border-color: var(--sp-ap-text-muted);
+  color: var(--sp-ap-text);
 }
 
 /* A non-zero block count is the number this pane exists to show, so it gets a

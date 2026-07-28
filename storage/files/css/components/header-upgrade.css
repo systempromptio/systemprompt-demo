@@ -6,6 +6,68 @@
   backdrop-filter: blur(var(--sp-space-5)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--sp-space-5)) saturate(180%);
   border-bottom: 1px solid var(--sp-color-header-border);
+  box-shadow: none;
+}
+
+/* A brand hairline along the bottom edge: the header is otherwise a neutral
+   glass bar, and this is the one place the orange belongs at full strength
+   without competing with the CTA. */
+.site-header::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--sp-color-primary) 12%,
+    var(--sp-color-primary) 34%,
+    transparent 62%
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.logo-svg {
+  height: 34px;
+  transition: opacity var(--sp-transition-fast);
+}
+
+.logo-link:hover .logo-svg {
+  opacity: 0.85;
+}
+
+.nav-links a {
+  position: relative;
+  font-size: 0.9375rem;
+}
+
+/* An underline that grows from the left rather than a colour swap: the nav sits
+   on glass, where a colour change alone is easy to miss. Desktop only — in the
+   drawer the links are full-width rows with their own dividers. */
+@media (min-width: 769px) {
+  .nav-dropdown > .nav-dropdown-trigger { position: relative; }
+
+  .nav-links > a::after,
+  .nav-dropdown > .nav-dropdown-trigger::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -0.4rem;
+    width: 100%;
+    height: 2px;
+    background: var(--sp-color-primary);
+    border-radius: 1px;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--sp-transition-fast);
+  }
+
+  .nav-links > a:hover::after,
+  .nav-links > a.nav-link--active::after,
+  .nav-dropdown > .nav-dropdown-trigger:hover::after {
+    transform: scaleX(1);
+  }
 }
 
 a.cta-button,
@@ -19,6 +81,7 @@ button.cta-button {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-radius: var(--sp-radius-sm);
+  box-shadow: var(--sp-shadow-accent-sm);
 }
 
 a.cta-button:hover,
@@ -26,23 +89,31 @@ button.cta-button:hover {
   background: var(--sp-color-primary-hover);
   color: var(--sp-primitive-white);
   transform: translateY(-1px);
+  box-shadow: var(--sp-shadow-accent-md);
 }
 
-.header-downloads a.download-badge {
-  padding: 0.375rem 0.75rem;
-  background: transparent;
-  border: 1px solid var(--sp-color-border);
-  color: var(--sp-color-text-secondary);
+/* The nav is off on a phone, so the CTA carries the header alone and can
+   afford to shrink rather than wrap. */
+@media (max-width: 768px) {
+  .nav-actions {
+    gap: var(--sp-space-3);
+    margin-left: var(--sp-space-4);
+  }
+
+  .nav-actions a.cta-button {
+    padding: 0.5rem var(--sp-space-4);
+    font-size: 0.75rem;
+  }
 }
 
-.header-downloads a.download-badge:hover {
-  background: var(--sp-color-surface);
-  border-color: var(--sp-color-primary);
-  color: var(--sp-color-text);
-  box-shadow: none;
+@media (max-width: 380px) {
+  .nav-actions a.cta-button { display: none; }
 }
 
-.download-badge-platform {
-  font-size: 0.875rem;
-  font-weight: 600;
+@media (prefers-reduced-motion: reduce) {
+  .nav-links > a::after,
+  .nav-dropdown > .nav-dropdown-trigger::after,
+  .logo-svg {
+    transition: none;
+  }
 }

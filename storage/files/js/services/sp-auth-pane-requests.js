@@ -131,6 +131,8 @@ function requestRow(pane, r) {
     audit.className = 'pane-link pane-link--sm';
     audit.href = '/trace/' + encodeURIComponent(pane._conversation)
       + (r.id ? '#call-' + encodeURIComponent(r.id) : '');
+    audit.target = '_blank';
+    audit.rel = 'noopener';
     audit.textContent = 'audit →';
     li.append(audit);
   }

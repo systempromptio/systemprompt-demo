@@ -30,17 +30,36 @@
   gap: var(--sp-space-3);
 }
 
-/* Over the stage the filled badge is too loud for a secondary action — the
-   demo CTA is the one thing here that should be solid. */
-.scene-offer-actions a.download-badge {
-  background: oklch(1 0 0 / 0.06);
+/* The demo recordings, as quiet siblings of the booking CTA: outline pills
+   with a play glyph, so "watch" and "book" read as one family of actions. */
+.scene-offer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem var(--sp-space-4);
   border: 1px solid var(--sp-stage-glass-border);
-  color: var(--sp-stage-text);
+  border-radius: var(--sp-radius-full);
+  background: oklch(1 0 0 / 0.05);
+  color: var(--sp-stage-text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
-.scene-offer-actions a.download-badge:hover {
-  background: var(--sp-color-primary);
-  color: var(--sp-color-text-on-primary);
+.scene-offer-link::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.65rem;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 10'%3E%3Cpath d='M0 0 8 5 0 10Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 10'%3E%3Cpath d='M0 0 8 5 0 10Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.scene-offer-link:hover {
+  color: var(--sp-stage-text);
+  border-color: var(--sp-color-primary);
+  background: rgb(var(--sp-color-primary-rgb) / 0.1);
 }
 
 /* ── narrow ─────────────────────────────────────────────────────────────── */
