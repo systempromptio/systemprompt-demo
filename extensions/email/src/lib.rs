@@ -57,8 +57,9 @@ pub async fn send_registration_notice(
         .await
 }
 
-/// The public site URL links in outbound email are built against, resolved
-/// from the `site_url` secret, falling back to this deployment's own
+/// The public site URL links in outbound email are built against.
+///
+/// Resolved from the `site_url` secret, falling back to this deployment's own
 /// `api_external_url` so a fork never mails links to someone else's domain.
 #[must_use]
 pub fn configured_site_url() -> String {
