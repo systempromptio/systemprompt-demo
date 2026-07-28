@@ -55,6 +55,66 @@ struct SummaryView {
     cost_display: String,
 }
 
+async fn insert_conversation(
+    obj: &mut serde_json::Map<String, serde_json::Value>,
+    pool: &PgPool,
+    row: &conversations::PiConversationRow,
+    owner_name: &str,
+) -> AdminHtmlResult<()> {
+    let attested = &row.attested_session_id;
+    let trace = demo_trace::list_demo_trace(pool, &row.id, TRACE_LIMIT)
+        .await
+        // lint-ok: http-error — every read failure on this page is a 500.
+        .map_err(|e| AdminHtmlError::internal(format!("demo trace read failed: {e:?}")))?;
+    let kpis = session_detail::get_conversation_kpis(pool, &row.id)
+        .await
+        // lint-ok: http-error — every read failure on this page is a 500.
+        .map_err(|e| AdminHtmlError::internal(format!("demo trace kpi read failed: {e:?}")))?;
+    let stored = event_repo::list_transcript_messages(pool, &row.id, TRACE_LIMIT)
+        .await
+        // lint-ok: http-error — every read failure on this page is a 500.
+        .map_err(|e| {
+            AdminHtmlError::internal(format!("demo trace transcript read failed: {e:?}"))
+        })?;
+
+    insert_artifacts(obj, pool, &row.id, &row.user_id).await?;
+
+    let events: Vec<views::EventView> = trace.iter().map(views::event_view).collect();
+    let denials = events.iter().filter(|e| e.is_denied).count();
+    let messages = transcript::message_views(&stored);
+    let events_value =
+        serde_json::to_value(&events).unwrap_or_else(|_| serde_json::Value::Array(vec![]));
+    let digest = transcript::integrity_digest(&row.id, attested.as_str(), &messages, &events_value);
+
+    obj.insert("has_session".to_owned(), true.into());
+    obj.insert("username".to_owned(), owner_name.into());
+    obj.insert("conversation_id".to_owned(), row.id.to_string().into());
+    obj.insert("session_id".to_owned(), attested.to_string().into());
+    obj.insert("integrity_hash".to_owned(), digest.into());
+    if let Some(title) = &row.title {
+        obj.insert("conversation_title".to_owned(), title.clone().into());
+    }
+    obj.insert("has_messages".to_owned(), (!messages.is_empty()).into());
+    obj.insert(
+        "messages".to_owned(),
+        serde_json::to_value(messages).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
+    );
+    obj.insert(
+        "summary".to_owned(),
+        serde_json::to_value(SummaryView {
+            events: events.len(),
+            denials,
+            requests: kpis.request_count,
+            input_tokens: kpis.total_input_tokens,
+            output_tokens: kpis.total_output_tokens,
+            cost_display: format!("${:.4}", kpis.total_cost_microdollars as f64 / 1_000_000.0),
+        })
+        .unwrap_or(serde_json::Value::Null),
+    );
+    obj.insert("events".to_owned(), events_value);
+    Ok(())
+}
+
 pub(crate) async fn demo_trace_page(
     Extension(engine): Extension<AdminTemplateEngine>,
     State(pool): State<Arc<PgPool>>,
@@ -75,58 +135,7 @@ pub(crate) async fn demo_trace_page(
         })?;
 
     if let Some((row, owner_name)) = conversation {
-        let attested = &row.attested_session_id;
-        let trace = demo_trace::list_demo_trace(&pool, &row.id, TRACE_LIMIT)
-            .await
-            // lint-ok: http-error — every read failure on this page is a 500.
-            .map_err(|e| AdminHtmlError::internal(format!("demo trace read failed: {e:?}")))?;
-        let kpis = session_detail::get_conversation_kpis(&pool, &row.id)
-            .await
-            // lint-ok: http-error — every read failure on this page is a 500.
-            .map_err(|e| AdminHtmlError::internal(format!("demo trace kpi read failed: {e:?}")))?;
-        let stored = event_repo::list_transcript_messages(&pool, &row.id, TRACE_LIMIT)
-            .await
-            // lint-ok: http-error — every read failure on this page is a 500.
-            .map_err(|e| {
-                AdminHtmlError::internal(format!("demo trace transcript read failed: {e:?}"))
-            })?;
-
-        insert_artifacts(obj, &pool, &row.id, &row.user_id).await?;
-
-        let events: Vec<views::EventView> = trace.iter().map(views::event_view).collect();
-        let denials = events.iter().filter(|e| e.is_denied).count();
-        let messages = transcript::message_views(&stored);
-        let events_value =
-            serde_json::to_value(&events).unwrap_or_else(|_| serde_json::Value::Array(vec![]));
-        let digest =
-            transcript::integrity_digest(&row.id, attested.as_str(), &messages, &events_value);
-
-        obj.insert("has_session".to_owned(), true.into());
-        obj.insert("username".to_owned(), owner_name.into());
-        obj.insert("conversation_id".to_owned(), row.id.to_string().into());
-        obj.insert("session_id".to_owned(), attested.to_string().into());
-        obj.insert("integrity_hash".to_owned(), digest.into());
-        if let Some(title) = &row.title {
-            obj.insert("conversation_title".to_owned(), title.clone().into());
-        }
-        obj.insert("has_messages".to_owned(), (!messages.is_empty()).into());
-        obj.insert(
-            "messages".to_owned(),
-            serde_json::to_value(messages).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
-        );
-        obj.insert(
-            "summary".to_owned(),
-            serde_json::to_value(SummaryView {
-                events: events.len(),
-                denials,
-                requests: kpis.request_count,
-                input_tokens: kpis.total_input_tokens,
-                output_tokens: kpis.total_output_tokens,
-                cost_display: format!("${:.4}", kpis.total_cost_microdollars as f64 / 1_000_000.0),
-            })
-            .unwrap_or(serde_json::Value::Null),
-        );
-        obj.insert("events".to_owned(), events_value);
+        insert_conversation(obj, &pool, &row, &owner_name).await?;
     } else {
         obj.insert("has_session".to_owned(), false.into());
     }
