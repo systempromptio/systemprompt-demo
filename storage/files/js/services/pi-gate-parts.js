@@ -45,6 +45,53 @@ function initials(name) {
   return parts.map((w) => w[0].toUpperCase()).join('') || '?';
 }
 
+const OUTCOME_MARK = { approved: '✓', denied: '✕' };
+
+/**
+ * A settled approval, folded down to one line.
+ *
+ * The card answered its question; leaving it open would push the rest of the
+ * conversation off screen, and a run of them turns the transcript into a wall
+ * of identical amber blocks. So the record collapses to the three facts a
+ * scan needs — verdict, tool, who decided when — and keeps the whole card one
+ * click away for the times a scan is not enough.
+ *
+ * Opening one closes the others: only the record being read stays expanded.
+ */
+export function settledRecord(card, frame) {
+  const record = document.createElement('details');
+  record.className = 'pi-approval-record';
+  record.dataset.outcome = frame.outcome;
+
+  const head = document.createElement('summary');
+  head.className = 'pi-approval-record-head';
+  const mark = document.createElement('span');
+  mark.className = 'pi-approval-record-mark';
+  mark.textContent = OUTCOME_MARK[frame.outcome] || '⏱';
+  mark.setAttribute('aria-hidden', 'true');
+  const tool = document.createElement('strong');
+  tool.className = 'pi-approval-record-tool';
+  tool.textContent = frame.tool_name;
+  const more = document.createElement('span');
+  more.className = 'pi-approval-record-more';
+  more.setAttribute('aria-hidden', 'true');
+  head.append(mark, tool, attributionStamp({
+    name: frame.approved_by,
+    at: frame.decided_at,
+    actor: frame.actor,
+    action: frame.outcome === 'approved' ? 'approved' : frame.outcome,
+  }), more);
+
+  record.append(head, card);
+  record.addEventListener('toggle', () => {
+    if (!record.open || !record.parentElement) return;
+    record.parentElement
+      .querySelectorAll('details.pi-approval-record[open]')
+      .forEach((other) => { if (other !== record) other.open = false; });
+  });
+  return record;
+}
+
 /** One small true fact, as a pill. */
 export function detailChip(text) {
   const chip = document.createElement('span');

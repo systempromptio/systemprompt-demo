@@ -6,7 +6,6 @@ import { autogrow, clearUnseen } from './pi-terminal-dom.js';
 import { refreshPalette, hidePalette } from './pi-terminal-palette.js';
 import { send, onKey } from './pi-terminal-input.js';
 import { wireArtifacts } from './pi-terminal-artifacts.js';
-import { startCapacity } from './pi-terminal-capacity.js';
 
 /** Draw the chrome once, cache the roles, and wire every listener to it. */
 export function build(el) {
@@ -27,9 +26,6 @@ export function build(el) {
   el._metersEl = role('meters');
   el._traceEl = role('trace');
   el._jailEl = role('jail');
-  el._capEl = role('cap');
-  el._capPips = role('cap-pips');
-  el._capCount = role('cap-count');
   el._modelEl = role('model');
   el._userEl = role('user');
   el._userNameEl = role('user-name');
@@ -49,7 +45,6 @@ export function build(el) {
     el.restart(el._conversationId || undefined);
   });
   loadModels(el);
-  startCapacity(el);
   el._paletteEl.id = 'pi-palette-list';
 
   el._composer.addEventListener('submit', (e) => {

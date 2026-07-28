@@ -15,16 +15,17 @@
 //! so nothing else in this deployment, CLI included, can show it to them.
 
 use crate::repositories::{self, DECISION_LIMIT};
-use crate::tools::SafetyFindingsInput;
+use crate::tool_inputs::SafetyFindingsInput;
 use rmcp::ErrorData as McpError;
 use std::future::Future;
 use systemprompt::database::DbPool;
 use systemprompt::identifiers::McpExecutionId;
 use systemprompt::mcp::McpToolHandler;
-use systemprompt::models::artifacts::CliArtifact;
+use serde_json::json;
+use systemprompt::models::artifacts::{CliArtifact, Column, ColumnType, TableArtifact};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 
-use super::{db_error, text_artifact};
+use super::db_error;
 
 pub(in crate::server) struct SafetyFindingsHandler {
     pub(in crate::server) db_pool: DbPool,
@@ -63,45 +64,43 @@ impl McpToolHandler for SafetyFindingsHandler {
                 .map_err(|e| db_error(&e))?;
 
             let summary = match rows.len() {
-                0 => "no gateway safety findings for this caller".to_owned(),
-                n => format!("{n} gateway safety finding(s)"),
+                0 => "no gateway safety findings for this caller — nothing sent has \
+                      matched a blocking pattern"
+                    .to_owned(),
+                n => format!(
+                    "{n} gateway safety finding(s); each was judged before a provider \
+                     was reached, and blocking categories were refused with a 403 \
+                     before any tokens were billed"
+                ),
             };
-            Ok((
-                text_artifact("Gateway Safety Findings", render_findings(&rows)),
-                summary,
-            ))
+            Ok((CliArtifact::table(findings_table(&rows)), summary))
         }
     }
 }
 
-fn render_findings(rows: &[repositories::SafetyFindingRow]) -> String {
-    let mut body = String::from("# Gateway safety findings for this caller\n\n");
-    if rows.is_empty() {
-        body.push_str(
-            "No findings. The gateway's scanners run on every request to a provider; \
-             nothing this caller has sent has matched a blocking pattern.\n",
-        );
-        return body;
-    }
-    body.push_str(
-        "Each row is a request the gateway judged **before** it reached a provider. \
-         A finding in a blocking category means the request was refused with a 403 \
-         and no tokens were billed. Excerpts are redacted by the scanner that wrote \
-         them — the matched credential is never stored.\n\n\
-         | When | Phase | Severity | Category | Scanner | Excerpt |\n\
-         |---|---|---|---|---|---|\n",
-    );
-    for row in rows {
-        let excerpt = row.excerpt.replace('|', "\\|");
-        body.push_str(&format!(
-            "| {} | {} | {} | `{}` | `{}` | {} |\n",
-            row.at.format("%Y-%m-%d %H:%M:%S"),
-            row.phase,
-            row.severity,
-            row.category,
-            row.scanner,
-            excerpt
-        ));
-    }
-    body
+// Why: excerpts arrive already redacted by the scanner that wrote them — the
+// matched credential is never stored, so it cannot appear in a cell here.
+fn findings_table(rows: &[repositories::SafetyFindingRow]) -> TableArtifact {
+    let columns = vec![
+        Column::new("at", ColumnType::Date).with_header("When"),
+        Column::new("phase", ColumnType::String).with_header("Phase"),
+        Column::new("severity", ColumnType::String).with_header("Severity"),
+        Column::new("category", ColumnType::String).with_header("Category"),
+        Column::new("scanner", ColumnType::String).with_header("Scanner"),
+        Column::new("excerpt", ColumnType::String).with_header("Excerpt"),
+    ];
+    let items: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|row| {
+            json!({
+                "at": row.at.format("%Y-%m-%d %H:%M:%S").to_string(),
+                "phase": row.phase,
+                "severity": row.severity,
+                "category": row.category,
+                "scanner": row.scanner,
+                "excerpt": row.excerpt,
+            })
+        })
+        .collect();
+    TableArtifact::new(columns).with_rows(items)
 }

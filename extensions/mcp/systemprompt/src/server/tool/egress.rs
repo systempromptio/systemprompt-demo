@@ -4,7 +4,7 @@
 //! with no egress must not be able to reach. Its value is the refusal: a
 //! governed denial a reader can watch land in the audit record.
 
-use crate::tools::FetchRemoteDocsInput;
+use crate::tool_inputs::FetchRemoteDocsInput;
 use rmcp::ErrorData as McpError;
 use std::future::Future;
 use systemprompt::identifiers::McpExecutionId;

@@ -2,7 +2,7 @@
 //! model-facing truncation reports only when it dropped something.
 
 use systemprompt_mcp_agent::test_support::{site_page_url, truncate_for_model};
-use systemprompt_mcp_agent::tools::SitePageSection;
+use systemprompt_mcp_agent::tool_inputs::SitePageSection;
 
 #[test]
 fn url_is_composed_from_section_and_slug_only() {

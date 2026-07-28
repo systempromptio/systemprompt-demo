@@ -4,16 +4,29 @@
 //! touch the database and never leave the process. That is what makes them the
 //! tools a session can always use, whatever the deployment's egress posture.
 
-use crate::tools::{GetTopicInput, ListTopicsInput, SearchDocsInput};
+use crate::tool_inputs::{GetTopicInput, ListTopicsInput, SearchDocsInput};
 use crate::topics;
 use rmcp::ErrorData as McpError;
 use std::future::{self, Future};
 use systemprompt::identifiers::McpExecutionId;
 use systemprompt::mcp::McpToolHandler;
-use systemprompt::models::artifacts::CliArtifact;
+use systemprompt::mcp::WEBSITE_URL;
+use systemprompt::models::artifacts::{CliArtifact, ListArtifact, ListItem};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 
 use super::text_artifact;
+
+// Why: the list renderer reads `description`, not `summary` — set both so the
+// item reads the same in the shelf preview and in the raw JSON. The link goes
+// to the public docs; the topic itself is read with `get_topic`, and the slug
+// field carries the id to pass it.
+fn topic_item(topic: &topics::Topic, description: &str) -> ListItem {
+    ListItem::new(topic.title, description, format!("{WEBSITE_URL}/docs"))
+        .with_id(topic.id)
+        .with_slug(topic.id)
+        .with_description(description)
+        .with_category("documentation")
+}
 
 pub(in crate::server) struct ListTopicsHandler;
 
@@ -35,18 +48,19 @@ impl McpToolHandler for ListTopicsHandler {
         _ctx: &SysRequestContext,
         _exec_id: &McpExecutionId,
     ) -> impl Future<Output = Result<(Self::Output, String), McpError>> + Send {
-        let mut body = String::from("# systemprompt.io documentation topics\n\n");
-        for topic in topics::TOPICS {
-            body.push_str(&format!(
-                "- **{}** (`{}`) — {}\n",
-                topic.title, topic.id, topic.summary
-            ));
-        }
-        body.push_str(
-            "\nRead one with `get_topic {\"topic_id\": \"<id>\"}` or search with `search_docs`.\n",
+        let items: Vec<ListItem> = topics::TOPICS
+            .iter()
+            .map(|topic| topic_item(topic, topic.summary))
+            .collect();
+        let summary = format!(
+            "{} documentation topics available; read one with `get_topic {{\"topic_id\": \
+             \"<id>\"}}` or search with `search_docs`",
+            topics::TOPICS.len()
         );
-        let summary = format!("{} documentation topics available", topics::TOPICS.len());
-        future::ready(Ok((text_artifact("Documentation Topics", body), summary)))
+        future::ready(Ok((
+            CliArtifact::list(ListArtifact::new().with_items(items)),
+            summary,
+        )))
     }
 }
 
@@ -118,25 +132,32 @@ impl McpToolHandler for SearchDocsHandler {
 
         let hits = topics::search(&input.query);
 
-        let mut body = format!("# Search results for: {}\n\n", input.query.trim());
-        if hits.is_empty() {
-            body.push_str(
-                "No topics matched. Try broader terms, or call `list_topics` to browse everything.\n",
-            );
-        } else {
-            for hit in &hits {
-                body.push_str(&format!(
-                    "## {} (`{}`)\n\n{}\n\n> {}\n\n",
-                    hit.topic.title,
-                    hit.topic.id,
-                    hit.topic.summary,
-                    topics::excerpt(hit.topic, &terms)
-                ));
-            }
-            body.push_str("Read any of these in full with `get_topic {\"topic_id\": \"<id>\"}`.\n");
-        }
+        let items: Vec<ListItem> = hits
+            .iter()
+            .map(|hit| {
+                let description =
+                    format!("{} — {}", hit.topic.summary, topics::excerpt(hit.topic, &terms));
+                topic_item(hit.topic, &description)
+            })
+            .collect();
 
-        let summary = format!("{} topic(s) matched \"{}\"", hits.len(), input.query.trim());
-        future::ready(Ok((text_artifact("Search Results", body), summary)))
+        let summary = if hits.is_empty() {
+            format!(
+                "no topics matched \"{}\" — try broader terms, or `list_topics` to browse \
+                 everything",
+                input.query.trim()
+            )
+        } else {
+            format!(
+                "{} topic(s) matched \"{}\"; read one in full with `get_topic {{\"topic_id\": \
+                 \"<id>\"}}`",
+                hits.len(),
+                input.query.trim()
+            )
+        };
+        future::ready(Ok((
+            CliArtifact::list(ListArtifact::new().with_items(items)),
+            summary,
+        )))
     }
 }

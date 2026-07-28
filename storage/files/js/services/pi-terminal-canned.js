@@ -184,8 +184,9 @@ function cannedStep(el, step) {
 
 /**
  * The replay's card resolves the way a live one does: after a beat, the same
- * settle path stamps "Ed approved this call at …" and moves the card into the
- * transcript. The timestamp is playback time, so every pass reads fresh.
+ * settle path folds it into a one-line record stamped "Ed approved at …" and
+ * moves it into the transcript. The timestamp is playback time, so every pass
+ * reads fresh.
  * Reduced motion skips the beat and shows the resolved state at once.
  */
 function cannedResolve(el, handle, step) {
@@ -197,9 +198,9 @@ function cannedResolve(el, handle, step) {
       actor: 'user',
       tool_name: step.tool,
     });
+    // No transcript echo: the folded record already carries the verdict, the
+    // name and the time on its summary line.
     if (record) append(el, record);
-    line(el, 'output-dim', 'approval ' + step.resolve.action + ' by ' + step.resolve.by
-      + ' — ' + new Date().toLocaleTimeString());
   };
   if (!motionOk()) {
     finish();

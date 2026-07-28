@@ -56,14 +56,6 @@ pub(crate) struct SpendRow {
     pub(crate) input_tokens: i64,
     pub(crate) output_tokens: i64,
     pub(crate) cost_microdollars: i64,
-    pub(crate) mean_latency_ms: Option<f64>,
-    pub(crate) model: Option<String>,
-}
-
-#[derive(Debug)]
-pub(crate) struct ToolFireRow {
-    pub(crate) tool_name: String,
-    pub(crate) fires: i64,
 }
 
 #[derive(Debug)]
@@ -141,43 +133,13 @@ pub(crate) async fn get_spend(
         r#"SELECT COUNT(*) as "requests!",
                   COALESCE(SUM(input_tokens), 0)::BIGINT as "input_tokens!",
                   COALESCE(SUM(output_tokens), 0)::BIGINT as "output_tokens!",
-                  COALESCE(SUM(cost_microdollars), 0)::BIGINT as "cost_microdollars!",
-                  AVG(latency_ms)::FLOAT8 as "mean_latency_ms?",
-                  (SELECT COALESCE(r.requested_model, r.model) FROM ai_requests r
-                   WHERE r.user_id = $1 AND r.session_id = $2
-                   ORDER BY r.created_at DESC LIMIT 1) as "model?"
+                  COALESCE(SUM(cost_microdollars), 0)::BIGINT as "cost_microdollars!"
            FROM ai_requests
            WHERE user_id = $1 AND session_id = $2"#,
         user_id.as_str(),
         session_id.as_str(),
     )
     .fetch_one(pool)
-    .await
-}
-
-pub(crate) async fn list_tool_fires(
-    pool: &PgPool,
-    user_id: &UserId,
-    session_id: &SessionId,
-    limit: i64,
-) -> Result<Vec<ToolFireRow>, sqlx::Error> {
-    sqlx::query_as!(
-        ToolFireRow,
-        r#"SELECT COALESCE(NULLIF(entity_name, ''), 'unknown') as "tool_name!",
-                  COUNT(*) as "fires!"
-           FROM user_activity
-           WHERE user_id = $1
-             AND category = 'mcp_access'
-             AND action = 'used'
-             AND metadata->>'session_id' = $2
-           GROUP BY 1
-           ORDER BY 2 DESC
-           LIMIT $3"#,
-        user_id.as_str(),
-        session_id.as_str(),
-        limit,
-    )
-    .fetch_all(pool)
     .await
 }
 

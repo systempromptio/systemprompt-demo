@@ -297,10 +297,12 @@ check-bans:
 audit:
     cargo audit
 
-# Unused dependencies across all three workspaces (same script CI runs).
+# Unused dependencies across all three workspaces (same script CI runs), plus
+# every source gate `just clippy` runs — comment lints, size ceilings, schema
+# and naming checks — so one recipe answers "is this landable" without a build.
 # A bare `cargo machete` only covers the root — `tests` and `bridge` are
 # excluded from the root workspace and need entering separately.
-machete:
+machete: lint-no-synthesis lint-gates
     bash scripts/machete.sh
 
 # Structural guard: no string-literal `UserId::new("...")` in extension code.

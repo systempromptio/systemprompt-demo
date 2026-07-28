@@ -1,4 +1,4 @@
-import { approvalGrid, attributionStamp, metaRow, toolTitle } from './pi-gate-parts.js';
+import { approvalGrid, metaRow, settledRecord, toolTitle } from './pi-gate-parts.js';
 
 /**
  * The approval card — the one row of the gate that asks a question.
@@ -36,11 +36,8 @@ export function approvalCard(frame, onDecide) {
   ring.append(glyph);
   const countdown = document.createElement('span');
   countdown.className = 'pi-countdown';
-  head.append(
-    ring,
-    toolTitle(frame.tool_name, 'wants to run — policy cleared it, you decide'),
-    countdown,
-  );
+  const title = toolTitle(frame.tool_name, 'wants to run — policy cleared it, you decide');
+  head.append(ring, title, countdown);
 
   const meta = metaRow(
     frame.policy_chain || [],
@@ -87,8 +84,8 @@ export function approvalCard(frame, onDecide) {
     timer: setInterval(tick, 1000),
     /**
      * Resolution arrived. With an attributed frame the card becomes a
-     * permanent record — buttons and countdown out, "Approved by X at T"
-     * stamp in — and is returned so the caller can move it into the
+     * permanent record — buttons and countdown out, folded into a one-line
+     * summary — and is returned so the caller can move it into the
      * transcript. Without one (expired, torn down) it just goes away.
      */
     settle(frame) {
@@ -104,15 +101,16 @@ export function approvalCard(frame, onDecide) {
       card.classList.add('is-settled');
       card.dataset.outcome = frame.outcome;
       card.removeAttribute('role');
-      card.setAttribute('aria-label', frame.tool_name + ' ' + frame.outcome);
-      card.append(attributionStamp({
-        name: frame.approved_by,
-        at: frame.decided_at,
-        actor: frame.actor,
-        action: frame.outcome === 'approved' ? 'approved this call' : 'denied this call',
-      }));
+      card.removeAttribute('aria-label');
+      // The question is answered; the sub-line stops asking it.
+      const sub = title.querySelector('.pi-approval-sub');
+      if (sub) {
+        sub.textContent = frame.outcome === 'approved'
+          ? 'policy cleared it, then a person did'
+          : 'policy cleared it, a person did not';
+      }
       card.remove();
-      return card;
+      return settledRecord(card, frame);
     },
     /** Freeze the card while the POST is in flight, so it cannot be answered
      *  twice from one click. */

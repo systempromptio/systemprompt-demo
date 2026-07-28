@@ -22,7 +22,7 @@ use systemprompt::mcp::McpToolHandler;
 use systemprompt::models::artifacts::CliArtifact;
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 
-use crate::tools::{FetchSitePageInput, ListSitePagesInput, SitePageSection};
+use crate::tool_inputs::{FetchSitePageInput, ListSitePagesInput, SitePageSection};
 
 use super::text_artifact;
 

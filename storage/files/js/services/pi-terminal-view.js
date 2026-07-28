@@ -18,13 +18,6 @@ chrome.innerHTML = ''
   + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
   + '<span class="pi-status" data-role="status"></span></span>'
   + '<span class="pi-jail-chip" data-role="jail" hidden></span>'
-  // Live slot occupancy, server-wide: one pip per session slot. The demo's
-  // capacity story rendered as a meter rather than discovered as a 429.
-  + '<span class="pi-cap" data-role="cap" hidden'
-  + ' title="Live agent sessions on this server">'
-  + '<span class="pi-cap-pips" data-role="cap-pips" aria-hidden="true"></span>'
-  + '<span class="pi-cap-count" data-role="cap-count"></span>'
-  + '</span>'
   // Who this session is signed to. The padlock is the claim: every request
   // this terminal makes carries a token minted for exactly this identity, so
   // the badge only exists once a session is actually established.

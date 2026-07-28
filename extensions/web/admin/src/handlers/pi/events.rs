@@ -15,10 +15,12 @@ pub use super::events_error::{
 use super::rpc;
 use super::stage::PolicyStage;
 
-/// One frame to one widget. `seq` is per-session and monotonic so a reconnect
-/// can resume with `Last-Event-ID`. Ephemeral frames (stats) carry no seq at
-/// all: they are never replayed, and a seq would make the browser's dedupe
-/// drop them as echoes of the transcript.
+/// One frame to one widget.
+///
+/// `seq` is per-session and monotonic so a reconnect can resume with
+/// `Last-Event-ID`. Ephemeral frames (stats) carry no seq at all: they are
+/// never replayed, and a seq would make the browser's dedupe drop them as
+/// echoes of the transcript.
 #[derive(Debug, Clone, Serialize)]
 pub struct PiEvent {
     #[serde(skip_serializing_if = "Option::is_none")]

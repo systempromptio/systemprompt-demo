@@ -3,7 +3,9 @@
 //!
 //! The server in the parent module owns the rmcp `ServerHandler` surface; this
 //! module owns what happens per tool call: RBAC enforcement against the
-//! registry, access auditing, and turning topic content into text artifacts.
+//! registry, access auditing, and turning each tool's answer into the typed
+//! artifact its shape calls for — lists for indexes, tables for audit rows,
+//! text for documents.
 
 use rmcp::ErrorData as McpError;
 use rmcp::model::{CallToolRequestParams, CallToolResult};
@@ -30,6 +32,7 @@ mod docs;
 mod egress;
 mod governance_stats;
 mod render_artifact;
+mod render_spine;
 mod safety_findings;
 pub(crate) mod site_pages;
 
@@ -90,10 +93,24 @@ pub(super) async fn authenticate_tool_request(
     }
 }
 
-#[expect(
-    clippy::too_many_lines,
-    reason = "one match arm per tool; splitting the dispatch would hide the full tool list"
-)]
+const TOOL_NAMES: &str = "list_topics, get_topic, search_docs, list_site_pages, fetch_site_page, \
+                          governance_stats, safety_findings, render_artifact, admin_audit_dump, \
+                          fetch_remote_docs";
+
+fn unknown_tool(tool_name: &str) -> McpError {
+    McpError::invalid_params(
+        format!(
+            "Unknown tool: '{tool_name}'. Available tools: {TOOL_NAMES}. Call `list_topics` \
+             first to see the documentation topics."
+        ),
+        None,
+    )
+}
+
+fn clone_pool(db_pool: &DbPool) -> DbPool {
+    std::sync::Arc::<systemprompt::database::Database>::clone(db_pool)
+}
+
 pub(super) async fn dispatch_tool(
     executor: &McpToolExecutor,
     db_pool: &DbPool,
@@ -128,63 +145,34 @@ pub(super) async fn dispatch_tool(
                 .await
         },
         "governance_stats" => {
-            executor
-                .execute(
-                    &GovernanceStatsHandler {
-                        db_pool: std::sync::Arc::<systemprompt::database::Database>::clone(db_pool),
-                    },
-                    request,
-                    request_context,
-                )
-                .await
+            let handler = GovernanceStatsHandler {
+                db_pool: clone_pool(db_pool),
+            };
+            executor.execute(&handler, request, request_context).await
         },
         "safety_findings" => {
-            executor
-                .execute(
-                    &SafetyFindingsHandler {
-                        db_pool: std::sync::Arc::<systemprompt::database::Database>::clone(db_pool),
-                    },
-                    request,
-                    request_context,
-                )
-                .await
+            let handler = SafetyFindingsHandler {
+                db_pool: clone_pool(db_pool),
+            };
+            executor.execute(&handler, request, request_context).await
         },
         "render_artifact" => {
-            executor
-                .execute(
-                    &RenderArtifactHandler {
-                        db_pool: std::sync::Arc::<systemprompt::database::Database>::clone(db_pool),
-                    },
-                    request,
-                    request_context,
-                )
-                .await
+            let handler = RenderArtifactHandler {
+                db_pool: clone_pool(db_pool),
+            };
+            executor.execute(&handler, request, request_context).await
         },
         "admin_audit_dump" => {
-            executor
-                .execute(
-                    &AdminAuditDumpHandler {
-                        db_pool: std::sync::Arc::<systemprompt::database::Database>::clone(db_pool),
-                    },
-                    request,
-                    request_context,
-                )
-                .await
+            let handler = AdminAuditDumpHandler {
+                db_pool: clone_pool(db_pool),
+            };
+            executor.execute(&handler, request, request_context).await
         },
         "fetch_remote_docs" => {
             executor
                 .execute(&FetchRemoteDocsHandler, request, request_context)
                 .await
         },
-        _ => Err(McpError::invalid_params(
-            format!(
-                "Unknown tool: '{tool_name}'. Available tools: list_topics, get_topic, \
-                 search_docs, list_site_pages, fetch_site_page, governance_stats, \
-                 safety_findings, render_artifact, admin_audit_dump, fetch_remote_docs. \
-                 Call `list_topics` \
-                 first to see the documentation topics."
-            ),
-            None,
-        )),
+        _ => Err(unknown_tool(tool_name)),
     }
 }

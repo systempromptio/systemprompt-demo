@@ -14,16 +14,17 @@
 //! ever executes in the terminal, the policy chain has a hole in it.
 
 use crate::repositories::{self, DECISION_LIMIT};
-use crate::tools::AdminAuditDumpInput;
+use crate::tool_inputs::AdminAuditDumpInput;
 use rmcp::ErrorData as McpError;
 use std::future::Future;
 use systemprompt::database::DbPool;
 use systemprompt::identifiers::McpExecutionId;
 use systemprompt::mcp::McpToolHandler;
-use systemprompt::models::artifacts::CliArtifact;
+use serde_json::json;
+use systemprompt::models::artifacts::{CliArtifact, Column, ColumnType, TableArtifact};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 
-use super::{db_error, text_artifact};
+use super::db_error;
 
 pub(in crate::server) struct AdminAuditDumpHandler {
     pub(in crate::server) db_pool: DbPool,
@@ -66,37 +67,36 @@ impl McpToolHandler for AdminAuditDumpHandler {
                 .await
                 .map_err(|e| db_error(&e))?;
 
-            let summary = format!("{} decision(s) across all identities", rows.len());
-            Ok((
-                text_artifact("Deployment Audit Dump", render_dump(&rows)),
-                summary,
-            ))
+            let summary = format!(
+                "{} decision(s) across all identities (newest {DECISION_LIMIT} max)",
+                rows.len()
+            );
+            Ok((CliArtifact::table(dump_table(&rows)), summary))
         }
     }
 }
 
-fn render_dump(rows: &[repositories::GlobalDecisionRow]) -> String {
-    let mut body = format!(
-        "# Deployment-wide governance decisions (newest {DECISION_LIMIT} max)\n\n\
-         Every identity, not just the caller's.\n\n"
-    );
-    if rows.is_empty() {
-        body.push_str("No decisions recorded.\n");
-        return body;
-    }
-    body.push_str(
-        "| When | User | Session | Tool | Outcome | Policy |\n|---|---|---|---|---|---|\n",
-    );
-    for row in rows {
-        body.push_str(&format!(
-            "| {} | `{}` | `{}` | `{}` | {} | `{}` |\n",
-            row.at.format("%Y-%m-%d %H:%M:%S"),
-            row.user_id,
-            row.session_id,
-            row.tool_name,
-            row.decision,
-            row.policy
-        ));
-    }
-    body
+fn dump_table(rows: &[repositories::GlobalDecisionRow]) -> TableArtifact {
+    let columns = vec![
+        Column::new("at", ColumnType::Date).with_header("When"),
+        Column::new("user", ColumnType::String).with_header("User"),
+        Column::new("session", ColumnType::String).with_header("Session"),
+        Column::new("tool", ColumnType::String).with_header("Tool"),
+        Column::new("decision", ColumnType::String).with_header("Outcome"),
+        Column::new("policy", ColumnType::String).with_header("Policy"),
+    ];
+    let items: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|row| {
+            json!({
+                "at": row.at.format("%Y-%m-%d %H:%M:%S").to_string(),
+                "user": row.user_id.to_string(),
+                "session": row.session_id.to_string(),
+                "tool": row.tool_name,
+                "decision": row.decision,
+                "policy": row.policy,
+            })
+        })
+        .collect();
+    TableArtifact::new(columns).with_rows(items)
 }

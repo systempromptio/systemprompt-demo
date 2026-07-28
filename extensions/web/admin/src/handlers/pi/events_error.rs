@@ -33,7 +33,7 @@ pub const CREDIT_EXHAUSTED_CODE: &str = "credit_exhausted";
 /// `TurnStart`/`TurnEnd` are deliberately transparent to this memory: they are
 /// exactly what a retry interleaves. Any substantive frame clears it, so a
 /// genuinely new error is never hidden and re-prompting re-surfaces the same
-/// one. Pure state, held behind [`super::session::PiSession`]'s emit funnel;
+/// one. Pure state, held behind `session::PiSession`'s emit funnel;
 /// the read-side mirror for already-persisted rows lives in
 /// `conversations::collapse_duplicate_errors`.
 #[derive(Debug, Default)]

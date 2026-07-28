@@ -300,7 +300,8 @@
 }
 
 /* A settled card is a record, not a question: the verdict edge replaces the
-   countdown chrome the settle() pass already removed. */
+   countdown chrome the settle() pass already removed. Inside a folded record
+   it drops its own frame — the record supplies one. */
 .pi-approval-card.is-settled {
   border-left: 2px solid var(--sp-color-success);
 }

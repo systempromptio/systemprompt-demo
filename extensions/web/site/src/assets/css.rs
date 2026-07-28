@@ -49,6 +49,7 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/pi-terminal-prose.css"),
         css!(p, "components/pi-terminal-chain.css"),
         css!(p, "components/pi-terminal-approval.css"),
+        css!(p, "components/pi-terminal-record.css"),
         css!(p, "components/pi-terminal-composer.css"),
         css!(p, "components/pi-terminal-tools.css"),
         css!(p, "components/pi-terminal-motion.css"),

@@ -162,7 +162,12 @@ function settle(el, approvalId, outcome, frame) {
   const record = entry.settle(frame);
   if (record) append(el, record);
   el._approvals.delete(approvalId);
-  line(el, outcome === 'approved' ? 'output-dim' : 'output-warn', settleLine(outcome, frame));
+  // The record carries the verdict, the name and the time on its own summary
+  // line. A transcript line saying the same thing again is the noise, not the
+  // record — so it is only written when there is no record to read.
+  if (!record) {
+    line(el, outcome === 'approved' ? 'output-dim' : 'output-warn', settleLine(outcome, frame));
+  }
   // Nothing else is queued, so put the caret back where typing continues.
   if (!el._approvals.size && !el._input.disabled) el._input.focus();
 }

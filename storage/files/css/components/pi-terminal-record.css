@@ -1,0 +1,91 @@
+/* ── settled approval records ───────────────────────────────────────────────
+   The folded form of an answered approval. Lives beside the card CSS rather
+   than inside it: the card is a question, this is the record it leaves. */
+
+/* A run of answered approvals should read as a list of verdicts, not a wall of
+   identical amber blocks. Collapsed, each is one line; the card is one click
+   away, and only one is ever open at a time. */
+.pi-approval-record {
+  --pi-record-edge: var(--sp-color-success);
+
+  margin: var(--sp-space-1) 0;
+  border-left: 2px solid var(--pi-record-edge);
+  border-radius: var(--sp-radius-sm);
+  background: color-mix(in oklch, var(--sp-color-terminal-header) 55%, transparent);
+}
+
+.pi-approval-record[data-outcome='denied'],
+.pi-approval-record[data-outcome='timeout'],
+.pi-approval-record[data-outcome='abandoned'],
+.pi-approval-record[data-outcome='expired'] {
+  --pi-record-edge: var(--sp-color-warning);
+}
+
+.pi-approval-record-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  padding: 0.3rem var(--sp-space-3);
+  cursor: pointer;
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  color: var(--sp-color-terminal-text-dim);
+  list-style: none;
+}
+
+.pi-approval-record-head::-webkit-details-marker { display: none; }
+
+.pi-approval-record-head:hover,
+.pi-approval-record[open] > .pi-approval-record-head {
+  background: color-mix(in oklch, var(--sp-color-terminal-header) 85%, transparent);
+}
+
+.pi-approval-record-mark {
+  flex: none;
+  color: var(--pi-record-edge);
+}
+
+.pi-approval-record-tool {
+  color: var(--sp-color-terminal-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The stamp is the summary's own by-line here, so it loses the block spacing
+   it carries when it sits at the foot of an open card. */
+.pi-approval-record-head .pi-attribution {
+  margin-top: 0;
+  margin-left: auto;
+  font-size: 0.68rem;
+}
+
+.pi-approval-record-head .pi-attribution-avatar {
+  width: 1.1rem;
+  height: 1.1rem;
+  font-size: 0.52rem;
+}
+
+/* The affordance: a chevron that turns when the record opens. */
+.pi-approval-record-more::before {
+  content: '▸';
+  display: inline-block;
+  color: var(--sp-color-terminal-text-dim);
+  transition: transform 0.15s ease;
+}
+
+.pi-approval-record[open] .pi-approval-record-more::before {
+  transform: rotate(90deg);
+}
+
+/* Open, the card sits inside the record's frame rather than carrying its own. */
+.pi-approval-record > .pi-approval-card.is-settled {
+  border-left: none;
+  border-radius: 0 0 var(--sp-corners-inner-md) var(--sp-corners-inner-md);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pi-approval-record-more::before { transition: none; }
+}

@@ -1,25 +1,30 @@
 //! `governance_stats` — the audit spine, read back out of the database.
 //!
-//! The one handler that answers from the database rather than from compiled-in
-//! content. It reports what the four-stage pipeline actually decided, which is
-//! the demo's whole claim: these numbers come from the same rows the CLI
-//! reports on, not from anything assembled for display.
+//! Answers from the database rather than from compiled-in content. It reports
+//! what the four-stage pipeline actually decided, which is the demo's whole
+//! claim: these rows come from the same tables the CLI reports on, not from
+//! anything assembled for display.
+//!
+//! The artifact is a **table** of this session's decisions — the typed shape
+//! the terminal's renderer draws as one — while the aggregate the old markdown
+//! carried (verdict counts, spend, tokens, cost) travels in the one-line
+//! summary, where the model quotes it from.
 
 use crate::repositories::{self, DECISION_LIMIT};
-use crate::tools::GovernanceStatsInput;
+use crate::tool_inputs::GovernanceStatsInput;
 use rmcp::ErrorData as McpError;
 use std::future::Future;
 use systemprompt::database::DbPool;
-use systemprompt::identifiers::{McpExecutionId, SessionId};
+use systemprompt::identifiers::McpExecutionId;
 use systemprompt::mcp::McpToolHandler;
 use systemprompt::models::artifacts::CliArtifact;
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 
-use super::{db_error, text_artifact};
+use super::db_error;
+use super::render_spine::decisions_table;
 
-// Why: the one handler that answers from the database rather than from
-// compiled-in content. The caller comes from the authenticated request
-// context, never from the input — which is why the input type has no fields.
+// Why: the caller comes from the authenticated request context, never from
+// the input — which is why the input type has no fields.
 pub(in crate::server) struct GovernanceStatsHandler {
     pub(in crate::server) db_pool: DbPool,
 }
@@ -33,7 +38,7 @@ impl McpToolHandler for GovernanceStatsHandler {
     }
 
     fn description(&self) -> &'static str {
-        "Return this session's own governance verdicts, spend, and tool fires."
+        "Return this session's own governance verdicts as a table, with spend in the summary."
     }
 
     fn handle(
@@ -54,148 +59,40 @@ impl McpToolHandler for GovernanceStatsHandler {
                 ));
             };
             let pool = pool.as_ref();
-            let stats = Spine {
-                tallies: repositories::list_policy_tallies(pool, &user_id, &session_id)
-                    .await
-                    .map_err(|e| db_error(&e))?,
-                decisions: repositories::list_recent_decisions(
-                    pool,
-                    &user_id,
-                    &session_id,
-                    DECISION_LIMIT,
-                )
+
+            if session_id.as_str().is_empty() || session_id.as_str() == "unknown" {
+                // Why: an empty table alone would read as "an ungoverned
+                // deployment"; the summary says what it actually is — a request
+                // that did not name a session to report on.
+                return Ok((
+                    CliArtifact::table(decisions_table(&[])),
+                    "no session id presented — no session-scoped rows can be read".to_owned(),
+                ));
+            }
+
+            let tallies = repositories::list_policy_tallies(pool, &user_id, &session_id)
                 .await
-                .map_err(|e| db_error(&e))?,
-                spend: repositories::get_spend(pool, &user_id, &session_id)
+                .map_err(|e| db_error(&e))?;
+            let decisions =
+                repositories::list_recent_decisions(pool, &user_id, &session_id, DECISION_LIMIT)
                     .await
-                    .map_err(|e| db_error(&e))?,
-                fires: repositories::list_tool_fires(pool, &user_id, &session_id, DECISION_LIMIT)
-                    .await
-                    .map_err(|e| db_error(&e))?,
-                session_id,
-            };
+                    .map_err(|e| db_error(&e))?;
+            let spend = repositories::get_spend(pool, &user_id, &session_id)
+                .await
+                .map_err(|e| db_error(&e))?;
 
+            let allowed: i64 = tallies.iter().map(|t| t.allowed).sum();
+            let denied: i64 = tallies.iter().map(|t| t.denied).sum();
             let summary = format!(
-                "{} allowed, {} denied, {} request(s)",
-                stats.allowed(),
-                stats.denied(),
-                stats.spend.requests
+                "{allowed} allowed, {denied} denied across {} decision(s); {} provider \
+                 request(s), {} tokens in / {} out, ${:.4}",
+                decisions.len(),
+                spend.requests,
+                spend.input_tokens,
+                spend.output_tokens,
+                spend.cost_microdollars as f64 / 1_000_000.0,
             );
-            Ok((
-                text_artifact("Governance Statistics", render_spine(&stats)),
-                summary,
-            ))
+            Ok((CliArtifact::table(decisions_table(&decisions)), summary))
         }
     }
-}
-
-struct Spine {
-    tallies: Vec<repositories::PolicyTally>,
-    decisions: Vec<repositories::DecisionRow>,
-    spend: repositories::SpendRow,
-    fires: Vec<repositories::ToolFireRow>,
-    session_id: SessionId,
-}
-
-impl Spine {
-    fn allowed(&self) -> i64 {
-        self.tallies.iter().map(|t| t.allowed).sum()
-    }
-
-    fn denied(&self) -> i64 {
-        self.tallies.iter().map(|t| t.denied).sum()
-    }
-
-    fn has_session(&self) -> bool {
-        !self.session_id.as_str().is_empty() && self.session_id.as_str() != "unknown"
-    }
-}
-
-fn render_spine(stats: &Spine) -> String {
-    if !stats.has_session() {
-        return "# Governance statistics\n\nThis caller presented no session id, so no \
-                session-scoped rows can be read. This is not an ungoverned deployment — it \
-                is a request that did not say which session to report on.\n"
-            .to_owned();
-    }
-
-    let mut body = format!(
-        "# Governance statistics for this session (`{}`)\n\n\
-         Every figure below is scoped to this session alone, not to the account's history.\n\n\
-         ## Spend\n\n",
-        stats.session_id
-    );
-
-    let spend = &stats.spend;
-    body.push_str(&format!(
-        "- Provider requests: {}\n- Tokens: {} in / {} out\n- Cost: ${:.4}\n",
-        spend.requests,
-        spend.input_tokens,
-        spend.output_tokens,
-        spend.cost_microdollars as f64 / 1_000_000.0,
-    ));
-    match spend.mean_latency_ms {
-        Some(ms) => body.push_str(&format!("- Mean latency: {ms:.0} ms\n")),
-        None => body.push_str("- Mean latency: no completed request yet\n"),
-    }
-    body.push_str(&format!(
-        "- Most recent model: {}\n\n## Verdicts by policy\n\n",
-        spend.model.as_deref().unwrap_or("none reached yet")
-    ));
-
-    if stats.tallies.is_empty() {
-        body.push_str("No governance decisions recorded in this session yet.\n\n");
-    } else {
-        body.push_str(&format!(
-            "{} allowed, {} denied across all policies in this session.\n\n\
-             | Policy | Allowed | Denied |\n|---|---|---|\n",
-            stats.allowed(),
-            stats.denied()
-        ));
-        for tally in &stats.tallies {
-            body.push_str(&format!(
-                "| `{}` | {} | {} |\n",
-                tally.policy, tally.allowed, tally.denied
-            ));
-        }
-        body.push('\n');
-    }
-
-    body.push_str(&render_decisions(stats));
-    body.push_str(&render_fires(stats));
-    body
-}
-
-fn render_decisions(stats: &Spine) -> String {
-    let mut body = format!("## Recent decisions (newest {DECISION_LIMIT} max)\n\n");
-    if stats.decisions.is_empty() {
-        body.push_str("None.\n\n");
-        return body;
-    }
-    body.push_str("| When | Tool | Outcome | Policy | Reason |\n|---|---|---|---|---|\n");
-    for row in &stats.decisions {
-        let reason = row.reason.replace('|', "\\|");
-        body.push_str(&format!(
-            "| {} | `{}` | {} | `{}` | {} |\n",
-            row.at.format("%Y-%m-%d %H:%M:%S"),
-            row.tool_name,
-            row.decision,
-            row.policy,
-            reason
-        ));
-    }
-    body.push('\n');
-    body
-}
-
-fn render_fires(stats: &Spine) -> String {
-    let mut body = String::from("## Tools that actually ran\n\n");
-    if stats.fires.is_empty() {
-        body.push_str("None in this session.\n");
-        return body;
-    }
-    for row in &stats.fires {
-        body.push_str(&format!("- `{}` — {} fire(s)\n", row.tool_name, row.fires));
-    }
-    body
 }

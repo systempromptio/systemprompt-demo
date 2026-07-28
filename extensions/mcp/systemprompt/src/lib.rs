@@ -11,6 +11,7 @@
 pub mod error;
 pub(crate) mod repositories;
 pub mod server;
+pub mod tool_inputs;
 pub mod tools;
 pub mod topics;
 
