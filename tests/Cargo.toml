@@ -55,6 +55,8 @@ http-body-util = "0.1"
 tokio = { version = "1.49", features = ["rt-multi-thread", "macros"] }
 sqlx = { version = "0.9", features = ["runtime-tokio", "tls-rustls-ring-webpki", "postgres", "uuid", "chrono", "json"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
+# Drives the admin template helpers through a real registry (unit/web).
+handlebars = "6"
 chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
 uuid = { version = "1.18", features = ["v4"] }

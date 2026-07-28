@@ -71,3 +71,5 @@ mod secret_crypto;
 mod seed_contract;
 #[cfg(test)]
 mod site_markdown_routes;
+#[cfg(test)]
+mod template_helpers;
