@@ -52,7 +52,6 @@ impl Credentials {
     }
 }
 
-// Seed one admin and one plain user, and mint a token for each.
 pub async fn provision(pool: &PgPool) -> Credentials {
     let non_admin = provision_one(pool, "contract-user", &["user"]).await;
     let admin = provision_one(pool, "contract-admin", &["admin", "user"]).await;

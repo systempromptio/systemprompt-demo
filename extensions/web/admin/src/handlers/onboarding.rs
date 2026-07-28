@@ -1,9 +1,8 @@
 //! Where a user lands after signing in.
 //!
-//! The company details this module used to collect are now part of
-//! registration itself (`public_register`), so what remains is the post-login
-//! fork: an account still under review goes to `/admin/pending`, an approved
-//! one to the homepage.
+//! Registration (`public_register`) collects the company details, so all
+//! that happens here is the post-login fork: an account still under review
+//! goes to `/admin/pending`, an approved one to the homepage.
 
 use axum::Extension;
 use axum::response::{IntoResponse, Redirect, Response};

@@ -8,7 +8,8 @@
 //! explained nothing.
 
 use systemprompt_web_admin::test_support::{
-    PiEvent, PiEventBody, PolicyStage, readable_provider_error, translate,
+    CREDIT_EXHAUSTED_CODE, ErrorKind, PiEvent, PiEventBody, PolicyStage, readable_provider_error,
+    translate,
 };
 
 
@@ -26,13 +27,20 @@ fn a_failed_turn_reports_the_provider_reason() {
             "errorMessage": "400 {\"type\":\"error\",\"error\":{\"type\":\"api_error\",\"message\":\"Credit exhausted. Your systemprompt credit has been used up — add credit to continue.\"}}"
         }
     });
-    let Some(PiEventBody::Error { message }) = translate(&frame) else {
+    let Some(PiEventBody::Error {
+        message,
+        kind,
+        code,
+    }) = translate(&frame)
+    else {
         panic!("a failed turn must surface an error");
     };
     assert_eq!(
         message,
         "Credit exhausted. Your systemprompt credit has been used up — add credit to continue."
     );
+    assert_eq!(kind, ErrorKind::Provider);
+    assert_eq!(code, Some(CREDIT_EXHAUSTED_CODE));
 }
 
 /// A turn that ended normally must not render an error card.
@@ -54,7 +62,10 @@ fn a_successful_turn_reports_nothing() {
 /// viewer — losing it is the failure this whole path exists to fix.
 #[test]
 fn an_unparseable_provider_error_is_passed_through() {
-    assert_eq!(readable_provider_error("upstream timed out"), "upstream timed out");
+    assert_eq!(
+        readable_provider_error("upstream timed out"),
+        "upstream timed out"
+    );
     assert_eq!(readable_provider_error("502 {not json"), "502 {not json");
 }
 
@@ -100,10 +111,47 @@ fn provider_failure_surfaces_as_an_error() {
                        "errorMessage": "401 unknown or revoked session" }
         }
     });
-    let Some(PiEventBody::Error { message }) = translate(&frame) else {
+    let Some(PiEventBody::Error {
+        message,
+        kind,
+        code,
+    }) = translate(&frame)
+    else {
         panic!("expected Error");
     };
     assert_eq!(message, "401 unknown or revoked session");
+    assert_eq!(kind, ErrorKind::Provider);
+    assert_eq!(code, None);
+}
+
+/// The two wire frames one failed request produces — the mid-stream `error`
+/// event and the `message_end` with `stopReason: "error"` — must translate to
+/// byte-identical bodies. That equality is what lets the emit-level dedupe
+/// collapse them; if the two arms ever normalise differently again, the
+/// duplicate error lines come back.
+#[test]
+fn both_error_frames_of_one_failure_translate_identically() {
+    let envelope = "400 {\"type\":\"error\",\"error\":{\"type\":\"api_error\",\
+                    \"message\":\"Credit exhausted. Add credit to continue.\"}}";
+    let update = serde_json::json!({
+        "type": "message_update",
+        "assistantMessageEvent": {
+            "type": "error", "reason": "error",
+            "error": { "role": "assistant", "stopReason": "error", "errorMessage": envelope }
+        }
+    });
+    let end = serde_json::json!({
+        "type": "message_end",
+        "message": { "role": "assistant", "content": [], "stopReason": "error",
+                     "errorMessage": envelope }
+    });
+    let (Some(a), Some(b)) = (translate(&update), translate(&end)) else {
+        panic!("both frames must surface an error");
+    };
+    let (Ok(a), Ok(b)) = (serde_json::to_value(&a), serde_json::to_value(&b)) else {
+        panic!("owned strings cannot fail to serialise");
+    };
+    assert_eq!(a, b);
 }
 
 #[test]
@@ -122,16 +170,19 @@ fn policy_stages_serialises_as_a_tagged_frame() {
         PiEventBody::PolicyStages {
             tool_use_id: Some("tu_1".to_owned()),
             tool_name: "read".to_owned(),
+            decision_id: "dec_1".to_owned(),
             stages: vec![
                 PolicyStage {
                     policy: "scope_check".to_owned(),
                     result: "pass",
                     detail: "read is in scope".to_owned(),
+                    duration_ms: 0.4,
                 },
                 PolicyStage {
                     policy: "rate_limit".to_owned(),
                     result: "skip",
                     detail: "disabled".to_owned(),
+                    duration_ms: 0.0,
                 },
             ],
         },

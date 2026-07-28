@@ -16,7 +16,6 @@ const BRIDGE_SRC: &str = include_str!("../../../../extensions/web/admin/src/rout
 
 const METHODS: [&str; 5] = ["get", "post", "put", "patch", "delete"];
 
-// A single method/path pair the router serves.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct MountedRoute {
     pub method: String,
@@ -25,8 +24,6 @@ pub struct MountedRoute {
 }
 
 impl MountedRoute {
-    // A concrete URL for this route.
-    //
     // Every path parameter is filled with a well-formed id that exists in no
     // table. That is the interesting case rather than a limitation: a route
     // asked for an id it cannot find owes the caller a 404, and one that
@@ -67,8 +64,6 @@ pub fn mounted_routes() -> Vec<MountedRoute> {
     routes
 }
 
-// Split the source on `.route(` and read each call's path literal plus every
-// method constructor applied to it.
 fn parse(src: &str, prefix: &str, out: &mut Vec<MountedRoute>) {
     let calls: Vec<usize> = src.match_indices(".route(").map(|(i, _)| i).collect();
     for (n, &start) in calls.iter().enumerate() {
@@ -105,9 +100,8 @@ fn path_literal(segment: &str) -> Option<String> {
     Some(literal.to_owned())
 }
 
-// Method constructors applied within one `.route(...)` call, in declaration
-// order. Matches only a bare `name(`, so handler identifiers that merely
-// contain a method name (`get_gateway_handler`) are not mistaken for one.
+// Matches only a bare `name(`, so handler identifiers that merely contain a
+// method name (`get_gateway_handler`) are not mistaken for one.
 fn methods_in(segment: &str) -> Vec<String> {
     let bytes = segment.as_bytes();
     let mut found = Vec::new();

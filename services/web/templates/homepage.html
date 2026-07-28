@@ -20,13 +20,25 @@
     <meta name="twitter:description" content="{{site.branding.description}}">
     <meta name="twitter:image" content="{{site.branding.image}}">
     <meta name="theme-color" content="{{site.branding.themeColor}}">
-    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-shell.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-header.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-transcript.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-prose.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-chain.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-approval.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-composer.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-tools.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/pi-terminal-motion.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-split.css">
-    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/auth-pane.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/auth-pane-core.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/auth-pane-offer.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/auth-pane-telemetry.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/analytics-pane.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/conversation-list.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-stage.css">
-    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene-rail.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene-lanes.css">
+    <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-scene-offer.css">
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/components/home-marquee.css">
     <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
     <script src="{{JS_BASE_PATH}}/home-scene.js" defer></script>
@@ -53,7 +65,6 @@
 
     <main id="main" class="home-split">
         <section class="home-split-pane home-split-pane--terminal" aria-label="Governed agent terminal">
-            <sp-conversation-list for="pi-terminal" endpoint="/api/public/pi"></sp-conversation-list>
             <sp-pi-terminal id="pi-terminal" endpoint="/api/public/pi"></sp-pi-terminal>
         </section>
         <section class="home-split-pane home-split-pane--profile" aria-label="Your account and agent telemetry">
@@ -69,82 +80,90 @@
       hero and the band below. Adapted from systemprompt-web's deploy-marquee:
       four identical groups and a -25% translate make the loop seamless; the
       first group is the real content and the other three are aria-hidden
-      copies, so assistive tech reads the list exactly once. Items are spans,
-      not links — this band states compatibility, it does not send traffic.
+      copies, so assistive tech reads the list exactly once (links in the
+      copies carry tabindex="-1" so the keyboard meets each one once too).
+      Two labelled sections: "Works with" names the agents — the same mark can
+      appear under two agent names, so these keep their text — and "Providers"
+      is logo-only, one mark per brand. Every item links out to the thing it
+      names.
     -->
     <aside class="compat-marquee" aria-label="Compatible agents and model providers">
         <div class="compat-marquee-track">
             <div class="compat-marquee-group">
-                <span class="compat-marquee-label">Compatible with</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
-                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-label">Works with</span>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/claude-code" target="_blank" rel="noopener noreferrer" title="Claude Code"><img src="/files/images/brands/claude-icon.svg" alt="Claude Code" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Claude Code</span></a>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/cowork" target="_blank" rel="noopener noreferrer" title="Cowork"><img src="/files/images/brands/claude-icon.svg" alt="Cowork" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Cowork</span></a>
+                <a class="compat-marquee-item" href="https://openai.com/codex/" target="_blank" rel="noopener noreferrer" title="Codex"><img src="/files/images/brands/openai.svg" alt="Codex" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Codex</span></a>
+                <a class="compat-marquee-item" href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noopener noreferrer" title="Gemini CLI"><img src="/files/images/brands/gemini.svg" alt="Gemini CLI" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Gemini CLI</span></a>
+                <a class="compat-marquee-item" href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener noreferrer" title="Pi"><img src="/files/images/brands/pi.svg" alt="Pi" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Pi</span></a>
                 <span class="compat-marquee-sep" aria-hidden="true"></span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
-                <span class="compat-marquee-item">Mistral</span>
-                <span class="compat-marquee-item">DeepSeek</span>
-                <span class="compat-marquee-item">Kimi</span>
-                <span class="compat-marquee-item">Qwen</span>
-                <span class="compat-marquee-item">Llama</span>
+                <span class="compat-marquee-label">Providers</span>
+                <a class="compat-marquee-item" href="https://www.anthropic.com" target="_blank" rel="noopener noreferrer" title="Anthropic"><img src="/files/images/brands/anthropic.svg" alt="Anthropic" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://openai.com" target="_blank" rel="noopener noreferrer" title="OpenAI"><img src="/files/images/brands/openai.svg" alt="OpenAI" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://ai.google.dev" target="_blank" rel="noopener noreferrer" title="Gemini"><img src="/files/images/brands/gemini.svg" alt="Gemini" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://groq.com" target="_blank" rel="noopener noreferrer" title="Groq"><img src="/files/images/brands/groq.svg" alt="Groq" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://mistral.ai" target="_blank" rel="noopener noreferrer" title="Mistral"><img src="/files/images/brands/mistral.svg" alt="Mistral" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.deepseek.com" target="_blank" rel="noopener noreferrer" title="DeepSeek"><img src="/files/images/brands/deepseek.svg" alt="DeepSeek" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.moonshot.ai" target="_blank" rel="noopener noreferrer" title="Kimi"><img src="/files/images/brands/kimi.svg" alt="Kimi" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://qwen.ai" target="_blank" rel="noopener noreferrer" title="Qwen"><img src="/files/images/brands/qwen.svg" alt="Qwen" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.llama.com" target="_blank" rel="noopener noreferrer" title="Llama"><img src="/files/images/brands/meta.svg" alt="Llama" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
             </div>
             <div class="compat-marquee-group" aria-hidden="true">
-                <span class="compat-marquee-label">Compatible with</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
-                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-label">Works with</span>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/claude-code" target="_blank" rel="noopener noreferrer" title="Claude Code" tabindex="-1"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Claude Code</span></a>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/cowork" target="_blank" rel="noopener noreferrer" title="Cowork" tabindex="-1"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Cowork</span></a>
+                <a class="compat-marquee-item" href="https://openai.com/codex/" target="_blank" rel="noopener noreferrer" title="Codex" tabindex="-1"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Codex</span></a>
+                <a class="compat-marquee-item" href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noopener noreferrer" title="Gemini CLI" tabindex="-1"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Gemini CLI</span></a>
+                <a class="compat-marquee-item" href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener noreferrer" title="Pi" tabindex="-1"><img src="/files/images/brands/pi.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Pi</span></a>
                 <span class="compat-marquee-sep" aria-hidden="true"></span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
-                <span class="compat-marquee-item">Mistral</span>
-                <span class="compat-marquee-item">DeepSeek</span>
-                <span class="compat-marquee-item">Kimi</span>
-                <span class="compat-marquee-item">Qwen</span>
-                <span class="compat-marquee-item">Llama</span>
+                <span class="compat-marquee-label">Providers</span>
+                <a class="compat-marquee-item" href="https://www.anthropic.com" target="_blank" rel="noopener noreferrer" title="Anthropic" tabindex="-1"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://openai.com" target="_blank" rel="noopener noreferrer" title="OpenAI" tabindex="-1"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://ai.google.dev" target="_blank" rel="noopener noreferrer" title="Gemini" tabindex="-1"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://groq.com" target="_blank" rel="noopener noreferrer" title="Groq" tabindex="-1"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://mistral.ai" target="_blank" rel="noopener noreferrer" title="Mistral" tabindex="-1"><img src="/files/images/brands/mistral.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.deepseek.com" target="_blank" rel="noopener noreferrer" title="DeepSeek" tabindex="-1"><img src="/files/images/brands/deepseek.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.moonshot.ai" target="_blank" rel="noopener noreferrer" title="Kimi" tabindex="-1"><img src="/files/images/brands/kimi.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://qwen.ai" target="_blank" rel="noopener noreferrer" title="Qwen" tabindex="-1"><img src="/files/images/brands/qwen.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.llama.com" target="_blank" rel="noopener noreferrer" title="Llama" tabindex="-1"><img src="/files/images/brands/meta.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
             </div>
             <div class="compat-marquee-group" aria-hidden="true">
-                <span class="compat-marquee-label">Compatible with</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
-                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-label">Works with</span>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/claude-code" target="_blank" rel="noopener noreferrer" title="Claude Code" tabindex="-1"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Claude Code</span></a>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/cowork" target="_blank" rel="noopener noreferrer" title="Cowork" tabindex="-1"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Cowork</span></a>
+                <a class="compat-marquee-item" href="https://openai.com/codex/" target="_blank" rel="noopener noreferrer" title="Codex" tabindex="-1"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Codex</span></a>
+                <a class="compat-marquee-item" href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noopener noreferrer" title="Gemini CLI" tabindex="-1"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Gemini CLI</span></a>
+                <a class="compat-marquee-item" href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener noreferrer" title="Pi" tabindex="-1"><img src="/files/images/brands/pi.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Pi</span></a>
                 <span class="compat-marquee-sep" aria-hidden="true"></span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
-                <span class="compat-marquee-item">Mistral</span>
-                <span class="compat-marquee-item">DeepSeek</span>
-                <span class="compat-marquee-item">Kimi</span>
-                <span class="compat-marquee-item">Qwen</span>
-                <span class="compat-marquee-item">Llama</span>
+                <span class="compat-marquee-label">Providers</span>
+                <a class="compat-marquee-item" href="https://www.anthropic.com" target="_blank" rel="noopener noreferrer" title="Anthropic" tabindex="-1"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://openai.com" target="_blank" rel="noopener noreferrer" title="OpenAI" tabindex="-1"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://ai.google.dev" target="_blank" rel="noopener noreferrer" title="Gemini" tabindex="-1"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://groq.com" target="_blank" rel="noopener noreferrer" title="Groq" tabindex="-1"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://mistral.ai" target="_blank" rel="noopener noreferrer" title="Mistral" tabindex="-1"><img src="/files/images/brands/mistral.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.deepseek.com" target="_blank" rel="noopener noreferrer" title="DeepSeek" tabindex="-1"><img src="/files/images/brands/deepseek.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.moonshot.ai" target="_blank" rel="noopener noreferrer" title="Kimi" tabindex="-1"><img src="/files/images/brands/kimi.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://qwen.ai" target="_blank" rel="noopener noreferrer" title="Qwen" tabindex="-1"><img src="/files/images/brands/qwen.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.llama.com" target="_blank" rel="noopener noreferrer" title="Llama" tabindex="-1"><img src="/files/images/brands/meta.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
             </div>
             <div class="compat-marquee-group" aria-hidden="true">
-                <span class="compat-marquee-label">Compatible with</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Claude Code</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Cowork</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Codex</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini CLI</span>
-                <span class="compat-marquee-item"><img src="/files/images/icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Pi</span>
+                <span class="compat-marquee-label">Works with</span>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/claude-code" target="_blank" rel="noopener noreferrer" title="Claude Code" tabindex="-1"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Claude Code</span></a>
+                <a class="compat-marquee-item" href="https://www.claude.com/product/cowork" target="_blank" rel="noopener noreferrer" title="Cowork" tabindex="-1"><img src="/files/images/brands/claude-icon.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Cowork</span></a>
+                <a class="compat-marquee-item" href="https://openai.com/codex/" target="_blank" rel="noopener noreferrer" title="Codex" tabindex="-1"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Codex</span></a>
+                <a class="compat-marquee-item" href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noopener noreferrer" title="Gemini CLI" tabindex="-1"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Gemini CLI</span></a>
+                <a class="compat-marquee-item" href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener noreferrer" title="Pi" tabindex="-1"><img src="/files/images/brands/pi.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"><span class="compat-marquee-name">Pi</span></a>
                 <span class="compat-marquee-sep" aria-hidden="true"></span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Anthropic</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">OpenAI</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Gemini</span>
-                <span class="compat-marquee-item"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async">Groq</span>
-                <span class="compat-marquee-item">Mistral</span>
-                <span class="compat-marquee-item">DeepSeek</span>
-                <span class="compat-marquee-item">Kimi</span>
-                <span class="compat-marquee-item">Qwen</span>
-                <span class="compat-marquee-item">Llama</span>
+                <span class="compat-marquee-label">Providers</span>
+                <a class="compat-marquee-item" href="https://www.anthropic.com" target="_blank" rel="noopener noreferrer" title="Anthropic" tabindex="-1"><img src="/files/images/brands/anthropic.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://openai.com" target="_blank" rel="noopener noreferrer" title="OpenAI" tabindex="-1"><img src="/files/images/brands/openai.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://ai.google.dev" target="_blank" rel="noopener noreferrer" title="Gemini" tabindex="-1"><img src="/files/images/brands/gemini.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://groq.com" target="_blank" rel="noopener noreferrer" title="Groq" tabindex="-1"><img src="/files/images/brands/groq.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://mistral.ai" target="_blank" rel="noopener noreferrer" title="Mistral" tabindex="-1"><img src="/files/images/brands/mistral.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.deepseek.com" target="_blank" rel="noopener noreferrer" title="DeepSeek" tabindex="-1"><img src="/files/images/brands/deepseek.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.moonshot.ai" target="_blank" rel="noopener noreferrer" title="Kimi" tabindex="-1"><img src="/files/images/brands/kimi.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://qwen.ai" target="_blank" rel="noopener noreferrer" title="Qwen" tabindex="-1"><img src="/files/images/brands/qwen.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
+                <a class="compat-marquee-item" href="https://www.llama.com" target="_blank" rel="noopener noreferrer" title="Llama" tabindex="-1"><img src="/files/images/brands/meta.svg" alt="" class="compat-marquee-logo" width="20" height="20" loading="lazy" decoding="async"></a>
             </div>
         </div>
     </aside>

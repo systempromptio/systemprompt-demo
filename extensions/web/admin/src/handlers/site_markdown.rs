@@ -20,8 +20,8 @@ use sqlx::PgPool;
 
 use crate::repositories::site_markdown as repo;
 
-/// The `source_id` values a path may name. Everything else 404s, including
-/// values that exist in the DB but are not meant to be listed here.
+// Why: the only `source_id` values a path may name — everything else 404s,
+// including values that exist in the DB but are not meant to be listed here.
 const SECTIONS: &[&str] = &["documentation", "blog"];
 
 const CACHE_CONTROL: &str = "public, max-age=300";

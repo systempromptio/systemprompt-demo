@@ -17,12 +17,9 @@ use systemprompt::models::execution::context::RequestContext as SysRequestContex
 
 use super::{db_error, text_artifact};
 
-/// `governance_stats` — read the caller's own audit rows back.
-///
-/// Holds a pool because this is the one handler that answers from the database
-/// rather than from compiled-in content. The caller is taken from the
-/// authenticated request context, never from the input, which is why the input
-/// type has no fields.
+// Why: the one handler that answers from the database rather than from
+// compiled-in content. The caller comes from the authenticated request
+// context, never from the input — which is why the input type has no fields.
 pub(in crate::server) struct GovernanceStatsHandler {
     pub(in crate::server) db_pool: DbPool,
 }

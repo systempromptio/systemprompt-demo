@@ -120,8 +120,6 @@ pub async fn list_conversations(
         .collect())
 }
 
-/// Name a conversation.
-///
 /// The row count distinguishes a title that was set from a conversation the
 /// caller does not own, which the `WHERE` clause conflates with one that does
 /// not exist.

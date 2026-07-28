@@ -4,7 +4,8 @@ import { conversations, sendJson } from './pi-transport.js';
 /**
  * <sp-conversation-list for="pi" endpoint="/api/public/pi">
  *
- * The picker beside the terminal: every conversation this viewer owns, a button
+ * The picker in the terminal's header dropdown (the terminal instantiates it
+ * inside .pi-conv-panel): every conversation this viewer owns, a button
  * to start a new one, and rename/delete on each. Light DOM, like the terminal,
  * so the global --sp-* tokens and [data-theme] apply.
  *

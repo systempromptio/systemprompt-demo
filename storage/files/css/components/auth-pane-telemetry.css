@@ -1,0 +1,319 @@
+/* ── policy pipeline ────────────────────────────────────────────────────── */
+
+.auth-pane .pane-stages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: pane-stage;
+}
+
+.auth-pane .pane-stage {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-2) var(--sp-space-3);
+  background: var(--sp-ap-well);
+  border-left: 2px solid var(--sp-ap-border);
+  border-radius: 0 var(--sp-radius-sm) var(--sp-radius-sm) 0;
+  font-size: 0.78rem;
+}
+
+/* Numbered, because the order the checks run in is part of the claim. */
+.auth-pane .pane-stage-name::before {
+  counter-increment: pane-stage;
+  content: counter(pane-stage) ". ";
+  color: var(--sp-ap-text-muted);
+  font-family: var(--sp-font-mono);
+}
+
+.auth-pane .pane-stage-name {
+  color: var(--sp-ap-text);
+}
+
+.auth-pane .pane-stage-tally {
+  color: var(--sp-ap-text-muted);
+  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A stage that has not evaluated anything yet reads as present but quiet —
+   dimmed rather than absent, so the pipeline never appears to grow. */
+.auth-pane .pane-stage[data-active="0"] {
+  opacity: 0.55;
+}
+
+.auth-pane .pane-stage[data-active="1"] {
+  border-left-color: var(--sp-color-success);
+}
+
+.auth-pane .pane-stage[data-hot="1"] {
+  border-left-color: var(--sp-color-error);
+  background: color-mix(in oklch, var(--sp-color-error) 12%, var(--sp-ap-well));
+  opacity: 1;
+}
+
+.auth-pane .pane-stage[data-hot="1"] .pane-stage-tally {
+  color: var(--sp-color-error);
+}
+
+/* ── platform pulse ─────────────────────────────────────────────────────── */
+
+/* Muted throughout: this section is context about everyone else, and it must
+   not compete with the visitor's own numbers above it. */
+.auth-pane .pane-section--pulse {
+  padding-top: var(--sp-space-3);
+  border-top: 1px solid var(--sp-ap-border);
+}
+
+.auth-pane .pane-stats--pulse {
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+}
+
+.auth-pane .pane-stats--pulse .pane-stat {
+  padding: var(--sp-space-2);
+  background: transparent;
+  border-style: dashed;
+}
+
+.auth-pane .pane-stats--pulse .pane-stat dd {
+  color: var(--sp-ap-text-muted);
+  font-size: 0.85rem;
+}
+
+.auth-pane .pane-pulse-note {
+  margin: var(--sp-space-2) 0 0;
+  color: var(--sp-ap-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ── tabbed telemetry ───────────────────────────────────────────────────────
+   The signed-in pane is four panels behind one tablist. Panels all stay in
+   the DOM — switching toggles `hidden` — so the counters inside a hidden tab
+   are already current the instant it is shown. */
+
+.auth-pane .pane-tabs--stats {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.auth-pane .pane-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-space-1);
+}
+
+.auth-pane .pane-tab[aria-selected="true"] {
+  background: var(--sp-ap-raise);
+  color: var(--sp-ap-text);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.35);
+}
+
+.auth-pane .pane-tab:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 1px;
+}
+
+/* The Governance tab's live count. Red once anything has been denied — the
+   one signal that must reach a visitor looking at a different tab. */
+.auth-pane .pane-tab-chip {
+  padding: 0 0.4rem;
+  background: var(--sp-ap-well);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-ap-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.auth-pane .pane-tab-chip[data-alert="1"] {
+  background: color-mix(in oklch, var(--sp-color-error) 25%, var(--sp-ap-well));
+  color: var(--sp-color-error);
+}
+
+.auth-pane .pane-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-4);
+  animation: auth-pane-panel-in 0.16s ease-out;
+}
+
+.auth-pane .pane-panel:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--sp-radius-sm);
+}
+
+@keyframes auth-pane-panel-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Denser tiles inside panels than the old stacked layout: the tab already
+   names the group, so each tile carries less framing. */
+.auth-pane .pane-panel .pane-stat {
+  padding: var(--sp-space-2) var(--sp-space-3);
+}
+
+/* The Overview's headline numbers, sized to be read from across the split. */
+.auth-pane .pane-stats--hero {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-pane .pane-stats--hero .pane-stat dd {
+  font-size: 1.35rem;
+}
+
+.auth-pane .pane-model-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-space-2);
+  margin: 0;
+  padding: var(--sp-space-2) var(--sp-space-3);
+  background: var(--sp-ap-well);
+  border-radius: var(--sp-radius-sm);
+  color: var(--sp-ap-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.78rem;
+}
+
+.auth-pane .pane-model-sep {
+  color: var(--sp-ap-text-muted);
+}
+
+/* One pip per policy stage — the Overview's echo of the full pipeline. */
+.auth-pane .pane-stage-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-space-1);
+}
+
+.auth-pane .pane-stage-pip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem var(--sp-space-2);
+  border: 1px solid var(--sp-ap-border);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-ap-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
+.auth-pane .pane-stage-pip::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  background: var(--sp-ap-text-muted);
+  border-radius: var(--sp-radius-full);
+}
+
+.auth-pane .pane-stage-pip[data-active="1"] {
+  color: var(--sp-ap-text-dim);
+}
+
+.auth-pane .pane-stage-pip[data-active="1"]::before {
+  background: var(--sp-color-success);
+}
+
+.auth-pane .pane-stage-pip[data-hot="1"] {
+  border-color: color-mix(in oklch, var(--sp-color-error) 55%, transparent);
+  color: var(--sp-color-error);
+}
+
+.auth-pane .pane-stage-pip[data-hot="1"]::before {
+  background: var(--sp-color-error);
+}
+
+/* Inline share/latency bars — same recipe as the credit meter, so every bar
+   in the pane speaks one visual language. */
+.auth-pane .pane-bar {
+  overflow: hidden;
+  flex: 1;
+  height: 0.35rem;
+  min-width: 3rem;
+  background: var(--sp-ap-raise);
+  border: 1px solid var(--sp-ap-border);
+  border-radius: var(--sp-radius-full);
+}
+
+.auth-pane .pane-bar > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--sp-color-primary);
+  border-radius: inherit;
+  transition: width 0.5s ease-out;
+}
+
+.auth-pane .pane-lat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+}
+
+.auth-pane .pane-lat-row,
+.auth-pane .pane-mix-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  font-family: var(--sp-font-mono);
+  font-size: 0.76rem;
+}
+
+.auth-pane .pane-lat-label,
+.auth-pane .pane-mix-label {
+  flex: none;
+  width: 5.5rem;
+  overflow: hidden;
+  color: var(--sp-ap-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-pane .pane-lat-val,
+.auth-pane .pane-mix-pct {
+  flex: none;
+  min-width: 3.2rem;
+  color: var(--sp-ap-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.auth-pane .pane-mix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+}
+
+.auth-pane .pane-feed--preview {
+  max-height: none;
+  overflow: visible;
+}
+
+.auth-pane .pane-link--sm {
+  font-size: 0.72rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-pane .pane-spinner,
+  .auth-pane .pane-stat dd.is-changed,
+  .auth-pane .pane-panel {
+    animation: none;
+  }
+
+  .auth-pane .pane-bar > span {
+    transition: none;
+  }
+}

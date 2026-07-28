@@ -38,7 +38,7 @@ report() {
 }
 
 ARCHAEOLOGY=$(rg -n --no-heading --color=never -g '*.rs' -g '!**/tests/**' \
-    '^\s*(///|//)[^!].*(\(was |historical|previously|no longer|used to be|formerly|renamed)' \
+    '^\s*(//!|///|//).*(\(was |historical|previously|no longer|used to |formerly|renamed)' \
     "${SEARCH_DIRS[@]}" 2>/dev/null | grep -v 'doc-ok:' || true)
 report "comment narrates how the code used to look." \
     "State current behaviour only — history lives in git." \

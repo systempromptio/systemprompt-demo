@@ -90,7 +90,7 @@ pub(super) async fn decide(
     .await;
 
     let stages = verdict.stages();
-    emit_stages(session, payload, &tool_name, &stages);
+    emit_stages(session, payload, &tool_name, &verdict.decision_id, &stages);
 
     if !verdict.allowed {
         emit_denial(session, payload, &tool_name, &verdict);
@@ -141,11 +141,13 @@ fn emit_stages(
     session: &Arc<PiSession>,
     payload: &GovernancePayload,
     tool_name: &str,
+    decision_id: &str,
     stages: &[StageOutcome],
 ) {
     session.emit(PiEventBody::PolicyStages {
         tool_use_id: payload.tool_use_id.clone(),
         tool_name: tool_name.to_owned(),
+        decision_id: decision_id.to_owned(),
         stages: stages.iter().map(PolicyStage::from_outcome).collect(),
     });
 }

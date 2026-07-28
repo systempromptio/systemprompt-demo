@@ -12,7 +12,7 @@ use tokio::io::AsyncWriteExt as _;
 use tokio::process::{Child, ChildStdin};
 use tokio::sync::{broadcast, mpsc, oneshot};
 
-use super::events::{PiEvent, PiEventBody};
+use super::events::{ErrorDeduper, PiEvent, PiEventBody};
 
 const REPLAY_CAPACITY: usize = 200;
 
@@ -50,6 +50,7 @@ pub(super) struct PiSession {
     replay: Mutex<VecDeque<PiEvent>>,
     pending: Mutex<HashMap<String, oneshot::Sender<Verdict>>>,
     seq: AtomicU64,
+    dedupe: Mutex<ErrorDeduper>,
     last_activity: Mutex<Instant>,
     started: Instant,
     closed: AtomicBool,
@@ -82,13 +83,22 @@ impl PiSession {
             replay: Mutex::new(VecDeque::with_capacity(REPLAY_CAPACITY)),
             pending: Mutex::new(HashMap::new()),
             seq: AtomicU64::new(start_seq),
+            dedupe: Mutex::new(ErrorDeduper::default()),
             last_activity: Mutex::new(Instant::now()),
             started: Instant::now(),
             closed: AtomicBool::new(false),
         }
     }
 
+    // Why: a suppressed repeat consumes no seq, so replay windows stay gapless
     pub(super) fn emit(&self, body: PiEventBody) -> u64 {
+        if self
+            .dedupe
+            .lock()
+            .is_ok_and(|mut dedupe| dedupe.is_repeat(&body))
+        {
+            return self.seq.load(Ordering::SeqCst);
+        }
         let seq = self.seq.fetch_add(1, Ordering::SeqCst) + 1;
         let event = PiEvent::new(seq, body);
         if let Ok(mut replay) = self.replay.lock() {

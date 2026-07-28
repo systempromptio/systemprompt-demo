@@ -81,7 +81,7 @@ fn handle_line(deps: &Arc<PiDeps>, session: &Arc<PiSession>, line: &str) {
         RpcFrame::Response { success, error } => {
             if !success {
                 let message = error.unwrap_or_else(|| "pi rejected the command".to_owned());
-                session.emit(PiEventBody::Error { message });
+                session.emit(PiEventBody::rpc_error(message));
             }
         },
         RpcFrame::Event(value) => {
@@ -102,9 +102,9 @@ fn handle_line(deps: &Arc<PiDeps>, session: &Arc<PiSession>, line: &str) {
 fn deny_unparseable(session: &Arc<PiSession>, id: String) {
     let session = Arc::clone(session);
     tokio::spawn(async move {
-        session.emit(PiEventBody::Error {
-            message: "[GOVERNANCE] unparseable approval request — denied".to_owned(),
-        });
+        session.emit(PiEventBody::governance_error(
+            "unparseable approval request — denied",
+        ));
         answer(&session, &id, false).await;
     });
 }

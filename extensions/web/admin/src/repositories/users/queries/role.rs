@@ -14,14 +14,13 @@ pub async fn find_user_access(
     pool: &PgPool,
     user_id: &UserId,
 ) -> Result<Option<UserAccess>, sqlx::Error> {
-    // Why: a missing user_approvals row is pending, not approved — the gate has
-    // to fail closed for any account created down a path that skips the review.
+    // Why: manual review is disabled — only an explicit denial gates an account.
     let row = sqlx::query!(
         r#"
         SELECT
             u.roles,
             COALESCE(upe.department, 'Default') AS "department!",
-            COALESCE(ua.status = 'approved', false) AS "is_approved!"
+            COALESCE(ua.status <> 'denied', true) AS "is_approved!"
         FROM users u
         LEFT JOIN user_profile_ext upe ON upe.user_id = u.id
         LEFT JOIN user_approvals ua ON ua.user_id = u.id

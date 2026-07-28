@@ -3,9 +3,8 @@
 //! This calls the same [`systemprompt_security::authz::resolve`] that
 //! `POST /govern/authz` calls, over the same rules and the same subject
 //! dimensions, so a cell here and a decision at the enforcement point cannot
-//! disagree. It used to carry its own forked `user > department > role`
-//! implementation; that fork is gone, and department is now a subject
-//! dimension the resolver understands (see [`crate::authz::department`]).
+//! disagree. Department is a subject dimension the resolver understands
+//! (see [`crate::authz::department`]), not a parallel implementation here.
 //!
 //! `MatrixSource::layer` names which band decided, mapped back from the
 //! resolver's `MatchedBy` / `DenyReason`.

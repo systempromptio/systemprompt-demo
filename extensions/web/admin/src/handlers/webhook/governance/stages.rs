@@ -20,4 +20,6 @@ pub(crate) struct StageOutcome {
     pub(crate) policy: String,
     pub(crate) result: StageResult,
     pub(crate) detail: String,
+    // Why: zero means "never ran", not "instant" — readers render it as absent.
+    pub(crate) duration_ms: f64,
 }

@@ -17,12 +17,10 @@ pub use service::EmailService;
 
 use systemprompt::extension::prelude::*;
 
-/// Send the welcome / $5-credit email to `to`, addressed to `name`.
+/// Links are built against `site_url`.
 ///
-/// Links are built against `site_url`. Callable from other extension crates
-/// (e.g. the onboarding handler). Never fails when SMTP is unconfigured — it
-/// logs and returns `Ok(())`. A configured-but-failing send returns the
-/// transport error.
+/// Never fails when SMTP is unconfigured — it logs and returns `Ok(())`. A
+/// configured-but-failing send returns the transport error.
 pub async fn send_welcome_email(to: &str, name: &str, site_url: &str) -> Result<(), EmailError> {
     let Some(service) = EmailService::from_env() else {
         tracing::info!(
@@ -34,8 +32,6 @@ pub async fn send_welcome_email(to: &str, name: &str, site_url: &str) -> Result<
     service.send_welcome_email(to, name, site_url).await
 }
 
-/// Tell the reviewer an account is waiting on them.
-///
 /// Same no-op-when-unconfigured contract as [`send_welcome_email`]: a missing
 /// SMTP config must never fail a registration.
 pub async fn send_registration_notice(

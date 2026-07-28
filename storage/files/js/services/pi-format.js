@@ -35,3 +35,30 @@ export function compact(n) {
   if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
   return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
 }
+
+/** `$5/$25` — the two rates a picker row has room for. Sub-dollar rates keep
+ *  their cents (`$0.35`), dollar rates drop them: the point is comparison
+ *  across rows, not an invoice. */
+export function price(n) {
+  if (typeof n !== 'number' || !(n > 0)) return null;
+  return '$' + (n < 1 ? n.toFixed(2).replace(/0$/, '') : String(Math.round(n)));
+}
+
+export function modelLabel(m) {
+  const parts = [m.id];
+  const inp = price(m.input_per_million);
+  const out = price(m.output_per_million);
+  if (inp && out) parts.push(inp + '/' + out);
+  if (m.context_window) parts.push(compact(m.context_window) + ' ctx');
+  return parts.join('  ·  ');
+}
+
+export function modelTitle(m) {
+  const bits = [];
+  const inp = price(m.input_per_million);
+  const out = price(m.output_per_million);
+  if (inp && out) bits.push('input ' + inp + ' / output ' + out + ' per million tokens');
+  if (m.context_window) bits.push('context window ' + compact(m.context_window));
+  if (m.max_output_tokens) bits.push('max output ' + compact(m.max_output_tokens));
+  return bits.join(' · ');
+}

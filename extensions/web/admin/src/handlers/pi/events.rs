@@ -7,6 +7,10 @@
 
 use serde::{Deserialize as _, Serialize};
 
+pub use super::events_error::{
+    CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind,
+    readable_provider_error, upgrade_legacy_error,
+};
 use super::rpc;
 use super::stage::PolicyStage;
 
@@ -97,6 +101,9 @@ pub enum PiEventBody {
     PolicyStages {
         tool_use_id: Option<String>,
         tool_name: String,
+        /// The `governance_decisions.id` these stages were recorded under, so
+        /// the UI can link straight to the audit trail for this call.
+        decision_id: String,
         stages: Vec<PolicyStage>,
     },
     ApprovalRequest {
@@ -117,6 +124,9 @@ pub enum PiEventBody {
     },
     Error {
         message: String,
+        kind: ErrorKind,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<&'static str>,
     },
     Exit {
         code: Option<i32>,
@@ -154,32 +164,7 @@ fn translate_failed_turn(message: rpc::EndedMessage) -> Option<PiEventBody> {
     let raw = message
         .error_message
         .unwrap_or_else(|| "the provider request failed".to_owned());
-    Some(PiEventBody::Error {
-        message: readable_provider_error(&raw),
-    })
-}
-
-/// Pull the human sentence out of a provider error.
-///
-/// pi hands over the transport status and the raw body — `400 {"type":"error",
-/// "error":{"message":"Credit exhausted…"}}` — and the sentence a person needs
-/// is the innermost `message`. Rendering the envelope instead buries it in
-/// JSON, which in a terminal reads as a crash rather than as an answer.
-/// Anything that does not parse is passed through untouched: an unfamiliar
-/// error still beats no error.
-pub fn readable_provider_error(raw: &str) -> String {
-    // JSON: provider error envelopes vary by upstream; only the innermost
-    // `message` is wanted and anything unparseable passes through untouched
-    let Some(start) = raw.find('{') else {
-        return raw.to_owned();
-    };
-    let Ok(body) = serde_json::from_str::<serde_json::Value>(&raw[start..]) else {
-        return raw.to_owned();
-    };
-    body.pointer("/error/message")
-        .and_then(serde_json::Value::as_str)
-        .or_else(|| body.get("message").and_then(serde_json::Value::as_str))
-        .map_or_else(|| raw.to_owned(), ToOwned::to_owned)
+    Some(PiEventBody::provider_error(&raw))
 }
 
 fn translate_message_update(event: rpc::AssistantMessageEvent) -> Option<PiEventBody> {
@@ -196,11 +181,10 @@ fn translate_message_update(event: rpc::AssistantMessageEvent) -> Option<PiEvent
             if reason.as_deref() == Some("aborted") {
                 return None;
             }
-            Some(PiEventBody::Error {
-                message: error
-                    .and_then(|e| e.error_message)
-                    .unwrap_or_else(|| "the provider request failed".to_owned()),
-            })
+            let raw = error
+                .and_then(|e| e.error_message)
+                .unwrap_or_else(|| "the provider request failed".to_owned());
+            Some(PiEventBody::provider_error(&raw))
         },
         rpc::AssistantMessageEvent::Other => None,
     }

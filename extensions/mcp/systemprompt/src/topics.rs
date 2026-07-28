@@ -6,10 +6,6 @@
 //! file dependency.
 
 /// One documentation topic served by the hub.
-///
-/// Carries a stable id, a human title, a one-line summary used by
-/// `list_topics`, keywords that bias search scoring, and the full Markdown body
-/// served by `get_topic` and the `systemprompt://docs/<id>` resource.
 #[derive(Debug, Clone, Copy)]
 pub struct Topic {
     pub id: &'static str,

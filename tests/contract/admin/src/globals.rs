@@ -23,8 +23,6 @@ static READY: OnceLock<bool> = OnceLock::new();
 // the minter and the validator agree on.
 const ISSUER: &str = "http://localhost:8099";
 
-// Absolute path to the repository root, derived from this crate's manifest
-// directory (`tests/contract/admin`).
 pub fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
@@ -33,8 +31,6 @@ pub fn repo_root() -> PathBuf {
         .to_path_buf()
 }
 
-// Install the profile, secrets, config, and an ephemeral signing key.
-//
 // Returns `false` only if the fixture cannot be materialised; the suite then
 // self-skips the same way it does without a database.
 pub fn init() -> bool {
@@ -109,7 +105,6 @@ fn write_fixture_profile() -> Option<PathBuf> {
     Some(dir.join("profile.yaml"))
 }
 
-// The issuer the admin cookie validator will check tokens against.
 pub fn jwt_issuer() -> String {
     systemprompt::models::Config::get()
         .expect("config installed by init()")

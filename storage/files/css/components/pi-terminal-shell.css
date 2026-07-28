@@ -1,0 +1,141 @@
+/* Live pi terminal widget.
+ *
+ * The one surface on the site where the product is running rather than being
+ * described, so it is styled as an instrument and not as a picture of a shell.
+ * No window dressing: there are no traffic-light dots, because the thing is
+ * live and a mac-window costume is the clearest possible signal that it is not.
+ *
+ * The governance chain is the subject. Everything else — chrome, meters,
+ * composer — is deliberately quiet so that the rail, the approval card, and a
+ * blocked call are what the eye lands on.
+ *
+ * Always dark, in both themes. --sp-color-terminal-* is intentionally not a
+ * light-dark() pair: a console that follows the page theme stops reading as a
+ * console. */
+
+.pi-terminal {
+  /* Local tokens. Scoped here rather than added to core/tokens.css — one
+     component's rail geometry is not a design-system concern. */
+  --pi-pip: 0.875rem;
+  --pi-rail-track: color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
+  --pi-ring-size: 2.25rem;
+  --pi-ring-width: 3px;
+  --pi-ring-fill: 1;
+  --pi-rim: color-mix(in oklch, var(--sp-color-primary) 32%, transparent);
+  --pi-pass: var(--sp-color-success);
+  --pi-fail: var(--sp-color-error);
+
+  display: block;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.pi-demo {
+  padding: var(--sp-space-4xl) 0 var(--sp-space-12);
+  border-top: 1px solid var(--sp-color-border);
+}
+
+.pi-demo-note {
+  max-width: 860px;
+  margin: var(--sp-space-4) auto 0;
+  color: var(--sp-color-text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Screen-reader-only text. Local because the public site has no utility layer;
+   the glyphs and colours in the rail all have a spoken equivalent and this is
+   what carries it. */
+.sp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── shell ──────────────────────────────────────────────────────────────── */
+
+.pi-terminal .terminal {
+  position: relative;
+  opacity: 1;
+  visibility: visible;
+  background: var(--sp-color-terminal-bg);
+  /* Softened: at full strength the edge read as a hard white frame against the
+     dark stage. The rim-light below is what says "lit"; the border only has to
+     say "ends here". */
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 65%, transparent);
+  /* The brand's asymmetric corner, which the rest of the site uses and this
+     widget used to ignore. */
+  border-radius: var(--sp-corners-lg);
+  box-shadow: var(--sp-shadow-hero);
+  overflow: hidden;
+}
+
+/* A rim-light along the top edge, so the shell reads as lit rather than as a
+   flat rectangle sitting on the page. */
+.pi-terminal .terminal::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--pi-rim) 18%, var(--pi-rim) 82%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* On the homepage stage the shell becomes glass so the field reads through it.
+   Scoped, because everywhere else this widget sits on an opaque page and glass
+   there would just look like a rendering bug.
+
+   One surface, not two. The transcript used to carry a near-solid slab of its
+   own while the chrome around it stayed transparent — which made the shell read
+   as a box inside a box, with a visible seam where the slab ended. The whole
+   shell now wears the near-solid ink (mono text over moving footage still needs
+   it) and every section inside is a region of that one surface. */
+.home-split-body .pi-terminal {
+  --pi-rim: var(--sp-stage-rim);
+}
+
+.home-split-body .pi-terminal .terminal {
+  background: oklch(0.14 0.01 55 / 0.86);
+  backdrop-filter: blur(var(--sp-stage-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--sp-stage-blur)) saturate(140%);
+  border-color: var(--sp-stage-glass-border);
+  box-shadow: 0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.04) inset;
+}
+
+.home-split-body .pi-terminal .terminal-body {
+  background: transparent;
+}
+
+.home-split-body .pi-terminal .terminal-header,
+.home-split-body .pi-terminal .pi-composer,
+.home-split-body .pi-terminal .pi-approvals:not(:empty) {
+  background: transparent;
+}
+
+/* The replay strip is chrome like the rest of it. Left opaque it was a grey
+   slab across the foot of a glass card — the one place the illusion broke. */
+.home-split-body .pi-terminal .pi-gate {
+  background: transparent;
+}
+
+/* Every internal division uses the shell's own edge. The default here is
+   `--sp-color-terminal-border`, a zero-chroma grey that belongs to the opaque
+   theme this widget wears everywhere else; against the stage's warm glass it
+   reads as a hard rule drawn across the material rather than a seam in it. */
+.home-split-body .pi-terminal .terminal-header {
+  border-bottom-color: var(--sp-stage-glass-border);
+}
+
+.home-split-body .pi-terminal .pi-composer,
+.home-split-body .pi-terminal .pi-gate,
+.home-split-body .pi-terminal .pi-approvals:not(:empty) {
+  border-top-color: var(--sp-stage-glass-border);
+}
+

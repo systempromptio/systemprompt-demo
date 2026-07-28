@@ -1,0 +1,270 @@
+/* The band under the homepage stage: three hosts feeding one governance
+ * pipeline.
+ *
+ * The point it has to make visually is that the terminal above is *one* host
+ * among several, and that all of them land in the same four checks. So the
+ * hosts sit on a rail, their lanes converge, and a single pip runs the pipeline
+ * — the same shape whichever card you look at.
+ *
+ * No palette of its own. Every colour here is a `--sp-stage-*` token declared
+ * on `body.home-split-body` in `home-stage.css`, so the band cannot drift away
+ * from the glass panes above it. Buttons come from `header-core.css`
+ * (`a.cta-button`, `a.download-badge`) rather than being restyled here.
+ *
+ * The pips move on `transform` and `opacity` alone; the only other animated
+ * property is the fill of five 9px nodes, which is not worth a compositor
+ * layer. All of it is paused until `home-scene.js` adds `.is-running`, and off
+ * entirely under reduced motion. */
+
+.home-scene {
+  border-top: 1px solid var(--sp-stage-glass-border);
+  position: relative;
+}
+
+/* The shared stage scrim (home-stage.css) is at its lightest in the middle of
+   the viewport, which — because the video layer is fixed — is exactly what sits
+   behind this band while it is being read. A local scrim in the same ink, light
+   at the seam so the field still reads as continuous with the hero. */
+.home-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  background: linear-gradient(180deg,
+    oklch(0.12 0.012 55 / 0.50) 0%,
+    oklch(0.12 0.012 55 / 0.78) 22%,
+    oklch(0.12 0.012 55 / 0.82) 100%);
+}
+
+.home-scene-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--sp-space-10, 4rem) var(--sp-space-6) var(--sp-space-8);
+}
+
+/* ── heading ────────────────────────────────────────────────────────────── */
+
+.scene-eyebrow {
+  margin: 0 0 var(--sp-space-2);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sp-stage-text-muted);
+}
+
+.scene-title {
+  margin: 0 0 var(--sp-space-3);
+  font-family: var(--sp-font-brand, inherit);
+  font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--sp-stage-text);
+}
+
+.scene-deck {
+  margin: 0 0 var(--sp-space-5);
+  max-width: 62ch;
+  font-size: 1.08rem;
+  line-height: 1.6;
+  color: var(--sp-stage-text-dim);
+}
+
+/* The claim in six words. A list because it is one — and separators drawn as
+   borders rather than typed between the items, so the markup stays clean and
+   the wrapped rows never start with a stray bullet. */
+.scene-verbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-space-2) 0;
+  list-style: none;
+  margin: 0 0 var(--sp-space-6);
+  padding: 0;
+  font-family: var(--sp-font-brand, inherit);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sp-stage-text-muted);
+}
+
+.scene-verbs li {
+  padding: 0 var(--sp-space-4);
+  border-left: 1px solid var(--sp-stage-glass-border);
+}
+
+.scene-verbs li:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* The last verb is the whole point of the other five. */
+.scene-verbs .scene-verb--own {
+  color: var(--sp-stage-glow);
+}
+
+/* ── the host rail ──────────────────────────────────────────────────────── */
+
+.scene-hosts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scene-host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-3);
+  padding: var(--sp-space-5);
+  background: var(--sp-stage-glass);
+  border: 1px solid var(--sp-stage-glass-border);
+  border-radius: var(--sp-radius-md, 10px);
+  backdrop-filter: blur(var(--sp-stage-blur));
+  -webkit-backdrop-filter: blur(var(--sp-stage-blur));
+  /* Opacity, not colour: dimming a sibling must not change what the lit card
+     looks like, and `opacity` is the only property that composites cheaply. */
+  transition: opacity 220ms ease, border-color 220ms ease, transform 220ms ease;
+}
+
+/* One card at a time is "the one you are looking at". Pointer and keyboard
+   both set `data-active` on the section — see home-scene.js — so the same rule
+   serves a hover and a tab stop. */
+.home-scene[data-active] .scene-host {
+  opacity: 0.42;
+}
+
+.home-scene[data-active="web"] .scene-host[data-host="web"],
+.home-scene[data-active="claude-code"] .scene-host[data-host="claude-code"],
+.home-scene[data-active="codex"] .scene-host[data-host="codex"] {
+  opacity: 1;
+  border-color: var(--sp-stage-rim);
+  transform: translateY(-2px);
+}
+
+/* The same lit edge the terminal and the account pane carry — see the
+   `--sp-stage-specular` rule in home-stage.css. Without it these cards are
+   translucent rectangles sitting under two panes that are visibly glass, and
+   the band reads as a different material bolted on below. */
+.scene-host,
+.scene-pipeline {
+  position: relative;
+}
+
+.scene-host::before,
+.scene-pipeline::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--sp-stage-specular);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.scene-host-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-space-2);
+}
+
+.scene-host-name {
+  margin: 0;
+  font-family: var(--sp-font-brand, inherit);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--sp-stage-text);
+}
+
+.scene-host-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sp-stage-text-muted);
+}
+
+.scene-host-role {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--sp-stage-text-dim);
+}
+
+/* How this host arrives, not how you set it up. Setup instructions belong with
+   the download, not on a card whose job is to say "this one too". */
+.scene-host-via {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  margin-top: auto;
+  padding: var(--sp-space-3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sp-stage-text-muted);
+}
+
+/* A short lead-in rule, so the label reads as an inbound connection rather
+   than a caption. */
+.scene-host-via::before {
+  content: '';
+  width: 1.25rem;
+  height: 1px;
+  background: var(--sp-stage-rim);
+}
+
+/* The web agent has no command to run — it is the thing above the fold. */
+.scene-host-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  margin-top: auto;
+  padding: var(--sp-space-3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--sp-stage-glow);
+}
+
+.scene-host-live::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: scene-pulse 2.4s ease-out infinite;
+  animation-play-state: paused;
+}
+
+.home-scene.is-running .scene-host-live::before {
+  animation-play-state: running;
+}
+
+@keyframes scene-pulse {
+  0% { box-shadow: 0 0 0 0 oklch(0.62 0.19 47 / 0.55); }
+  70% { box-shadow: 0 0 0 0.55rem oklch(0.62 0.19 47 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(0.62 0.19 47 / 0); }
+}
+

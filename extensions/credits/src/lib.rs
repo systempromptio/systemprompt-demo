@@ -43,8 +43,6 @@ pub struct CreditGrant {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-/// Grant `microdollars` to `user_id` under `reason`.
-///
 /// Idempotent per `(user_id, reason)`: re-granting the same reason is a no-op
 /// and returns `false`. Callers that want a repeatable top-up must vary the
 /// reason.
@@ -66,8 +64,6 @@ pub async fn grant_credit(
     Ok(result.rows_affected() > 0)
 }
 
-/// Grant the one-time signup credit to `user_id`.
-///
 /// Idempotent: a second call for the same user is a no-op thanks to the
 /// `UNIQUE (user_id, reason)` constraint. Returns `true` when a new grant row
 /// was inserted.

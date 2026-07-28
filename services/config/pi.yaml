@@ -47,7 +47,20 @@ model: claude-sonnet-4-6
 # `models` is an OPTIONAL narrowing filter, not the source: leave it empty (or
 # omit it) to offer the whole catalogue; list ids to offer only those. POST
 # /session refuses anything the gateway would not serve either way.
-models: []
+#
+# Narrowed to one model per class — the picker is a demo surface, and forty
+# ids of version archaeology read as noise where eight read as a range. The
+# class's latest wins; superseded versions stay in the registry and still
+# route, they are just not offered here.
+models:
+  - claude-opus-4-8              # Anthropic: latest Opus
+  - claude-sonnet-4-6            # Anthropic: latest Sonnet (default)
+  - claude-haiku-4-5-20251001    # Anthropic: latest Haiku
+  - gpt-5.1                      # OpenAI: latest flagship
+  - gpt-5-mini                   # OpenAI: latest mini
+  - gemini-3.1-pro-preview       # Google: latest Pro
+  - gemini-3.5-flash             # Google: latest Flash
+  - gpt-oss-120b                 # Cerebras: open-weights flagship
 
 # Who the agent says it is. Omitted here on purpose: it defaults to
 # services/config/pi-persona.md, which is compiled into the binary — the child

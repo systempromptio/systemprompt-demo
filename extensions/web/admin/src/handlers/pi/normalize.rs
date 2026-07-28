@@ -19,10 +19,9 @@
 //! usage by subtracting their own. Below [`MIN_PEOPLE`] distinct accounts the
 //! whole window is withheld and only lifetime totals remain.
 //!
-//! This decision used to live in the browser (`PULSE_MIN_PEOPLE` in
-//! `sp-auth-pane.js`), which meant the numbers were sent and then hidden — a
-//! privacy control enforced by the party it protects against. It is server-side
-//! now, and the sparse window never leaves the process.
+//! Suppression is server-side so the sparse window never leaves the process
+//! — hiding it in the browser would put a privacy control in the hands of
+//! the party it protects against.
 
 pub const MIN_PEOPLE: i64 = 3;
 

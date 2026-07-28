@@ -177,28 +177,6 @@ pub async fn find_applicant(pool: &PgPool, user_id: &UserId) -> Option<PendingAp
     })
 }
 
-/// Open a review for this account.
-///
-/// `DO NOTHING` keeps the original
-/// `requested_at`, so a user who abandons the passkey step and retries does not
-/// jump the review queue — and a denied account cannot reset itself to pending.
-// lint-ok: unused-pub — the disabled-but-not-removed half of the review flow;
-// re-enabling manual review swaps registration back to this.
-pub async fn insert_pending_approval<'e>(
-    executor: impl PgExecutor<'e>,
-    user_id: &UserId,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "INSERT INTO user_approvals (user_id, status)
-         VALUES ($1, 'pending')
-         ON CONFLICT (user_id) DO NOTHING",
-        user_id.as_str(),
-    )
-    .execute(executor)
-    .await?;
-    Ok(())
-}
-
 /// Approve an account inside the registration transaction.
 ///
 /// Signups are currently auto-approved: the review machinery (gate middleware,
@@ -245,6 +223,14 @@ pub async fn approve_on_create(pool: &PgPool, user_id: &UserId, decided_by: &Use
 
     if let Err(e) = result {
         tracing::warn!(error = %e, user_id = %user_id, "approve_on_create failed");
+    }
+
+    // Why: every approved account must hold the signup credit, whichever path
+    // created it; the grant is idempotent, so re-approval cannot double-pay.
+    if let Err(e) =
+        systemprompt_credits_extension::grant_signup_credit(pool, user_id.as_str()).await
+    {
+        tracing::warn!(error = %e, user_id = %user_id, "signup credit grant failed");
     }
 }
 

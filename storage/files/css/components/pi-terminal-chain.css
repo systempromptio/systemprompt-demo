@@ -1,0 +1,241 @@
+/* ── the governance chain ───────────────────────────────────────────────── */
+
+/* Deliberately quiet at rest. The rail is provenance for the transcript, not
+   the exhibit itself — it sharpens under the pointer, when it is being read. */
+.pi-rail-line {
+  margin: var(--sp-space-2) 0;
+  opacity: 0.75;
+  transition: opacity 150ms ease;
+}
+
+.pi-rail-line:hover,
+.pi-rail-line:focus-within {
+  opacity: 1;
+}
+
+.pi-rail {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+/* The per-check cost, stated but not shouted. */
+.pi-pip-ms {
+  font-size: 0.6rem;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The way into the audit trail for this exact decision. */
+.pi-rail-audit {
+  margin-left: auto;
+  padding-left: var(--sp-space-3);
+  font-family: var(--sp-font-mono);
+  font-size: 0.65rem;
+  color: var(--sp-color-terminal-text-dim);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pi-rail-audit:hover,
+.pi-rail-audit:focus-visible {
+  color: var(--sp-color-primary);
+  text-decoration: underline;
+}
+
+/* One pip per policy, connected by the segment before it, so the row reads as a
+   pipeline rather than as a set of badges. */
+.pi-pip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.6rem 0.1rem 0.35rem;
+  font-family: var(--sp-font-mono);
+  font-size: 0.65rem;
+  color: var(--sp-color-terminal-text-dim);
+  cursor: default;
+}
+
+/* The connector meets the dot's centre, not the top of the pip's box. It was
+   drawn against the flex line box before, so on a wrapped rail it joined the
+   dots at a visibly different height on each row. */
+.pi-pip + .pi-pip::before {
+  content: '';
+  position: absolute;
+  left: -0.35rem;
+  top: 50%;
+  width: 0.7rem;
+  height: 1px;
+  background: var(--pi-rail-track);
+}
+
+.pi-pip-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pi-pip);
+  height: var(--pi-pip);
+  border-radius: var(--sp-radius-full);
+  border: 1px solid var(--pi-rail-track);
+  font-size: 0.55rem;
+  line-height: 1;
+  flex: none;
+  /* Sits above the connector so the line never crosses the glyph. */
+  position: relative;
+  z-index: 1;
+  transition: box-shadow 200ms ease;
+}
+
+/* A pass is tinted, not lit. Passing is the expected outcome on every call, so
+   it must not out-shout the transcript below; only a failure gets weight. */
+.pi-pip[data-result="pass"] .pi-pip-dot {
+  border-color: color-mix(in oklch, var(--pi-pass) 70%, transparent);
+  background: color-mix(in oklch, var(--pi-pass) 10%, transparent);
+  color: var(--pi-pass);
+}
+
+/* A failure is filled, not outlined. It is the one verdict that must be
+   findable in peripheral vision, and weight carries further than hue. */
+.pi-pip[data-result="fail"] .pi-pip-dot {
+  border-color: var(--pi-fail);
+  background: var(--pi-fail);
+  color: var(--sp-color-terminal-bg);
+  font-weight: 700;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--pi-fail) 22%, transparent);
+}
+
+.pi-pip[data-result="fail"] .pi-pip-name {
+  color: var(--pi-fail);
+  font-weight: 600;
+}
+
+/* The load-bearing state. A policy that never ran is dimmed, not ticked — so a
+   visitor watching a blocked call can see exactly where the chain stopped. */
+.pi-pip[data-result="skip"] {
+  opacity: 0.4;
+}
+
+.pi-pip[data-result="skip"] .pi-pip-dot {
+  border-style: dashed;
+}
+
+/* The compact rail, drawn inside the row whose call it judged.
+   Attached to its subject, it no longer has to name it: the dots carry the
+   verdicts and the names arrive on hover or keyboard focus. */
+.pi-rail--compact {
+  --pi-pip: 0.75rem;
+  margin-left: auto;
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+/* Collapsed pips have no room for timings; the tooltip still carries them. */
+.pi-rail--compact .pi-pip-ms {
+  display: none;
+}
+
+.pi-rail--compact .pi-pip {
+  padding: 0 0.3rem 0 0.2rem;
+}
+
+.pi-rail--compact .pi-pip-name {
+  /* Collapsed, not removed — the screen-reader text is a separate node and is
+     unaffected, so the spoken rail stays complete either way. */
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 200ms ease, opacity 200ms ease, margin 200ms ease;
+}
+
+.pi-tool:hover .pi-rail--compact .pi-pip-name,
+.pi-tool:focus-within .pi-rail--compact .pi-pip-name,
+.pi-rail--compact .pi-pip:hover .pi-pip-name {
+  max-width: 10rem;
+  margin-left: 0.35rem;
+  opacity: 1;
+}
+
+/* A denied call colours its whole row, so the chain and its subject agree. */
+.pi-tool.is-denied > summary .pi-tool-name {
+  color: var(--pi-fail);
+}
+
+/* ── blocked ────────────────────────────────────────────────────────────── */
+
+.pi-blocked {
+  position: relative;
+  margin: var(--sp-space-2) 0;
+  max-width: 46rem;
+  padding: var(--sp-space-2) var(--sp-space-3);
+  background: color-mix(in oklch, var(--sp-color-error) 8%, var(--sp-color-terminal-header));
+  /* The verdict carries the colour; the frame does not have to shout it. A
+     bright outline against the dark stage read as an alarm banner — the left
+     accent alone marks the row, and the outer edge stays quiet. */
+  border: 1px solid color-mix(in oklch, var(--sp-color-error) 28%, transparent);
+  border-left: 3px solid color-mix(in oklch, var(--sp-color-error) 75%, transparent);
+  border-radius: var(--sp-corners-inner-md);
+  font-size: 0.8rem;
+  overflow: hidden;
+}
+
+/* A slow light travelling the left accent — the one edge that carries the
+   verdict is the one that is alive. Decorative: motion-gated below. */
+.pi-blocked::before {
+  content: '';
+  position: absolute;
+  /* Just inside the accent — the shell's overflow:hidden clips anything drawn
+     over the border itself. */
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, transparent 20%, var(--sp-color-error) 50%, transparent 80%);
+  background-size: 100% 300%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pi-blocked-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-space-2);
+  color: var(--sp-color-terminal-text);
+}
+
+/* Facts about the evaluation, right-aligned in the head row. */
+.pi-blocked-meta {
+  margin-left: auto;
+}
+
+.pi-blocked-mark {
+  color: var(--sp-color-error);
+  font-weight: 700;
+}
+
+.pi-policy-chip {
+  padding: 0.05rem 0.45rem;
+  background: color-mix(in oklch, var(--sp-color-error) 20%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-error);
+  font-family: var(--sp-font-mono);
+  font-size: 0.68rem;
+}
+
+.pi-blocked-reason {
+  margin: var(--sp-space-1) 0 0;
+  max-width: 60ch;
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+}
+
+.pi-blocked-note {
+  margin: var(--sp-space-1) 0 0;
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.68rem;
+}
+

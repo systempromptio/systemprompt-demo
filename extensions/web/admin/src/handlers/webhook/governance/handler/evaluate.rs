@@ -53,13 +53,16 @@ pub(crate) fn evaluate(input: &EvaluateInput<'_>) -> (Decision, Vec<ChainEntryOu
             chain_trace.push(skipped_after_deny(cfg));
             continue;
         }
+        let started = std::time::Instant::now();
         let decision = policy.evaluate(&ctx);
+        let duration_ms = started.elapsed().as_secs_f64() * 1000.0;
         match &decision {
             Decision::Allow { matched_by } => {
                 chain_trace.push(ChainEntryOutcome {
                     policy_id: policy.id(),
                     result: ChainEntryResult::Pass,
                     detail: allow_detail(matched_by),
+                    duration_ms,
                 });
             },
             Decision::Deny { reason } => {
@@ -67,6 +70,7 @@ pub(crate) fn evaluate(input: &EvaluateInput<'_>) -> (Decision, Vec<ChainEntryOu
                     policy_id: policy.id(),
                     result: ChainEntryResult::Fail,
                     detail: reason.to_string(),
+                    duration_ms,
                 });
                 denied = Some(decision);
             },
@@ -85,6 +89,7 @@ fn disabled_entry(cfg: &PolicyConfig) -> ChainEntryOutcome {
         policy_id: systemprompt::identifiers::PolicyId::new(cfg.id.clone()),
         result: ChainEntryResult::Skip,
         detail: "Policy disabled in services/governance/config.yaml".to_owned(),
+        duration_ms: 0.0,
     }
 }
 
@@ -93,6 +98,7 @@ fn skipped_after_deny(cfg: &PolicyConfig) -> ChainEntryOutcome {
         policy_id: systemprompt::identifiers::PolicyId::new(cfg.id.clone()),
         result: ChainEntryResult::Skip,
         detail: "Skipped — already denied by an earlier policy".to_owned(),
+        duration_ms: 0.0,
     }
 }
 

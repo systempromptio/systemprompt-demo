@@ -31,8 +31,16 @@ fn prefers_the_artifact_body_over_the_summary() {
     )
     .expect("a frame");
     let rendered = render(&frame);
-    assert!(rendered.text.contains("governance-pipeline"), "{}", rendered.text);
-    assert!(rendered.text.contains("7 documentation topics"), "{}", rendered.text);
+    assert!(
+        rendered.text.contains("governance-pipeline"),
+        "{}",
+        rendered.text
+    );
+    assert!(
+        rendered.text.contains("7 documentation topics"),
+        "{}",
+        rendered.text
+    );
 }
 
 /// A response with no artifact must still say something rather than going

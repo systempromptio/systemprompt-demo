@@ -118,7 +118,7 @@ for p in sorted(js_sources):
     if re.search(r'window\.Sp\w+\s*=', text):
         err(f'{p} publishes a window.Sp* namespace - export from the module instead')
 
-bad_prop = re.compile(r'--(?!sp-|pi-|webkit)[a-z][\w-]*\s*:')
+bad_prop = re.compile(r'^\s*--(?!sp-|pi-|webkit)[a-z][\w-]*\s*:')
 unprefixed = 0
 for p in sorted(css_sources):
     if p in GENERATED:

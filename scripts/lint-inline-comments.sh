@@ -49,7 +49,8 @@ while IFS= read -r file; do
             if (in_doc) {
                 stripped = $0
                 sub(/^[[:space:]]+/, "", stripped)
-                if (stripped ~ /^(pub\(crate\)|pub\(super\))/) {
+                if (stripped ~ /^(pub\(crate\)|pub\(super\)|pub\(in )/ ||
+                    stripped ~ /^(async fn|fn|struct|enum|const|static|type|impl|mod|trait) /) {
                     print FILENAME ":" doc_line ": rustdoc on non-public item (" stripped ") — use // Why: or delete"
                 }
             }

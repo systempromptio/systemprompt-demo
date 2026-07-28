@@ -6,19 +6,19 @@
  * own numbers — but it is denser than anything else in the pane, and the rules
  * here are mostly about surviving that density in a column roughly 30rem wide.
  *
- * Tokens are the --ap-* set defined by auth-pane.css rather than raw colours,
+ * Tokens are the --sp-ap-* set defined by auth-pane-core.css rather than raw colours,
  * so this block follows the pane into dark mode without a second theme block.
  */
 
 .auth-pane .pulse-admin {
   margin-top: var(--sp-space-4);
   padding-top: var(--sp-space-3);
-  border-top: 1px dashed var(--ap-border);
+  border-top: 1px dashed var(--sp-ap-border);
 }
 
 .auth-pane .pulse-admin-h {
   margin: var(--sp-space-4) 0 var(--sp-space-2);
-  color: var(--ap-text-muted);
+  color: var(--sp-ap-text-muted);
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -61,12 +61,12 @@
 
 .auth-pane .pulse-admin-tile {
   padding: var(--sp-space-2);
-  border: 1px dashed var(--ap-border);
+  border: 1px dashed var(--sp-ap-border);
   border-radius: var(--sp-radius-sm, 4px);
 }
 
 .auth-pane .pulse-admin-tile dt {
-  color: var(--ap-text-muted);
+  color: var(--sp-ap-text-muted);
   font-size: 0.65rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -93,7 +93,7 @@
 
 .auth-pane .pulse-admin-up { color: var(--sp-color-success, #2e7d32); }
 .auth-pane .pulse-admin-down { color: var(--sp-color-error, #c62828); }
-.auth-pane .pulse-admin-flat { color: var(--ap-text-muted); }
+.auth-pane .pulse-admin-flat { color: var(--sp-ap-text-muted); }
 
 /* ── tables ─────────────────────────────────────────────────────────────── */
 
@@ -111,18 +111,18 @@
 
 .auth-pane .pulse-admin-table th {
   padding: 0.25rem 0.4rem 0.25rem 0;
-  color: var(--ap-text-muted);
+  color: var(--sp-ap-text-muted);
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-align: left;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--ap-border);
+  border-bottom: 1px solid var(--sp-ap-border);
 }
 
 .auth-pane .pulse-admin-table td {
   padding: 0.25rem 0.4rem 0.25rem 0;
-  border-bottom: 1px solid color-mix(in oklab, var(--ap-border) 45%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--sp-ap-border) 45%, transparent);
 }
 
 /* The first column is a name and may be long — a tool id, a URL. It truncates;
@@ -142,7 +142,7 @@
 
 .auth-pane .pulse-admin-empty {
   margin: 0;
-  color: var(--ap-text-muted);
+  color: var(--sp-ap-text-muted);
   font-size: 0.72rem;
 }
 
@@ -156,13 +156,13 @@
   gap: 1px;
   height: 2.5rem;
   padding: 0.15rem;
-  border: 1px dashed var(--ap-border);
+  border: 1px dashed var(--sp-ap-border);
   border-radius: var(--sp-radius-sm, 4px);
 }
 
 .auth-pane .pulse-admin-spark span {
   flex: 1 1 0;
   min-width: 1px;
-  background: color-mix(in oklab, var(--ap-accent, currentColor) 55%, transparent);
+  background: color-mix(in oklab, var(--sp-ap-accent, currentColor) 55%, transparent);
   border-radius: 1px 1px 0 0;
 }

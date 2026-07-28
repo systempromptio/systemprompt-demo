@@ -1,0 +1,155 @@
+/* ── the lanes ──────────────────────────────────────────────────────────── */
+
+/* Three drops and one collector bar, drawn in CSS rather than an SVG so the
+   geometry follows the same grid the cards use and stays aligned at any width. */
+.scene-lanes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: 3.5rem;
+  position: relative;
+}
+
+.scene-lane {
+  position: relative;
+}
+
+/* The vertical drop out of each card. */
+.scene-lane::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 1.75rem;
+  background: var(--sp-stage-glass-border);
+}
+
+/* The collector bar the three drops meet on, and the single stem into the
+   pipeline. Both hang off the container so there is exactly one of each. */
+.scene-lanes::before {
+  content: '';
+  position: absolute;
+  left: 16.667%;
+  right: 16.667%;
+  top: 1.75rem;
+  height: 1px;
+  background: var(--sp-stage-glass-border);
+}
+
+.scene-lanes::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 1.75rem;
+  width: 1px;
+  height: 1.75rem;
+  background: var(--sp-stage-glass-border);
+}
+
+/* The pips. One per lane, each falling then handing off to the pipeline pip —
+   the delays are what make it read as flow rather than three unrelated dots. */
+.scene-pip {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--sp-stage-glow);
+  opacity: 0;
+  animation: scene-drop 3.6s linear infinite;
+  animation-play-state: paused;
+}
+
+.home-scene.is-running .scene-pip {
+  animation-play-state: running;
+}
+
+.scene-lane:nth-child(1) .scene-pip { animation-delay: 0s; }
+.scene-lane:nth-child(2) .scene-pip { animation-delay: 1.2s; }
+.scene-lane:nth-child(3) .scene-pip { animation-delay: 2.4s; }
+
+@keyframes scene-drop {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 1; }
+  22% { transform: translateY(1.75rem); opacity: 1; }
+  30% { transform: translateY(1.75rem); opacity: 0; }
+  100% { transform: translateY(1.75rem); opacity: 0; }
+}
+
+/* ── the pipeline ───────────────────────────────────────────────────────── */
+
+.scene-pipeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-space-2);
+  list-style: none;
+  margin: 0;
+  padding: var(--sp-space-5) var(--sp-space-4);
+  background: var(--sp-stage-glass);
+  border: 1px solid var(--sp-stage-glass-border);
+  border-radius: var(--sp-radius-md, 10px);
+  backdrop-filter: blur(var(--sp-stage-blur));
+  -webkit-backdrop-filter: blur(var(--sp-stage-blur));
+}
+
+.scene-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1, 0.25rem);
+  padding-left: var(--sp-space-4);
+  position: relative;
+}
+
+/* The node itself. Unlit is the resting state; the sweep lights it in turn. */
+.scene-stage::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.3rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  border: 1px solid var(--sp-stage-rim);
+  background: transparent;
+  animation: scene-light 3.6s ease-out infinite;
+  animation-play-state: paused;
+}
+
+.home-scene.is-running .scene-stage::before {
+  animation-play-state: running;
+}
+
+.scene-stage:nth-child(1)::before { animation-delay: 0.30s; }
+.scene-stage:nth-child(2)::before { animation-delay: 0.66s; }
+.scene-stage:nth-child(3)::before { animation-delay: 1.02s; }
+.scene-stage:nth-child(4)::before { animation-delay: 1.38s; }
+.scene-stage:nth-child(5)::before { animation-delay: 1.74s; }
+
+@keyframes scene-light {
+  0%, 6% { background: transparent; }
+  10% { background: var(--sp-stage-glow); }
+  28% { background: var(--sp-stage-glow); }
+  46%, 100% { background: transparent; }
+}
+
+.scene-stage-name {
+  font-family: var(--sp-font-brand, inherit);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--sp-stage-text);
+}
+
+.scene-stage-note {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--sp-stage-text-muted);
+}
+
+/* The last stage is the outcome, not another check. */
+.scene-stage--audit .scene-stage-name {
+  color: var(--sp-stage-glow);
+}
+

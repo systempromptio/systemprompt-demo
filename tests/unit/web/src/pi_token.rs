@@ -5,8 +5,8 @@
 //! signature, deliberately: an unsigned token is never trusted enough for its
 //! own expiry claim to be read.
 
-use systemprompt::identifiers::UserId;
 use base64::Engine as _;
+use systemprompt::identifiers::UserId;
 use systemprompt_web_admin::test_support::{B64, Invalid, hmac, sign, verify};
 
 const SECRET: &[u8] = b"test-signing-secret";

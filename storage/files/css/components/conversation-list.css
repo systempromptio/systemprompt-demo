@@ -1,31 +1,24 @@
-/* <sp-conversation-list> — the picker above the terminal.
+/* <sp-conversation-list> — the picker inside the terminal's header dropdown
+ * (see .pi-conv-panel in pi-terminal.css).
  *
  * Light DOM, so everything is scoped under .conv-* rather than shadowed, and it
  * borrows the same dark-glass tokens the stage gives <sp-pi-terminal> and
- * <sp-auth-pane>. It sits inside the terminal pane, so a token it does not
- * define is inherited from there rather than restated. */
+ * <sp-auth-pane>. The panel owns the surface and the spacing; this element only
+ * lays out its own rows. */
 
 sp-conversation-list {
   display: block;
   min-width: 0;
 
-  --cv-glass: var(--sp-stage-glass, oklch(0.24 0.012 55 / 0.72));
-  --cv-border: var(--sp-stage-glass-border, oklch(1 0 0 / 0.09));
-  --cv-raise: oklch(1 0 0 / 0.08);
-  --cv-text: var(--sp-stage-text, oklch(0.96 0.004 60));
-  --cv-text-dim: var(--sp-stage-text-dim, oklch(0.82 0.008 60));
-  --cv-text-muted: var(--sp-stage-text-muted, oklch(0.68 0.01 60));
+  --sp-cv-glass: var(--sp-stage-glass, oklch(0.24 0.012 55 / 0.72));
+  --sp-cv-border: var(--sp-stage-glass-border, oklch(1 0 0 / 0.09));
+  --sp-cv-raise: oklch(1 0 0 / 0.08);
+  --sp-cv-text: var(--sp-stage-text, oklch(0.96 0.004 60));
+  --sp-cv-text-dim: var(--sp-stage-text-dim, oklch(0.82 0.008 60));
+  --sp-cv-text-muted: var(--sp-stage-text-muted, oklch(0.68 0.01 60));
 
-  margin-block-end: 0.75rem;
-  color: var(--cv-text-dim);
+  color: var(--sp-cv-text-dim);
   font-size: 0.8125rem;
-}
-
-/* Signed out there is no list, and the element renders nothing — but it still
-   claimed its bottom margin, which pushed the terminal below the account card
-   beside it. Nothing to separate, nothing to reserve. */
-sp-conversation-list:empty {
-  margin-block-end: 0;
 }
 
 .conv-head {
@@ -42,14 +35,14 @@ sp-conversation-list:empty {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cv-text-muted);
+  color: var(--sp-cv-text-muted);
 }
 
 .conv-new,
 .conv-action {
-  border: 1px solid var(--cv-border);
-  background: var(--cv-raise);
-  color: var(--cv-text-dim);
+  border: 1px solid var(--sp-cv-border);
+  background: var(--sp-cv-raise);
+  color: var(--sp-cv-text-dim);
   font: inherit;
   font-size: 0.75rem;
   padding: 0.2rem 0.6rem;
@@ -60,8 +53,8 @@ sp-conversation-list:empty {
 
 .conv-new:hover,
 .conv-action:hover {
-  color: var(--cv-text);
-  border-color: var(--cv-text-muted);
+  color: var(--sp-cv-text);
+  border-color: var(--sp-cv-text-muted);
 }
 
 .conv-action-danger:hover {
@@ -90,7 +83,7 @@ sp-conversation-list:empty {
 }
 
 .conv-item[data-current='true'] {
-  background: var(--cv-raise);
+  background: var(--sp-cv-raise);
 }
 
 .conv-open {
@@ -98,7 +91,7 @@ sp-conversation-list:empty {
   min-width: 0;
   border: 0;
   background: none;
-  color: var(--cv-text-dim);
+  color: var(--sp-cv-text-dim);
   font: inherit;
   text-align: start;
   padding: 0;
@@ -111,7 +104,7 @@ sp-conversation-list:empty {
 }
 
 .conv-item[data-current='true'] .conv-open {
-  color: var(--cv-text);
+  color: var(--sp-cv-text);
   font-weight: 600;
 }
 
@@ -132,14 +125,14 @@ sp-conversation-list:empty {
 }
 
 .conv-when {
-  color: var(--cv-text-muted);
+  color: var(--sp-cv-text-muted);
   font-size: 0.6875rem;
   white-space: nowrap;
 }
 
 .conv-empty {
   margin: 0;
-  color: var(--cv-text-muted);
+  color: var(--sp-cv-text-muted);
   font-size: 0.75rem;
 }
 

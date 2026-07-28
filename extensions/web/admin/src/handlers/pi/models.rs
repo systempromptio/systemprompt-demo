@@ -11,7 +11,7 @@
 //!
 //! `services/config/pi.yaml`'s `models` key is a *narrowing* allow-list on top
 //! of that: empty means the whole catalogue, non-empty keeps only the listed
-//! ids (plus the default). It is no longer the source of the models.
+//! ids (plus the default).
 
 use serde::Serialize;
 use systemprompt::config::ProfileBootstrap;
@@ -26,14 +26,20 @@ pub(super) struct GatewayModel {
     pub(super) context_window: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) max_output_tokens: Option<u32>,
+    // Why: the registry's own price card rides along so the picker can show
+    // what a model costs — the meters already show spend, and a picker that
+    // hides the rate while the header meters the bill is half an answer.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) input_per_million: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) output_per_million: Option<f64>,
 }
 
-/// Every model a session may run, default first.
 pub(super) fn catalogue(cfg: &PiConfig) -> Vec<GatewayModel> {
-    let mut models = advertised(cfg);
+    let mut models = advertised();
 
-    // The registry is the truth, but the terminal cannot come up empty: a
-    // profile that has not bootstrapped (tests, degraded start) still serves
+    // Why: the registry is the truth, but the terminal cannot come up empty —
+    // a profile that has not bootstrapped (tests, degraded start) still serves
     // the configured default.
     if models.is_empty() {
         models.push(GatewayModel {
@@ -41,6 +47,8 @@ pub(super) fn catalogue(cfg: &PiConfig) -> Vec<GatewayModel> {
             provider: cfg.provider.clone(),
             context_window: None,
             max_output_tokens: None,
+            input_per_million: None,
+            output_per_million: None,
         });
     }
 
@@ -48,25 +56,25 @@ pub(super) fn catalogue(cfg: &PiConfig) -> Vec<GatewayModel> {
         models.retain(|m| m.id == cfg.model || cfg.models.iter().any(|w| w == &m.id));
     }
 
-    // Default first: it is what a session gets when the visitor never touches
-    // the picker, so it leads the list the picker renders.
+    // Why: default first — it is what a session gets when the visitor never
+    // touches the picker, so it leads the list the picker renders.
     models.sort_by_key(|m| m.id != cfg.model);
     models
 }
 
-/// Resolve a client's model request. `None` in is the default; an id outside
-/// the catalogue resolves to `None` out, which the caller must refuse.
+// Why: `None` in means the default; an id outside the catalogue resolves to
+// `None` out, which the caller must refuse rather than silently downgrade.
 pub(super) fn resolve(cfg: &PiConfig, requested: Option<&str>) -> Option<String> {
-    match requested {
-        None => Some(cfg.model.clone()),
-        Some(m) => {
+    requested.map_or_else(
+        || Some(cfg.model.clone()),
+        |m| {
             let m = m.trim();
             catalogue(cfg).into_iter().find(|c| c.id == m).map(|c| c.id)
         },
-    }
+    )
 }
 
-fn advertised(cfg: &PiConfig) -> Vec<GatewayModel> {
+fn advertised() -> Vec<GatewayModel> {
     let Ok(profile) = ProfileBootstrap::get() else {
         return Vec::new();
     };
@@ -74,20 +82,34 @@ fn advertised(cfg: &PiConfig) -> Vec<GatewayModel> {
 
     profile
         .providers
-        .advertised_providers()
+        .providers
+        .iter()
+        // Why: backend-surface providers (e.g. an OpenAI-compatible Cerebras)
+        // stay off front-door advertised lists by design, but a model of
+        // theirs with an explicit gateway route is one this terminal can
+        // genuinely run — the route is the operator saying so. Advertised
+        // surfaces keep the blanket exposure rule; backend needs the route.
         .flat_map(|entry| {
-            entry.models.iter().map(|m| GatewayModel {
-                id: m.id.as_str().to_owned(),
-                provider: entry.name.as_str().to_owned(),
-                context_window: (m.limits.context_window > 0).then_some(m.limits.context_window),
-                max_output_tokens: (m.limits.max_output_tokens > 0)
-                    .then_some(m.limits.max_output_tokens),
+            let advertised_surface = entry.surface.is_advertised();
+            entry.models.iter().filter_map(move |m| {
+                let offered = if advertised_surface {
+                    gateway.is_none_or(|g| g.is_model_exposed(&profile.providers, m.id.as_str()))
+                } else {
+                    gateway.is_some_and(|g| g.find_route(m.id.as_str()).is_some())
+                };
+                offered.then(|| GatewayModel {
+                    id: m.id.as_str().to_owned(),
+                    provider: entry.name.as_str().to_owned(),
+                    context_window: (m.limits.context_window > 0)
+                        .then_some(m.limits.context_window),
+                    max_output_tokens: (m.limits.max_output_tokens > 0)
+                        .then_some(m.limits.max_output_tokens),
+                    input_per_million: (m.pricing.input_per_million > 0.0)
+                        .then_some(m.pricing.input_per_million),
+                    output_per_million: (m.pricing.output_per_million > 0.0)
+                        .then_some(m.pricing.output_per_million),
+                })
             })
-        })
-        // Advertised but not routable would 4xx at the gateway; keep the
-        // picker honest by applying the gateway's own exposure rule.
-        .filter(|m| {
-            gateway.is_none_or(|g| g.is_model_exposed(&profile.providers, &m.id))
         })
         .collect()
 }

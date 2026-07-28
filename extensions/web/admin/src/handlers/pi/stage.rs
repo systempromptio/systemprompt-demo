@@ -16,6 +16,8 @@ pub struct PolicyStage {
     /// ran can be dimmed rather than implying it cleared the call.
     pub result: &'static str,
     pub detail: String,
+    /// Milliseconds spent evaluating this policy; zero if it never ran.
+    pub duration_ms: f64,
 }
 
 impl PolicyStage {
@@ -28,6 +30,7 @@ impl PolicyStage {
                 StageResult::Skip => "skip",
             },
             detail: outcome.detail.clone(),
+            duration_ms: outcome.duration_ms,
         }
     }
 }

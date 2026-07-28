@@ -23,8 +23,8 @@ struct StartedChild {
     stderr: Option<tokio::process::ChildStderr>,
 }
 
-/// Why a session could not be created. Distinguished because the widget shows
-/// each differently: a cap is "try later", a spawn failure is "misconfigured".
+// Why: distinguished because the widget shows each differently — a cap is
+// "try later", a spawn failure is "misconfigured".
 #[derive(Debug)]
 pub(in crate::handlers::pi) enum SpawnError {
     PerUserCap(usize),
@@ -46,9 +46,9 @@ impl std::fmt::Display for SpawnError {
 
 
 impl PiRegistry {
-    /// Caps are checked while holding the lock and the placeholder is inserted
-    /// before the `await`, so two simultaneous requests cannot both pass a cap
-    /// of one.
+    // Why: caps are checked while holding the lock and the placeholder is
+    // inserted before the `await`, so two simultaneous requests cannot both
+    // pass a cap of one.
     pub(in crate::handlers::pi) async fn create(
         &self,
         req: CreateRequest<'_>,
@@ -125,7 +125,7 @@ impl PiRegistry {
     async fn issue_credential(
         &self,
         user_id: &UserId,
-        conversation_id: &systemprompt::identifiers::ContextId,
+        conversation_id: &ContextId,
     ) -> Result<IssuedApiKey, SpawnError> {
         credentials::issue(
             &self.0.pool,

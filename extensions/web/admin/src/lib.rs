@@ -50,8 +50,10 @@ pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary,
 pub mod test_support {
     pub use crate::handlers::pi::SHIM_SOURCE;
     pub use crate::handlers::pi::config::{PiConfig, SandboxMode};
+    pub use crate::handlers::pi::conversations::collapse_duplicate_errors;
     pub use crate::handlers::pi::events::{
-        PiEvent, PiEventBody, readable_provider_error, translate,
+        CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind, PiEvent,
+        PiEventBody, readable_provider_error, translate, upgrade_legacy_error,
     };
     pub use crate::handlers::pi::format::{cost, cost_round, median};
     pub use crate::handlers::pi::jail::gateway_port;

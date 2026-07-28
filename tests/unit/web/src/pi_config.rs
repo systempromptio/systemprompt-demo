@@ -22,14 +22,20 @@ fn empty_file_is_all_defaults() {
 #[test]
 fn sandbox_typo_is_rejected_rather_than_read_as_off() {
     let errors = PiConfig::parse("sandbox: of").expect_err("`of` is not a sandbox mode");
-    assert!(errors.errors.iter().any(|e| e.field == "_parse"), "{errors}");
+    assert!(
+        errors.errors.iter().any(|e| e.field == "_parse"),
+        "{errors}"
+    );
 }
 
 #[test]
 fn unknown_key_is_rejected() {
     let errors = PiConfig::parse("aprove_all: true").expect_err("misspelled key is rejected");
     assert!(
-        errors.errors.iter().any(|e| e.message.contains("unknown field")),
+        errors
+            .errors
+            .iter()
+            .any(|e| e.message.contains("unknown field")),
         "{errors}"
     );
 }
@@ -45,7 +51,12 @@ fn empty_tool_list_fails_validation() {
 fn zero_timeout_fails_validation() {
     let errors = PiConfig::parse("timeouts:\n  idle_secs: 0\nbase_url: http://127.0.0.1:8080")
         .expect_err("zero would expire immediately");
-    assert!(errors.errors.iter().any(|e| e.field == "timeouts.idle_secs"));
+    assert!(
+        errors
+            .errors
+            .iter()
+            .any(|e| e.field == "timeouts.idle_secs")
+    );
 }
 
 /// The shipped file has to satisfy `deny_unknown_fields` and every check in
@@ -53,12 +64,19 @@ fn zero_timeout_fails_validation() {
 /// instead. Nothing else exercises it until startup.
 #[test]
 fn the_checked_in_config_is_valid() {
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../services/config/pi.yaml");
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../services/config/pi.yaml"
+    );
     let yaml = std::fs::read_to_string(path).expect("services/config/pi.yaml is readable");
     let cfg = PiConfig::parse(&yaml).expect("services/config/pi.yaml validates");
     // The two settings that decide whether this is a demo or an exposure.
     assert_eq!(cfg.sandbox(), SandboxMode::Required);
-    assert!(!cfg.tools().iter().any(|t| matches!(t.as_str(), "bash" | "write" | "edit")));
+    assert!(
+        !cfg.tools()
+            .iter()
+            .any(|t| matches!(t.as_str(), "bash" | "write" | "edit"))
+    );
     assert!(cfg.approve_all());
 }
 

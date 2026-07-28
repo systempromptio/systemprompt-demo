@@ -1,0 +1,223 @@
+/* ── approval queue ─────────────────────────────────────────────────────── */
+
+/* A queue, not a modal: parallel tool calls each get their own card and the
+   server resolves them independently. */
+.pi-approvals:not(:empty) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-3) var(--sp-space-4);
+  border-top: 1px solid var(--sp-color-terminal-border);
+}
+
+/* Registered so the sweep angle interpolates. Harmless where @property is
+   unsupported — the animated border simply never engages and the static soft
+   border below stands. */
+@property --pi-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.pi-approval-card {
+  /* Smaller ring: the card is an instrument in a queue, not a dialog. */
+  --pi-ring-size: 1.75rem;
+
+  padding: var(--sp-space-2) var(--sp-space-3);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--sp-color-warning) 9%, var(--sp-color-terminal-header)),
+    var(--sp-color-terminal-header)
+  );
+  /* Quiet by default — the amber wash and the draining ring already say
+     "pending"; a bright outline was the frame shouting over its contents. */
+  border: 1px solid color-mix(in oklch, var(--sp-color-warning) 30%, transparent);
+  border-radius: var(--sp-corners-inner-md);
+  box-shadow: var(--sp-shadow-lift);
+  font-family: var(--sp-font-mono);
+  font-size: 0.8rem;
+  color: var(--sp-color-terminal-text);
+}
+
+/* Args beside the cleared chain: the two facts the decision rests on, side by
+   side rather than stacked into a banner. */
+.pi-approval-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--sp-space-2) var(--sp-space-4);
+  margin-top: var(--sp-space-2);
+}
+
+/* Flat arguments as a ledger — `TO board@acme.com` reads at a glance where a
+   JSON blob has to be parsed by eye. Non-flat input keeps the exact <pre>. */
+.pi-approval-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem var(--sp-space-3);
+  margin: 0;
+  padding: var(--sp-space-2);
+  background: color-mix(in oklch, var(--sp-color-terminal-bg) 70%, transparent);
+  border-radius: var(--sp-radius-sm);
+}
+
+.pi-approval-kv dt {
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.9;
+}
+
+.pi-approval-kv dd {
+  margin: 0;
+  color: var(--sp-color-terminal-text);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.pi-approval-card--canned {
+  opacity: 0.62;
+}
+
+.pi-approval-card.is-settling {
+  opacity: 0.5;
+}
+
+.pi-approval-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+}
+
+.pi-approval-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.pi-approval-sub {
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.7rem;
+}
+
+/* The countdown as a ring around the glyph: a shape draining is legible at a
+   glance in a way a number is not, and the number stays for the exact value. */
+.pi-ring {
+  position: relative;
+  width: var(--pi-ring-size);
+  height: var(--pi-ring-size);
+  flex: none;
+  border-radius: var(--sp-radius-full);
+  background:
+    conic-gradient(
+      var(--sp-color-warning) calc(var(--pi-ring-fill) * 360deg),
+      var(--pi-rail-track) 0
+    );
+  display: grid;
+  place-items: center;
+  transition: background 1s linear;
+}
+
+.pi-ring::after {
+  content: '';
+  position: absolute;
+  inset: var(--pi-ring-width);
+  border-radius: var(--sp-radius-full);
+  background: var(--sp-color-terminal-header);
+}
+
+.pi-ring-glyph {
+  position: relative;
+  z-index: 1;
+  font-size: 0.85rem;
+  color: var(--sp-color-warning);
+}
+
+.pi-countdown {
+  color: var(--sp-color-warning);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.pi-countdown[data-urgency="warn"] { color: var(--sp-color-warning); }
+.pi-countdown[data-urgency="critical"] { color: var(--sp-color-error); font-weight: 700; }
+
+.pi-approval-input {
+  margin: var(--sp-space-2) 0 0;
+  padding: var(--sp-space-2);
+  max-height: 120px;
+  overflow: auto;
+  background: var(--sp-color-terminal-bg);
+  border-radius: var(--sp-radius-sm);
+  color: var(--sp-color-terminal-text-dim);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
+}
+
+.pi-approval-grid .pi-approval-input {
+  margin: 0;
+}
+
+/* What already cleared, not a bare "allow this?" — the operator should see the
+   chain that passed before being asked. */
+.pi-approval-cleared {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1);
+  align-items: flex-start;
+}
+
+/* The cleared rail is compact; hovering the block names the policies, the same
+   contract the compact rail keeps inside a tool row. */
+.pi-approval-cleared:hover .pi-rail--compact .pi-pip-name,
+.pi-approval-cleared:focus-within .pi-rail--compact .pi-pip-name {
+  max-width: 10rem;
+  margin-left: 0.35rem;
+  opacity: 1;
+}
+
+.pi-approval-cleared-label {
+  display: block;
+  color: var(--sp-color-success);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Small true facts as pills — shared by the blocked callout and the approval
+   card. Detail belongs in chrome like this, not padded into the prose. */
+.pi-detail-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-space-1);
+}
+
+.pi-approval-card > .pi-detail-row {
+  margin-top: var(--sp-space-2);
+}
+
+.pi-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pi-approval-actions {
+  display: flex;
+  gap: var(--sp-space-2);
+  margin-top: var(--sp-space-3);
+}
+

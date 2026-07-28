@@ -1,11 +1,9 @@
 //! What is left of the server-rendered `/admin` surface.
 //!
-//! There is no admin console any more. The interactive site is one page — a
-//! governed terminal and the visitor's own telemetry pane — and every
-//! analytics, governance, catalog, and access page that used to live here has
-//! been retired in favour of the CLI, which reads the same tables. The
-//! repositories those pages called are untouched and now feed `GET
-//! /api/public/pi/stats/{id}`.
+//! There is no admin console. The interactive site is one page — a governed
+//! terminal and the visitor's own telemetry pane; analytics, governance,
+//! catalog, and access live in the CLI, which reads the same tables. The
+//! repositories behind them also feed `GET /api/public/pi/stats/{id}`.
 //!
 //! What survives is only what a browser still genuinely needs: the sign-in and
 //! registration pages (the passkey ceremony has to be served from somewhere),
@@ -75,6 +73,7 @@ fn account_routes() -> Router<Arc<PgPool>> {
     Router::new()
         .route("/pending", get(handlers::ssr::pending_page))
         .route("/continue", get(handlers::onboarding::post_login_redirect))
+        .route("/demo/trace", get(handlers::ssr::demo_trace_page))
 }
 
 fn device_routes() -> Router<Arc<PgPool>> {

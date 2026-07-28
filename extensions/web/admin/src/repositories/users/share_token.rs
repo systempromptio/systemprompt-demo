@@ -1,6 +1,6 @@
 //! Share-token versioning stored on `user_profile_ext`.
 //!
-//! Rotating `share_token_version` revokes every previously-issued share token
+//! Rotating `share_token_version` revokes every outstanding share token
 //! for that user; the public manifest endpoint rechecks the stored version
 //! against the value encoded in the token.
 

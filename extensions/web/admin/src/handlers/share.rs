@@ -2,7 +2,7 @@
 //!
 //! Issuance: admins POST `/admin/users/:id/share-token` to mint a signed token
 //! that encodes the `user_id` and the current `users.share_token_version`.
-//! Rotating the version revokes every previously-issued token.
+//! Rotating the version revokes every outstanding token.
 //!
 //! Verification: GET `/share/manifest/:token` is **public** (no auth
 //! middleware). The token is validated, the version is rechecked against the

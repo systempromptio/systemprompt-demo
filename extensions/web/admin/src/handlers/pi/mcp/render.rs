@@ -49,7 +49,7 @@ struct McpContentItem {
 }
 
 impl McpResponseFrame {
-    fn is_answer(&self) -> bool {
+    const fn is_answer(&self) -> bool {
         self.result.is_some() || self.error.is_some()
     }
 }

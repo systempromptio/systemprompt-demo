@@ -22,7 +22,8 @@ fn repo_file(rel: &str) -> String {
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{} is readable: {e}", path.display()))
 }
 
-/// The `mcp__systemprompt__*` entries under `tools:` in `services/config/pi.yaml`.
+/// The `mcp__systemprompt__*` entries under `tools:` in
+/// `services/config/pi.yaml`.
 fn pi_yaml_hub_tools() -> Vec<String> {
     repo_file("services/config/pi.yaml")
         .lines()

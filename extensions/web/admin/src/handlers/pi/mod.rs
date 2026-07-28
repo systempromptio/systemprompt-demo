@@ -15,61 +15,47 @@
 //! and emits an `extension_ui_request`. The shim decides nothing; this module
 //! decides everything, and answers on the same stream.
 //!
-//! # Three hard-won constraints
+//! # Security invariants
 //!
 //! - **The RPC command surface is ungoverned.** `{"type":"bash"}` executes a
 //!   shell command with no `tool_call` hook firing at all. Only
 //!   [`rpc::RpcCommand`]'s variants are ever constructed here, and no client
 //!   string reaches pi as a command type — relaying raw RPC would hand every
 //!   viewer a shell. See [`commands`].
-//! - **The gateway credential must belong to the conversation's own user.** The
-//!   gateway attests `x-session-id` against the identity that authenticated,
-//!   and answers a mismatch with the same opaque `401 unknown or revoked
-//!   session` it gives a session that does not exist. A single shared PAT
-//!   therefore works for exactly one account and leaves everyone else with a
-//!   turn that starts and ends with no output — measured against a live
-//!   gateway. So [`registry`] mints a PAT per conversation for that
-//!   conversation's user, and revokes it, along with the attested session, when
-//!   the conversation ends. That is also why teardown revokes rather than
-//!   waiting out an expiry: the gateway's session lookup filters on
-//!   `revoked_at` and ignores `expires_at` entirely.
-//! - **pi confines nothing itself, and `read` was the proof.** pi's tools run
-//!   with whatever permissions the process has, and its `read` applies no path
-//!   containment at all — an absolute path is passed through to `readFile`. As
-//!   the child runs the server's uid, one approved call could read the
-//!   deployment's provider keys, its database URL, its OAuth at-rest pepper,
-//!   and the child's own gateway credential. Nothing stopped it but a person
-//!   clicking Approve, and in this deployment that person is the untrusted
-//!   party. (What actually masked it was the credit guard: an unapproved
-//!   account 429s before the model runs, so it can never issue a tool call — a
-//!   billing control doing security work, one growth decision from
-//!   evaporating.)
+//! - **The gateway credential belongs to the conversation's own user.** The
+//!   gateway attests `x-session-id` against the identity that authenticated and
+//!   refuses a mismatch, so a shared PAT works for exactly one account.
+//!   [`registry`] mints a PAT per conversation for that conversation's user and
+//!   revokes it, with the attested session, when the conversation ends.
+//!   Teardown revokes rather than waiting out an expiry because the gateway's
+//!   session lookup filters on `revoked_at` and ignores `expires_at`.
+//! - **pi confines nothing itself.** Its tools run with the process's own
+//!   permissions and its `read` applies no path containment, and the child runs
+//!   the server's uid — so confinement is this module's job, in two independent
+//!   layers. Every child starts through [`spawn`]'s `sp-pi-jail` wrapper, which
+//!   applies a Landlock ruleset to itself and `exec`s pi: read-write on the
+//!   session workspace, read-execute on the interpreter and its libraries,
+//!   `connect()` on the gateway's port, and nothing else — no `/proc`, so
+//!   `/proc/<server-pid>/environ` stays unreadable. And [`scope`] rejects
+//!   out-of-workspace path arguments before a human is ever asked, so a denial
+//!   is a `workspace_scope` audit row and a legible card rather than a bare
+//!   `EACCES`.
 //!
-//!   Two independent layers close it. Every child now starts through
-//!   [`spawn`]'s `sp-pi-jail` wrapper, which applies a Landlock ruleset to
-//!   itself and `exec`s pi: read-write on the session workspace, read-execute
-//!   on the interpreter and its libraries, `connect()` on the gateway's port,
-//!   and nothing else — no `/proc`, so `/proc/<server-pid>/environ` stays
-//!   unreadable. And [`scope`] rejects out-of-workspace path arguments before
-//!   a human is ever asked, so a denial is a `workspace_scope` audit row and a
-//!   legible card rather than a bare `EACCES`.
-//!
-//!   The residual gaps are real and worth naming. Landlock is a path- and
-//!   port-based LSM, not a namespace: the child still shares the pid and
-//!   network namespaces, still runs the server's uid, and the granted port is
-//!   granted on *any* reachable host rather than loopback alone. Kernels below
-//!   6.7 get filesystem confinement only, leaving loopback services reachable
-//!   — harmless while the tool set is `read`, not harmless after. A container
-//!   per session remains the prerequisite for enabling `bash`: this makes
-//!   `read` safe, not arbitrary execution.
+//!   Residual gaps: Landlock is a path- and port-based LSM, not a namespace —
+//!   the child shares the pid and network namespaces, runs the server's uid,
+//!   and the granted port is granted on *any* reachable host. Kernels below
+//!   6.7 get filesystem confinement only. A container per session remains the
+//!   prerequisite for enabling `bash`: this makes `read` safe, not arbitrary
+//!   execution.
 
 mod api;
 mod auth;
 mod commands;
 pub(crate) mod config;
-mod conversations;
+pub(crate) mod conversations;
 mod credentials;
 pub(crate) mod events;
+mod events_error;
 pub(crate) mod format;
 mod gate;
 pub(crate) mod jail;

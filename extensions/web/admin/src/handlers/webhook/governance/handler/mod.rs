@@ -130,6 +130,7 @@ pub(crate) async fn govern_tool_use(
     });
 
     let audit = DecisionAudit {
+        id: uuid::Uuid::new_v4().to_string(),
         decision: decision.clone(),
         principal: PrincipalSnapshot {
             user_id,
@@ -182,6 +183,7 @@ fn spawn_auth_denial(params: &AuthDenialParams<'_>, reason: &str) {
             },
         };
         let audit = DecisionAudit {
+            id: uuid::Uuid::new_v4().to_string(),
             decision: deny_for_auth_failure(&reason),
             principal: PrincipalSnapshot {
                 user_id,
@@ -202,6 +204,7 @@ fn spawn_auth_denial(params: &AuthDenialParams<'_>, reason: &str) {
                 policy_id: systemprompt::identifiers::PolicyId::new("authentication"),
                 result: ChainEntryResult::Fail,
                 detail: reason,
+                duration_ms: 0.0,
             }],
         };
         if let Err(e) = audit::record_decision(&pool, &audit).await {

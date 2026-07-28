@@ -40,6 +40,7 @@ pub(crate) async fn record_human_decision(
         },
     };
     let audit = DecisionAudit {
+        id: uuid::Uuid::new_v4().to_string(),
         decision,
         principal: PrincipalSnapshot {
             user_id: call.user_id.clone(),
@@ -59,6 +60,7 @@ pub(crate) async fn record_human_decision(
                 _ => ChainEntryResult::Fail,
             },
             detail: outcome.reason().to_owned(),
+            duration_ms: 0.0,
         }],
     };
     if outcome.allowed() {
@@ -76,6 +78,7 @@ pub(crate) async fn record_policy_denial(
     detail: &str,
 ) {
     let audit = DecisionAudit {
+        id: uuid::Uuid::new_v4().to_string(),
         decision: Decision::Deny {
             reason: systemprompt_security::authz::DenyReason::PolicyViolation {
                 policy: policy_id.to_string(),
@@ -97,6 +100,7 @@ pub(crate) async fn record_policy_denial(
             policy_id: policy_id.clone(),
             result: ChainEntryResult::Fail,
             detail: detail.to_owned(),
+            duration_ms: 0.0,
         }],
     };
     write_now(pool, audit).await;
@@ -132,6 +136,7 @@ pub(super) async fn record(
     agent_id: &AgentId,
 ) {
     let audit = DecisionAudit {
+        id: verdict.decision_id.clone(),
         decision: verdict.decision.clone(),
         principal: PrincipalSnapshot {
             user_id: call.user_id.clone(),

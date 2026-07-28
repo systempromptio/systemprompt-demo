@@ -1,11 +1,9 @@
 //! Access rule value types and their Postgres enum encodings.
 //!
-//! `rule_type` is core's [`RuleType`],
-//! re-exported here so the admin CRUD surface and the resolver cannot drift
-//! apart: this crate used to keep a parallel `Role | Department | User` enum,
-//! and a `department` row that the matrix rendered was invisible to the
-//! resolver as a direct result. Core owns `user` and `role`; `department` is
-//! minted by [`crate::authz::department`].
+//! `rule_type` is core's [`RuleType`], re-exported here so the admin CRUD
+//! surface and the resolver cannot drift apart — a parallel enum would let
+//! the matrix render a row the resolver cannot see. Core owns `user` and
+//! `role`; `department` is minted by [`crate::authz::department`].
 
 use std::fmt;
 

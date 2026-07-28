@@ -1,0 +1,208 @@
+/* ── The offer, and what is left of it ──────────────────────────────────────
+   Two faces of one fact. Signed out it is `.pane-offer`: the reason to make an
+   account. Signed in it is `.pane-credit`: what that grant has left. They are
+   styled as a pair on purpose — the promise and the receipt should look like
+   the same object, because a visitor who acted on the first is owed the
+   second in the same visual language. */
+
+.auth-pane .pane-offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-1);
+  margin-bottom: var(--sp-space-4);
+  padding: var(--sp-space-4);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--sp-color-primary-rgb) / 0.14),
+    rgb(var(--sp-color-primary-rgb) / 0.04)
+  );
+  border: 1px solid rgb(var(--sp-color-primary-rgb) / 0.35);
+  border-radius: var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-sm);
+}
+
+.auth-pane .pane-offer-amount {
+  color: var(--sp-color-primary-text, var(--sp-ap-text));
+  font-family: var(--sp-font-heading);
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.auth-pane .pane-offer-line {
+  color: var(--sp-ap-text);
+  font-size: 0.92rem;
+}
+
+.auth-pane .pane-offer-fine {
+  color: var(--sp-ap-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.auth-pane .pane-credit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+}
+
+.auth-pane .pane-credit-figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-space-2);
+}
+
+.auth-pane .pane-credit-left {
+  color: var(--sp-ap-text);
+  font-family: var(--sp-font-mono);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.auth-pane .pane-credit-cap {
+  color: var(--sp-ap-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-pane .pane-credit-bar {
+  overflow: hidden;
+  height: 0.4rem;
+  background: var(--sp-ap-raise);
+  border: 1px solid var(--sp-ap-border);
+  border-radius: var(--sp-radius-full);
+}
+
+.auth-pane .pane-credit-bar > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--sp-color-success);
+  border-radius: inherit;
+  /* Eased because the bar moves on a 3s poll, not per frame: a jump would
+     read as a glitch, a slide reads as spend. */
+  transition: width 0.5s ease-out, background-color 0.3s ease-out;
+}
+
+.auth-pane .pane-credit-bar[data-state="low"] > span { background: var(--sp-color-warning); }
+.auth-pane .pane-credit-bar[data-state="empty"] > span { background: var(--sp-color-error); }
+
+.auth-pane .pane-credit-note {
+  margin: 0;
+  color: var(--sp-ap-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-pane .pane-credit-bar > span { transition: none; }
+}
+
+.auth-pane .pane-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: var(--sp-space-2);
+  margin: 0;
+}
+
+.auth-pane .pane-stat {
+  padding: var(--sp-space-3);
+  background: var(--sp-ap-raise);
+  border: 1px solid var(--sp-ap-border);
+  /* One squared corner per tile, so a grid of them reads as one family. */
+  border-radius: var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-md) var(--sp-radius-sm);
+}
+
+.auth-pane .pane-stat dt {
+  color: var(--sp-ap-text-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-pane .pane-stat dd {
+  margin: var(--sp-space-1) 0 0;
+  color: var(--sp-ap-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A number that just moved is the point of the pane; a brief warm wash is
+   enough to catch the eye without pulling it off the terminal. */
+.auth-pane .pane-stat dd.is-changed {
+  animation: auth-pane-flash 0.6s ease-out;
+}
+
+@keyframes auth-pane-flash {
+  from { color: var(--sp-color-primary); }
+  to { color: var(--sp-ap-text); }
+}
+
+.auth-pane .pane-section--feed {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.auth-pane .pane-feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+  margin: 0;
+  padding: 0;
+  max-height: 22rem;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.auth-pane .pane-feed-empty {
+  color: var(--sp-ap-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.auth-pane .pane-feed-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: var(--sp-space-2) var(--sp-space-3);
+  background: var(--sp-ap-well);
+  border-left: 2px solid var(--sp-color-success);
+  border-radius: 0 var(--sp-radius-sm) var(--sp-radius-sm) 0;
+  font-family: var(--sp-font-mono);
+  font-size: 0.76rem;
+}
+
+.auth-pane .pane-feed-item--deny {
+  border-left-color: var(--sp-color-error);
+}
+
+.auth-pane .pane-feed-head {
+  color: var(--sp-ap-text);
+}
+
+.auth-pane .pane-feed-tail {
+  color: var(--sp-ap-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.auth-pane .pane-foot {
+  padding-top: var(--sp-space-3);
+  border-top: 1px solid var(--sp-ap-border);
+}
+
+/* A non-zero block count is the number this pane exists to show, so it gets a
+   hot state — the same one the terminal header's meter already uses, because
+   the two halves are reporting the same fact. */
+.auth-pane .pane-stat[data-hot="1"] {
+  border-color: color-mix(in oklch, var(--sp-color-error) 55%, transparent);
+  background: color-mix(in oklch, var(--sp-color-error) 12%, var(--sp-ap-raise));
+}
+
+.auth-pane .pane-stat[data-hot="1"] dd {
+  color: var(--sp-color-error);
+}
+

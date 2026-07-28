@@ -1,0 +1,192 @@
+/* /admin/demo/trace — the audit report behind the terminal's governance rail.
+   One column, time-ordered; a deep-linked call is haloed, a denial is the only
+   thing allowed to be loud. */
+
+.trace-page {
+  margin: 0;
+  background: var(--sp-bg-base);
+  color: var(--sp-text-primary);
+  font-family: var(--sp-font-mono, monospace);
+}
+
+.trace-shell {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: var(--sp-space-6, 2rem) var(--sp-space-4, 1rem) var(--sp-space-8, 3rem);
+}
+
+.trace-eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sp-text-tertiary);
+}
+
+.trace-head h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.4rem;
+}
+
+.trace-identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 2rem;
+  margin: 0 0 1.5rem;
+  font-size: 0.8rem;
+}
+
+.trace-identity dt {
+  color: var(--sp-text-tertiary);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.trace-identity dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.trace-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--sp-border-subtle);
+  border-radius: 6px;
+}
+
+.trace-stat b {
+  display: block;
+  font-size: 1rem;
+}
+
+.trace-stat span {
+  font-size: 0.65rem;
+  color: var(--sp-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.trace-stat[data-hot="1"] b {
+  color: var(--sp-status-error, #c0392b);
+}
+
+.trace-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trace-event {
+  border: 1px solid var(--sp-border-subtle);
+  border-left-width: 3px;
+  border-radius: 6px;
+  padding: 0.6rem 0.9rem;
+}
+
+.trace-event.is-denied {
+  border-left-color: var(--sp-status-error, #c0392b);
+}
+
+.trace-event.is-focus {
+  border-color: var(--sp-brand-primary, var(--sp-text-primary));
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--sp-brand-primary, currentColor) 25%, transparent);
+}
+
+.trace-event-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+}
+
+.trace-kind {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sp-text-tertiary);
+}
+
+.trace-outcome[data-outcome="deny"],
+.trace-outcome[data-outcome="denied"],
+.trace-outcome[data-outcome="failed"],
+.trace-outcome[data-outcome="rejected"] {
+  color: var(--sp-status-error, #c0392b);
+  font-weight: 600;
+}
+
+.trace-policy {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--sp-border-subtle);
+  border-radius: 999px;
+  color: var(--sp-text-secondary);
+}
+
+.trace-at {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--sp-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.trace-detail {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--sp-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.trace-stages {
+  width: 100%;
+  margin-top: 0.6rem;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.trace-stages th {
+  text-align: left;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sp-text-tertiary);
+  font-weight: 500;
+  padding: 0.2rem 0.75rem 0.2rem 0;
+}
+
+.trace-stages td {
+  padding: 0.25rem 0.75rem 0.25rem 0;
+  border-top: 1px solid var(--sp-border-subtle);
+  vertical-align: top;
+}
+
+.trace-stages tr[data-result="fail"] .trace-stage-result {
+  color: var(--sp-status-error, #c0392b);
+  font-weight: 600;
+}
+
+.trace-stages tr[data-result="skip"] {
+  opacity: 0.55;
+}
+
+.trace-stage-ms {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trace-stage-detail {
+  color: var(--sp-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.trace-empty,
+.trace-empty-state {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--sp-text-tertiary);
+  font-size: 0.85rem;
+}

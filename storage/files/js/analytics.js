@@ -1,166 +1,16 @@
+import {
+  MIN_TIME_MS,
+  SCROLL_MILESTONES,
+  buildEngagementData,
+  calculateScrollVelocity,
+  createState,
+  detectRageClick,
+  getScrollDepth,
+  sendEvent
+} from './analytics-helpers.js';
+
 function initAnalytics() {
-  const ENDPOINT = '/track/engagement';
-  const BATCH_ENDPOINT = '/track/engagement/batch';
-  const MIN_TIME_MS = 5000;
-  const RAGE_CLICK_THRESHOLD = 3;
-  const RAGE_CLICK_WINDOW_MS = 500;
-  const SCROLL_MILESTONES = [25, 50, 75, 90, 100];
-
-  const state = {
-    pageLoadTime: Date.now(),
-    firstInteractionTime: null,
-    firstScrollTime: null,
-    maxScrollDepth: 0,
-    scrollPositions: [],
-    scrollDirectionChanges: 0,
-    lastScrollDirection: null,
-    clickCount: 0,
-    clickTimestamps: [],
-    hasRageClick: false,
-    hasDeadClick: false,
-    mouseDistance: 0,
-    lastMousePosition: null,
-    keyboardEvents: 0,
-    copyEvents: 0,
-    focusTime: 0,
-    blurCount: 0,
-    tabSwitches: 0,
-    visibleTime: 0,
-    hiddenTime: 0,
-    lastVisibilityChange: Date.now(),
-    isVisible: !document.hidden,
-    dataSent: false,
-    pageViewSent: false,
-    scrollMilestonesSent: {},
-    linkClicks: []
-  };
-
-  function getScrollDepth() {
-    const windowHeight = window.innerHeight;
-    const documentHeight = Math.max(
-      document.body.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.scrollHeight,
-      document.documentElement.offsetHeight
-    );
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-    if (documentHeight <= windowHeight) {
-      return 100;
-    }
-
-    return Math.min(100, Math.round((scrollTop + windowHeight) / documentHeight * 100));
-  }
-
-  function calculateScrollVelocity() {
-    if (state.scrollPositions.length < 2) {
-      return null;
-    }
-
-    const recent = state.scrollPositions.slice(-10);
-    let totalVelocity = 0;
-
-    for (let i = 1; i < recent.length; i++) {
-      const timeDiff = recent[i].time - recent[i - 1].time;
-      const posDiff = Math.abs(recent[i].position - recent[i - 1].position);
-      if (timeDiff > 0) {
-        totalVelocity += posDiff / timeDiff;
-      }
-    }
-
-    return Math.round(totalVelocity / (recent.length - 1) * 1000);
-  }
-
-  function detectRageClick(timestamp) {
-    state.clickTimestamps.push(timestamp);
-
-    const recentClicks = state.clickTimestamps.filter((t) => timestamp - t < RAGE_CLICK_WINDOW_MS);
-
-    state.clickTimestamps = recentClicks;
-
-    if (recentClicks.length >= RAGE_CLICK_THRESHOLD) {
-      state.hasRageClick = true;
-    }
-  }
-
-  function detectReadingPattern() {
-    const timeOnPage = Date.now() - state.pageLoadTime;
-    const scrollDepth = state.maxScrollDepth;
-
-    if (timeOnPage < 10000 && scrollDepth < 25) {
-      return 'bounce';
-    }
-
-    if (scrollDepth > 75 && timeOnPage > 30000) {
-      return 'engaged';
-    }
-
-    if (scrollDepth > 50 && timeOnPage > 15000) {
-      return 'reader';
-    }
-
-    if (scrollDepth > 30 && timeOnPage < 20000) {
-      return 'scanner';
-    }
-
-    return 'skimmer';
-  }
-
-  function buildEngagementData() {
-    const now = Date.now();
-    const timeOnPage = now - state.pageLoadTime;
-    const visibleTime = Math.round(state.visibleTime + (state.isVisible ? now - state.lastVisibilityChange : 0));
-    const hiddenTime = Math.round(state.hiddenTime + (!state.isVisible ? now - state.lastVisibilityChange : 0));
-
-    return {
-      page_url: window.location.pathname,
-      time_on_page_ms: Math.round(timeOnPage),
-      max_scroll_depth: state.maxScrollDepth,
-      click_count: state.clickCount,
-      focus_time_ms: visibleTime,
-      blur_count: state.tabSwitches || 0,
-      tab_switches: state.tabSwitches || 0,
-      visible_time_ms: visibleTime,
-      hidden_time_ms: hiddenTime,
-      time_to_first_interaction_ms: state.firstInteractionTime
-        ? Math.round(state.firstInteractionTime - state.pageLoadTime)
-        : null,
-      time_to_first_scroll_ms: state.firstScrollTime
-        ? Math.round(state.firstScrollTime - state.pageLoadTime)
-        : null,
-      scroll_velocity_avg: calculateScrollVelocity(),
-      scroll_direction_changes: state.scrollDirectionChanges,
-      mouse_move_distance_px: Math.round(state.mouseDistance),
-      keyboard_events: state.keyboardEvents,
-      copy_events: state.copyEvents,
-      is_rage_click: state.hasRageClick,
-      is_dead_click: state.hasDeadClick,
-      reading_pattern: detectReadingPattern()
-    };
-  }
-
-  function sendEvent(eventType, eventData) {
-    const payload = {
-      page_url: window.location.pathname,
-      data: {
-        ...eventData,
-        event_type: eventType
-      }
-    };
-
-    const jsonPayload = JSON.stringify(payload);
-
-    if (navigator.sendBeacon) {
-      const blob = new Blob([jsonPayload], { type: 'application/json' });
-      navigator.sendBeacon(ENDPOINT, blob);
-    } else {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', ENDPOINT, true);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.withCredentials = true;
-      xhr.send(jsonPayload);
-    }
-  }
+  const state = createState();
 
   function sendPageView() {
     if (state.pageViewSent) return;
@@ -179,7 +29,7 @@ function initAnalytics() {
     if (timeOnPage < MIN_TIME_MS) return;
 
     state.dataSent = true;
-    sendEvent('page_exit', buildEngagementData());
+    sendEvent('page_exit', buildEngagementData(state));
   }
 
   function sendScrollMilestone(milestone) {
@@ -190,7 +40,7 @@ function initAnalytics() {
       depth: state.maxScrollDepth,
       milestone: milestone,
       direction: state.lastScrollDirection || 'down',
-      velocity: calculateScrollVelocity()
+      velocity: calculateScrollVelocity(state)
     });
   }
 
@@ -250,7 +100,7 @@ function initAnalytics() {
   function handleClick(event) {
     state.clickCount++;
     recordFirstInteraction();
-    detectRageClick(Date.now());
+    detectRageClick(state, Date.now());
 
     const target = event.target;
     const link = target.tagName === 'A' ? target : target.closest('a');
@@ -373,4 +223,8 @@ function initAnalytics() {
   handleScroll();
 }
 
-document.addEventListener('DOMContentLoaded', initAnalytics);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAnalytics);
+} else {
+  initAnalytics();
+}

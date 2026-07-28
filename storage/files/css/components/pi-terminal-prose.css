@@ -1,0 +1,205 @@
+/* ── rendered prose ─────────────────────────────────────────────────────── */
+
+.pi-prose {
+  color: var(--sp-color-terminal-text);
+  max-width: 72ch;
+  line-height: 1.7;
+  margin-block: var(--sp-space-3) var(--sp-space-4);
+}
+
+.pi-prose > :first-child { margin-top: 0; }
+.pi-prose > :last-child { margin-bottom: 0; }
+
+.pi-prose p {
+  margin: 0 0 var(--sp-space-3);
+}
+
+.pi-heading {
+  margin: var(--sp-space-4) 0 var(--sp-space-2);
+  font-family: var(--sp-font-mono);
+  font-size: 0.9rem;
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-list {
+  margin: 0 0 var(--sp-space-3);
+  padding-left: var(--sp-space-5);
+}
+
+.pi-list li {
+  margin-block: 0.3rem;
+}
+
+.pi-list li {
+  margin-bottom: 0.15rem;
+}
+
+.pi-code {
+  padding: 0.05rem 0.3rem;
+  background: color-mix(in oklch, var(--sp-color-terminal-header) 80%, var(--sp-color-primary) 8%);
+  border-radius: var(--sp-radius-xs);
+  font-size: 0.9em;
+}
+
+.pi-strong { color: var(--sp-color-terminal-text); font-weight: 650; }
+.pi-em { font-style: italic; }
+
+.pi-prose a {
+  color: var(--sp-color-primary);
+  text-underline-offset: 2px;
+}
+
+.pi-codeblock {
+  margin: var(--sp-space-2) 0;
+  background: var(--sp-color-terminal-header);
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-corners-inner-md);
+  overflow: hidden;
+}
+
+.pi-codeblock-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem var(--sp-space-3);
+  border-bottom: 1px solid var(--sp-color-terminal-border);
+}
+
+.pi-codeblock-lang {
+  font-size: 0.68rem;
+  color: var(--sp-color-terminal-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pi-copy {
+  background: none;
+  border: none;
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.pi-copy:hover { color: var(--sp-color-primary); }
+
+.pi-codeblock pre {
+  margin: 0;
+  padding: var(--sp-space-3);
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+/* Reuses the palette the blog's code blocks use, so a snippet here looks like a
+   snippet there. */
+.pi-tok-comment { color: var(--sp-syntax-comment); font-style: italic; }
+.pi-tok-string { color: var(--sp-syntax-string); }
+.pi-tok-keyword { color: var(--sp-syntax-keyword); }
+.pi-tok-number { color: var(--sp-syntax-number); }
+
+/* ── tables and rules ───────────────────────────────────────────────────── */
+
+/* A table wider than the shell scrolls on its own axis. Widening the terminal
+   instead would push the transcript sideways and break the column the whole
+   page is built on. Focusable, because a scrollable region that only a mouse
+   can reach is not reachable. */
+.pi-table-wrap {
+  margin: var(--sp-space-2) 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border: 1px solid var(--sp-color-terminal-border);
+  border-radius: var(--sp-corners-inner-md);
+}
+
+.pi-table-wrap:focus-visible {
+  outline: 1px solid var(--pi-rim);
+  outline-offset: -1px;
+}
+
+.pi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sp-font-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-table th,
+.pi-table td {
+  padding: 0.3rem var(--sp-space-3);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.pi-table thead th {
+  background: var(--sp-color-terminal-header);
+  border-bottom: 1px solid var(--sp-color-terminal-border);
+  color: var(--sp-color-terminal-text);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Row rules rather than a full grid: the eye only needs help crossing a row. */
+.pi-table tbody tr + tr td {
+  border-top: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 55%, transparent);
+}
+
+.pi-table tbody td {
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-table tbody td:first-child {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-hr {
+  height: 0;
+  margin: var(--sp-space-3) 0;
+  border: 0;
+  border-top: 1px solid var(--sp-color-terminal-border);
+}
+
+/* ── thinking ───────────────────────────────────────────────────────────── */
+
+.pi-think {
+  margin: var(--sp-space-1) 0;
+  font-size: 0.8rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-think > summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-space-2);
+  cursor: pointer;
+  list-style: none;
+  opacity: 0.8;
+}
+
+.pi-think > summary::before {
+  content: '▸';
+  font-size: 0.7em;
+}
+
+.pi-think[open] > summary::before {
+  content: '▾';
+}
+
+.pi-think-count {
+  font-size: 0.68rem;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-think-body {
+  margin: var(--sp-space-1) 0 var(--sp-space-2) var(--sp-space-4);
+  padding-left: var(--sp-space-3);
+  border-left: 1px solid var(--sp-color-terminal-border);
+  white-space: pre-wrap;
+  opacity: 0.85;
+}
+

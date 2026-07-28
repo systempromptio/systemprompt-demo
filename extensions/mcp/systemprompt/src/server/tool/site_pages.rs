@@ -26,19 +26,18 @@ use crate::tools::{FetchSitePageInput, ListSitePagesInput, SitePageSection};
 
 use super::text_artifact;
 
-/// Overrides where the site lives, for deployments whose MCP hub should read a
-/// staging or local copy. Read once per call; never caller-influenced.
+// Why: overrides where the site lives, for deployments whose MCP hub should
+// read a staging or local copy; read once per call, never caller-influenced.
 pub(crate) const SITE_BASE_URL_ENV: &str = "SYSTEMPROMPT_SITE_BASE_URL";
 
 const FALLBACK_SITE_BASE_URL: &str = "https://systemprompt.io";
 
 const FETCH_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
-/// Bytes read off the wire before the response is abandoned. Guards this
-/// process; [`MAX_MODEL_CHARS`] guards the model's context.
+// Why: two limits for two resources — MAX_RESPONSE_BYTES guards this
+// process's memory, MAX_MODEL_CHARS guards the model's context.
 const MAX_RESPONSE_BYTES: usize = 256 * 1024;
 
-/// Characters of page markdown handed to the model before truncation.
 pub(crate) const MAX_MODEL_CHARS: usize = 20_000;
 
 // Why: env beats profile beats public site — so a local deployment reads its
@@ -54,10 +53,10 @@ fn site_base_url() -> String {
     base.trim_end_matches('/').to_owned()
 }
 
-/// A slug as the site's ingestion pipeline mints them: `/`-separated segments
-/// of lowercase alphanumerics and hyphens. This is the entire input surface of
-/// `fetch_site_page`, so everything path traversal could be spelled with —
-/// `..`, `%`, `#`, `?`, leading `/` — fails here.
+// Why: a slug as the site's ingestion pipeline mints them — `/`-separated
+// segments of lowercase alphanumerics and hyphens. This is the entire input
+// surface of `fetch_site_page`, so everything path traversal could be spelled
+// with — `..`, `%`, `#`, `?`, leading `/` — fails here.
 #[must_use]
 pub(crate) fn valid_slug(slug: &str) -> bool {
     !slug.is_empty()
@@ -73,7 +72,7 @@ pub(crate) fn valid_slug(slug: &str) -> bool {
 /// The one place a fetch URL is composed.
 ///
 /// # Errors
-/// A human-readable rejection when the slug fails [`valid_slug`].
+/// A human-readable rejection when the slug fails `valid_slug`.
 pub fn site_page_url(base: &str, section: SitePageSection, slug: &str) -> Result<String, String> {
     if !valid_slug(slug) {
         return Err(format!(

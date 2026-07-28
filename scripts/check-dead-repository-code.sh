@@ -24,10 +24,17 @@
 # `// lint-ok: unused-pub` on the line above it, and say why.
 set -uo pipefail
 
-REPO_DIR="${REPO_DIR:-extensions/web/admin/src/repositories}"
+# Every repository dir and standalone repository.rs in the tree, unless the
+# caller narrows it with REPO_DIR.
+if [ -n "${REPO_DIR:-}" ]; then
+    REPO_PATHS="$REPO_DIR"
+else
+    REPO_PATHS=$( { find extensions -type d \( -name repositories -o -name repository \) -path '*/src/*'; \
+                    find extensions -type f \( -name repository.rs -o -name repositories.rs \) -not -path '*/repositor*/*'; } | sort -u)
+fi
 SIBLING_REPO="${SIBLING_REPO:-}"
 
-[ -d "$REPO_DIR" ] || { echo "check-dead-repository-code: no $REPO_DIR - nothing to check"; exit 0; }
+[ -n "$REPO_PATHS" ] || { echo "check-dead-repository-code: no repository paths - nothing to check"; exit 0; }
 
 roots_for() {
     local base="$1"
@@ -40,7 +47,7 @@ roots_for() {
 declare -A ALIAS
 while IFS=' ' read -r orig alias; do
     [ -n "${orig:-}" ] && [ -n "${alias:-}" ] && ALIAS["$orig"]+=" $alias"
-done < <(grep -rhoE '\b[A-Za-z0-9_]+ as [A-Za-z0-9_]+' "$REPO_DIR" --include='*.rs' 2>/dev/null \
+done < <(grep -rhoE '\b[A-Za-z0-9_]+ as [A-Za-z0-9_]+' $REPO_PATHS --include='*.rs' 2>/dev/null \
          | sed -E 's/ as / /' | sort -u)
 
 # Functions annotated `// lint-ok: unused-pub` on the preceding line are
@@ -48,7 +55,7 @@ done < <(grep -rhoE '\b[A-Za-z0-9_]+ as [A-Za-z0-9_]+' "$REPO_DIR" --include='*.
 declare -A EXEMPT
 while IFS= read -r fn; do
     [ -n "$fn" ] && EXEMPT["$fn"]=1
-done < <(find "$REPO_DIR" -name '*.rs' -exec awk '
+done < <(find $REPO_PATHS -name '*.rs' -exec awk '
     /lint-ok: unused-pub/ { skip = 1; next }
     skip && match($0, /^[[:space:]]*pub (async )?fn [a-z_0-9]+/) {
         sub(/.*fn /, ""); sub(/[^a-z_0-9].*/, ""); print; skip = 0; next
@@ -73,7 +80,7 @@ while IFS= read -r fn; do
         done < <(roots_for "$base")
     done
     [ "$hits" -eq 0 ] && DEAD+=("$fn")
-done < <(grep -rhoE '^\s*pub (async )?fn [a-z_0-9]+' "$REPO_DIR" --include='*.rs' 2>/dev/null \
+done < <(grep -rhoE '^\s*pub (async )?fn [a-z_0-9]+' $REPO_PATHS --include='*.rs' 2>/dev/null \
          | sed 's/.*fn //' | sort -u)
 
 if [ "${#DEAD[@]}" -gt 0 ]; then

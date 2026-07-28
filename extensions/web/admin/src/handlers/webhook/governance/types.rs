@@ -75,6 +75,9 @@ pub(super) struct ChainEntryOutcome {
     #[serde(flatten)]
     pub result: ChainEntryResult,
     pub detail: String,
+    /// Wall-clock cost of evaluating this policy. Zero for entries that never
+    /// ran (disabled, skipped-after-deny, or synthesized outcomes).
+    pub duration_ms: f64,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -104,6 +107,10 @@ pub(super) struct AuditTarget {
 // blob by the repository layer before it lands in `evaluated_rules`.
 #[derive(Debug, Serialize, Clone)]
 pub(super) struct DecisionAudit {
+    /// The `governance_decisions.id` this blob will land under. Minted by the
+    /// caller (not the repository) so surfaces that saw the decision live —
+    /// e.g. the pi SSE stream — can hand out the same id as a trace link.
+    pub id: String,
     pub decision: Decision,
     pub principal: PrincipalSnapshot,
     pub target: AuditTarget,

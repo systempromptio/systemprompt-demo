@@ -13,8 +13,14 @@ fn known_sections_with_valid_slugs_parse() {
         parse_md_path("documentation/services/ai.md"),
         Some(("documentation", "services/ai"))
     );
-    assert_eq!(parse_md_path("blog/launch-post.md"), Some(("blog", "launch-post")));
-    assert_eq!(parse_md_path("documentation/a1.md"), Some(("documentation", "a1")));
+    assert_eq!(
+        parse_md_path("blog/launch-post.md"),
+        Some(("blog", "launch-post"))
+    );
+    assert_eq!(
+        parse_md_path("documentation/a1.md"),
+        Some(("documentation", "a1"))
+    );
 }
 
 #[test]

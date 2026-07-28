@@ -42,8 +42,7 @@ fn parses_a_real_ui_request() {
 
 #[test]
 fn parses_a_failed_response() {
-    let line =
-        r#"{"id":"1","type":"response","command":"prompt","success":false,"error":"boom"}"#;
+    let line = r#"{"id":"1","type":"response","command":"prompt","success":false,"error":"boom"}"#;
     let RpcFrame::Response { success, error } = parse_frame(line) else {
         panic!("expected a Response");
     };

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>{{branding.domain}} - Audit Trail</title>
+    <link rel="stylesheet" href="/css/core/fonts.css?v={{css_version}}">
+    <link rel="stylesheet" href="/css/admin-bundle.css?v={{css_version}}">
+</head>
+<body class="trace-page">
+    <main class="trace-shell">
+        <header class="trace-head">
+            <p class="trace-eyebrow">{{branding.domain}} · governance spine</p>
+            <h1>Audit trail</h1>
+            {{#if has_session}}
+            <dl class="trace-identity">
+                <div><dt>operator</dt><dd>{{username}}</dd></div>
+                <div><dt>conversation</dt><dd><code>{{conversation_id}}</code></dd></div>
+                <div><dt>attested session</dt><dd><code>{{session_id}}</code></dd></div>
+                {{#if conversation_title}}<div><dt>title</dt><dd>{{conversation_title}}</dd></div>{{/if}}
+            </dl>
+            {{/if}}
+        </header>
+
+        {{#if has_session}}
+        <section class="trace-summary" aria-label="Session summary">
+            <div class="trace-stat"><b>{{summary.events}}</b><span>events</span></div>
+            <div class="trace-stat" {{#if summary.denials}}data-hot="1"{{/if}}><b>{{summary.denials}}</b><span>denied</span></div>
+            <div class="trace-stat"><b>{{summary.requests}}</b><span>AI requests</span></div>
+            <div class="trace-stat"><b>{{summary.input_tokens}}</b><span>tokens in</span></div>
+            <div class="trace-stat"><b>{{summary.output_tokens}}</b><span>tokens out</span></div>
+            <div class="trace-stat"><b>{{summary.cost_display}}</b><span>cost</span></div>
+        </section>
+
+        <section class="trace-timeline" aria-label="Time-ordered trace">
+            {{#each events}}
+            <article class="trace-event{{#if is_denied}} is-denied{{/if}}{{#if is_focus}} is-focus{{/if}}"
+                     id="call-{{id}}" data-kind="{{kind}}">
+                <header class="trace-event-head">
+                    <span class="trace-kind">{{kind}}</span>
+                    <strong class="trace-subject">{{subject}}</strong>
+                    <span class="trace-outcome" data-outcome="{{outcome}}">{{outcome}}</span>
+                    {{#if policy}}<span class="trace-policy">{{policy}}</span>{{/if}}
+                    <time class="trace-at">{{at}}</time>
+                </header>
+                {{#if detail}}<p class="trace-detail">{{detail}}</p>{{/if}}
+                {{#if has_stages}}
+                <table class="trace-stages">
+                    <thead>
+                        <tr><th>policy</th><th>result</th><th>duration</th><th>detail</th></tr>
+                    </thead>
+                    <tbody>
+                        {{#each stages}}
+                        <tr data-result="{{result}}">
+                            <td class="trace-stage-policy">{{policy}}</td>
+                            <td class="trace-stage-result">{{result}}</td>
+                            <td class="trace-stage-ms">{{duration}}</td>
+                            <td class="trace-stage-detail">{{detail}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+                {{/if}}
+            </article>
+            {{else}}
+            <p class="trace-empty">No governed activity has been recorded for this session yet.</p>
+            {{/each}}
+        </section>
+        {{else}}
+        <section class="trace-empty-state">
+            <p>No session to show. Open this page from the terminal's
+            <strong>audit&nbsp;→</strong> link, or pass <code>?session=&lt;conversation-id&gt;</code>
+            for a conversation you own.</p>
+        </section>
+        {{/if}}
+    </main>
+    <script>
+        (function () {
+            var focus = document.querySelector('.trace-event.is-focus');
+            if (focus) focus.scrollIntoView({ block: 'center' });
+        })();
+    </script>
+</body>
+</html>

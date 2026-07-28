@@ -9,12 +9,11 @@ chrome.innerHTML = ''
   + '<div class="terminal active">'
   + '<div class="terminal-header">'
   + '<span class="pi-brand">'
-  // The real asset, not a hand-copied set of paths: icon.svg is the mark in
-  // the wordmark's own coordinate space, so there is one source of truth and
-  // resizing it here cannot drift from the brand.
-  + '<img class="pi-brand-mark" src="/files/images/icon.svg" alt=""'
-  + ' width="18" height="18" decoding="async">'
-  + '<span class="pi-brand-name">systemprompt<span class="pi-brand-tld">.io</span></span>'
+  // The same wordmark asset the site header wears (its over-video variant —
+  // this chrome is always dark), not a mark-plus-HTML-text reconstruction
+  // that could drift from the brand.
+  + '<img class="pi-brand-wordmark" src="/files/images/logo-white.svg"'
+  + ' alt="systemprompt.io" width="140" height="16" decoding="async">'
   + '</span>'
   + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
   + '<span class="pi-status" data-role="status"></span></span>'
@@ -30,17 +29,16 @@ chrome.innerHTML = ''
   + '</svg>'
   + '<span data-role="user-name"></span>'
   + '</span>'
-  // Abandon the transcript, keep the identity. Dressed as a chip so the
-  // header stays one family; hidden until there is a conversation to clear.
-  + '<button type="button" class="pi-clear-chip" data-role="clear" hidden'
-  + ' title="Clear this conversation and start a new one">'
-  + '<svg class="pi-clear-icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
-  + '<path d="M2.5 4.5a4 4 0 1 1-.4 3" fill="none" stroke="currentColor"'
-  + ' stroke-width="1.4" stroke-linecap="round"/>'
-  + '<path d="M2.1 2.2v2.5h2.5" fill="none" stroke="currentColor"'
-  + ' stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>'
-  + '</svg>'
-  + 'clear</button>'
+  // The conversation picker lives in the header rather than above the shell:
+  // it is terminal chrome, and as a sibling it broke the pane's geometry. The
+  // chip toggles a dropdown that hosts <sp-conversation-list> — the terminal
+  // instantiates it in _build(), the list keeps owning its own behaviour.
+  + '<span class="pi-conv" data-role="conv-wrap">'
+  + '<button type="button" class="pi-conv-chip" data-role="conv-chip"'
+  + ' aria-haspopup="true" aria-expanded="false"'
+  + ' title="Your conversations">Conversations</button>'
+  + '<div class="pi-conv-panel" data-role="conv-panel" hidden></div>'
+  + '</span>'
   // Hidden until the catalogue arrives with more than one entry; a picker
   // with one option is furniture.
   + '<select class="pi-model" data-role="model" aria-label="Model" hidden></select>'
@@ -78,15 +76,34 @@ chrome.innerHTML = ''
   + ' placeholder="Ask the agent something, or type / for skills…"'
   + ' role="combobox" aria-expanded="false" aria-controls="pi-palette-list"'
   + ' aria-autocomplete="list" disabled></textarea>'
-  + '<button type="submit" class="pi-btn pi-btn--send" data-role="send" disabled>'
+  // Conversation controls, quietest to loudest: Clear (ghost, session up),
+  // Stop (mid-turn only), Send (primary, at the edge where the eye expects
+  // the commit action). Send wears the return glyph because that is the key
+  // that does the same thing — the button and the hint state one contract.
+  + '<button type="button" class="pi-btn pi-btn--ghost pi-btn--clear" data-role="clear" hidden'
+  + ' title="Clear this conversation and start a new one">'
   + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
-  + '<path d="M3.5 2.25 9.25 6 3.5 9.75Z" fill="currentColor"/></svg>'
-  + '<span class="pi-btn__label">Run</span>'
+  + '<path d="M2.5 4.5a4 4 0 1 1-.4 3" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.4" stroke-linecap="round"/>'
+  + '<path d="M2.1 2.2v2.5h2.5" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '</svg>'
+  + '<span class="pi-btn__label">Clear</span>'
   + '</button>'
   + '<button type="button" class="pi-btn pi-btn--ghost pi-btn--stop" data-role="stop" hidden>'
   + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
   + '<rect x="3" y="3" width="6" height="6" rx="1" fill="currentColor"/></svg>'
   + '<span class="pi-btn__label">Stop</span>'
+  + '</button>'
+  + '<button type="submit" class="pi-btn pi-btn--send" data-role="send" disabled'
+  + ' title="Send (Enter)">'
+  + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+  + '<path d="M9.5 2.5v3.25a1.5 1.5 0 0 1-1.5 1.5H3" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '<path d="M5 4.75 2.5 7.25 5 9.75" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '</svg>'
+  + '<span class="pi-btn__label">Send</span>'
   + '</button>'
   + '</form>'
   + '<div class="pi-hint">'

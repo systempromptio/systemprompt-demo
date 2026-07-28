@@ -4,7 +4,8 @@
 use systemprompt_web_admin::test_support::{escape, scalar, scan_str_for_secret};
 
 /// The credential-shaped literal `demonstrate_governance` sends to trigger a
-/// `secret_scan` deny. It matches an operator `extra_pattern`, never a built-in.
+/// `secret_scan` deny. It matches an operator `extra_pattern`, never a
+/// built-in.
 const DEMO_CREDENTIAL: &str = "SPDEMOKEY-0000000000000000";
 
 /// The governed name of the tool `demonstrate_scope_rejection` reaches for.

@@ -1,0 +1,216 @@
+/* ── transcript ─────────────────────────────────────────────────────────── */
+
+.pi-body-wrap {
+  position: relative;
+}
+
+.pi-terminal .terminal-body {
+  min-height: 260px;
+  max-height: 480px;
+  overflow-y: auto;
+  /* Growth must never shift what the reader is looking at; the widget decides
+     when to follow the output, and the browser must not second-guess it. */
+  overflow-anchor: none;
+  padding: var(--sp-space-4) var(--sp-space-5);
+  font-family: var(--sp-font-mono);
+  font-variant-ligatures: none;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--sp-color-terminal-text);
+  box-shadow: var(--sp-shadow-inner-glow);
+  scrollbar-width: thin;
+  scrollbar-color: var(--sp-color-terminal-border) transparent;
+}
+
+.pi-terminal .terminal-body:focus-visible {
+  outline: 1px solid var(--pi-rim);
+  outline-offset: -2px;
+}
+
+.pi-terminal .terminal-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.pi-terminal .terminal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pi-terminal .terminal-body::-webkit-scrollbar-thumb {
+  background: var(--sp-color-terminal-border);
+  border-radius: var(--sp-radius-full);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.pi-terminal .terminal-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  /* Measure cap. Mono at 0.875rem across the full 860px shell runs past 150
+     characters a line — unreadable. ~72ch is where prose stops being a wall. */
+  max-width: 72ch;
+}
+
+.pi-terminal .prompt {
+  color: var(--sp-color-primary);
+}
+
+/* A user turn opens every act, so a hairline above each one is all the
+   grouping the transcript needs: the eye scans a flush-left column of `>`
+   prompts and each answer hangs off its question. */
+.pi-terminal .pi-turn-user {
+  margin-top: var(--sp-space-5);
+  padding-top: var(--sp-space-3);
+  border-top: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 45%, transparent);
+}
+
+.pi-terminal .pi-turn-user:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.pi-terminal .pi-turn-user .command {
+  font-weight: 600;
+}
+
+/* Replay commentary — the narrator's voice, not the agent's. Set apart as an
+   editorial aside so the two can never be read as the same speaker. */
+.pi-terminal .pi-note {
+  display: inline-block;
+  max-width: 60ch;
+  margin: var(--sp-space-2) 0 var(--sp-space-1);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.pi-terminal .pi-note::before {
+  content: '— ';
+  opacity: 0.5;
+}
+
+/* In replay the agent's half of the exchange is indented off the prompt
+   column. Scoped to replay: a live session's transcript is the operator's
+   working surface and keeps its full width. */
+.pi-terminal.is-replay .terminal-body .pi-prose,
+.pi-terminal.is-replay .terminal-body .pi-tool,
+.pi-terminal.is-replay .terminal-body .pi-rail-line,
+.pi-terminal.is-replay .terminal-body .pi-blocked,
+.pi-terminal.is-replay .terminal-body .pi-note {
+  margin-left: var(--sp-space-4);
+}
+
+.pi-terminal.is-replay .terminal-body .pi-prose {
+  padding-left: var(--sp-space-3);
+  border-left: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 40%, transparent);
+}
+
+.pi-terminal .command {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-terminal .output,
+.pi-terminal .pi-stream {
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-terminal .output-dim {
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.output-warn {
+  color: var(--sp-color-warning);
+}
+
+/* Credit exhaustion is a state with a way out, not a stream of failures, so it
+   renders once as a card with the action beside the sentence. */
+.pi-error-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  margin-block: var(--sp-space-2);
+  padding: var(--sp-space-2) var(--sp-space-3);
+  border: 1px solid color-mix(in oklch, var(--sp-color-warning) 45%, transparent);
+  border-radius: var(--sp-radius-md);
+  background: color-mix(in oklch, var(--sp-color-warning) 8%, transparent);
+  font-family: var(--sp-font-mono);
+  font-size: 0.8rem;
+}
+
+.pi-error-card__icon {
+  color: var(--sp-color-warning);
+}
+
+.pi-error-card__text {
+  flex: 1;
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-error-card__action {
+  padding: var(--sp-space-1) var(--sp-space-2);
+  border: 1px solid var(--sp-color-warning);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-warning);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pi-error-card__action:hover {
+  background: color-mix(in oklch, var(--sp-color-warning) 16%, transparent);
+}
+
+.pi-trimmed {
+  color: var(--sp-color-terminal-text-dim);
+  opacity: 0.6;
+}
+
+
+/* Jump-to-bottom. Only appears once the reader has scrolled away, because that
+   is the only time autoscroll is suppressed. */
+.pi-jump {
+  position: absolute;
+  right: var(--sp-space-4);
+  bottom: var(--sp-space-3);
+  padding: var(--sp-space-1) var(--sp-space-3);
+  background: var(--sp-color-terminal-header);
+  border: 1px solid var(--pi-rim);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  box-shadow: var(--sp-shadow-lift);
+  z-index: 2;
+}
+
+/* ── working ────────────────────────────────────────────────────────────── */
+
+/* What replaced the blinking block cursor that used to be appended to the
+   transcript. That caret implied the transcript was an input; this says the
+   true thing instead — a block is being written, and this much has landed. */
+.pi-working {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  padding: var(--sp-space-1) 0;
+  font-family: var(--sp-font-mono);
+  font-size: 0.78rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-working-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: var(--sp-radius-full);
+  background: var(--sp-color-primary);
+}
+
+.pi-working-label {
+  letter-spacing: 0.04em;
+}
+
+.pi-working-count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+

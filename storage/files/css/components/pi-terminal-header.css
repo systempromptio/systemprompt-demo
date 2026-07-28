@@ -1,0 +1,300 @@
+/* ── header ─────────────────────────────────────────────────────────────── */
+
+.pi-terminal .terminal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+  padding: var(--sp-space-2) var(--sp-space-4);
+  background: var(--sp-color-terminal-header);
+  border-bottom: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
+}
+
+/* The titlebar is branded rather than labelled.
+   It used to read "pi — governed", which named an internal binary and a property
+   in a way that meant nothing to a visitor. A product surface should say whose
+   it is; what it does is demonstrated by the thing underneath. */
+.pi-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+  flex: none;
+}
+
+/* The wordmark asset itself; height picks the scale, width follows. */
+.pi-brand-wordmark {
+  display: block;
+  height: 16px;
+  width: auto;
+  flex: none;
+}
+
+/* Confinement, promoted out of the transcript. It was the first line of output
+   and therefore the first thing to scroll away — a claim about a sandbox is
+   worth more when it is still on screen an hour into a session. */
+.pi-jail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-success) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-success);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.pi-jail-chip::before {
+  content: '⛨';
+  font-size: 0.8em;
+}
+
+/* Who the session is signed to. A padlock and the identity, dressed as a chip
+   so the header stays one family — the lock is the claim that every call this
+   terminal makes carries a token minted for exactly this identity. */
+.pi-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-primary) 35%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+}
+
+.pi-user-lock {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: none;
+  color: var(--sp-color-primary);
+}
+
+/* The identity may be long; the chip may not be. */
+.pi-user-chip > span {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The conversation picker: a chip in the header that drops a panel hosting
+   <sp-conversation-list>. The wrapper anchors the panel; the shell's own
+   overflow:hidden keeps the drop inside the glass. */
+.pi-conv {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.pi-conv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-text-dim) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  background: color-mix(in oklch, var(--sp-color-terminal-text-dim) 8%, transparent);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pi-conv-chip::after {
+  content: '';
+  width: 0.45rem;
+  height: 0.35rem;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M1 1.5 4 4.5 7 1.5' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M1 1.5 4 4.5 7 1.5' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.pi-conv-chip:hover,
+.pi-conv-chip[aria-expanded='true'] {
+  color: var(--sp-color-terminal-text);
+  border-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 70%, transparent);
+}
+
+.pi-conv-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 30;
+  width: min(24rem, 72vw);
+  padding: var(--sp-space-3) var(--sp-space-4);
+  background: oklch(0.16 0.01 55 / 0.97);
+  border: 1px solid var(--sp-stage-glass-border, var(--sp-color-terminal-border));
+  border-radius: 6px 6px 6px 14px;
+  box-shadow: 0 16px 40px oklch(0 0 0 / 0.5);
+}
+
+.pi-conv-panel[hidden] {
+  display: none;
+}
+
+/* Clear sits in the composer with Run and Stop — it is a conversation
+   control, so it lives with the conversation controls. Ghost weight: it must
+   never compete with Run for the eye. */
+.pi-btn--clear:hover {
+  color: var(--sp-color-terminal-text);
+  border-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 70%, transparent);
+}
+
+/* In replay the composer takes no input, so buttons that cannot act are not
+   drawn at all — dead controls read as a broken page, not a demo. */
+.pi-terminal.is-replay .pi-btn--send,
+.pi-terminal.is-replay .pi-btn--stop {
+  display: none;
+}
+
+/* The class sets display, so without this the hidden attribute loses the
+   cascade and a JS `hidden = true` silently stops working. */
+.pi-btn[hidden] {
+  display: none;
+}
+
+/* The model picker, dressed as a chip so the header stays one family. Only
+   rendered when the gateway advertises more than one model. The native
+   arrow is replaced with an inline chevron so the closed control matches the
+   jail chip beside it on every platform. */
+.pi-model {
+  appearance: none;
+  -webkit-appearance: none;
+  /* Wide enough for `id · $in/$out · ctx` — the closed control shows the
+     chosen model's price card, and an ellipsis through the rate defeats the
+     point of carrying it. */
+  max-width: 19rem;
+  padding: 0.15rem 1.3rem 0.15rem 0.6rem;
+  overflow: hidden;
+  background-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 8%, transparent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M1 1.5 4 4.5 7 1.5' fill='none' stroke='%23999' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.45rem center;
+  background-size: 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-text-dim) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.pi-model:hover {
+  border-color: color-mix(in oklch, var(--sp-color-primary) 55%, transparent);
+  color: var(--sp-color-terminal-text);
+}
+
+.pi-model:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 1px;
+}
+
+/* The open list is native; these are the only knobs it honours. */
+.pi-model option,
+.pi-model optgroup {
+  background: var(--sp-color-terminal-bg, #1a1a1a);
+  color: var(--sp-color-terminal-text, #eee);
+  font-family: var(--sp-font-mono);
+}
+
+.pi-model optgroup {
+  color: var(--sp-color-terminal-text-dim, #999);
+  font-size: 0.7rem;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pi-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-2);
+}
+
+.pi-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--sp-radius-full);
+  background: var(--sp-color-terminal-text-dim);
+  flex: none;
+}
+
+.pi-live[data-state="live"] .pi-live-dot { background: var(--sp-color-success); }
+.pi-live[data-state="reconnecting"] .pi-live-dot,
+.pi-live[data-state="session in use"] .pi-live-dot { background: var(--sp-color-warning); }
+.pi-live[data-state="ended"] .pi-live-dot { background: var(--sp-color-error); }
+
+.pi-status {
+  font-family: var(--sp-font-mono);
+  font-size: 0.75rem;
+  color: var(--sp-color-terminal-text-dim);
+  text-transform: lowercase;
+}
+
+.pi-status[data-state="live"] {
+  color: var(--sp-color-success);
+}
+
+.pi-status[data-state="reconnecting"],
+.pi-status[data-state="session in use"] {
+  color: var(--sp-color-warning);
+}
+
+.pi-status[data-state="ended"] {
+  color: var(--sp-color-error);
+}
+
+/* Meters. The page claims governance is metered; a number that moves while you
+   watch is the cheapest available proof, so it lives in the chrome. */
+.pi-meters {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+  margin-left: auto;
+}
+
+.pi-meter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-meter b {
+  color: var(--sp-color-terminal-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-meter i {
+  font-style: normal;
+  opacity: 0.72;
+}
+
+/* A non-zero block count is the interesting number on this page. */
+.pi-meter[data-hot="1"] b {
+  color: var(--sp-color-error);
+}
+
+.pi-trace-link {
+  font-family: var(--sp-font-mono);
+  font-size: 0.72rem;
+  color: var(--sp-color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pi-trace-link:hover {
+  text-decoration: underline;
+}
+

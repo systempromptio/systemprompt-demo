@@ -16,20 +16,10 @@ use super::text_artifact;
 
 use super::{REMOTE_FETCH_HOST, REMOTE_FETCH_PORT, REMOTE_FETCH_TIMEOUT};
 
-/// `fetch_remote_docs` — the tool policy is expected to refuse.
-///
-/// It is implemented rather than stubbed. A refusal demonstration is only worth
-/// watching if the thing refused could genuinely have happened: a stub that
-/// returns "would have fetched" proves that a string was returned, not that a
-/// boundary held. Reaching this code at all means the `tool_blocklist` policy
-/// was bypassed or disabled, so it says so.
-///
-/// It opens a TCP connection rather than speaking HTTPS. That is the whole of
-/// what the boundary underneath the policy actually controls — Landlock's
-/// network rules gate `connect()` by port, and this session's jail grants the
-/// gateway's port alone — so a successful connect is the honest evidence that
-/// egress was possible, and a TLS stack would add a large dependency to prove
-/// nothing further.
+// Why: implemented rather than stubbed — a refusal is only evidence if the
+// refused thing could genuinely happen. Bare TCP, not HTTPS: Landlock gates
+// `connect()` by port, so a successful connect is the whole proof and a TLS
+// stack would prove nothing further.
 pub(in crate::server) struct FetchRemoteDocsHandler;
 
 impl McpToolHandler for FetchRemoteDocsHandler {

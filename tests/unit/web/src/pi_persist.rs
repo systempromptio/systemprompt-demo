@@ -22,9 +22,7 @@ fn journal(bodies: Vec<PiEventBody>) -> Vec<NewPiEvent> {
 }
 
 fn text(s: &str) -> PiEventBody {
-    PiEventBody::TextDelta {
-        text: s.to_owned(),
-    }
+    PiEventBody::TextDelta { text: s.to_owned() }
 }
 
 #[test]

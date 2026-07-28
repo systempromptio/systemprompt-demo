@@ -1,0 +1,337 @@
+/* <sp-auth-pane> — sign in, then watch your own agent's governance spine.
+ *
+ * Light DOM, so everything is scoped under .auth-pane rather than shadowed.
+ * The two states share the same shell deliberately: signing in should read as
+ * the panel filling in, not as one screen replacing another. */
+
+.auth-pane {
+  display: block;
+  min-width: 0;
+
+  /* Local dark-glass tokens. This component is used by the homepage and
+     nowhere else, so it is styled for the stage directly rather than being
+     themed through it. */
+  --sp-ap-glass: var(--sp-stage-glass, oklch(0.24 0.012 55 / 0.72));
+  --sp-ap-border: var(--sp-stage-glass-border, oklch(1 0 0 / 0.09));
+  --sp-ap-well: oklch(0 0 0 / 0.28);
+  --sp-ap-raise: oklch(1 0 0 / 0.08);
+  --sp-ap-text: var(--sp-stage-text, oklch(0.96 0.004 60));
+  --sp-ap-text-dim: var(--sp-stage-text-dim, oklch(0.82 0.008 60));
+  --sp-ap-text-muted: var(--sp-stage-text-muted, oklch(0.68 0.01 60));
+}
+
+/* The JS wizard toggles `hidden` on the form, on each step, and on the busy
+   row. An author `display` on any of those silently defeats the UA's
+   `[hidden] { display: none }` — which is exactly how sign-in, register step
+   1, register step 2, and a spinner all ended up stacked on screen at once.
+   These live above the `display: flex` rules and must stay above them. */
+.auth-pane .pane-form[hidden],
+.auth-pane .pane-step[hidden],
+.auth-pane .pane-busy[hidden],
+.auth-pane .pane-panel[hidden],
+.auth-pane .pane-alert[hidden] { display: none; }
+
+.auth-pane .pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-5);
+  padding: var(--sp-space-5);
+  background: var(--sp-ap-glass);
+  backdrop-filter: blur(var(--sp-stage-blur, 16px)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--sp-stage-blur, 16px)) saturate(140%);
+  border: 1px solid var(--sp-ap-border);
+  border-radius: var(--sp-corners-lg);
+  box-shadow: 0 24px 60px oklch(0 0 0 / 0.45), 0 0 0 1px oklch(1 0 0 / 0.04) inset;
+  color: var(--sp-ap-text-dim);
+}
+
+/* ── head ───────────────────────────────────────────────────────────────── */
+
+.auth-pane .pane-title {
+  margin: 0 0 var(--sp-space-2);
+  font-family: var(--sp-font-heading);
+  font-size: clamp(1.35rem, 1.1rem + 0.9vw, 1.9rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--sp-ap-text);
+}
+
+.auth-pane .pane-sub {
+  margin: 0;
+  color: var(--sp-ap-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.auth-pane .pane-head--profile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-space-4);
+  padding-bottom: var(--sp-space-4);
+  border-bottom: 1px solid var(--sp-ap-border);
+}
+
+.auth-pane .pane-id {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+  min-width: 0;
+}
+
+.auth-pane .pane-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--sp-color-primary);
+  color: var(--sp-color-text-on-primary);
+  /* The branded asymmetric corner: square where the identity anchors, round
+     everywhere else. */
+  border-radius: var(--sp-radius-full) var(--sp-radius-full) var(--sp-radius-full) var(--sp-radius-sm);
+  font-family: var(--sp-font-heading);
+  font-weight: 600;
+}
+
+.auth-pane .pane-name {
+  display: block;
+  color: var(--sp-ap-text);
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.auth-pane .pane-email {
+  display: block;
+  color: var(--sp-ap-text-muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-pane .pane-badge {
+  flex: none;
+  padding: 0.2rem var(--sp-space-3);
+  border: 1px solid currentcolor;
+  border-radius: var(--sp-radius-full);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-pane .pane-badge--ok { color: var(--sp-color-success); }
+.auth-pane .pane-badge--pending { color: var(--sp-color-warning); }
+
+/* ── tabs ───────────────────────────────────────────────────────────────── */
+
+.auth-pane .pane-tabs {
+  display: flex;
+  gap: var(--sp-space-1);
+  padding: 0.25rem;
+  background: var(--sp-ap-well);
+  border-radius: var(--sp-radius-md);
+}
+
+.auth-pane .pane-tab {
+  flex: 1;
+  padding: var(--sp-space-2) var(--sp-space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--sp-radius-sm);
+  color: var(--sp-ap-text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.auth-pane .pane-tab.is-active {
+  background: var(--sp-ap-raise);
+  color: var(--sp-ap-text);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.35);
+}
+
+/* ── forms ──────────────────────────────────────────────────────────────── */
+
+.auth-pane .pane-form,
+.auth-pane .pane-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.auth-pane .pane-label {
+  color: var(--sp-ap-text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.auth-pane .pane-label:not(:first-child) {
+  margin-top: var(--sp-space-2);
+}
+
+.auth-pane .pane-field {
+  width: 100%;
+  padding: var(--sp-space-3);
+  background: var(--sp-ap-well);
+  border: 1px solid var(--sp-ap-border);
+  border-radius: var(--sp-radius-md);
+  color: var(--sp-ap-text);
+  font: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.auth-pane .pane-field:focus-visible {
+  outline: none;
+  border-color: var(--sp-color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--sp-color-primary-rgb), 0.18);
+}
+
+.auth-pane textarea.pane-field {
+  resize: vertical;
+}
+
+.auth-pane .pane-actions {
+  display: flex;
+  gap: var(--sp-space-2);
+  margin-top: var(--sp-space-2);
+}
+
+.auth-pane .pane-btn {
+  padding: var(--sp-space-3) var(--sp-space-5);
+  border: 1px solid transparent;
+  border-radius: var(--sp-radius-md);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+
+.auth-pane .pane-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-pane .pane-btn--primary {
+  margin-top: var(--sp-space-2);
+  background: var(--sp-color-primary);
+  color: var(--sp-color-text-on-primary);
+  box-shadow: var(--sp-shadow-accent-sm);
+}
+
+.auth-pane .pane-btn--primary:hover:not(:disabled) {
+  background: var(--sp-color-primary-hover);
+}
+
+.auth-pane .pane-btn--primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.auth-pane .pane-btn--ghost {
+  background: transparent;
+  border-color: var(--sp-ap-border);
+  color: var(--sp-ap-text-dim);
+}
+
+.auth-pane .pane-note {
+  margin: var(--sp-space-1) 0 0;
+  color: var(--sp-ap-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.auth-pane .pane-note--pending {
+  padding: var(--sp-space-3);
+  background: var(--sp-ap-well);
+  border-left: 2px solid var(--sp-color-warning);
+  border-radius: 0 var(--sp-radius-md) var(--sp-radius-md) 0;
+  color: var(--sp-ap-text-dim);
+}
+
+.auth-pane .pane-link {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--sp-color-primary-text);
+  font: inherit;
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── feedback ───────────────────────────────────────────────────────────── */
+
+.auth-pane .pane-alert {
+  padding: var(--sp-space-3);
+  border-radius: var(--sp-radius-md);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.auth-pane .pane-alert[data-tone="error"] {
+  background: color-mix(in oklch, var(--sp-color-error) 14%, transparent);
+  border-left: 2px solid var(--sp-color-error);
+  color: var(--sp-color-error);
+}
+
+.auth-pane .pane-alert[data-tone="info"] {
+  background: var(--sp-ap-well);
+  border-left: 2px solid var(--sp-color-info);
+  color: var(--sp-ap-text-dim);
+}
+
+.auth-pane .pane-busy {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-space-3);
+  color: var(--sp-ap-text-dim);
+  font-size: 0.85rem;
+}
+
+.auth-pane .pane-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--sp-ap-border);
+  border-top-color: var(--sp-color-primary);
+  border-radius: var(--sp-radius-full);
+  animation: auth-pane-spin 0.8s linear infinite;
+}
+
+@keyframes auth-pane-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── telemetry ──────────────────────────────────────────────────────────── */
+
+.auth-pane .pane-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-3);
+  min-height: 0;
+}
+
+.auth-pane .pane-h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-space-3);
+  margin: 0;
+  color: var(--sp-ap-text-muted);
+  font-family: var(--sp-font-heading);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-pane .pane-h3-sub {
+  color: var(--sp-ap-text-muted);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+

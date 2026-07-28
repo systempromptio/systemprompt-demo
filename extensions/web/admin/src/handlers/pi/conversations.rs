@@ -113,7 +113,7 @@ pub(super) async fn history(
                 title: row.title,
                 last_seq,
                 more,
-                events: events.into_iter().map(|e| e.body).collect(),
+                events: collapse_duplicate_errors(events.into_iter().map(|e| e.body).collect()),
             })
             .into_response()
         },
@@ -126,6 +126,43 @@ pub(super) async fn history(
             )
         },
     }
+}
+
+/// The read-side mirror of `PiSession::is_repeat_error`, for stored rows the
+/// emit-level dedupe never saw.
+///
+/// Error frames are upgraded to the current
+/// vocabulary first (`events::upgrade_legacy_error`) so differently-worded
+/// duplicates of one failed request become identical and collapse.
+/// `turn_start`/`turn_end` are transparent for the same reason as in the
+/// live path: they are what a provider retry interleaves.
+pub fn collapse_duplicate_errors(events: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
+    let mut out = Vec::with_capacity(events.len());
+    let mut last_error: Option<serde_json::Value> = None;
+    for mut event in events {
+        match event.get("type").and_then(serde_json::Value::as_str) {
+            Some("error") => {
+                super::events::upgrade_legacy_error(&mut event);
+                if last_error.as_ref().is_some_and(|l| same_error(l, &event)) {
+                    continue;
+                }
+                last_error = Some(event.clone());
+                out.push(event);
+            },
+            Some("turn_start" | "turn_end") => out.push(event),
+            _ => {
+                last_error = None;
+                out.push(event);
+            },
+        }
+    }
+    out
+}
+
+fn same_error(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+    ["kind", "code", "message"]
+        .iter()
+        .all(|field| a.get(field) == b.get(field))
 }
 
 pub(super) async fn rename(

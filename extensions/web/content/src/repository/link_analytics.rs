@@ -82,46 +82,6 @@ impl LinkAnalyticsRepository {
         .await
     }
 
-    pub async fn check_session_clicked_link(
-        &self,
-        link_id: &LinkId,
-        session_id: &SessionId,
-    ) -> Result<bool, sqlx::Error> {
-        let result = sqlx::query!(
-            r#"SELECT COALESCE(COUNT(*), 0)::bigint as "count!" FROM link_clicks WHERE link_id = $1 AND session_id = $2"#,
-            link_id.as_str(),
-            session_id.as_str()
-        )
-        .fetch_one(&*self.pool)
-        .await?;
-
-        Ok(result.count > 0)
-    }
-
-    pub async fn increment_link_clicks(
-        &self,
-        link_id: &LinkId,
-        is_first_click: bool,
-    ) -> Result<(), sqlx::Error> {
-        if is_first_click {
-            sqlx::query!(
-                "UPDATE campaign_links SET click_count = click_count + 1, unique_click_count = \
-                 unique_click_count + 1 WHERE id = $1",
-                link_id.as_str()
-            )
-            .execute(&*self.pool)
-            .await?;
-        } else {
-            sqlx::query!(
-                "UPDATE campaign_links SET click_count = click_count + 1 WHERE id = $1",
-                link_id.as_str()
-            )
-            .execute(&*self.pool)
-            .await?;
-        }
-        Ok(())
-    }
-
     pub async fn list_clicks_by_link(
         &self,
         link_id: &LinkId,
@@ -148,37 +108,6 @@ impl LinkAnalyticsRepository {
         )
         .fetch_all(&*self.pool)
         .await
-    }
-
-    pub async fn list_content_journey_map(
-        &self,
-        limit: i64,
-        offset: i64,
-    ) -> Result<Vec<ContentJourneyNode>, sqlx::Error> {
-        let rows = sqlx::query!(
-            r#"
-            SELECT source_content_id, target_url, COALESCE(click_count, 0) as "click_count!"
-            FROM campaign_links
-            WHERE source_content_id IS NOT NULL AND click_count > 0
-            ORDER BY click_count DESC
-            LIMIT $1 OFFSET $2
-            "#,
-            limit,
-            offset
-        )
-        .fetch_all(&*self.pool)
-        .await?;
-
-        Ok(rows
-            .into_iter()
-            .filter_map(|r| {
-                Some(ContentJourneyNode {
-                    source_content_id: ContentId::new(r.source_content_id?),
-                    target_url: r.target_url,
-                    click_count: r.click_count,
-                })
-            })
-            .collect())
     }
 
     pub async fn find_campaign_performance(

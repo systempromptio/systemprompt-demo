@@ -60,10 +60,10 @@ pub struct McpAccess<'a> {
     pub action: &'a str,
 }
 
-/// Record one MCP access event against `user_activity`.
-///
 /// The session is stamped into `metadata` because callers read these rows back
-/// per session — "which tools ran in the session I just watched" is the
+/// per session.
+///
+/// "Which tools ran in the session I just watched" is the
 /// question, and a user-lifetime total answers a different one. `user_activity`
 /// is core-owned, so this repo adds an index over the JSON key rather than a
 /// column (`020_user_activity_session_index.sql`).

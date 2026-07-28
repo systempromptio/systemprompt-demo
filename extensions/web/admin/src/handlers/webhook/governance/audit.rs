@@ -12,7 +12,6 @@ pub(super) async fn record_decision(
     pool: &PgPool,
     audit: &DecisionAudit,
 ) -> Result<(), sqlx::Error> {
-    let id = uuid::Uuid::new_v4().to_string();
     let actor = Actor::from_tool_name(
         audit.principal.user_id.clone(),
         audit.principal.agent_id.as_ref().map(AgentId::as_str),
@@ -44,7 +43,7 @@ pub(super) async fn record_decision(
     });
 
     let dec_record = GovernanceDecisionRecord {
-        id: &id,
+        id: &audit.id,
         actor: &actor,
         session_id: audit.principal.session_id.as_str(),
         tool_name: &audit.target.tool_name,

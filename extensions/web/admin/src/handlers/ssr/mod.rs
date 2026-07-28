@@ -16,11 +16,13 @@ mod ssr_add_passkey;
 mod ssr_bridge_device_link;
 mod ssr_bridge_setup;
 mod ssr_demo_help;
+mod ssr_demo_trace;
 pub(crate) mod ssr_helpers;
 
 pub(crate) use ssr_add_passkey::add_passkey_page;
 pub(crate) use ssr_bridge_device_link::{device_link_approve, device_link_deny, device_link_page};
 pub(crate) use ssr_bridge_setup::bridge_setup_page;
+pub(crate) use ssr_demo_trace::demo_trace_page;
 pub(crate) use ssr_helpers::branding_context;
 
 pub(crate) async fn login_page(

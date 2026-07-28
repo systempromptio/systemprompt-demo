@@ -30,15 +30,9 @@
   background: none;
 }
 
-/* No `gap`: the terminal column carries an extra first child, the conversation
-   list, which is empty and zero-height until you sign in — but a gap is paid
-   whether or not the child has height, so the terminal started below the
-   account card next to it. The list carries its own bottom margin, which it
-   drops when empty (see `conversation-list.css`). */
 .home-split-pane {
   display: flex;
   flex-direction: column;
-  gap: 0;
   min-height: 0;
   min-width: 0;
   padding-block: var(--sp-space-5);

@@ -49,6 +49,9 @@ pub(crate) struct GovernedCall<'a> {
 pub(crate) const PROMPT_TOOL_NAME: &str = "user_prompt";
 
 pub(crate) struct PolicyVerdict {
+    // Why: the governance_decisions.id this verdict lands under, minted before
+    // the write so the pi SSE stream can emit it as a trace link immediately.
+    pub(crate) decision_id: String,
     pub(crate) allowed: bool,
     pub(crate) reason: Option<String>,
     pub(crate) policy: Option<String>,
@@ -70,6 +73,7 @@ impl PolicyVerdict {
                     ChainEntryResult::Skip => StageResult::Skip,
                 },
                 detail: entry.detail.clone(),
+                duration_ms: entry.duration_ms,
             })
             .collect()
     }
@@ -106,6 +110,7 @@ pub(crate) async fn govern_call(
         .map(|e| e.policy_id.to_string());
 
     let verdict = PolicyVerdict {
+        decision_id: uuid::Uuid::new_v4().to_string(),
         allowed,
         reason,
         policy,
