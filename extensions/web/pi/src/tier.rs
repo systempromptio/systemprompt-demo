@@ -29,7 +29,7 @@ use std::sync::Arc;
 
 use sqlx::PgPool;
 
-use crate::repositories;
+use systemprompt_web_governance::repositories::user_access;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum Tier {
@@ -58,7 +58,7 @@ pub(super) async fn resolve(pool: &Arc<PgPool>, raw: &str) -> Tier {
         return Tier::Anonymous;
     };
 
-    match repositories::users::queries::find_user_access(pool, &user_id).await {
+    match user_access::find_user_access(pool, &user_id).await {
         Ok(Some(access)) if access.roles.iter().any(|r| r == "admin") => Tier::Admin,
         Ok(_) => Tier::Member,
         Err(e) => {

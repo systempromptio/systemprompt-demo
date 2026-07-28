@@ -18,7 +18,7 @@ use systemprompt::identifiers::ContextId;
 
 use super::auth::{authenticate, authorize_conversation, problem, unauthorized};
 use super::registry::PiRegistry;
-use crate::repositories::pi::{conversations as repo, events as event_repo};
+use crate::repositories::{conversations as repo, events as event_repo};
 
 const LIST_LIMIT: i64 = 50;
 

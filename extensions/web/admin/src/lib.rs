@@ -45,31 +45,31 @@ pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary,
 /// so anything they touch needs a public name. Re-exporting here keeps that
 /// list explicit and reviewable instead of widening each item in place.
 pub mod test_support {
-    pub use crate::handlers::pi::SHIM_SOURCE;
-    pub use crate::handlers::pi::config::{PiConfig, SandboxMode, VersionCheckMode};
-    pub use crate::handlers::pi::conversations::collapse_duplicate_errors;
-    pub use crate::handlers::pi::events::{
+    pub use systemprompt_web_pi::SHIM_SOURCE;
+    pub use systemprompt_web_pi::config::{PiConfig, SandboxMode, VersionCheckMode};
+    pub use systemprompt_web_pi::conversations::collapse_duplicate_errors;
+    pub use systemprompt_web_pi::events::{
         CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind, PiEvent,
         PiEventBody, readable_provider_error, translate, upgrade_legacy_error,
     };
-    pub use crate::handlers::pi::format::{cost, cost_round, median};
-    pub use crate::handlers::pi::jail::gateway_port;
-    pub use crate::handlers::pi::ledger::CallLedger;
-    pub use crate::handlers::pi::mcp::FORWARDABLE;
-    pub use crate::handlers::pi::mcp::render::{McpCallResult, first_frame, render};
-    pub use crate::handlers::pi::normalize::{
+    pub use systemprompt_web_pi::format::{cost, cost_round, median};
+    pub use systemprompt_web_pi::jail::gateway_port;
+    pub use systemprompt_web_pi::ledger::CallLedger;
+    pub use systemprompt_web_pi::mcp::FORWARDABLE;
+    pub use systemprompt_web_pi::mcp::render::{McpCallResult, first_frame, render};
+    pub use systemprompt_web_pi::normalize::{
         MIN_PEOPLE, bucket, bucket_tokens, window_is_publishable,
     };
-    pub use crate::handlers::pi::persist::Journal;
-    pub use crate::handlers::pi::rpc::{
+    pub use systemprompt_web_pi::persist::Journal;
+    pub use systemprompt_web_pi::rpc::{
         GovernancePayload, PayloadKind, RpcCommand, RpcFrame, UiRequest, parse_frame,
     };
-    pub use crate::handlers::pi::scope::escape_reason;
-    pub use crate::handlers::pi::skills::{escape, scalar};
-    pub use crate::handlers::pi::stage::PolicyStage;
-    pub use crate::handlers::pi::token::{B64, Invalid, sign, verify};
-    pub use crate::handlers::pi::transcript::{MAX_CHARS, clamp, section};
-    pub use crate::handlers::pi::version::extract_version;
+    pub use systemprompt_web_pi::scope::escape_reason;
+    pub use systemprompt_web_pi::skills::{escape, scalar};
+    pub use systemprompt_web_pi::stage::PolicyStage;
+    pub use systemprompt_web_pi::token::{B64, Invalid, sign, verify};
+    pub use systemprompt_web_pi::transcript::{MAX_CHARS, clamp, section};
+    pub use systemprompt_web_pi::version::extract_version;
     pub use crate::handlers::resolve_principal;
     pub use crate::handlers::site_markdown::parse_md_path;
     pub use crate::handlers::ssr::bridge_downloads::{
@@ -79,30 +79,11 @@ pub mod test_support {
     pub use systemprompt_web_governance::webhook::governance::scope::cap_at;
     pub use systemprompt_web_governance::webhook::governance::secrets::scan_str_for_secret;
     pub use crate::middleware::gates::{is_pending_allowed_path, may_pass_pending_gate};
-    pub use crate::repositories::pi::events::NewPiEvent;
+    pub use systemprompt_web_pi::repositories::events::NewPiEvent;
     pub use crate::util::hmac;
 }
 
 
-/// Routes for the governed pi web terminal.
-///
-/// Always mounted — the terminal is the site's primary demo, so there is
-/// nothing to opt into. `services/config/pi.yaml` bounds a session rather than
-/// deciding whether one exists, and a broken one is reported at ERROR and
-/// replaced by the shipped defaults rather than taking the surface away. See
-/// `handlers::pi` for the sandboxing posture — the tool set is read-only
-/// unless deliberately widened.
-pub fn pi_terminal_router(
-    pool: Arc<PgPool>,
-    session_service: Arc<systemprompt::oauth::SessionCreationService>,
-    analytics_provider: Arc<dyn systemprompt::traits::AnalyticsProvider>,
-) -> Router {
-    let cfg = handlers::pi::PiConfig::load_or_defaults();
-    tracing::info!(model = %cfg.model_name(), "pi web terminal mounted");
-    let registry =
-        handlers::pi::PiRegistry::new(cfg, Arc::clone(&pool), Arc::clone(&analytics_provider));
-    handlers::pi::pi_router(pool, registry, session_service, analytics_provider)
-}
 
 /// The public page-markdown surface: `/index.md` and `/md/{section}/{slug}.md`.
 ///

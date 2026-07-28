@@ -17,7 +17,7 @@ use super::auth::{authenticate, problem, unauthorized};
 use super::gate::PiDeps;
 use super::registry::{self, CreateRequest, PiRegistry};
 use super::{MCP_CLIENT_SOURCE, SHIM_SOURCE, events, pump, transcript};
-use crate::repositories::pi::conversations;
+use crate::repositories::conversations;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct CreateBody {

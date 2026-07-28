@@ -15,7 +15,6 @@ pub(crate) mod gateway_catalog;
 mod jobs;
 pub(crate) mod magic_link;
 pub(crate) mod onboarding;
-pub(crate) mod pi;
 mod plugins;
 mod plugins_env;
 pub(crate) mod public_register;

@@ -11,7 +11,7 @@ use serde::Serialize;
 use systemprompt::identifiers::{AgentId, UserId};
 
 use super::super::normalize;
-use crate::types::{
+use systemprompt_web_governance::types::{
     ActivityStats, HourlyActivity, RealtimePulse, SkillCount, ToolSuccessRate, TopUser, TrafficData,
 };
 

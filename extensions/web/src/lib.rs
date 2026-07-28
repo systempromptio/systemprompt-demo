@@ -29,6 +29,7 @@ mod schemas;
 
 pub use systemprompt_web_admin as admin;
 pub use systemprompt_web_governance as governance;
+pub use systemprompt_web_pi as pi;
 pub use systemprompt_web_content::{api, repository, services};
 pub use systemprompt_web_jobs as jobs;
 pub use systemprompt_web_shared as shared;

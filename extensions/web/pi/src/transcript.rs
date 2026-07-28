@@ -16,7 +16,7 @@ use std::fmt::Write as _;
 
 use sqlx::PgPool;
 
-use crate::repositories::pi::events as event_repo;
+use crate::repositories::events as event_repo;
 
 const MAX_FRAMES: i64 = 400;
 

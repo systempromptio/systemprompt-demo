@@ -23,7 +23,13 @@ mod waitlist;
 pub(super) use admission::SpawnError;
 
 #[derive(Clone)]
-pub(crate) struct PiRegistry(Arc<Inner>);
+pub struct PiRegistry(Arc<Inner>);
+
+impl std::fmt::Debug for PiRegistry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PiRegistry").finish_non_exhaustive()
+    }
+}
 
 // Why: a slot is claimed under the lock *before* the spawn's first await, so
 // the cap can never be double-passed; `Reserving` is what fills the gap
@@ -167,7 +173,7 @@ impl PiRegistry {
                      what node needs at startup"
                 );
             }
-            if let Err(e) = crate::repositories::pi::conversations::update_conversation_closed(
+            if let Err(e) = crate::repositories::conversations::update_conversation_closed(
                 &self.0.pool,
                 conversation_id,
             )

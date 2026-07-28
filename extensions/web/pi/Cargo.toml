@@ -1,0 +1,55 @@
+[package]
+name = "systemprompt-web-pi"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "The governed pi web terminal for the systemprompt.io template: sandboxed agent sessions driven from the browser."
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[dependencies]
+systemprompt-web-shared = { workspace = true }
+systemprompt-web-governance = { workspace = true }
+systemprompt-credits-extension = { workspace = true }
+# Audit: uses ai, identifiers, models, oauth, traits — requires `full`.
+systemprompt = { workspace = true, features = ["full"] }
+systemprompt-security = { workspace = true }
+
+sqlx = { workspace = true }
+
+axum = { workspace = true }
+async-stream = { workspace = true }
+futures = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+tokio = { workspace = true }
+
+# Loopback HTTP to the systemprompt MCP hub (mcp.rs). Pinned to the 0.12 line
+# already in the graph via the core CLI, with default features off: the call is
+# plain HTTP to an address only this server can reach, and the 0.13 workspace
+# spec pulls an aws-lc TLS backend this crate has no use for.
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+sha2 = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+
+url = { workspace = true }
+urlencoding = { workspace = true }
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

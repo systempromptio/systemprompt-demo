@@ -17,11 +17,11 @@ use systemprompt::identifiers::{ContextId, UserId};
 
 use super::registry::PiRegistry;
 use super::{session, token};
-use crate::error::{AdminError, AdminResult};
-use crate::handlers::extract_user_from_cookie;
-use crate::repositories;
-use crate::repositories::pi::conversations;
-use crate::types::UserContext;
+use crate::error::{PiError, PiResult};
+use systemprompt_web_governance::identity::extract_user_from_cookie;
+use crate::repositories::conversations;
+use systemprompt_web_governance::repositories::share_token;
+use systemprompt_web_shared::UserContext;
 
 #[derive(Debug, Serialize)]
 struct IssuedToken {
@@ -29,13 +29,13 @@ struct IssuedToken {
     expires_at: i64,
 }
 
-pub(crate) async fn issue_embed_token_handler(
+pub async fn issue_embed_token_handler(
     Extension(user_ctx): Extension<UserContext>,
     State(pool): State<Arc<PgPool>>,
     Path(target_user_id): Path<String>,
-) -> AdminResult<Response> {
+) -> PiResult<Response> {
     if !user_ctx.is_admin {
-        return Err(AdminError::Forbidden("Admin access required".to_owned()));
+        return Err(PiError::Forbidden("Admin access required".to_owned()));
     }
     let target_user_id = UserId::new(target_user_id);
     mint_for(&pool, &target_user_id).await
@@ -54,12 +54,12 @@ pub(super) async fn issue_own_embed_token(
         .unwrap_or_else(IntoResponse::into_response)
 }
 
-async fn mint_for(pool: &Arc<PgPool>, user_id: &UserId) -> AdminResult<Response> {
-    let secret = SecretsBootstrap::manifest_signing_secret_seed().map_err(AdminError::internal)?;
-    let version = repositories::users::find_or_create_share_token_version(pool, user_id)
+async fn mint_for(pool: &Arc<PgPool>, user_id: &UserId) -> PiResult<Response> {
+    let secret = SecretsBootstrap::manifest_signing_secret_seed().map_err(PiError::internal)?;
+    let version = share_token::find_or_create_share_token_version(pool, user_id)
         .await
-        .map_err(AdminError::internal)?
-        .ok_or_else(|| AdminError::NotFound("user not found".to_owned()))?;
+        .map_err(PiError::internal)?
+        .ok_or_else(|| PiError::NotFound("user not found".to_owned()))?;
     let exp = now_secs() + token::TTL_SECS;
     Ok(Json(IssuedToken {
         token: token::sign(&secret, user_id, version, exp),
@@ -81,7 +81,7 @@ pub(super) async fn authenticate(pool: &Arc<PgPool>, raw: &str) -> Option<UserId
             return None;
         },
     };
-    let current = repositories::users::find_share_token_version(pool, &user_id)
+    let current = share_token::find_share_token_version(pool, &user_id)
         .await
         .inspect_err(|e| tracing::warn!(error = %e, "could not read a share-token version"))
         .ok()??;

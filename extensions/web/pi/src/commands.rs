@@ -142,7 +142,7 @@ pub(super) async fn approve(
     // trail shows.
     let decided_at = chrono::Utc::now();
     let user_id = session.user_id.clone();
-    let username = crate::repositories::users::queries::find_display_name(&pool, &user_id)
+    let username = systemprompt_web_governance::repositories::user_access::find_display_name(&pool, &user_id)
         .await
         .ok()
         .flatten()

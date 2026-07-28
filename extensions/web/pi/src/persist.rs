@@ -26,8 +26,8 @@ use systemprompt::identifiers::ContextId;
 use tokio::sync::mpsc;
 
 use super::events::{PiEvent, PiEventBody};
-use crate::repositories::pi::conversations;
-use crate::repositories::pi::events::{self as event_repo, NewPiEvent};
+use crate::repositories::conversations;
+use crate::repositories::events::{self as event_repo, NewPiEvent};
 
 const BATCH_FRAMES: usize = 32;
 

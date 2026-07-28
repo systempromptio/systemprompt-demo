@@ -46,7 +46,7 @@ fn declared_tools() -> Vec<String> {
 
 /// Tool names the pi extension registers, read from the shipped TypeScript.
 fn shim_tools() -> Vec<String> {
-    repo_file("extensions/web/admin/src/handlers/pi/shim/mcp-client.ts")
+    repo_file("extensions/web/pi/src/shim/mcp-client.ts")
         .lines()
         .filter_map(|l| l.trim().strip_prefix("name: \""))
         .filter_map(|r| r.split_once('"').map(|(n, _)| n.to_owned()))

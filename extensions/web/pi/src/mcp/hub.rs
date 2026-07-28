@@ -16,7 +16,7 @@ use systemprompt::oauth::services::{
 
 use super::render::{self, McpCallResult, first_frame, render};
 use super::{AGENT_NAME, PROTOCOL_VERSION, TOKEN_TTL_HOURS};
-use crate::handlers::pi::session::PiSession;
+use crate::session::PiSession;
 
 pub(super) async fn forward(
     endpoint: &str,

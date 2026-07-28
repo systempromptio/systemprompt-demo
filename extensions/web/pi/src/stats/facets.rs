@@ -8,8 +8,8 @@ use sqlx::PgPool;
 
 use super::super::format;
 use super::{PiCredit, PiModelShare, PiPolicyStage};
-use crate::repositories::analytics::session_detail;
-use crate::repositories::governance::{demo_trace, stages};
+use systemprompt_web_governance::repositories::analytics::session_detail;
+use systemprompt_web_governance::repositories::governance::{demo_trace, stages};
 
 pub(super) async fn credit_position(
     pool: &PgPool,
@@ -47,7 +47,7 @@ pub(super) async fn credit_position(
 
 
 pub(super) fn policy_stages(
-    rows: &[crate::repositories::governance::PerPolicyCounts],
+    rows: &[systemprompt_web_governance::repositories::governance::PerPolicyCounts],
 ) -> Vec<PiPolicyStage> {
     stages::STAGES
         .iter()

@@ -157,7 +157,7 @@ impl Extension for WebExtension {
             Arc::clone(&session_service),
             Arc::clone(&analytics_provider),
         );
-        let pi_api = admin::pi_terminal_router(
+        let pi_api = crate::pi::pi_terminal_router(
             Arc::clone(&write_pool),
             Arc::clone(&session_service),
             analytics_provider,

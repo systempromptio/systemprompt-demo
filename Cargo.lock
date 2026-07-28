@@ -5814,6 +5814,7 @@ dependencies = [
  "systemprompt-email-extension",
  "systemprompt-security",
  "systemprompt-web-governance",
+ "systemprompt-web-pi",
  "systemprompt-web-shared",
  "tempfile",
  "thiserror 2.0.18",
@@ -5859,6 +5860,7 @@ dependencies = [
  "systemprompt-web-content",
  "systemprompt-web-governance",
  "systemprompt-web-jobs",
+ "systemprompt-web-pi",
  "systemprompt-web-shared",
  "systemprompt-web-site",
  "thiserror 2.0.18",
@@ -5912,6 +5914,39 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "systemprompt-web-pi"
+version = "0.25.0"
+dependencies = [
+ "async-stream",
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "futures",
+ "hex",
+ "rand 0.9.5",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2 0.10.9",
+ "sqlx",
+ "systemprompt",
+ "systemprompt-credits-extension",
+ "systemprompt-security",
+ "systemprompt-web-governance",
+ "systemprompt-web-shared",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower",
+ "tower-http 0.6.11",
+ "tracing",
+ "url",
+ "urlencoding",
  "uuid",
 ]
 

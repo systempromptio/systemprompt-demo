@@ -25,7 +25,7 @@
 //!
 //! - **Nothing identifying leaves below the admin tier.** The repository layer
 //!   returns only counts for the window (see
-//!   [`crate::repositories::analytics::pulse`]), the member tier rounds those
+//!   [`systemprompt_web_governance::repositories::analytics::pulse`]), the member tier rounds those
 //!   counts, and a window with fewer than [`super::normalize::MIN_PEOPLE`]
 //!   accounts in it is not sent at all. The admin tier is the sole exception,
 //!   and it is the tier that could already read every one of these rows from
@@ -61,8 +61,8 @@ use wire::{
 use super::auth::problem;
 use super::tier::{Tier, resolve};
 use super::{format, normalize};
-use crate::repositories::analytics::pulse as repo;
-use crate::repositories::{analytics, dashboard};
+use systemprompt_web_governance::repositories::analytics::pulse as repo;
+use systemprompt_web_governance::repositories::{analytics, dashboard};
 
 const CACHE_TTL: Duration = Duration::from_secs(60);
 

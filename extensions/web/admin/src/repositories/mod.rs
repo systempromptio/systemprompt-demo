@@ -10,9 +10,9 @@ pub mod departments;
 pub mod jobs;
 pub mod marketplace;
 pub mod mcp;
-pub mod pi;
 pub mod secrets;
 pub mod site_markdown;
 pub mod users;
 
 pub use systemprompt_web_governance::repositories::{analytics, bridge, dashboard, governance};
+pub use systemprompt_web_pi::repositories as pi;

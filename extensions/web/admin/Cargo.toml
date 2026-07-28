@@ -13,6 +13,7 @@ publish = false
 # Foundation
 systemprompt-web-shared = { workspace = true }
 systemprompt-web-governance = { workspace = true }
+systemprompt-web-pi = { workspace = true }
 # Audit: uses ai, identifiers, models, oauth, security — requires `full`.
 systemprompt = { workspace = true, features = ["full"] }
 systemprompt-email-extension = { workspace = true }

@@ -21,7 +21,7 @@ pub(super) const DEFAULT_TOOLS: &[&str] = &[
 ];
 
 pub(super) const DEFAULT_PERSONA: &str =
-    include_str!("../../../../../../../services/config/pi-persona.md");
+    include_str!("../../../../../services/config/pi-persona.md");
 
 pub(super) const DEFAULT_JAIL_READ_PATHS: &[&str] = &[
     "/usr/bin",

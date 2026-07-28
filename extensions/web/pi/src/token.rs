@@ -15,7 +15,7 @@
 use base64::Engine;
 use systemprompt::identifiers::UserId;
 
-use crate::util::hmac;
+use systemprompt_web_shared::hmac;
 
 const PURPOSE: &str = "pi-embed";
 

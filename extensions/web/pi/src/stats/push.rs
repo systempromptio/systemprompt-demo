@@ -55,7 +55,7 @@ fn invalidate(conversation_id: &ContextId) {
 // and a turn's tool calls would each schedule their own collection.
 const PUSH_DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(750);
 
-pub(in crate::handlers::pi) async fn snapshot(
+pub(crate) async fn snapshot(
     pool: &PgPool,
     session: &PiSession,
 ) -> Option<serde_json::Value> {
@@ -79,7 +79,7 @@ pub(in crate::handlers::pi) async fn snapshot(
 
 // Why: this replaced the browser's 3s stats poll — debounced per session so a
 // burst of triggers costs one collection, not one per tool call
-pub(in crate::handlers::pi) fn push_soon(pool: Arc<PgPool>, session: Arc<PiSession>) {
+pub(crate) fn push_soon(pool: Arc<PgPool>, session: Arc<PiSession>) {
     if !session.stats_push_begin() {
         return;
     }

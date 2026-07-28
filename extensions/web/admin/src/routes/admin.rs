@@ -91,7 +91,7 @@ fn build_admin_user_routes() -> Router<Arc<PgPool>> {
         )
         .route(
             "/users/{user_id}/pi-embed-token",
-            post(handlers::pi::issue_embed_token_handler),
+            post(systemprompt_web_pi::issue_embed_token_handler),
         )
         .route(
             "/users/{user_id}/approve",

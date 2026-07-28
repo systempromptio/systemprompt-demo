@@ -4,6 +4,7 @@ members = [
     "extensions/web/shared",
     "extensions/web/admin",
     "extensions/web/governance",
+    "extensions/web/pi",
     "extensions/web/content",
     "extensions/web/site",
     "extensions/web/jobs",
@@ -53,6 +54,7 @@ systemprompt-web-extension = { path = "extensions/web" }
 systemprompt-web-shared = { path = "extensions/web/shared" }
 systemprompt-web-admin = { path = "extensions/web/admin" }
 systemprompt-web-governance = { path = "extensions/web/governance" }
+systemprompt-web-pi = { path = "extensions/web/pi" }
 systemprompt-web-content = { path = "extensions/web/content" }
 systemprompt-web-site = { path = "extensions/web/site" }
 systemprompt-web-jobs = { path = "extensions/web/jobs" }

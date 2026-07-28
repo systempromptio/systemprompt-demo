@@ -10,9 +10,9 @@ use std::sync::Arc;
 use systemprompt::identifiers::{ContextId, UserId};
 
 use super::super::credentials;
-use crate::handlers::pi::session::PiSession;
-use crate::handlers::pi::{persist, session, spawn};
-use crate::repositories::bridge::IssuedApiKey;
+use crate::session::PiSession;
+use crate::{persist, session, spawn};
+use systemprompt_web_governance::repositories::bridge::IssuedApiKey;
 
 use super::{CreateRequest, PiRegistry, SessionParts, Slot};
 
@@ -49,7 +49,7 @@ struct StartedChild {
 // Why: distinguished because the widget shows each differently — a cap is
 // "try later", a spawn failure is "misconfigured".
 #[derive(Debug)]
-pub(in crate::handlers::pi) enum SpawnError {
+pub(crate) enum SpawnError {
     PerUserCap(usize),
     Waitlisted { position: usize, queue_len: usize },
     Credential(String),
@@ -80,7 +80,7 @@ impl PiRegistry {
     // Why: caps are checked while holding the lock and the placeholder is
     // inserted before the `await`, so two simultaneous requests cannot both
     // pass a cap of one.
-    pub(in crate::handlers::pi) async fn create(
+    pub(crate) async fn create(
         &self,
         req: CreateRequest<'_>,
     ) -> Result<SessionParts, SpawnError> {

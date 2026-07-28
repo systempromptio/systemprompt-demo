@@ -22,7 +22,7 @@ pub(super) struct Waiter {
     last_seen: Instant,
 }
 
-pub(in crate::handlers::pi) enum Gate {
+pub(crate) enum Gate {
     Admit,
     Wait { position: usize, queue_len: usize },
 }
@@ -75,7 +75,7 @@ impl PiRegistry {
 
     // Why: a poll is also a heartbeat — it refreshes the caller's entry
     // (re-joining if it expired and `join` is set) before reporting position.
-    pub(in crate::handlers::pi) fn waitlist_status(
+    pub(crate) fn waitlist_status(
         &self,
         user_id: Option<&UserId>,
         join: bool,

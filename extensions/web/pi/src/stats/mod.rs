@@ -40,8 +40,8 @@ pub(super) use push::{push_soon, snapshot};
 use super::auth::{authorize_conversation, problem};
 use super::format;
 use super::watch::TokenQuery;
-use crate::repositories::analytics::session_detail;
-use crate::repositories::governance::{demo_trace, stages};
+use systemprompt_web_governance::repositories::analytics::session_detail;
+use systemprompt_web_governance::repositories::governance::{demo_trace, stages};
 
 const TRACE_LIMIT: i64 = 120;
 

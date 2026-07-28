@@ -26,8 +26,8 @@ use serde::Deserialize;
 use systemprompt::identifiers::UserId;
 
 use super::auth::{authenticate, problem, unauthorized};
-use crate::handlers::users::extract_user_from_cookie;
-use crate::repositories::pi::artifacts::{McpArtifactRow, find_artifact_for_user};
+use systemprompt_web_governance::identity::extract_user_from_cookie;
+use crate::repositories::artifacts::{McpArtifactRow, find_artifact_for_user};
 
 // Why: the embed token is optional here, unlike on the stream — the
 // audit-trail page links to these routes from an admin session, where the

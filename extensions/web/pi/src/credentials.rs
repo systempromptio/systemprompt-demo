@@ -14,8 +14,8 @@ use chrono::TimeDelta;
 use sqlx::PgPool;
 use systemprompt::identifiers::{ContextId, UserId};
 
-use crate::repositories::bridge::IssuedApiKey;
-use crate::services::device_service;
+use systemprompt_web_governance::repositories::bridge::IssuedApiKey;
+use systemprompt_web_governance::device_service;
 
 pub(super) const PI_PAT_PREFIX: &str = "pi-conversation ";
 

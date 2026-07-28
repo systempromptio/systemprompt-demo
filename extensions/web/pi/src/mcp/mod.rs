@@ -33,7 +33,7 @@
 //! call is the cheap half of the trade.
 
 mod hub;
-pub(crate) mod render;
+pub mod render;
 
 use std::sync::Arc;
 
@@ -175,7 +175,7 @@ async fn emit_artifact(
     tool_name: &str,
     artifact_id: &ArtifactId,
 ) {
-    let row = match crate::repositories::pi::artifacts::find_artifact_for_user(
+    let row = match crate::repositories::artifacts::find_artifact_for_user(
         pool,
         artifact_id,
         &session.user_id,

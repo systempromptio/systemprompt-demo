@@ -16,7 +16,7 @@ use systemprompt::identifiers::ContextId;
 
 use super::auth::{authenticate, problem, unauthorized};
 use super::format;
-use crate::repositories::analytics::user_summary;
+use systemprompt_web_governance::repositories::analytics::user_summary;
 
 const CONVERSATION_LIMIT: i64 = 20;
 const TOOL_LIMIT: i64 = 8;

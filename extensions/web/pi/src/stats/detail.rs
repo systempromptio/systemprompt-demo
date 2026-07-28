@@ -17,7 +17,7 @@ use systemprompt::identifiers::ContextId;
 use super::super::auth::{authorize_conversation, problem};
 use super::super::format;
 use super::super::watch::TokenQuery;
-use crate::repositories::analytics::session_detail;
+use systemprompt_web_governance::repositories::analytics::session_detail;
 
 const MIN_BUCKET_SECS: i64 = 10;
 const MAX_BUCKET_SECS: i64 = 3600;
@@ -45,7 +45,7 @@ struct RequestsBody {
     requests: Vec<RequestView>,
 }
 
-pub(in crate::handlers::pi) async fn requests(
+pub(crate) async fn requests(
     State(pool): State<Arc<PgPool>>,
     Path(conversation_id): Path<ContextId>,
     Query(q): Query<TokenQuery>,
@@ -91,7 +91,7 @@ pub(in crate::handlers::pi) async fn requests(
 }
 
 #[derive(Debug, Deserialize)]
-pub(in crate::handlers::pi) struct TimeseriesQuery {
+pub(crate) struct TimeseriesQuery {
     token: String,
     #[serde(default)]
     bucket: Option<i64>,
@@ -116,7 +116,7 @@ struct TimeseriesBody {
     buckets: Vec<BucketView>,
 }
 
-pub(in crate::handlers::pi) async fn timeseries(
+pub(crate) async fn timeseries(
     State(pool): State<Arc<PgPool>>,
     Path(conversation_id): Path<ContextId>,
     Query(q): Query<TimeseriesQuery>,

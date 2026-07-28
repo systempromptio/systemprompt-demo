@@ -48,40 +48,43 @@
 //!   prerequisite for enabling `bash`: this makes `read` safe, not arbitrary
 //!   execution.
 
+pub mod error;
+pub mod repositories;
+
 mod api;
 mod artifacts;
 mod auth;
 mod capacity;
 mod commands;
-pub(crate) mod config;
-pub(crate) mod conversations;
+pub mod config;
+pub mod conversations;
 mod credentials;
-pub(crate) mod events;
+pub mod events;
 mod events_error;
-pub(crate) mod format;
+pub mod format;
 mod gate;
-pub(crate) mod jail;
-pub(crate) mod ledger;
-pub(crate) mod mcp;
+pub mod jail;
+pub mod ledger;
+pub mod mcp;
 mod models;
-pub(crate) mod normalize;
-pub(crate) mod persist;
+pub mod normalize;
+pub mod persist;
 mod pulse;
 mod pump;
 mod registry;
-pub(crate) mod rpc;
-pub(crate) mod scope;
+pub mod rpc;
+pub mod scope;
 mod session;
-pub(crate) mod skills;
+pub mod skills;
 mod spawn;
-pub(crate) mod stage;
+pub mod stage;
 mod stats;
 mod summary;
 mod throttle;
 mod tier;
-pub(crate) mod token;
-pub(crate) mod transcript;
-pub(crate) mod version;
+pub mod token;
+pub mod transcript;
+pub mod version;
 mod watch;
 
 use std::sync::Arc;
@@ -90,9 +93,9 @@ use axum::routing::{get, patch, post};
 use axum::{Extension, Router};
 use sqlx::PgPool;
 
-pub(crate) use auth::issue_embed_token_handler;
-pub(crate) use config::PiConfig;
-pub(crate) use registry::PiRegistry;
+pub use auth::issue_embed_token_handler;
+pub use config::PiConfig;
+pub use registry::PiRegistry;
 
 use gate::PiDeps;
 
@@ -102,7 +105,24 @@ pub const SHIM_SOURCE: &str = include_str!("shim/governance-shim.ts");
 
 const MCP_CLIENT_SOURCE: &str = include_str!("shim/mcp-client.ts");
 
-pub(crate) fn pi_router(
+/// Mounts the terminal.
+///
+/// Always mounted — the terminal is the site's primary demo, so there is
+/// nothing to opt into. `services/config/pi.yaml` bounds a session rather than
+/// deciding whether one exists, and a broken one is reported at ERROR and
+/// replaced by the shipped defaults rather than taking the surface away.
+pub fn pi_terminal_router(
+    pool: Arc<PgPool>,
+    session_service: Arc<systemprompt::oauth::SessionCreationService>,
+    analytics_provider: Arc<dyn systemprompt::traits::AnalyticsProvider>,
+) -> Router {
+    let cfg = PiConfig::load_or_defaults();
+    tracing::info!(model = %cfg.model_name(), "pi web terminal mounted");
+    let registry = PiRegistry::new(cfg, Arc::clone(&pool), Arc::clone(&analytics_provider));
+    pi_router(pool, registry, session_service, analytics_provider)
+}
+
+pub fn pi_router(
     pool: Arc<PgPool>,
     registry: PiRegistry,
     session_service: Arc<systemprompt::oauth::SessionCreationService>,
