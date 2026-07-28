@@ -1,5 +1,6 @@
 //! Download URLs for the bridge desktop app, shared by every page that offers
-//! it.
+//! it. Since the public site dropped its download badges these consts are the
+//! only place the URLs live.
 //!
 //! Bump the `bridge-v*` tag in every URL below on each bridge release. The
 //! bridge ships under its own tag alongside the gateway's `v*` tags, so

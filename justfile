@@ -3,6 +3,9 @@ set dotenv-load
 
 CLI_RELEASE := "target/release/systemprompt"
 
+# Cloud profile every deploy targets. See .systemprompt/profiles/production/.
+DEPLOY_PROFILE := "production"
+
 # Use newest binary (release vs debug, whichever is most recent)
 CLI := if path_exists("target/release/systemprompt") == "true" { \
     if path_exists("target/debug/systemprompt") == "true" { \
@@ -675,13 +678,19 @@ sync-pull *ARGS:
 
 # Deploy to cloud
 # Note: publish_pipeline runs automatically on server startup with correct profile URLs
+# Pinned to the `production` profile (tenant 476147ddbaa3) so a deploy never
+# follows whichever profile the CLI session happens to be switched to.
 deploy *FLAGS:
     just build --release
-    {{CLI_RELEASE}} cloud deploy {{FLAGS}}
+    {{CLI_RELEASE}} cloud deploy --profile {{DEPLOY_PROFILE}} {{FLAGS}}
+
+# Pre-deploy preflight only — no build, no push
+deploy-check:
+    {{CLI}} cloud doctor --profile {{DEPLOY_PROFILE}}
 
 # Check deployment status
 status:
-    {{CLI}} cloud status
+    {{CLI}} cloud status --profile {{DEPLOY_PROFILE}}
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MCP & BUILD ALL
