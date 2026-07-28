@@ -18,7 +18,7 @@
 use std::sync::Arc;
 
 use sqlx::PgPool;
-use systemprompt::identifiers::{AgentId, SessionId, UserId};
+use systemprompt::identifiers::{AgentId, CallId, SessionId, UserId};
 use systemprompt::traits::AnalyticsProvider;
 use systemprompt_security::authz::Decision;
 use systemprompt_security::policy::types::AccessScope;
@@ -27,7 +27,7 @@ use super::handler::attested_session_id;
 use super::handler::evaluate::{EvaluateInput, evaluate};
 use super::scope;
 use super::stages::{StageOutcome, StageResult};
-use super::types::{ChainEntryOutcome, ChainEntryResult};
+use super::types::{AuditOrigin, ChainEntryOutcome, ChainEntryResult};
 
 mod record;
 
@@ -44,6 +44,11 @@ pub(crate) struct GovernedCall<'a> {
     pub(crate) agent_session: &'a SessionId,
     pub(crate) tool_input: Option<&'a serde_json::Value>,
     pub(crate) scope_ceiling: AccessScope,
+    // Why: an enforcement point behind another still runs the chain, so one
+    // call reaches it more than once. Carrying the identity the first point
+    // minted is what lets a counting policy tell the repeat from a new call.
+    pub(crate) call_id: &'a CallId,
+    pub(crate) origin: AuditOrigin,
 }
 
 pub(crate) const PROMPT_TOOL_NAME: &str = "user_prompt";
@@ -98,6 +103,7 @@ pub(crate) async fn govern_call(
         user_id: call.user_id,
         access_scope,
         tool_input: call.tool_input,
+        call_id: call.call_id,
     });
 
     let (allowed, reason) = match &decision {

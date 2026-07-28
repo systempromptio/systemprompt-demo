@@ -61,6 +61,7 @@ mod events_error;
 pub(crate) mod format;
 mod gate;
 pub(crate) mod jail;
+pub(crate) mod ledger;
 pub(crate) mod mcp;
 mod models;
 pub(crate) mod normalize;

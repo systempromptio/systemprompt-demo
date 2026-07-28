@@ -8,7 +8,7 @@ mod audit;
 mod authz;
 mod handler;
 pub(crate) mod inproc;
-mod policies;
+pub(crate) mod policies;
 pub(crate) mod policy;
 pub(crate) mod scope;
 pub(crate) mod secrets;

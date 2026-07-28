@@ -13,7 +13,7 @@ use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 use serde_yaml::Value as YamlValue;
-use systemprompt::identifiers::{PolicyId, SessionId, UserId};
+use systemprompt::identifiers::{CallId, PolicyId, SessionId, UserId};
 use systemprompt_security::authz::{Decision, DenyReason, MatchedBy};
 use systemprompt_security::policy::{GovernancePolicy, PolicyContext, RateLimitWindow};
 
@@ -23,13 +23,17 @@ const ID: &str = "rate_limit";
 const DEFAULT_WINDOW_SECS: u64 = 60;
 const DEFAULT_LIMIT: usize = 300;
 
-#[derive(Debug)]
-pub(super) struct RateLimit {
+#[derive(Debug, Clone, Copy)]
+pub struct RateLimit {
     window_secs: u64,
     limit: usize,
 }
 
 impl RateLimit {
+    pub const fn new(window_secs: u64, limit: usize) -> Self {
+        Self { window_secs, limit }
+    }
+
     fn from_yaml(v: &YamlValue) -> Self {
         let window_secs = v
             .get("window_secs")
@@ -45,7 +49,12 @@ impl RateLimit {
 
 #[derive(Default)]
 struct SlidingWindow {
-    buckets: HashMap<String, Vec<Instant>>,
+    buckets: HashMap<String, Vec<Charge>>,
+}
+
+struct Charge {
+    at: Instant,
+    call_id: CallId,
 }
 
 // Why: keys are `{session}:{user}` and a session is minted per conversation,
@@ -54,29 +63,49 @@ struct SlidingWindow {
 const SWEEP_AT: usize = 1024;
 
 impl SlidingWindow {
-    fn check_and_record(&mut self, key: &str, window_secs: u64, limit: usize) -> usize {
+    fn check_and_record(&mut self, charge: &ChargeRequest<'_>, limit: usize) -> usize {
+        let &ChargeRequest {
+            key,
+            call_id,
+            window_secs,
+        } = charge;
         let now = Instant::now();
         let cutoff = now
             .checked_sub(Duration::from_secs(window_secs))
             .unwrap_or(now);
 
         if self.buckets.len() > SWEEP_AT {
-            self.buckets.retain(|_, ts| {
-                ts.retain(|t| *t > cutoff);
-                !ts.is_empty()
+            self.buckets.retain(|_, charges| {
+                charges.retain(|c| c.at > cutoff);
+                !charges.is_empty()
             });
         }
 
-        let timestamps = self.buckets.entry(key.to_owned()).or_default();
-        timestamps.retain(|t| *t > cutoff);
-        let count = timestamps.len();
+        let charges = self.buckets.entry(key.to_owned()).or_default();
+        charges.retain(|c| c.at > cutoff);
 
+        // Why: replaying the position this call was charged at reproduces the
+        // count it first saw, so every later evaluation of it decides the same.
+        if let Some(position) = charges.iter().position(|c| c.call_id == *call_id) {
+            return position;
+        }
+
+        let count = charges.len();
         if count < limit {
-            timestamps.push(now);
+            charges.push(Charge {
+                at: now,
+                call_id: call_id.clone(),
+            });
         }
 
         count
     }
+}
+
+struct ChargeRequest<'a> {
+    key: &'a str,
+    call_id: &'a CallId,
+    window_secs: u64,
 }
 
 static COUNTERS: LazyLock<Mutex<SlidingWindow>> =
@@ -102,7 +131,14 @@ impl GovernancePolicy for RateLimit {
         let count = COUNTERS
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .check_and_record(&key, self.window_secs, self.limit);
+            .check_and_record(
+                &ChargeRequest {
+                    key: &key,
+                    call_id: ctx.call_id,
+                    window_secs: self.window_secs,
+                },
+                self.limit,
+            );
 
         let window = RateLimitWindow {
             name: ID.to_owned(),

@@ -43,6 +43,8 @@ pub(crate) async fn record_human_decision(
     };
     let audit = DecisionAudit {
         id: uuid::Uuid::new_v4().to_string(),
+        call_id: call.call_id.as_str().to_owned(),
+        origin: call.origin,
         decision,
         principal: PrincipalSnapshot {
             user_id: call.user_id.clone(),
@@ -85,6 +87,8 @@ pub(crate) async fn record_policy_denial(
 ) {
     let audit = DecisionAudit {
         id: uuid::Uuid::new_v4().to_string(),
+        call_id: call.call_id.as_str().to_owned(),
+        origin: call.origin,
         decision: Decision::Deny {
             reason: systemprompt_security::authz::DenyReason::PolicyViolation {
                 policy: policy_id.to_string(),
@@ -144,6 +148,8 @@ pub(super) async fn record(
 ) {
     let audit = DecisionAudit {
         id: verdict.decision_id.clone(),
+        call_id: call.call_id.as_str().to_owned(),
+        origin: call.origin,
         decision: verdict.decision.clone(),
         principal: PrincipalSnapshot {
             user_id: call.user_id.clone(),

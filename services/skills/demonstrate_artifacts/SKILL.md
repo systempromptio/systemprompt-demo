@@ -20,6 +20,21 @@ from the shelf. The first three are built from **this session's own governance
 spine** — the same rows `governance_stats` reports — so they change as the
 session does. The rest carry curated content.
 
+**Narrate only what a call actually returned.** Describe an artifact after its
+call comes back, never before, and never for a call you have not made. Claiming
+a render that did not happen is worse than the failure it papers over: this
+skill exists to show the audit spine, and a fabricated line is the one thing
+the spine will contradict.
+
+**A denial ends the run.** If any call comes back blocked, stop — do not
+continue to the next type. Say which call was refused, quote the reason
+verbatim, and then call `governance_stats` to find the deciding policy, because
+the reason the model receives is deliberately generic. A block on
+`human_approval` means a person declined or the approval lapsed (it times out,
+and it is abandoned if the terminal tab has no live viewer); that is the
+approval gate doing its job, not the four-stage policy chain refusing the tool.
+Say which of the two it was, or say you cannot tell — never guess.
+
 ### 1. Table — live audit rows
 
 ```
@@ -80,6 +95,8 @@ Info, warning, and success notices rendered from structured data.
 mcp__systemprompt__render_artifact {"artifact_type": "text"}
 ```
 
-Close by noting the shelf now holds one artifact of every type, and that every
-one of these calls is on the audit spine — `governance_stats` will show eight
-`allow` verdicts for `render_artifact`.
+Close by calling `governance_stats` and reading the `render_artifact` verdict
+count back to the viewer. Do not assert the number in advance — the point of
+the demo is that the spine is the source of truth, so let it say how many calls
+landed. Eight `allow` verdicts means the shelf holds one artifact of every
+type; anything less is the more interesting result, and is worth showing.

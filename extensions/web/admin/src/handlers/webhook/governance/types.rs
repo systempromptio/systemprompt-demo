@@ -123,12 +123,25 @@ pub(super) struct DecisionAudit {
     /// caller (not the repository) so surfaces that saw the decision live —
     /// e.g. the pi SSE stream — can hand out the same id as a trace link.
     pub id: String,
+    /// Identity of the call this row judged, shared by every row that judged
+    /// the same one. `id` distinguishes evaluations; this groups them.
+    pub call_id: String,
+    /// Whether this row is the first judgement of the call or a later
+    /// enforcement point re-verifying it.
+    pub origin: AuditOrigin,
     pub decision: Decision,
     pub principal: PrincipalSnapshot,
     pub target: AuditTarget,
     pub chain: Vec<ChainEntryOutcome>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub approver: Option<ApproverStamp>,
+}
+
+#[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AuditOrigin {
+    Governed,
+    Reverified,
 }
 
 // Why: the two services the governance webhook needs, layered as one

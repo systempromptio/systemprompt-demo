@@ -26,6 +26,7 @@ use crate::handlers::webhook::governance::inproc::{
     self, GovernedCall, PROMPT_TOOL_NAME, PolicyVerdict,
 };
 use crate::handlers::webhook::governance::stages::{StageOutcome, StageResult};
+use crate::handlers::webhook::governance::types::AuditOrigin;
 
 mod human;
 
@@ -73,12 +74,15 @@ pub(super) async fn decide(
     let (tool_name, governed_input) = governed_parts(payload);
 
     let agent_session = SessionId::new(session.conversation_id.clone());
+    let call_id = session.calls.mint(&tool_name, governed_input.as_ref());
     let call = GovernedCall {
         tool_name: &tool_name,
         user_id: &session.user_id,
         agent_session: &agent_session,
         tool_input: governed_input.as_ref(),
         scope_ceiling: AccessScope::User,
+        call_id: &call_id,
+        origin: AuditOrigin::Governed,
     };
 
     let verdict = inproc::govern_call(
@@ -120,11 +124,7 @@ pub(super) async fn decide(
     }
 
     if !needs_human(&deps.cfg, &tool_name) {
-        session.emit(PiEventBody::ApprovalAuto {
-            tool_name: tool_name.clone(),
-            tool_input: governed_input.clone().unwrap_or(serde_json::Value::Null),
-            policy_chain: cleared_policies(&stages),
-        });
+        emit_auto_approval(session, &tool_name, governed_input.as_ref(), &stages);
         return true;
     }
 
@@ -169,6 +169,19 @@ async fn deny_workspace_escape(
         tool_name: call.tool_name.to_owned(),
         reason: format!("[GOVERNANCE] {detail}"),
         policy: Some(WORKSPACE_SCOPE.to_owned()),
+    });
+}
+
+fn emit_auto_approval(
+    session: &Arc<PiSession>,
+    tool_name: &str,
+    governed_input: Option<&serde_json::Value>,
+    stages: &[StageOutcome],
+) {
+    session.emit(PiEventBody::ApprovalAuto {
+        tool_name: tool_name.to_owned(),
+        tool_input: governed_input.cloned().unwrap_or(serde_json::Value::Null),
+        policy_chain: cleared_policies(stages),
     });
 }
 

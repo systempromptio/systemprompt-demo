@@ -13,6 +13,7 @@ use tokio::process::{Child, ChildStdin};
 use tokio::sync::{broadcast, mpsc, oneshot};
 
 use super::events::{ErrorDeduper, PiEvent, PiEventBody};
+use super::ledger::CallLedger;
 
 const REPLAY_CAPACITY: usize = 200;
 
@@ -58,6 +59,7 @@ pub(super) struct PiSession {
     persist: mpsc::UnboundedSender<PiEvent>,
     replay: Mutex<VecDeque<PiEvent>>,
     pending: Mutex<HashMap<String, oneshot::Sender<Verdict>>>,
+    pub(super) calls: CallLedger,
     seq: AtomicU64,
     dedupe: Mutex<ErrorDeduper>,
     stats_push_pending: AtomicBool,
@@ -92,6 +94,7 @@ impl PiSession {
             persist,
             replay: Mutex::new(VecDeque::with_capacity(REPLAY_CAPACITY)),
             pending: Mutex::new(HashMap::new()),
+            calls: CallLedger::default(),
             seq: AtomicU64::new(start_seq),
             dedupe: Mutex::new(ErrorDeduper::default()),
             stats_push_pending: AtomicBool::new(false),

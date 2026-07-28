@@ -5,7 +5,7 @@
 //! deny. The handler owns request flow and auditing; this module owns the
 //! decision logic.
 
-use systemprompt::identifiers::{McpToolName, SessionId, UserId};
+use systemprompt::identifiers::{CallId, McpToolName, SessionId, UserId};
 use systemprompt_security::authz::{Decision, MatchedBy};
 use systemprompt_security::policy::types::AccessScope;
 use systemprompt_security::policy::{AgentScope, McpToolInput, PolicyContext};
@@ -19,6 +19,7 @@ pub(crate) struct EvaluateInput<'a> {
     pub(crate) user_id: &'a UserId,
     pub(crate) access_scope: AccessScope,
     pub(crate) tool_input: Option<&'a serde_json::Value>,
+    pub(crate) call_id: &'a CallId,
 }
 
 pub(crate) fn evaluate(input: &EvaluateInput<'_>) -> (Decision, Vec<ChainEntryOutcome>) {
@@ -38,6 +39,7 @@ pub(crate) fn evaluate(input: &EvaluateInput<'_>) -> (Decision, Vec<ChainEntryOu
         session_id: input.session_id,
         user_id: input.user_id,
         tool_input: &tool_input,
+        call_id: input.call_id,
     };
 
     let mut chain_trace: Vec<ChainEntryOutcome> = Vec::new();

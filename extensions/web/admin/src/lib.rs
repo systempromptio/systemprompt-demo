@@ -57,6 +57,7 @@ pub mod test_support {
     };
     pub use crate::handlers::pi::format::{cost, cost_round, median};
     pub use crate::handlers::pi::jail::gateway_port;
+    pub use crate::handlers::pi::ledger::CallLedger;
     pub use crate::handlers::pi::mcp::FORWARDABLE;
     pub use crate::handlers::pi::mcp::render::{McpCallResult, first_frame, render};
     pub use crate::handlers::pi::normalize::{
@@ -77,6 +78,7 @@ pub mod test_support {
     pub use crate::handlers::ssr::bridge_downloads::{
         LINUX, MAC_ARM, MAC_INTEL, RELEASE_PAGE, WINDOWS,
     };
+    pub use crate::handlers::webhook::governance::policies::rate_limit::RateLimit;
     pub use crate::handlers::webhook::governance::scope::cap_at;
     pub use crate::handlers::webhook::governance::secrets::scan_str_for_secret;
     pub use crate::middleware::gates::{is_pending_allowed_path, may_pass_pending_gate};

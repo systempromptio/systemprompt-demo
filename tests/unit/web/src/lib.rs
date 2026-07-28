@@ -13,6 +13,8 @@ mod campaign_link_full_url;
 #[cfg(test)]
 mod config_base_url;
 #[cfg(test)]
+mod governance_rate_limit;
+#[cfg(test)]
 mod governance_scope;
 #[cfg(test)]
 mod hook_event_dispatch;
@@ -32,6 +34,8 @@ mod pi_format;
 mod pi_jail;
 #[cfg(test)]
 mod pi_jail_args;
+#[cfg(test)]
+mod pi_ledger;
 #[cfg(test)]
 mod pi_mcp_render;
 #[cfg(test)]

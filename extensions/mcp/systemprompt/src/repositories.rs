@@ -48,6 +48,7 @@ pub(crate) struct DecisionRow {
     pub(crate) decision: String,
     pub(crate) policy: String,
     pub(crate) reason: String,
+    pub(crate) reverified: bool,
 }
 
 #[derive(Debug)]
@@ -107,13 +108,23 @@ pub(crate) async fn list_recent_decisions(
 ) -> Result<Vec<DecisionRow>, sqlx::Error> {
     sqlx::query_as!(
         DecisionRow,
-        r#"SELECT created_at as "at!", tool_name as "tool_name!",
-                  decision as "decision!",
-                  COALESCE(NULLIF(policy, ''), 'default_included') as "policy!",
-                  COALESCE(reason, '') as "reason!"
-           FROM governance_decisions
-           WHERE user_id = $1 AND session_id = $2
-           ORDER BY created_at DESC
+        // Why: one row per logical call — a nested enforcement point re-judging
+        // a call appends its own row, and listing both reads as two calls.
+        r#"SELECT g.created_at as "at!", g.tool_name as "tool_name!",
+                  g.decision as "decision!",
+                  COALESCE(NULLIF(g.policy, ''), 'default_included') as "policy!",
+                  COALESCE(g.reason, '') as "reason!",
+                  EXISTS (
+                      SELECT 1 FROM governance_decisions r
+                       WHERE r.user_id = g.user_id
+                         AND r.session_id = g.session_id
+                         AND r.evaluated_rules->>'call_id' = g.evaluated_rules->>'call_id'
+                         AND r.evaluated_rules->>'origin' = 'reverified'
+                  ) as "reverified!"
+           FROM governance_decisions g
+           WHERE g.user_id = $1 AND g.session_id = $2
+             AND g.evaluated_rules->>'origin' IS DISTINCT FROM 'reverified'
+           ORDER BY g.created_at DESC
            LIMIT $3"#,
         user_id.as_str(),
         session_id.as_str(),

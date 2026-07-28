@@ -12,7 +12,7 @@ use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json};
 use sqlx::PgPool;
 use systemprompt::api::services::middleware::attest_session;
-use systemprompt::identifiers::{SessionId, UserId};
+use systemprompt::identifiers::{CallId, SessionId, UserId};
 use systemprompt::traits::{AnalyticsProvider, SessionAnalytics};
 use systemprompt_security::authz::Decision;
 use systemprompt_security::policy::types::AccessScope;
@@ -20,7 +20,7 @@ use systemprompt_security::policy::types::AccessScope;
 use crate::types::webhook::{GovernQuery, HookEventPayload};
 
 use super::types::{
-    AuditTarget, AuthDenialParams, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
+    AuditOrigin, AuditTarget, AuthDenialParams, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
     GovernanceDecision, GovernanceDeps, GovernanceResponse, HookSpecificOutput, PrincipalSnapshot,
 };
 use super::{audit, scope};
@@ -121,16 +121,22 @@ pub(crate) async fn govern_tool_use(
     // Why: the rate-limit policy keys on the *agent's* session, not the
     // credential's — one long-lived plugin token drives many agent runs, and a
     // per-credential bucket would let one runaway run throttle every other.
+    // Why: one POST is one call, and this hook is the only point that sees it —
+    // an out-of-process agent has no second enforcement point to inherit from.
+    let call_id = CallId::generate();
     let (decision, chain) = evaluate(&EvaluateInput {
         tool_name,
         session_id: &agent_session,
         user_id: &user_id,
         access_scope,
         tool_input: payload.tool_input(),
+        call_id: &call_id,
     });
 
     let audit = DecisionAudit {
         id: uuid::Uuid::new_v4().to_string(),
+        call_id: call_id.as_str().to_owned(),
+        origin: AuditOrigin::Governed,
         decision: decision.clone(),
         principal: PrincipalSnapshot {
             user_id,
@@ -185,6 +191,10 @@ fn spawn_auth_denial(params: &AuthDenialParams<'_>, reason: &str) {
         };
         let audit = DecisionAudit {
             id: uuid::Uuid::new_v4().to_string(),
+            // Why: refused before the chain ran, so no call identity was ever
+            // minted for it — this denial is the whole of the call's history.
+            call_id: CallId::generate().as_str().to_owned(),
+            origin: AuditOrigin::Governed,
             decision: deny_for_auth_failure(&reason),
             principal: PrincipalSnapshot {
                 user_id,

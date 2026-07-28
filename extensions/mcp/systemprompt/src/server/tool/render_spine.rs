@@ -20,7 +20,6 @@ use super::db_error;
 
 const PIPELINE_STAGES: [&str; 4] = ["scope_check", "secret_scan", "tool_blocklist", "rate_limit"];
 
-/// The connection guard every data-shaped variant shares.
 async fn spine_rows(
     db_pool: &DbPool,
     user_id: &UserId,
@@ -58,12 +57,11 @@ fn decision_columns() -> Vec<Column> {
         Column::new("tool", ColumnType::String).with_header("Tool"),
         Column::new("decision", ColumnType::String).with_header("Outcome"),
         Column::new("policy", ColumnType::String).with_header("Policy"),
+        Column::new("enforced", ColumnType::String).with_header("Enforced"),
         Column::new("reason", ColumnType::String).with_header("Reason"),
     ]
 }
 
-/// The one place a decision row becomes a table — shared by `render_artifact`'s
-/// table variant and `governance_stats`, so the two never drift apart.
 pub(super) fn decisions_table(decisions: &[repositories::DecisionRow]) -> TableArtifact {
     let rows: Vec<serde_json::Value> = decisions
         .iter()
@@ -73,6 +71,7 @@ pub(super) fn decisions_table(decisions: &[repositories::DecisionRow]) -> TableA
                 "tool": d.tool_name,
                 "decision": d.decision,
                 "policy": d.policy,
+                "enforced": if d.reverified { "gate + proxy" } else { "gate" },
                 "reason": d.reason,
             })
         })
@@ -92,6 +91,7 @@ pub(super) async fn spine_table(
             "tool": "render_artifact",
             "decision": "allow",
             "policy": "example",
+            "enforced": "gate",
             "reason": "No governance decisions recorded in this session yet; this row is illustrative."
         });
         return Ok(CliArtifact::table(

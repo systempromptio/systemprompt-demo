@@ -108,6 +108,9 @@ pub(super) async fn call(
 
     let tool_name = format!("mcp__systemprompt__{}", body.tool);
     let agent_session = SessionId::new(session.conversation_id.as_str().to_owned());
+    // Why: describing the call rather than naming it — an id from the child
+    // would be an id the child could replay to stay uncounted.
+    let (call_id, origin) = session.calls.claim(&tool_name, Some(&body.arguments));
     let verdict = inproc::govern_call(
         &deps.pool,
         &deps.analytics,
@@ -118,6 +121,8 @@ pub(super) async fn call(
             agent_session: &agent_session,
             tool_input: Some(&body.arguments),
             scope_ceiling: AccessScope::User,
+            call_id: &call_id,
+            origin,
         },
     )
     .await;

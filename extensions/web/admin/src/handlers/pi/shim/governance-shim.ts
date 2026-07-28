@@ -64,9 +64,12 @@ export default function (pi: ExtensionAPI) {
     return ok ? { action: "continue" } : { action: "handled" };
   });
 
-  // Tool gate. Returning `block` keeps the call from executing at all; the
-  // reason is generic because `confirm` answers a bare boolean, and the specific
-  // policy reason is audited and shown in the widget instead.
+  // Tool gate. Returning `block` keeps the call from executing at all. The
+  // reason cannot carry the deciding policy: `confirm` answers a bare boolean,
+  // so the specific reason reaches the audit spine and the widget but not the
+  // model. It therefore has to say so — a bare "denied" reads as a policy
+  // refusal, and a model with no way to tell will narrate one that never
+  // happened.
   pi.on("tool_call", async (event, ctx) => {
     const ok = await permitted(ctx, {
       kind: "tool",
@@ -74,6 +77,16 @@ export default function (pi: ExtensionAPI) {
       tool_use_id: event.toolCallId,
       tool_input: event.input,
     });
-    return ok ? undefined : { block: true, reason: "[GOVERNANCE] denied" };
+    return ok
+      ? undefined
+      : {
+          block: true,
+          reason:
+            "[GOVERNANCE] denied — this call was refused before it ran, by " +
+            "either the policy chain or the human-approval gate. Which one is " +
+            "not carried on this channel: call governance_stats for the " +
+            "deciding policy and reason. Do not guess, and do not continue as " +
+            "if the call had succeeded.",
+        };
   });
 }
