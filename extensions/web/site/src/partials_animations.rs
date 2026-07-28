@@ -17,7 +17,7 @@ static_partial!(
     "web:cli-remote-animation",
     "ANIMATION_CLI_REMOTE",
     "animation-cli-remote",
-    "../../../../services/web/templates/partials/animation-cli-remote.html",
+    "animation-cli-remote.html",
     PRIORITY_MID
 );
 
@@ -26,7 +26,7 @@ static_partial!(
     "web:rust-mesh-animation",
     "RUST_MESH_ANIMATION",
     "rust-mesh-animation",
-    "../../../../services/web/templates/partials/animation-rust-mesh.html",
+    "animation-rust-mesh.html",
     PRIORITY_MID
 );
 
@@ -35,7 +35,7 @@ static_partial!(
     "web:memory-loop-animation",
     "ANIMATION_MEMORY_LOOP",
     "animation-memory-loop",
-    "../../../../services/web/templates/partials/animation-memory-loop.html",
+    "animation-memory-loop.html",
     PRIORITY_MID
 );
 
@@ -44,7 +44,7 @@ static_partial!(
     "web:agentic-mesh-animation",
     "ANIMATION_AGENTIC_MESH",
     "animation-agentic-mesh",
-    "../../../../services/web/templates/partials/animation-agentic-mesh.html",
+    "animation-agentic-mesh.html",
     PRIORITY_MID
 );
 
@@ -53,6 +53,6 @@ static_partial!(
     "web:architecture-diagram",
     "ARCHITECTURE_DIAGRAM",
     "architecture-diagram",
-    "../../../../services/web/templates/partials/architecture-diagram.html",
+    "architecture-diagram.html",
     PRIORITY_MID
 );

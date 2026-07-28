@@ -32,7 +32,7 @@ macro_rules! static_partial {
         pub struct $ty;
 
         impl $ty {
-            const TEMPLATE: &str = include_str!($template);
+            const TEMPLATE: &str = include_str!(concat!(env!("OUT_DIR"), "/partials/", $template));
         }
 
         #[async_trait]
@@ -74,7 +74,7 @@ static_partial!(
     "web:head-assets-partial",
     "HEAD_ASSETS",
     "head-assets",
-    "../../../../services/web/templates/partials/head-assets.html",
+    "head-assets.html",
     PRIORITY_CRITICAL
 );
 
@@ -83,7 +83,7 @@ static_partial!(
     "web:header-partial",
     "HEADER",
     "header",
-    "../../../../services/web/templates/partials/header.html",
+    "header.html",
     PRIORITY_HIGH
 );
 
@@ -92,7 +92,7 @@ static_partial!(
     "web:footer-partial",
     "FOOTER",
     "footer",
-    "../../../../services/web/templates/partials/footer.html",
+    "footer.html",
     PRIORITY_LOW
 );
 
@@ -101,6 +101,6 @@ static_partial!(
     "web:scripts-partial",
     "SCRIPTS",
     "scripts",
-    "../../../../services/web/templates/partials/scripts.html",
+    "scripts.html",
     PRIORITY_LAST
 );
