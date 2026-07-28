@@ -18,7 +18,7 @@ pub(super) fn resolve_agent_scope(agent_id: &AgentId) -> AccessScope {
 }
 
 pub(super) async fn scope_from_user_roles(pool: &PgPool, user_id: &UserId) -> AccessScope {
-    match crate::repositories::users::queries::find_user_access(pool, user_id).await {
+    match crate::repositories::user_access::find_user_access(pool, user_id).await {
         Ok(Some(access)) => {
             let roles = access.roles;
             if roles.iter().any(|r| r == "admin") {

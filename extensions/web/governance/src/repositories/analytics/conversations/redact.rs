@@ -1,6 +1,6 @@
 //! Credential redactor for transcript bodies heading to the DOM.
 
-use crate::handlers::webhook::governance::secrets::find_high_entropy_token;
+use crate::webhook::governance::secrets::find_high_entropy_token;
 
 /// Defense-in-depth text redactor for prompts/responses heading to the DOM.
 ///

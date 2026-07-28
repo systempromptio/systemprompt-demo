@@ -6,7 +6,7 @@ use systemprompt::identifiers::SessionId;
 pub async fn update_session_ai_summary_structured(
     pool: &PgPool,
     session_id: &SessionId,
-    summary: &crate::handlers::hooks_track::ai_summary::SessionAnalysis,
+    summary: &crate::hooks_track::ai_summary::SessionAnalysis,
 ) {
     let tags = summary.tags.join(",");
     let composed_summary = summary.composed_summary();

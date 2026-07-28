@@ -4,7 +4,7 @@ use axum::http::HeaderMap;
 use systemprompt::models::Config;
 use systemprompt::models::auth::JwtAudience;
 
-use crate::error::{AdminError, AdminResult};
+use crate::error::{GovernanceError, GovernanceResult};
 
 #[derive(Debug, thiserror::Error)]
 pub(super) enum JwtConfigError {
@@ -12,10 +12,10 @@ pub(super) enum JwtConfigError {
     Config(#[source] Box<dyn std::error::Error + Send + Sync>),
 }
 
-pub(super) fn authenticate_webhook(headers: &HeaderMap) -> AdminResult<()> {
+pub(super) fn authenticate_webhook(headers: &HeaderMap) -> GovernanceResult<()> {
     let token = extract_bearer_token(headers)
-        .ok_or_else(|| AdminError::Unauthorized("Missing Authorization header".to_owned()))?;
-    let jwt_issuer = get_jwt_issuer().map_err(AdminError::internal)?;
+        .ok_or_else(|| GovernanceError::Unauthorized("Missing Authorization header".to_owned()))?;
+    let jwt_issuer = get_jwt_issuer().map_err(GovernanceError::internal)?;
     systemprompt::oauth::validate_jwt_token(
         token,
         &jwt_issuer,

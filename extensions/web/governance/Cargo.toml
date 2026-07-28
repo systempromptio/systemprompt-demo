@@ -1,0 +1,49 @@
+[package]
+name = "systemprompt-web-governance"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Governance spine for the systemprompt.io template: policy evaluation webhooks, hook ingest, and the audit and analytics data layer."
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[dependencies]
+systemprompt-web-shared = { workspace = true }
+# Audit: uses ai, identifiers, models, oauth, traits — requires `full`.
+systemprompt = { workspace = true, features = ["full"] }
+systemprompt-security = { workspace = true }
+
+sqlx = { workspace = true }
+
+axum = { workspace = true }
+tower = { workspace = true }
+
+tokio = { workspace = true }
+futures = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Secret detection (governance secret_scan + gateway safety scanner). Pinned to
+# the 1.x line already in the graph transitively.
+regex = "1"
+
+sha2 = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+
+url = { workspace = true }
+urlencoding = { workspace = true }
+async-trait = { workspace = true }
+inventory = { workspace = true }
+
+[lints]
+workspace = true

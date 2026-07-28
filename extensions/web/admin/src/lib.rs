@@ -6,9 +6,8 @@
 //!
 //! - [`admin_router`] — the SSR dashboard (auth-gated; admin-only and
 //!   authenticated-read routes are layered together).
-//! - [`hooks_webhook_router`] — the four governance webhooks called by gateway
-//!   / MCP / Claude Code (`/hooks/track`, `/hooks/govern`, `/govern/authz`,
-//!   statusline/transcript ingest).
+//! - [`hooks_webhook_router`] — re-exported from
+//!   [`systemprompt_web_governance`], which owns the governance webhooks.
 //! - [`secrets_router`], [`share_manifest_router`] — per-plugin secret
 //!   resolution and public manifest sharing.
 //!
@@ -16,16 +15,10 @@
 //! the DB directly. Errors normalise on `error::WebError` via the
 //! `WebError` re-export in [`systemprompt_web_shared`].
 
-pub mod activity;
-pub mod audit_event_bus;
-pub mod authz;
 pub mod error;
-pub mod event_hub;
-pub mod gateway_safety;
 pub(crate) mod handlers;
 pub mod marketplace_filter;
 pub(crate) mod middleware;
-pub mod numeric;
 pub mod repositories;
 mod routes;
 pub(crate) mod services;
@@ -36,8 +29,12 @@ pub mod util;
 use std::sync::Arc;
 
 use axum::routing::{get, post};
-use axum::{Extension, Router, middleware as axum_middleware};
+use axum::{Router, middleware as axum_middleware};
 use sqlx::PgPool;
+
+pub use systemprompt_web_governance::{
+    activity, audit_event_bus, authz, event_hub, gateway_safety, hooks_webhook_router, numeric,
+};
 
 pub use routes::{admin_ssr_router, bridge_auth_ssr_router, trace_ssr_router};
 pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary, UserUsageEvent};
@@ -78,37 +75,14 @@ pub mod test_support {
     pub use crate::handlers::ssr::bridge_downloads::{
         LINUX, MAC_ARM, MAC_INTEL, RELEASE_PAGE, WINDOWS,
     };
-    pub use crate::handlers::webhook::governance::policies::rate_limit::RateLimit;
-    pub use crate::handlers::webhook::governance::scope::cap_at;
-    pub use crate::handlers::webhook::governance::secrets::scan_str_for_secret;
+    pub use systemprompt_web_governance::webhook::governance::policies::rate_limit::RateLimit;
+    pub use systemprompt_web_governance::webhook::governance::scope::cap_at;
+    pub use systemprompt_web_governance::webhook::governance::secrets::scan_str_for_secret;
     pub use crate::middleware::gates::{is_pending_allowed_path, may_pass_pending_gate};
     pub use crate::repositories::pi::events::NewPiEvent;
     pub use crate::util::hmac;
 }
 
-pub fn hooks_webhook_router(
-    pool: Arc<PgPool>,
-    session_service: Arc<systemprompt::oauth::SessionCreationService>,
-    analytics_provider: Arc<dyn systemprompt::traits::AnalyticsProvider>,
-) -> Router {
-    Router::new()
-        .route(
-            "/hooks/track",
-            post(handlers::hooks_track::handle_hook_track),
-        )
-        .route("/hooks/govern", post(handlers::govern_tool_use))
-        .route("/govern/authz", post(handlers::govern_authz))
-        .route("/hooks/statusline", post(handlers::track_statusline_event))
-        .route("/hooks/transcript", post(handlers::track_transcript_event))
-        .layer(Extension(event_hub::EventHub::default()))
-        .layer(Extension(None::<Arc<systemprompt::ai::AiService>>))
-        .layer(Extension(handlers::GovernanceDeps {
-            session_service: Arc::clone(&session_service),
-            analytics: analytics_provider,
-        }))
-        .layer(Extension(session_service))
-        .with_state(pool)
-}
 
 /// Routes for the governed pi web terminal.
 ///

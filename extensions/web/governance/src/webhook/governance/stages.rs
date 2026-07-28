@@ -10,16 +10,17 @@
 //! cosmetic reasons.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum StageResult {
+pub enum StageResult {
     Pass,
     Fail,
     Skip,
 }
 
-pub(crate) struct StageOutcome {
-    pub(crate) policy: String,
-    pub(crate) result: StageResult,
-    pub(crate) detail: String,
+#[derive(Debug)]
+pub struct StageOutcome {
+    pub policy: String,
+    pub result: StageResult,
+    pub detail: String,
     // Why: zero means "never ran", not "instant" — readers render it as absent.
-    pub(crate) duration_ms: f64,
+    pub duration_ms: f64,
 }

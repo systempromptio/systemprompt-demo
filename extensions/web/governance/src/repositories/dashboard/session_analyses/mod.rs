@@ -3,7 +3,7 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::{SessionId, UserId};
 
-use crate::handlers::hooks_track::ai_summary::SessionAnalysis;
+use crate::hooks_track::ai_summary::SessionAnalysis;
 
 pub type SessionAnalysisDetail = SessionAnalysisRow;
 

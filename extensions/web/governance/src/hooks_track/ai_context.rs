@@ -8,7 +8,7 @@ use crate::repositories::dashboard::conversation_analytics;
 
 use crate::repositories::dashboard::hooks_track;
 
-use crate::types::ENTITY_SKILL;
+use systemprompt_web_shared::constants::ENTITY_SKILL;
 
 use super::session_summary;
 

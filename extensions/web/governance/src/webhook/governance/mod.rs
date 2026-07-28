@@ -7,14 +7,14 @@
 mod audit;
 mod authz;
 mod handler;
-pub(crate) mod inproc;
-pub(crate) mod policies;
-pub(crate) mod policy;
-pub(crate) mod scope;
-pub(crate) mod secrets;
-pub(crate) mod stages;
-pub(crate) mod types;
+pub mod inproc;
+pub mod policies;
+pub mod policy;
+pub mod scope;
+pub mod secrets;
+pub mod stages;
+pub mod types;
 
-pub(crate) use authz::govern_authz;
-pub(crate) use handler::govern_tool_use;
-pub(crate) use types::GovernanceDeps;
+pub use authz::govern_authz;
+pub use handler::govern_tool_use;
+pub use types::GovernanceDeps;

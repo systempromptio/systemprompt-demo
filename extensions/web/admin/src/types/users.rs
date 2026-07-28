@@ -93,12 +93,6 @@ pub struct CookieSession {
     pub email: Email,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct ContentBytes {
-    pub input: i64,
-    pub output: i64,
-}
-
 #[derive(Debug, Clone)]
 pub struct DetectedEntity {
     pub entity_type: &'static str,

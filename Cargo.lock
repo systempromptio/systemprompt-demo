@@ -5813,6 +5813,7 @@ dependencies = [
  "systemprompt-credits-extension",
  "systemprompt-email-extension",
  "systemprompt-security",
+ "systemprompt-web-governance",
  "systemprompt-web-shared",
  "tempfile",
  "thiserror 2.0.18",
@@ -5856,11 +5857,41 @@ dependencies = [
  "systemprompt-extension",
  "systemprompt-web-admin",
  "systemprompt-web-content",
+ "systemprompt-web-governance",
  "systemprompt-web-jobs",
  "systemprompt-web-shared",
  "systemprompt-web-site",
  "thiserror 2.0.18",
  "tracing",
+]
+
+[[package]]
+name = "systemprompt-web-governance"
+version = "0.25.0"
+dependencies = [
+ "async-trait",
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "futures",
+ "hex",
+ "inventory",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2 0.10.9",
+ "sqlx",
+ "systemprompt",
+ "systemprompt-security",
+ "systemprompt-web-shared",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower",
+ "tracing",
+ "url",
+ "urlencoding",
+ "uuid",
 ]
 
 [[package]]
@@ -5871,6 +5902,7 @@ dependencies = [
  "inventory",
  "serde_json",
  "serde_yaml",
+ "sha2 0.10.9",
  "sqlx",
  "systemprompt",
  "systemprompt-web-admin",
@@ -5891,6 +5923,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "sha2 0.10.9",
  "sqlx",
  "systemprompt",
  "thiserror 2.0.18",

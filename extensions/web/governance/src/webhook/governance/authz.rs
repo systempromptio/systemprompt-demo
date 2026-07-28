@@ -171,7 +171,7 @@ async fn audit_decision(
     }
 }
 
-pub(crate) async fn govern_authz(
+pub async fn govern_authz(
     State(pool): State<Arc<PgPool>>,
     Json(req): Json<AuthzRequest>,
 ) -> Response {

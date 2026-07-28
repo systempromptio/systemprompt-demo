@@ -32,34 +32,36 @@ use super::types::{AuditOrigin, ChainEntryOutcome, ChainEntryResult};
 mod record;
 
 use record::record;
-pub(crate) use record::{HumanOutcome, record_human_decision, record_policy_denial};
+pub use record::{HumanOutcome, record_human_decision, record_policy_denial};
 
-pub(crate) const PI_AGENT_ID: &str = "pi_agent";
+pub const PI_AGENT_ID: &str = "pi_agent";
 
-pub(crate) const PI_PLUGIN_ID: &str = "enterprise-demo";
+pub const PI_PLUGIN_ID: &str = "enterprise-demo";
 
-pub(crate) struct GovernedCall<'a> {
-    pub(crate) tool_name: &'a str,
-    pub(crate) user_id: &'a UserId,
-    pub(crate) agent_session: &'a SessionId,
-    pub(crate) tool_input: Option<&'a serde_json::Value>,
-    pub(crate) scope_ceiling: AccessScope,
+#[derive(Debug)]
+pub struct GovernedCall<'a> {
+    pub tool_name: &'a str,
+    pub user_id: &'a UserId,
+    pub agent_session: &'a SessionId,
+    pub tool_input: Option<&'a serde_json::Value>,
+    pub scope_ceiling: AccessScope,
     // Why: an enforcement point behind another still runs the chain, so one
     // call reaches it more than once. Carrying the identity the first point
     // minted is what lets a counting policy tell the repeat from a new call.
-    pub(crate) call_id: &'a CallId,
-    pub(crate) origin: AuditOrigin,
+    pub call_id: &'a CallId,
+    pub origin: AuditOrigin,
 }
 
-pub(crate) const PROMPT_TOOL_NAME: &str = "user_prompt";
+pub const PROMPT_TOOL_NAME: &str = "user_prompt";
 
-pub(crate) struct PolicyVerdict {
+#[derive(Debug)]
+pub struct PolicyVerdict {
     // Why: the governance_decisions.id this verdict lands under, minted before
     // the write so the pi SSE stream can emit it as a trace link immediately.
-    pub(crate) decision_id: String,
-    pub(crate) allowed: bool,
-    pub(crate) reason: Option<String>,
-    pub(crate) policy: Option<String>,
+    pub decision_id: String,
+    pub allowed: bool,
+    pub reason: Option<String>,
+    pub policy: Option<String>,
     decision: Decision,
     chain: Vec<ChainEntryOutcome>,
     access_scope: AccessScope,
@@ -67,7 +69,7 @@ pub(crate) struct PolicyVerdict {
 }
 
 impl PolicyVerdict {
-    pub(crate) fn stages(&self) -> Vec<StageOutcome> {
+    pub fn stages(&self) -> Vec<StageOutcome> {
         self.chain
             .iter()
             .map(|entry| StageOutcome {
@@ -84,7 +86,7 @@ impl PolicyVerdict {
     }
 }
 
-pub(crate) async fn govern_call(
+pub async fn govern_call(
     pool: &Arc<PgPool>,
     analytics: &Arc<dyn AnalyticsProvider>,
     claimed_session: &SessionId,

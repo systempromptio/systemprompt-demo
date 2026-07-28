@@ -1,7 +1,8 @@
 //! HTTP handlers for the admin plane.
 //!
-//! SSR page handlers live in [`ssr`]; everything else here is JSON API or
-//! webhook intake. Handlers own status mapping and call repositories for data.
+//! SSR page handlers live in [`ssr`]; everything else here is JSON API.
+//! Governance webhook intake lives in [`systemprompt_web_governance`].
+//! Handlers own status mapping and call repositories for data.
 
 pub(crate) mod access_control;
 pub(crate) mod demo_register;
@@ -11,7 +12,6 @@ pub(crate) mod entity_access;
 pub(crate) mod gateway;
 pub(crate) mod gateway_access;
 pub(crate) mod gateway_catalog;
-pub(crate) mod hooks_track;
 mod jobs;
 pub(crate) mod magic_link;
 pub(crate) mod onboarding;
@@ -28,12 +28,6 @@ pub(crate) mod site_markdown;
 pub(crate) mod ssr;
 mod users;
 mod users_approval;
-pub(crate) mod webhook;
-
-pub(crate) use webhook::{
-    GovernanceDeps, govern_authz, govern_tool_use, track_statusline_event, track_transcript_event,
-};
-
 pub(crate) use gateway::{
     create_gateway_route_handler, delete_gateway_route_handler, get_gateway_handler,
     reorder_gateway_routes_handler, update_gateway_route_handler, update_gateway_settings_handler,

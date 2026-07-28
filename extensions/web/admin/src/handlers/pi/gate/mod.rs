@@ -22,11 +22,11 @@ use super::events::PiEventBody;
 use super::rpc::{GovernancePayload, PayloadKind};
 use super::session::PiSession;
 use super::stage::PolicyStage;
-use crate::handlers::webhook::governance::inproc::{
+use systemprompt_web_governance::webhook::governance::inproc::{
     self, GovernedCall, PROMPT_TOOL_NAME, PolicyVerdict,
 };
-use crate::handlers::webhook::governance::stages::{StageOutcome, StageResult};
-use crate::handlers::webhook::governance::types::AuditOrigin;
+use systemprompt_web_governance::webhook::governance::stages::{StageOutcome, StageResult};
+use systemprompt_web_governance::webhook::governance::types::AuditOrigin;
 
 mod human;
 

@@ -11,7 +11,7 @@ use systemprompt::oauth::OauthError;
 use systemprompt_security::authz::{Decision, DenyReason};
 use systemprompt_security::policy::types::AccessScope;
 
-use crate::handlers::webhook::helpers::{extract_bearer_token, get_jwt_issuer};
+use crate::webhook::helpers::{extract_bearer_token, get_jwt_issuer};
 
 use super::super::scope::scope_from_permissions;
 use super::super::types::AuthDenialParams;
@@ -35,7 +35,7 @@ pub(super) fn deny_for_auth_failure(reason: &str) -> Decision {
 }
 
 // Why: the `Err` arm is deliberately **not** an
-// [`crate::error::AdminError`]. A `PreToolUse` hook blocks a tool call by
+// [`crate::error::GovernanceError`]. A `PreToolUse` hook blocks a tool call by
 // answering `200 OK` with a deny decision; a `401` is a transport failure,
 // which the client is free to treat as the hook being unavailable and carry on.
 // Converting this channel to the admin error type would silently turn every

@@ -152,7 +152,7 @@ impl Extension for WebExtension {
         let (session_service, analytics_provider) = Self::build_session_service(&dbpool)?;
 
         let admin_api = admin::admin_router(Arc::clone(&pool));
-        let webhook_api = admin::hooks_webhook_router(
+        let webhook_api = crate::governance::hooks_webhook_router(
             Arc::clone(&write_pool),
             Arc::clone(&session_service),
             Arc::clone(&analytics_provider),

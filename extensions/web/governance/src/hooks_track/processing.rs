@@ -11,7 +11,7 @@ use crate::numeric;
 use crate::repositories::dashboard::{conversation_analytics, hooks_track, usage_aggregations};
 
 use crate::types::webhook::{HookEvent, HookEventPayload};
-use crate::types::{ENTITY_SKILL, EVENT_SESSION_END, EVENT_SESSION_START, EVENT_STOP};
+use systemprompt_web_shared::constants::{ENTITY_SKILL, EVENT_SESSION_END, EVENT_SESSION_START, EVENT_STOP};
 
 use super::{ai_summary, entity, helpers};
 

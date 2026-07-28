@@ -50,7 +50,7 @@ use systemprompt_security::policy::types::AccessScope;
 use super::auth::{authorize_session, problem, unauthorized};
 use super::gate::PiDeps;
 use super::registry::PiRegistry;
-use crate::handlers::webhook::governance::inproc::{self, GovernedCall};
+use systemprompt_web_governance::webhook::governance::inproc::{self, GovernedCall};
 use render::McpCallResult;
 
 /// Tools the proxy will forward.

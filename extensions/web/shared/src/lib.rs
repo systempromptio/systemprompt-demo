@@ -13,6 +13,8 @@
 //!   that originate in `systemprompt_identifiers`, prefer those directly.
 //! - [`models`] — content/link/search wire types shared between the content
 //!   extension and the admin dashboard.
+//! - [`constants`] — entity, event, and status string literals the web crates
+//!   must agree on byte-for-byte, since they are also column values.
 //! - [`hmac`] — HMAC-SHA256 keyed off the bootstrap secret, backing every
 //!   signed token scheme in the web crates.
 //! - [`UserContext`] — the resolved caller identity threaded through admin,
@@ -23,6 +25,7 @@
 
 pub mod config;
 pub mod config_errors;
+pub mod constants;
 pub mod error;
 pub mod hmac;
 pub mod ids;

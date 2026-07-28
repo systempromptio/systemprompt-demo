@@ -1,11 +1,6 @@
 //! Value types for the admin plane, grouped by the surface that owns them.
 
 pub mod access_control;
-pub mod constants;
-pub mod control_center;
-pub mod conversation_analytics;
-mod dashboard;
-mod dashboard_enterprise;
 pub mod departments;
 pub mod gateway;
 pub mod hooks_export;
@@ -13,12 +8,12 @@ mod jobs;
 mod plugins;
 mod plugins_config;
 mod plugins_requests;
-mod traffic;
 pub use departments::{Department, DepartmentInput, DepartmentSummary};
 mod users;
-pub mod webhook;
 
-pub use dashboard::{
+pub use systemprompt_web_governance::types::{control_center, conversation_analytics, webhook};
+
+pub use systemprompt_web_governance::types::{
     AchievementInfo, ActivityStats, ContentPerformanceRow, DashboardData, DashboardQuery,
     DepartmentActivity, DepartmentQuery, DepartmentScore, EventBreakdown, EventFeedRow,
     EventTypeBreakdown, EventsQuery, EventsResponse, GovernanceEvent, HourlyActivity,
@@ -45,6 +40,7 @@ pub use plugins_requests::{
     UpdateMcpRequest, UpdatePluginEnvRequest, UpdatePluginRequest, UpdatePluginSkillsRequest,
     UpdateSkillFileRequest, UserQuery,
 };
+pub use systemprompt_web_governance::types::ContentBytes;
 pub use systemprompt_web_shared::UserContext;
 
 #[derive(Debug, Default, Clone, serde::Deserialize)]
@@ -79,7 +75,7 @@ pub struct MarketplaceContext {
     pub next_rank_name: String,
     pub xp_to_next_rank: i64,
 }
-pub use constants::{
+pub use systemprompt_web_shared::constants::{
     ACTION_GRANTED, CATEGORY_AI_SESSIONS, CATEGORY_EDITS, DECISION_DENY, DIR_PYCACHE, ENTITY_AGENT,
     ENTITY_MARKETPLACE, ENTITY_MCP_SERVER, ENTITY_MCP_TOOL, ENTITY_PLUGIN, ENTITY_SKILL,
     EVENT_POST_TOOL_USE, EVENT_POST_TOOL_USE_FAILURE, EVENT_SESSION_END, EVENT_SESSION_START,
@@ -90,17 +86,17 @@ pub use constants::{
     STATUS_ACTIVE, STATUS_DELETED, TAB_GOVERNANCE, TAB_MCP, TAB_REPORT, TRAFFIC_RANGE_30D,
     TRAFFIC_RANGE_TODAY, TRAFFIC_RANGE_YESTERDAY,
 };
-pub use conversation_analytics::{
+pub use systemprompt_web_governance::types::{
     EntityEffectiveness, EntityUsageSummary, RateSessionRequest, RateSkillRequest,
     SessionEntityLink, SessionRating, SkillEffectiveness, SkillRating,
 };
 pub use users::{
-    ContentBytes, CookieSession, CreateUserRequest, DepartmentStats, DetectedEntity,
+    CookieSession, CreateUserRequest, DepartmentStats, DetectedEntity,
     EventTypeCount, JwtIdentity, SkillSecret, ToolUsageCount, UpdateUserRequest,
     UpsertSkillSecretRequest, UserBasicInfo, UserDetail, UserIdentityRow, UserSession, UserSummary,
     UserTier, UserUsageEvent, UsersQuery,
 };
-pub use webhook::{
+pub use systemprompt_web_governance::types::webhook::{
     GovernQuery, HookEventPayload, StatusLinePayload, StatusLineQuery, TrackQuery,
     TranscriptPayload, TranscriptQuery,
 };

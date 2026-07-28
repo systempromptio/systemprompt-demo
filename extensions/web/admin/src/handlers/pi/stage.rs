@@ -7,7 +7,7 @@
 
 use serde::Serialize;
 
-use super::super::webhook::governance::stages::{StageOutcome, StageResult};
+use systemprompt_web_governance::webhook::governance::stages::{StageOutcome, StageResult};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct PolicyStage {

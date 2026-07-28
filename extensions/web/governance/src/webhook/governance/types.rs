@@ -43,13 +43,13 @@ impl From<GovernanceDecision> for DecisionTag {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub(super) struct GovernanceResponse {
+pub struct GovernanceResponse {
     #[serde(rename = "hookSpecificOutput")]
     pub hook_specific_output: HookSpecificOutput,
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub(super) struct HookSpecificOutput {
+pub struct HookSpecificOutput {
     #[serde(rename = "hookEventName")]
     pub hook_event_name: &'static str,
     #[serde(rename = "permissionDecision")]
@@ -61,16 +61,16 @@ pub(super) struct HookSpecificOutput {
     pub permission_decision_reason: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Copy)]
 #[serde(tag = "result", rename_all = "lowercase")]
-pub(super) enum ChainEntryResult {
+pub enum ChainEntryResult {
     Pass,
     Fail,
     Skip,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub(super) struct ChainEntryOutcome {
+pub struct ChainEntryOutcome {
     pub policy_id: PolicyId,
     #[serde(flatten)]
     pub result: ChainEntryResult,
@@ -81,7 +81,7 @@ pub(super) struct ChainEntryOutcome {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub(super) struct PrincipalSnapshot {
+pub struct PrincipalSnapshot {
     pub user_id: UserId,
     /// The credential's session, attested against `user_sessions` — the same
     /// class of evidence as `ai_requests.session_id`, so the inference and
@@ -98,7 +98,7 @@ pub(super) struct PrincipalSnapshot {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub(super) struct AuditTarget {
+pub struct AuditTarget {
     pub tool_name: String,
     pub plugin_id: Option<PluginId>,
 }
@@ -107,7 +107,7 @@ pub(super) struct AuditTarget {
 // session principal, stamped with the click instant rather than the
 // audit-write instant.
 #[derive(Debug, Serialize, Clone)]
-pub(crate) struct ApproverStamp {
+pub struct ApproverStamp {
     pub user_id: UserId,
     pub username: String,
     pub decided_at: chrono::DateTime<chrono::Utc>,
@@ -118,7 +118,7 @@ pub(crate) struct ApproverStamp {
 // Why: the `decision` and `reason` columns are populated from this same
 // blob by the repository layer before it lands in `evaluated_rules`.
 #[derive(Debug, Serialize, Clone)]
-pub(super) struct DecisionAudit {
+pub struct DecisionAudit {
     /// The `governance_decisions.id` this blob will land under. Minted by the
     /// caller (not the repository) so surfaces that saw the decision live —
     /// e.g. the pi SSE stream — can hand out the same id as a trace link.
@@ -147,12 +147,19 @@ pub enum AuditOrigin {
 // Why: the two services the governance webhook needs, layered as one
 // extension so the handler stays inside the argument-count lint.
 #[derive(Clone)]
-pub(crate) struct GovernanceDeps {
+pub struct GovernanceDeps {
     pub session_service: Arc<SessionCreationService>,
     pub analytics: Arc<dyn systemprompt::traits::AnalyticsProvider>,
 }
 
-pub(super) struct AuthDenialParams<'a> {
+impl std::fmt::Debug for GovernanceDeps {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GovernanceDeps").finish_non_exhaustive()
+    }
+}
+
+#[derive(Debug)]
+pub struct AuthDenialParams<'a> {
     pub pool: &'a Arc<PgPool>,
     pub session_id: &'a SessionId,
     pub tool_name: &'a str,

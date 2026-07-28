@@ -16,7 +16,7 @@ use systemprompt::models::wire::canonical::{
     CanonicalContent, CanonicalRequest, CanonicalResponse, Role,
 };
 
-use crate::handlers::webhook::governance::secrets::scan_str_for_secret;
+use crate::webhook::governance::secrets::scan_str_for_secret;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SecretsScanner;

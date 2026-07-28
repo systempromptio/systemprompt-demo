@@ -3,7 +3,7 @@
 use sqlx::PgPool;
 use systemprompt::identifiers::{SessionId, UserId};
 
-use crate::types::{EVENT_POST_TOOL_USE, EVENT_POST_TOOL_USE_FAILURE};
+use systemprompt_web_shared::constants::{EVENT_POST_TOOL_USE, EVENT_POST_TOOL_USE_FAILURE};
 
 #[derive(Debug, Clone, Copy)]
 pub struct DailyAggregationParams<'a> {

@@ -65,7 +65,7 @@ fn shannon_entropy(s: &str) -> f64 {
 // Why: the mixed-class requirement (upper AND lower AND digit) is what keeps
 // git SHAs, UUIDs and hex digests out; relaxing it reintroduces those false
 // positives.
-pub(crate) fn find_high_entropy_token(text: &str) -> Option<&str> {
+pub fn find_high_entropy_token(text: &str) -> Option<&str> {
     text.split(|c: char| c.is_whitespace() || "\"'`()[]{}<>,;:".contains(c))
         .find(|token| {
             token.len() >= ENTROPY_MIN_LEN

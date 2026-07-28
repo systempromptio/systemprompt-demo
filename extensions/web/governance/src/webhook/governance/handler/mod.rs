@@ -74,7 +74,7 @@ pub(super) async fn attested_session_id(
     }
 }
 
-pub(crate) async fn govern_tool_use(
+pub async fn govern_tool_use(
     State(pool): State<Arc<PgPool>>,
     Extension(deps): Extension<GovernanceDeps>,
     headers: HeaderMap,

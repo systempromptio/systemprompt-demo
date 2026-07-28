@@ -5,10 +5,8 @@
 
 use sqlx::PgPool;
 
-use crate::types::{
-    ContentPerformanceRow, RealtimePulse, TRAFFIC_RANGE_30D, TRAFFIC_RANGE_YESTERDAY,
-    TrafficCountryBucket, TrafficTopPage,
-};
+use crate::types::{ContentPerformanceRow, RealtimePulse, TrafficCountryBucket, TrafficTopPage};
+use systemprompt_web_shared::constants::{TRAFFIC_RANGE_30D, TRAFFIC_RANGE_YESTERDAY};
 
 pub async fn get_realtime_pulse(pool: &PgPool) -> Result<RealtimePulse, sqlx::Error> {
     let sessions_this_hour: i64 = sqlx::query_scalar!(

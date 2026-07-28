@@ -4,20 +4,20 @@
 //! downstream tracking, entity detection and AI analysis are dispatched after
 //! the event is persisted so a slow analysis never stalls the caller's hook.
 
-pub(crate) mod ai_context;
-pub(crate) mod ai_summary;
-pub(crate) mod ai_summary_types;
+pub mod ai_context;
+pub mod ai_summary;
+pub mod ai_summary_types;
 mod auth;
 mod dedup;
 mod description;
 mod entity;
 mod helpers;
 mod processing;
-pub(crate) mod session_summary;
+pub mod session_summary;
 
-use crate::error::AdminResult;
+use crate::error::GovernanceResult;
 use crate::event_hub::EventHub;
-use crate::repositories::marketplace::webhook;
+use crate::repositories::usage_events;
 use crate::types::webhook::{HookEvent, HookEventPayload};
 use auth::extract_and_validate_jwt;
 use axum::Json;
@@ -37,7 +37,7 @@ pub(crate) async fn handle_hook_track(
     // JSON: hook bodies must never 422 — `from_value` degrades leniently,
     // collecting warnings, and the sanitized raw value is traced for audit
     Json(raw): Json<serde_json::Value>,
-) -> AdminResult<Response> {
+) -> GovernanceResult<Response> {
     let (user_id, plugin_id, jwt_token) = extract_and_validate_jwt(&headers)?;
     tracing::trace!(payload = %helpers::sanitize_metadata(&raw), "Hook track received payload");
     let (payload, warnings) = HookEventPayload::from_value(raw);
@@ -113,7 +113,7 @@ async fn insert_hook_event(pool: &PgPool, user_id: &UserId, payload: &HookEventP
     let content_bytes = helpers::compute_content_bytes(payload);
     let sanitized_metadata = helpers::sanitize_metadata(&payload.raw);
 
-    let usage_params = webhook::UsageEventParams {
+    let usage_params = usage_events::UsageEventParams {
         user_id,
         session_id: &session_id,
         event_type: payload.event_name(),
@@ -127,7 +127,7 @@ async fn insert_hook_event(pool: &PgPool, user_id: &UserId, payload: &HookEventP
         content_output_bytes: content_bytes.output,
     };
 
-    match webhook::insert_plugin_usage_event(pool, &usage_params).await {
+    match usage_events::insert_plugin_usage_event(pool, &usage_params).await {
         Ok(inserted) => inserted,
         Err(e) => {
             tracing::warn!(error = %e, "Failed to insert hook tracking event");

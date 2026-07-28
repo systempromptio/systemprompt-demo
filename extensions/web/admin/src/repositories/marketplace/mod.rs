@@ -4,4 +4,5 @@ pub mod plugin_env;
 pub(crate) mod plugin_loader;
 pub(crate) mod plugin_resolvers;
 pub mod plugins;
-pub mod webhook;
+
+pub use systemprompt_web_governance::repositories::usage_events as webhook;

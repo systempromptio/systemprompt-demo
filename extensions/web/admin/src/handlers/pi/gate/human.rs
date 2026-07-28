@@ -7,10 +7,10 @@
 
 use std::sync::Arc;
 
-use crate::handlers::webhook::governance::inproc::{
+use systemprompt_web_governance::webhook::governance::inproc::{
     self, GovernedCall, HumanOutcome, PolicyVerdict,
 };
-use crate::handlers::webhook::governance::types::ApproverStamp;
+use systemprompt_web_governance::webhook::governance::types::ApproverStamp;
 
 use super::super::events::PiEventBody;
 use super::super::rpc::GovernancePayload;

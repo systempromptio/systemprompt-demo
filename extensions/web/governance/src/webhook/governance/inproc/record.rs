@@ -14,15 +14,15 @@ use sqlx::PgPool;
 use systemprompt::identifiers::{AgentId, PluginId, PolicyId};
 use systemprompt_security::authz::{Decision, MatchedBy};
 
-use crate::handlers::webhook::governance::audit;
-use crate::handlers::webhook::governance::types::{
+use crate::webhook::governance::audit;
+use crate::webhook::governance::types::{
     ApproverStamp, AuditTarget, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
     PrincipalSnapshot,
 };
 
 use super::{GovernedCall, PI_AGENT_ID, PI_PLUGIN_ID, PolicyVerdict};
 
-pub(crate) async fn record_human_decision(
+pub async fn record_human_decision(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
     verdict: &PolicyVerdict,
@@ -78,7 +78,7 @@ pub(crate) async fn record_human_decision(
     }
 }
 
-pub(crate) async fn record_policy_denial(
+pub async fn record_policy_denial(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
     verdict: &PolicyVerdict,
@@ -118,7 +118,7 @@ pub(crate) async fn record_policy_denial(
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) enum HumanOutcome {
+pub enum HumanOutcome {
     Approved,
     Denied,
     TimedOut,
@@ -126,7 +126,7 @@ pub(crate) enum HumanOutcome {
 }
 
 impl HumanOutcome {
-    pub(crate) const fn reason(self) -> &'static str {
+    pub const fn reason(self) -> &'static str {
         match self {
             Self::Approved => "approved by operator",
             Self::Denied => "denied by operator",
@@ -135,12 +135,12 @@ impl HumanOutcome {
         }
     }
 
-    pub(crate) const fn allowed(self) -> bool {
+    pub const fn allowed(self) -> bool {
         matches!(self, Self::Approved)
     }
 }
 
-pub(super) async fn record(
+pub(crate) async fn record(
     pool: &Arc<PgPool>,
     call: &GovernedCall<'_>,
     verdict: &PolicyVerdict,
