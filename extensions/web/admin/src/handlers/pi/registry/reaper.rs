@@ -56,32 +56,18 @@ impl PiRegistry {
     pub(super) fn spawn_reaper(&self) {
         let registry = self.clone();
         tokio::spawn(async move {
-            credentials::sweep_orphans(&registry.0.pool, &[]).await;
+            credentials::sweep_expired(&registry.0.pool).await;
             registry.sweep_workspaces().await;
             let mut ticker = tokio::time::interval(std::time::Duration::from_secs(30));
             let mut tick: u64 = 0;
             loop {
                 ticker.tick().await;
                 // Why: every ~10th tick (5 min), also re-sweep what a crash
-                // leaves behind — workspaces and PATs whose sessions no
-                // longer exist. Cheap enough that precision is not worth a
-                // second task. The live set must ride along: without it the
-                // sweep revokes running conversations' credentials and every
-                // chat dies with a provider "Connection error." mid-session.
+                // leaves behind — workspaces and expired PATs. Cheap enough
+                // that precision is not worth a second task.
                 tick += 1;
                 if tick.is_multiple_of(10) {
-                    // Why: a poisoned lock skips the credential sweep — an
-                    // unknown live set must fail toward keeping keys, not
-                    // revoking them.
-                    let live: Option<Vec<ContextId>> = registry
-                        .0
-                        .sessions
-                        .lock()
-                        .map(|s| s.keys().cloned().collect())
-                        .ok();
-                    if let Some(live) = live {
-                        credentials::sweep_orphans(&registry.0.pool, &live).await;
-                    }
+                    credentials::sweep_expired(&registry.0.pool).await;
                     registry.sweep_workspaces().await;
                 }
                 for (id, why) in registry.expired() {

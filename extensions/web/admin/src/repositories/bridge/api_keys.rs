@@ -188,18 +188,17 @@ pub async fn revoke_api_key(pool: &PgPool, user_id: &UserId, id: &str) -> Result
     Ok(result.rows_affected() > 0)
 }
 
-/// Revoke every unrevoked key whose name starts with `name_prefix`, sparing
-/// exact names in `keep_names`, returning how many rows changed.
+/// Revoke every unrevoked, expired key whose name starts with `name_prefix`,
+/// returning how many rows changed.
 ///
-/// Written for the pi terminal's orphan sweep: a hard kill leaves
-/// per-conversation keys live, and the session rows the gateway checks ignore
-/// `expires_at` entirely, so nothing else would ever retire them. The sweep
-/// also runs periodically while sessions are live, which is what `keep_names`
-/// exists for — the caller passes the keys of conversations still running.
-pub async fn revoke_api_keys_by_name_prefix(
+/// Written for the pi terminal's crash sweep: the gateway ignores `expires_at`
+/// on these keys, so this is the only path that ever retires a leftover. The
+/// expiry guard is what makes the sweep safe to run from any process at any
+/// time — a live conversation's key is unexpired by construction, so no
+/// caller-supplied liveness set is needed or accepted.
+pub async fn revoke_expired_api_keys_by_name_prefix(
     pool: &PgPool,
     name_prefix: &str,
-    keep_names: &[String],
 ) -> Result<u64> {
     let mut pattern = String::with_capacity(name_prefix.len() + 8);
     for ch in name_prefix.chars() {
@@ -213,10 +212,10 @@ pub async fn revoke_api_keys_by_name_prefix(
         r#"
         UPDATE user_api_keys
         SET revoked_at = CURRENT_TIMESTAMP
-        WHERE name LIKE $1 ESCAPE '\' AND revoked_at IS NULL AND name <> ALL($2)
+        WHERE name LIKE $1 ESCAPE '\' AND revoked_at IS NULL
+          AND expires_at IS NOT NULL AND expires_at < CURRENT_TIMESTAMP
         "#,
         pattern,
-        keep_names,
     )
     .execute(pool)
     .await?;

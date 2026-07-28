@@ -8,7 +8,7 @@ pub mod exchange_codes;
 
 pub use api_keys::{
     ApiKeyRow, EnrollDeviceParams, EnrolledDevice, IssuedApiKey, enroll_device, issue_api_key,
-    revoke_api_key, revoke_api_keys_by_name_prefix,
+    revoke_api_key, revoke_expired_api_keys_by_name_prefix,
 };
 pub use device_certs::{DeviceCertRow, revoke_device_cert};
 pub use error::{BridgeRepoError, Result};

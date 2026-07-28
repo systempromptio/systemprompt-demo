@@ -51,12 +51,11 @@ pub(crate) async fn revoke_pat(pool: &PgPool, user_id: &UserId, id: &str) -> Adm
     Ok(())
 }
 
-pub(crate) async fn revoke_pats_by_name_prefix(
+pub(crate) async fn revoke_expired_pats_by_name_prefix(
     pool: &PgPool,
     name_prefix: &str,
-    keep_names: &[String],
 ) -> AdminResult<u64> {
-    let revoked = bridge::revoke_api_keys_by_name_prefix(pool, name_prefix, keep_names).await?;
+    let revoked = bridge::revoke_expired_api_keys_by_name_prefix(pool, name_prefix).await?;
     Ok(revoked)
 }
 
