@@ -13,13 +13,20 @@ use crate::repositories::secrets::secret_keys;
 
 use systemprompt_web_shared::error::WebError;
 
+/// The token is stored only as this digest, so a database read cannot recover
+/// a usable token.
+#[must_use]
+pub fn token_hash(raw_token: &str) -> String {
+    hex::encode(Sha256::digest(raw_token.as_bytes()))
+}
+
 pub async fn create_resolution_token(
     pool: &PgPool,
     user_id: &UserId,
     plugin_id: &PluginId,
 ) -> Result<String, WebError> {
     let raw_token = uuid::Uuid::new_v4().to_string();
-    let token_hash = hex::encode(Sha256::digest(raw_token.as_bytes()));
+    let token_hash = token_hash(&raw_token);
     let id = uuid::Uuid::new_v4().to_string();
 
     sqlx::query!(
@@ -41,7 +48,7 @@ pub async fn validate_and_consume_token(
     pool: &PgPool,
     raw_token: &str,
 ) -> Result<(UserId, PluginId), WebError> {
-    let token_hash = hex::encode(Sha256::digest(raw_token.as_bytes()));
+    let token_hash = token_hash(raw_token);
 
     let row = sqlx::query!(
         r#"UPDATE secret_resolution_tokens SET used_at = NOW()

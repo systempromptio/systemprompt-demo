@@ -5,6 +5,9 @@
 //!
 //! and for `systemprompt-web-admin` items reached through its `test_support`
 //! re-exports: `PiConfig` parsing and validation.
+//!
+//! `secret_crypto` drives the envelope-encryption primitives directly, since
+//! `repositories::secrets` is already public.
 
 #[cfg(test)]
 mod artifact_theme;
@@ -60,6 +63,8 @@ mod pi_token;
 mod pi_transcript;
 #[cfg(test)]
 mod pi_version;
+#[cfg(test)]
+mod secret_crypto;
 #[cfg(test)]
 mod seed_contract;
 #[cfg(test)]
