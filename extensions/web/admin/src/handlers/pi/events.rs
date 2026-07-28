@@ -16,20 +16,30 @@ use super::rpc;
 use super::stage::PolicyStage;
 
 /// One frame to one widget. `seq` is per-session and monotonic so a reconnect
-/// can resume with `Last-Event-ID`.
+/// can resume with `Last-Event-ID`. Ephemeral frames (stats) carry no seq at
+/// all: they are never replayed, and a seq would make the browser's dedupe
+/// drop them as echoes of the transcript.
 #[derive(Debug, Clone, Serialize)]
 pub struct PiEvent {
-    seq: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    seq: Option<u64>,
     #[serde(flatten)]
     body: PiEventBody,
 }
 
 impl PiEvent {
     pub const fn new(seq: u64, body: PiEventBody) -> Self {
-        Self { seq, body }
+        Self {
+            seq: Some(seq),
+            body,
+        }
     }
 
-    pub(super) const fn seq(&self) -> u64 {
+    pub(super) const fn ephemeral(body: PiEventBody) -> Self {
+        Self { seq: None, body }
+    }
+
+    pub(super) const fn seq(&self) -> Option<u64> {
         self.seq
     }
 
@@ -56,6 +66,7 @@ impl PiEventBody {
             Self::ToolArtifact { .. } => "tool_artifact",
             Self::ApprovalResolved { .. } => "approval_resolved",
             Self::TurnEnd => "turn_end",
+            Self::Stats { .. } => "stats",
             Self::Stderr { .. } => "stderr",
             Self::Error { .. } => "error",
             Self::Exit { .. } => "exit",
@@ -150,6 +161,13 @@ pub enum PiEventBody {
         policy_chain: Vec<String>,
     },
     TurnEnd,
+    /// The governance/cost snapshot pushed after activity settles, replacing
+    /// the browser's stats poll. Same JSON shape as `GET stats/{id}`.
+    /// Ephemeral: broadcast-only, never persisted, never replayed.
+    Stats {
+        // JSON: serialized PiStats, shape owned by the stats module
+        stats: serde_json::Value,
+    },
     Stderr {
         line: String,
     },

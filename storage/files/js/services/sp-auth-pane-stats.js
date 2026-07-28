@@ -1,19 +1,19 @@
 /**
- * The authoritative numbers behind <sp-auth-pane>: the session poll, and
- * everything it paints — tiles, latency bars, model mix, and the credit meter.
+ * The authoritative numbers behind <sp-auth-pane>: the stats fallback fetch,
+ * and everything it paints — tiles, latency bars, model mix, and the credit
+ * meter. The live path is the `stats` frame the terminal's SSE stream pushes;
+ * the fetch here only runs when that push has gone quiet.
  */
 
 import { ms, pct, compactTokens } from './sp-auth-pane-helpers.js';
 import { applyGovChip, applyStages, renderFeed } from './sp-auth-pane-governance.js';
 
-/** How often the authoritative numbers are re-read while a session is live. */
-export const POLL_MS = 3000;
+/** How often the fallback checks whether the push has gone quiet. */
+export const FALLBACK_POLL_MS = 15000;
 
-/** Backs off to this once a conversation has gone quiet, to stop hammering. */
-export const IDLE_POLL_MS = 15000;
-
-/** Nothing has happened for this long → treat the session as idle. */
-export const IDLE_AFTER_MS = 60000;
+/** A push younger than this means the stream is doing its job — don't fetch.
+ *  Longer than the fallback interval, so one late frame skips a whole tick. */
+export const PUSH_FRESH_MS = 20000;
 
 /**
  * A key can appear in more than one panel — the Overview repeats the
@@ -41,14 +41,6 @@ export function setStat(pane, key, value) {
 
 export async function poll(pane) {
   if (!pane._conversation || !pane._token || !pane._feed) return;
-  // A conversation nobody is driving still costs a request every few seconds.
-  // Once it has gone quiet, check it a quarter as often.
-  const idle = Date.now() - pane._lastFrameAt > IDLE_AFTER_MS;
-  if (idle && pane._pollTimer && pane._pollMs !== IDLE_POLL_MS) {
-    pane._pollMs = IDLE_POLL_MS;
-    clearInterval(pane._pollTimer);
-    pane._pollTimer = setInterval(() => poll(pane), IDLE_POLL_MS);
-  }
   try {
     const url = '/api/public/pi/stats/' + encodeURIComponent(pane._conversation)
       + '?token=' + encodeURIComponent(pane._token);
@@ -56,8 +48,8 @@ export async function poll(pane) {
     if (!res.ok) return;
     applyStats(pane, await res.json());
   } catch (_) {
-    // A failed poll is not worth surfacing: the next one is three seconds
-    // away, and the frame-driven counters are still moving.
+    // A failed fetch is not worth surfacing: the pushed frames are still
+    // moving the counters, and the fallback will try again.
   }
 }
 

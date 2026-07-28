@@ -29,9 +29,10 @@ use super::auth::{authenticate, problem, unauthorized};
 use crate::handlers::users::extract_user_from_cookie;
 use crate::repositories::pi::artifacts::{McpArtifactRow, find_artifact_for_user};
 
-/// The embed token is optional here, unlike on the stream: the audit-trail
-/// page links to these routes from an admin session, where the identity is
-/// the cookie's. Either credential resolves to the same `user_id` filter.
+// Why: the embed token is optional here, unlike on the stream — the
+// audit-trail page links to these routes from an admin session, where the
+// identity is the cookie's. Either credential resolves to the same `user_id`
+// filter.
 #[derive(Debug, Deserialize)]
 pub(super) struct OptionalTokenQuery {
     token: Option<String>,
@@ -82,9 +83,8 @@ pub(super) async fn show_ui(
         Err(response) => return response,
     };
 
-    // The stored row wraps the typed payload in the full tool response; the
-    // renderer wants the payload alone — same unwrap `resources.rs` does on
-    // the MCP path.
+    // Why: the stored row wraps the typed payload in the full tool response;
+    // the renderer wants the payload alone.
     let Some(payload) = row.data.get("artifact") else {
         return problem(StatusCode::UNPROCESSABLE_ENTITY, "artifact has no payload");
     };
@@ -98,17 +98,27 @@ pub(super) async fn show_ui(
     };
 
     match systemprompt::mcp::services::ui_renderer::artifact_ui_resource(&target).await {
-        Ok(resource) => Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, MCP_APP_MIME_TYPE)
-            .header(
-                header::CONTENT_SECURITY_POLICY,
-                resource.csp.to_header_value(),
-            )
-            .header(header::X_FRAME_OPTIONS, "SAMEORIGIN")
-            .body(axum::body::Body::from(resource.html))
-            // lint-ok: http-error — headers are static, so this arm is unreachable
-            .unwrap_or_else(|_| problem(StatusCode::INTERNAL_SERVER_ERROR, "render failed")),
+        Ok(resource) => {
+            let mut response = Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, MCP_APP_MIME_TYPE)
+                .header(
+                    header::CONTENT_SECURITY_POLICY,
+                    resource.csp.to_header_value(),
+                )
+                .body(axum::body::Body::from(resource.html))
+                // lint-ok: http-error — headers are static, so this arm is unreachable
+                .unwrap_or_else(|_| problem(StatusCode::INTERNAL_SERVER_ERROR, "render failed"));
+            // Why: the global security middleware stamps X-Frame-Options: DENY
+            // sitewide and ignores a raw header; this marker is the sanctioned
+            // way to say "the terminal may iframe this, others may not".
+            response.extensions_mut().insert(
+                systemprompt::extension::FrameOptionsOverride(
+                    systemprompt::extension::FrameOptions::SameOrigin,
+                ),
+            );
+            response
+        },
         Err(e) => {
             tracing::warn!(error = %e, artifact_id = %row.artifact_id, "artifact render failed");
             problem(StatusCode::UNPROCESSABLE_ENTITY, "unrenderable artifact")

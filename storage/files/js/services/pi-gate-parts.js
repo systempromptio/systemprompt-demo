@@ -8,6 +8,43 @@ import { EXPLAIN, chainRail } from './pi-gate-view.js';
  * are constructed once, here.
  */
 
+/**
+ * Who decided, and when — the by-line every settled approval carries. A named
+ * human gets an initials avatar; a system path (timeout, auto-approve) gets a
+ * muted, avatar-less variant so machine decisions never dress up as a person.
+ */
+export function attributionStamp({ name, at, actor, action }) {
+  const stamp = document.createElement('div');
+  stamp.className = 'pi-attribution';
+  stamp.dataset.actor = actor === 'system' ? 'system' : 'user';
+  if (actor !== 'system') {
+    const avatar = document.createElement('span');
+    avatar.className = 'pi-attribution-avatar';
+    avatar.textContent = initials(name);
+    avatar.setAttribute('aria-hidden', 'true');
+    stamp.append(avatar);
+  }
+  const text = document.createElement('span');
+  text.className = 'pi-attribution-text';
+  const who = document.createElement('strong');
+  who.textContent = name || 'system';
+  text.append(who, document.createTextNode(' ' + (action || 'approved')));
+  stamp.append(text);
+  if (at) {
+    const time = document.createElement('time');
+    time.className = 'pi-attribution-at';
+    time.dateTime = at;
+    time.textContent = ' at ' + new Date(at).toLocaleTimeString();
+    stamp.append(time);
+  }
+  return stamp;
+}
+
+function initials(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  return parts.map((w) => w[0].toUpperCase()).join('') || '?';
+}
+
 /** One small true fact, as a pill. */
 export function detailChip(text) {
   const chip = document.createElement('span');

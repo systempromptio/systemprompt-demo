@@ -1,7 +1,7 @@
-import { RECONNECT_MIN_MS, RECONNECT_MAX_MS, STATS_MS } from './pi-constants.js';
-import { compact } from './pi-format.js';
+import { RECONNECT_MIN_MS, RECONNECT_MAX_MS } from './pi-constants.js';
 import { getJson } from './pi-transport.js';
 import { onFrame } from './pi-terminal-frames.js';
+import { meters } from './pi-terminal-meters.js';
 
 export function openStream(el) {
   const url = el._endpoint + '/stream/' + encodeURIComponent(el._conversationId)
@@ -34,59 +34,24 @@ function jitter(el) {
 }
 
 /**
- * Poll the stats the pane already polls.
+ * Paint the meters once, before the stream's first stats frame arrives.
  *
  * Cost and denial counts belong in the terminal's own chrome: the claim this
  * page makes is that governance is metered, and a number that moves while you
- * watch is the cheapest possible proof. No new endpoint — this is the same
- * `GET stats/{id}` the pane beside it uses.
+ * watch is the cheapest possible proof. The stream pushes a `stats` frame
+ * after every settled turn and on connect, so there is no timer here — this
+ * single fetch covers the gap before the EventSource opens, and doubles as
+ * the fallback against an older server that does not push yet.
  */
 export function startStats(el) {
-  const poll = async () => {
+  const paint = async () => {
     if (el._closed || !el._conversationId) return;
-    // A failed poll is cosmetic. The transcript is the source of truth.
+    // A failed fetch is cosmetic. The transcript is the source of truth.
     const stats = await getJson(el._endpoint + '/stats/'
       + encodeURIComponent(el._conversationId)
       + '?token=' + encodeURIComponent(el._token));
     if (stats) meters(el, stats);
   };
-  void poll();
-  el._statsTimer = setInterval(poll, STATS_MS);
+  void paint();
 }
 
-export function meters(el, s) {
-  el._metersEl.hidden = false;
-  el._traceEl.hidden = false;
-  if (el._conversationId) {
-    el._traceEl.href = '/admin/demo/trace?session='
-      + encodeURIComponent(el._conversationId);
-  }
-  const set = (role, value) => {
-    const node = el.querySelector('[data-role="' + role + '"] b');
-    if (node) node.textContent = value;
-  };
-  set('m-tools', String(s.tool_calls || 0));
-  set('m-blocked', String((s.tools_blocked || 0) + (s.prompts_blocked || 0)));
-  set('m-tokens', compact((s.input_tokens || 0) + (s.output_tokens || 0)));
-  set('m-cost', s.cost_display || '$0.00');
-  const blocked = el.querySelector('[data-role="m-blocked"]');
-  if (blocked) blocked.dataset.hot = (s.tools_blocked || s.prompts_blocked) ? '1' : '0';
-}
-
-/**
- * The replay's meters. The strip must count the replay's own calls — a chrome
- * that says "0 calls, $0.00" over a transcript showing four tool calls and a
- * block is the pane contradicting itself. The trace link stays hidden: no
- * real audit trail exists behind a scripted pass, and linking one would be
- * the dishonest move.
- */
-export function cannedMeters(el, m) {
-  meters(el, {
-    tool_calls: m.calls,
-    tools_blocked: m.blocked,
-    input_tokens: m.tokens,
-    output_tokens: 0,
-    cost_display: m.cost,
-  });
-  el._traceEl.hidden = true;
-}

@@ -7,7 +7,7 @@ import { blockedRow } from './pi-gate-records.js';
 import { append, line, echo } from './pi-terminal-dom.js';
 import { policyStages } from './pi-terminal-rail.js';
 import { toolRow } from './pi-terminal-gate.js';
-import { cannedMeters } from './pi-terminal-stream.js';
+import { cannedMeters } from './pi-terminal-meters.js';
 
 /** Without a usable credential the terminal plays a scripted pass instead, so a
  *  public page can embed it unconditionally. */
@@ -165,6 +165,7 @@ function cannedStep(el, step) {
     // the card the next pass replaces.
     el._cannedCards.push(handle);
     el._approvalsEl.append(handle.el);
+    if (step.resolve) cannedResolve(el, handle, step);
     return;
   }
   if (step.cls === 'prompt') {
@@ -179,4 +180,30 @@ function cannedStep(el, step) {
     return;
   }
   line(el, step.cls, step.text);
+}
+
+/**
+ * The replay's card resolves the way a live one does: after a beat, the same
+ * settle path stamps "Ed approved this call at …" and moves the card into the
+ * transcript. The timestamp is playback time, so every pass reads fresh.
+ * Reduced motion skips the beat and shows the resolved state at once.
+ */
+function cannedResolve(el, handle, step) {
+  const finish = () => {
+    const record = handle.settle({
+      outcome: step.resolve.action,
+      approved_by: step.resolve.by,
+      decided_at: new Date().toISOString(),
+      actor: 'user',
+      tool_name: step.tool,
+    });
+    if (record) append(el, record);
+    line(el, 'output-dim', 'approval ' + step.resolve.action + ' by ' + step.resolve.by
+      + ' — ' + new Date().toLocaleTimeString());
+  };
+  if (!motionOk()) {
+    finish();
+    return;
+  }
+  el._cannedTimers.push(setTimeout(finish, step.resolve.afterMs || 3000));
 }

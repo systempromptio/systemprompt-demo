@@ -12,7 +12,19 @@
     <main class="trace-shell">
         <header class="trace-head">
             <p class="trace-eyebrow">{{branding.domain}} · governance spine</p>
-            <h1>Audit trail</h1>
+            <div class="trace-title-row">
+                <h1>Audit trail</h1>
+                <div class="trace-actions">
+                    <button type="button" class="trace-action" id="trace-print" aria-label="Print this audit trail">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        <span>print</span>
+                    </button>
+                    <button type="button" class="trace-action" id="trace-share" aria-label="Share a link to this audit trail">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2M8.6 13.4l6.8 4.2"/></svg>
+                        <span>share</span>
+                    </button>
+                </div>
+            </div>
             {{#if has_session}}
             <dl class="trace-identity">
                 <div><dt>operator</dt><dd>{{username}}</dd></div>
@@ -57,7 +69,7 @@
 
         <section class="trace-timeline" aria-label="Time-ordered trace">
             {{#each events}}
-            <article class="trace-event{{#if is_denied}} is-denied{{/if}}{{#if is_focus}} is-focus{{/if}}"
+            <article class="trace-event{{#if is_denied}} is-denied{{/if}}"
                      id="call-{{id}}" data-kind="{{kind}}">
                 <header class="trace-event-head">
                     <span class="trace-kind">{{kind}}</span>
@@ -67,6 +79,14 @@
                     <time class="trace-at">{{at}}</time>
                 </header>
                 {{#if detail}}<p class="trace-detail">{{detail}}</p>{{/if}}
+                {{#if approver}}
+                <p class="trace-approver" data-action="{{approver.action}}">
+                    <span class="trace-approver-avatar" aria-hidden="true">{{initials approver.name}}</span>
+                    <strong>{{approver.name}}</strong> {{approver.action}} this call
+                    {{#if approver.at}}at <time class="trace-at">{{approver.at}}</time>{{/if}}
+                    <code class="trace-approver-id">{{approver.user_id}}</code>
+                </p>
+                {{/if}}
                 {{#if has_stages}}
                 <table class="trace-stages">
                     <thead>
@@ -91,16 +111,35 @@
         </section>
         {{else}}
         <section class="trace-empty-state">
-            <p>No session to show. Open this page from the terminal's
-            <strong>audit&nbsp;→</strong> link, or pass <code>?session=&lt;conversation-id&gt;</code>
-            for a conversation you own.</p>
+            <p>Nothing to show for this link. Open the audit trail from the
+            terminal's <strong>audit&nbsp;→</strong> link — its address is
+            <code>/trace/&lt;conversation-id&gt;</code>.</p>
         </section>
         {{/if}}
     </main>
     <script>
         (function () {
-            var focus = document.querySelector('.trace-event.is-focus');
-            if (focus) focus.scrollIntoView({ block: 'center' });
+            var print = document.getElementById('trace-print');
+            if (print) print.addEventListener('click', function () { window.print(); });
+
+            var share = document.getElementById('trace-share');
+            if (share) share.addEventListener('click', function () {
+                var url = window.location.href;
+                if (navigator.share) {
+                    navigator.share({ title: document.title, url: url }).catch(function () {});
+                    return;
+                }
+                navigator.clipboard.writeText(url).then(function () {
+                    var label = share.querySelector('span');
+                    var was = label.textContent;
+                    share.classList.add('is-copied');
+                    label.textContent = 'link copied';
+                    setTimeout(function () {
+                        share.classList.remove('is-copied');
+                        label.textContent = was;
+                    }, 2000);
+                });
+            });
         })();
     </script>
 </body>

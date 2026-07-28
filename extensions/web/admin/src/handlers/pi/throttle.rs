@@ -20,9 +20,9 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 
-/// Idle-bucket sweep threshold: past this many keys, a check also drops every
-/// bucket with no hit inside the window, so the map tracks active IPs rather
-/// than every IP ever seen.
+// Why: past this many keys, a check also drops every bucket with no hit
+// inside the window, so the map tracks active IPs rather than every IP ever
+// seen.
 const SWEEP_AT: usize = 1024;
 
 pub(super) struct Lane {

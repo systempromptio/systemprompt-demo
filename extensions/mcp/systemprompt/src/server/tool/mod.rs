@@ -29,6 +29,7 @@ mod admin_audit_dump;
 mod docs;
 mod egress;
 mod governance_stats;
+mod render_artifact;
 mod safety_findings;
 pub(crate) mod site_pages;
 
@@ -36,6 +37,7 @@ pub(super) use admin_audit_dump::AdminAuditDumpHandler;
 pub(super) use docs::{GetTopicHandler, ListTopicsHandler, SearchDocsHandler};
 pub(super) use egress::FetchRemoteDocsHandler;
 pub(super) use governance_stats::GovernanceStatsHandler;
+pub(super) use render_artifact::RenderArtifactHandler;
 pub(super) use safety_findings::SafetyFindingsHandler;
 pub(super) use site_pages::{FetchSitePageHandler, ListSitePagesHandler};
 
@@ -147,6 +149,17 @@ pub(super) async fn dispatch_tool(
                 )
                 .await
         },
+        "render_artifact" => {
+            executor
+                .execute(
+                    &RenderArtifactHandler {
+                        db_pool: std::sync::Arc::<systemprompt::database::Database>::clone(db_pool),
+                    },
+                    request,
+                    request_context,
+                )
+                .await
+        },
         "admin_audit_dump" => {
             executor
                 .execute(
@@ -167,7 +180,8 @@ pub(super) async fn dispatch_tool(
             format!(
                 "Unknown tool: '{tool_name}'. Available tools: list_topics, get_topic, \
                  search_docs, list_site_pages, fetch_site_page, governance_stats, \
-                 safety_findings, admin_audit_dump, fetch_remote_docs. Call `list_topics` \
+                 safety_findings, render_artifact, admin_audit_dump, fetch_remote_docs. \
+                 Call `list_topics` \
                  first to see the documentation topics."
             ),
             None,

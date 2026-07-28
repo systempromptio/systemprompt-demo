@@ -71,6 +71,7 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
         svc_js!(p, "pi-terminal-frames.js"),
         svc_js!(p, "pi-terminal-gate.js"),
         svc_js!(p, "pi-terminal-input.js"),
+        svc_js!(p, "pi-terminal-meters.js"),
         svc_js!(p, "pi-terminal-palette.js"),
         svc_js!(p, "pi-terminal-prose.js"),
         svc_js!(p, "pi-terminal-rail.js"),

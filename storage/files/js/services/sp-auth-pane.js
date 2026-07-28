@@ -23,7 +23,9 @@ import { renderAuth } from './sp-auth-pane-auth.js';
 import { profileHtml } from './sp-auth-pane-forms.js';
 import { wireTabs, selectTab } from './sp-auth-pane-tabs.js';
 import { createPulse } from './sp-auth-pane-pulse.js';
-import { poll, setStat, POLL_MS } from './sp-auth-pane-stats.js';
+import {
+  poll, setStat, applyStats, FALLBACK_POLL_MS, PUSH_FRESH_MS,
+} from './sp-auth-pane-stats.js';
 import { applyStages, pushFeed, syncFeedPreview, IDLE_STAGES } from './sp-auth-pane-governance.js';
 
 class SpAuthPane extends HTMLElement {
@@ -35,6 +37,7 @@ class SpAuthPane extends HTMLElement {
     this._pollTimer = null;
     this._pulse = null;
     this._lastFrameAt = 0;
+    this._lastStatsPushAt = 0;
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
   }
 
@@ -134,20 +137,24 @@ class SpAuthPane extends HTMLElement {
     // A new conversation is a new set of numbers; carrying the last one's
     // counters over would show the visitor tool calls they never made.
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
-    this._pollMs = POLL_MS;
+    this._lastStatsPushAt = 0;
     if (this._who) this._startPolling();
     if (this._pulse) this._pulse.setToken(this._token);
   }
 
   /**
    * Frames are the fast path — they move the counters in the same beat as the
-   * terminal renders them. The poll behind it is what makes the numbers true:
-   * tokens, cost, and latency only exist once the request row lands.
+   * terminal renders them. The `stats` frame behind them is what makes the
+   * numbers true: tokens, cost, and latency only exist once the request row
+   * lands, and the stream pushes that snapshot once each turn settles.
    */
   _onFrame(f) {
     this._lastFrameAt = Date.now();
     if (!this._feed) return;
-    if (f.type === 'tool_start') {
+    if (f.type === 'stats') {
+      this._lastStatsPushAt = Date.now();
+      applyStats(this, f.stats || {});
+    } else if (f.type === 'tool_start') {
       this._live.tools += 1;
       setStat(this, 'tools', String(this._live.tools));
     } else if (f.type === 'tool_blocked' || f.type === 'prompt_blocked') {
@@ -160,19 +167,28 @@ class SpAuthPane extends HTMLElement {
         policy: f.policy || '',
         detail: f.reason || '',
       });
-    } else if (f.type === 'turn_end') {
-      // A turn just settled, so the request row exists — read it now rather
-      // than waiting out the poll interval.
+    } else if (f.type === 'turn_end' && !this._lastStatsPushAt) {
+      // A server that pushes stats will follow this turn with its own
+      // snapshot; one that never has is an older binary, so read the numbers
+      // the turn just landed ourselves.
       poll(this);
     }
   }
 
   // ── timers ────────────────────────────────────────────────────────────────
 
+  /**
+   * Not the data path — the safety net. The stream pushes a stats frame on
+   * connect and after every settled turn; this timer only fetches when no
+   * push has arrived recently, which covers an older server binary and the
+   * window where the terminal's EventSource is down.
+   */
   _startPolling() {
     this._stopPolling();
     poll(this);
-    this._pollTimer = setInterval(() => poll(this), POLL_MS);
+    this._pollTimer = setInterval(() => {
+      if (Date.now() - this._lastStatsPushAt > PUSH_FRESH_MS) poll(this);
+    }, FALLBACK_POLL_MS);
   }
 
   _stopPolling() {

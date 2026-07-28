@@ -48,8 +48,15 @@ pub(super) async fn revoke(pool: &PgPool, user_id: &UserId, api_key_id: &str) {
     }
 }
 
-pub(super) async fn sweep_orphans(pool: &PgPool) {
-    match device_service::revoke_pats_by_name_prefix(pool, PI_PAT_PREFIX).await {
+// Why: `live` is what makes the periodic sweep orphan-only — a running
+// conversation's credential must survive it; boot passes an empty slice
+// because nothing is live yet.
+pub(super) async fn sweep_orphans(pool: &PgPool, live: &[ContextId]) {
+    let keep: Vec<String> = live
+        .iter()
+        .map(|id| format!("{PI_PAT_PREFIX}{id}"))
+        .collect();
+    match device_service::revoke_pats_by_name_prefix(pool, PI_PAT_PREFIX, &keep).await {
         Ok(0) => {},
         Ok(n) => tracing::info!(revoked = n, "swept orphaned pi conversation credentials"),
         Err(e) => tracing::warn!(error = %e, "could not sweep orphaned pi credentials"),

@@ -39,7 +39,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Router, middleware as axum_middleware};
 use sqlx::PgPool;
 
-pub use routes::{admin_ssr_router, bridge_auth_ssr_router};
+pub use routes::{admin_ssr_router, bridge_auth_ssr_router, trace_ssr_router};
 pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary, UserUsageEvent};
 
 /// Crate-private items that out-of-crate unit tests drive directly.

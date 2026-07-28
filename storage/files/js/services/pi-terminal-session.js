@@ -22,7 +22,6 @@ export async function restart(el, resume) {
   el._queued = false;
   el._teardownStream();
   if (el._reconnectTimer) clearTimeout(el._reconnectTimer);
-  if (el._statsTimer) clearInterval(el._statsTimer);
   el._cannedTimers.forEach(clearTimeout);
   el._cannedTimers = [];
   el._cannedCards.forEach((c) => c.settle());

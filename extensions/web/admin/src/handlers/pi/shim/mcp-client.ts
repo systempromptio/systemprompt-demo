@@ -126,6 +126,27 @@ const TOOLS: readonly HubTool[] = [
     parameters: Type.Object({}),
   },
   {
+    name: "render_artifact",
+    label: "Render Demo Artifact",
+    description:
+      "Render one artifact of the requested type so the terminal's artifact " +
+      "shelf can be seen working. The table, chart, and dashboard variants are " +
+      "built from this session's own governance spine; the rest carry curated " +
+      "content about systemprompt.io.",
+    parameters: Type.Object({
+      artifact_type: Type.Union([
+        Type.Literal("table"),
+        Type.Literal("chart"),
+        Type.Literal("list"),
+        Type.Literal("dashboard"),
+        Type.Literal("presentation_card"),
+        Type.Literal("message"),
+        Type.Literal("copy_paste_text"),
+        Type.Literal("text"),
+      ]),
+    }),
+  },
+  {
     name: "admin_audit_dump",
     label: "Dump Audit Spine",
     description:

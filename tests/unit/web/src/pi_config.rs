@@ -8,7 +8,7 @@
 //! exercises it until startup, where a failure means the deployment runs on
 //! defaults instead of on what the file says.
 
-use systemprompt_web_admin::test_support::{PiConfig, SandboxMode};
+use systemprompt_web_admin::test_support::{PiConfig, SandboxMode, VersionCheckMode};
 
 #[test]
 fn empty_file_is_all_defaults() {
@@ -78,6 +78,44 @@ fn the_checked_in_config_is_valid() {
             .any(|t| matches!(t.as_str(), "bash" | "write" | "edit"))
     );
     assert!(cfg.approve_all());
+    // The version pin is load-bearing security (see version.rs): the shipped
+    // file must carry one, and must fail closed on a mismatch.
+    assert!(cfg.expected_version().is_some());
+    assert_eq!(cfg.version_check(), VersionCheckMode::Required);
+}
+
+#[test]
+fn version_check_defaults_to_required_with_no_pin() {
+    let cfg = PiConfig::parse("base_url: http://127.0.0.1:8080").expect("validates");
+    assert_eq!(cfg.expected_version(), None);
+    assert_eq!(cfg.version_check(), VersionCheckMode::Required);
+}
+
+#[test]
+fn a_blank_pin_reads_as_no_pin() {
+    let cfg = PiConfig::parse("expected_version: \"  \"\nbase_url: http://127.0.0.1:8080")
+        .expect("validates");
+    assert_eq!(cfg.expected_version(), None);
+}
+
+#[test]
+fn version_check_typo_is_rejected() {
+    let errors =
+        PiConfig::parse("version_check: sometimes").expect_err("`sometimes` is not a mode");
+    assert!(errors.errors.iter().any(|e| e.field == "_parse"));
+}
+
+#[test]
+fn throttle_typo_is_rejected() {
+    let errors = PiConfig::parse("throttle:\n  sessions_per_ip: 5")
+        .expect_err("misspelled throttle key is rejected");
+    assert!(
+        errors
+            .errors
+            .iter()
+            .any(|e| e.message.contains("unknown field")),
+        "{errors}"
+    );
 }
 
 #[test]

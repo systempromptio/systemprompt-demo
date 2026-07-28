@@ -194,10 +194,12 @@ impl Extension for WebExtension {
             },
         };
         let bridge_auth_router = admin::bridge_auth_ssr_router(Arc::clone(&pool), engine.clone());
+        let trace_router = admin::trace_ssr_router(Arc::clone(&pool), engine.clone());
         let ssr_router = admin::admin_ssr_router(pool, engine);
 
         let combined = Self::admin_redirects()
             .nest_service("/admin", ssr_router)
+            .merge(trace_router)
             .nest_service("/bridge-auth", bridge_auth_router)
             .merge(share_api)
             .merge(site_md_api)

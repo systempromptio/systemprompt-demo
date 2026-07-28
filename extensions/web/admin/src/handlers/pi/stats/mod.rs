@@ -30,8 +30,11 @@ use sqlx::PgPool;
 use systemprompt::identifiers::{ContextId, SessionId};
 
 mod facets;
+mod push;
 
 use facets::{Facets, credit_position, facets, model_mix, policy_stages, trace_counts};
+pub(super) use push::{push_soon, snapshot};
+use push::{cached_body, store_body};
 
 use super::auth::{authorize_conversation, problem};
 use super::format;
@@ -40,38 +43,6 @@ use crate::repositories::analytics::session_detail;
 use crate::repositories::governance::{demo_trace, stages};
 
 const TRACE_LIMIT: i64 = 120;
-
-// Why: every viewer polls this endpoint on a 3s timer, and each uncached hit
-// is half a dozen queries. A 2s TTL means one collection per conversation per
-// poll interval no matter how many tabs watch it. The ownership check still
-// runs per request — only the collection is shared.
-const CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(2);
-const CACHE_SWEEP_AT: usize = 64;
-const CACHE_STALE: std::time::Duration = std::time::Duration::from_secs(60);
-
-static CACHE: std::sync::LazyLock<
-    std::sync::Mutex<std::collections::HashMap<String, (std::time::Instant, String)>>,
-> = std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
-
-fn cached_body(conversation_id: &ContextId) -> Option<String> {
-    let cache = CACHE.lock().ok()?;
-    cache
-        .get(conversation_id.as_str())
-        .filter(|(at, _)| at.elapsed() < CACHE_TTL)
-        .map(|(_, body)| body.clone())
-}
-
-fn store_body(conversation_id: &ContextId, body: String) {
-    if let Ok(mut cache) = CACHE.lock() {
-        if cache.len() > CACHE_SWEEP_AT {
-            cache.retain(|_, (at, _)| at.elapsed() < CACHE_STALE);
-        }
-        cache.insert(
-            conversation_id.as_str().to_owned(),
-            (std::time::Instant::now(), body),
-        );
-    }
-}
 
 fn json_body(body: String) -> Response {
     // lint-ok: http-error — a widget-facing endpoint answers in its own shape
@@ -154,6 +125,20 @@ struct PiStatEvent {
     outcome: String,
     policy: String,
     detail: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    approver: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    approver_action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    approver_at: Option<String>,
+}
+
+fn approver_field(rules: Option<&serde_json::Value>, key: &str) -> Option<String> {
+    rules?
+        .get("approver")?
+        .get(key)?
+        .as_str()
+        .map(str::to_owned)
 }
 
 pub(super) async fn stats(
@@ -178,13 +163,13 @@ pub(super) async fn stats(
     )
     .await
     {
-        Ok(stats) => match serde_json::to_string(&stats) {
-            Ok(body) => {
+        Ok(stats) => serde_json::to_string(&stats).map_or_else(
+            |_| Json(&stats).into_response(),
+            |body| {
                 store_body(&conversation_id, body.clone());
                 json_body(body)
             },
-            Err(_) => Json(stats).into_response(),
-        },
+        ),
         Err(e) => {
             tracing::error!(error = %e, "could not read pi session stats");
             problem(StatusCode::INTERNAL_SERVER_ERROR, "could not read stats") // lint-ok: http-error — logged above; the client is told nothing about why
@@ -259,6 +244,9 @@ async fn collect(
         events: trace
             .into_iter()
             .map(|r| PiStatEvent {
+                approver: approver_field(r.evaluated_rules.as_ref(), "username"),
+                approver_action: approver_field(r.evaluated_rules.as_ref(), "action"),
+                approver_at: approver_field(r.evaluated_rules.as_ref(), "decided_at"),
                 id: r.id,
                 at: r.at,
                 kind: r.kind,

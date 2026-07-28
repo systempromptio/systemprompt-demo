@@ -14,7 +14,7 @@ use systemprompt::identifiers::UserId;
 
 use super::PiRegistry;
 
-/// A waiter who has not polled for this long has left.
+// Why: a waiter who has not polled for this long has left the line.
 pub(super) const WAITLIST_TTL: Duration = Duration::from_secs(30);
 
 pub(super) struct Waiter {
@@ -22,16 +22,14 @@ pub(super) struct Waiter {
     last_seen: Instant,
 }
 
-/// What the admission gate decided while the caps were being checked.
 pub(in crate::handlers::pi) enum Gate {
     Admit,
     Wait { position: usize, queue_len: usize },
 }
 
 impl PiRegistry {
-    /// FIFO fairness at the capacity boundary: with `free` slots open, only
-    /// the first `free` waiters may pass; anyone else is (re)enqueued. A user
-    /// who passes is removed from the line.
+    // Why: FIFO fairness at the capacity boundary — with `free` slots open,
+    // only the first `free` waiters may pass; anyone else is (re)enqueued.
     pub(super) fn waitlist_gate(&self, user_id: &UserId, free: usize) -> Gate {
         let Ok(mut queue) = self.0.waitlist.lock() else {
             // Why: fail open to plain capacity behaviour — a poisoned queue
@@ -75,8 +73,8 @@ impl PiRegistry {
         }
     }
 
-    /// One poll of the line: heartbeats the caller's entry (re-joining if it
-    /// expired and `join` is set) and reports `(queue_len, position)`.
+    // Why: a poll is also a heartbeat — it refreshes the caller's entry
+    // (re-joining if it expired and `join` is set) before reporting position.
     pub(in crate::handlers::pi) fn waitlist_status(
         &self,
         user_id: Option<&UserId>,

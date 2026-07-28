@@ -87,6 +87,45 @@ pub async fn find_conversation(
     }))
 }
 
+/// The audit-trail lookup: one conversation by id alone, plus its owner's
+/// display name.
+///
+/// Deliberately not owner-scoped — the trace page is a shareable report, and
+/// the conversation id in the URL is the unguessable capability that
+/// authorizes the read. A soft-deleted row stays invisible: deleting the
+/// conversation revokes the link.
+pub async fn find_conversation_with_owner(
+    pool: &PgPool,
+    id: &ContextId,
+) -> Result<Option<(PiConversationRow, String)>, sqlx::Error> {
+    let row = sqlx::query!(
+        r#"
+        SELECT c.id AS "id: ContextId", c.user_id, c.attested_session_id,
+               c.title, c.last_seq, c.closed_at,
+               u.name AS owner_name
+        FROM pi_conversations c
+        JOIN users u ON u.id = c.user_id
+        WHERE c.id = $1 AND c.deleted_at IS NULL
+        "#,
+        id.as_str()
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.map(|r| {
+        (
+            PiConversationRow {
+                id: r.id,
+                user_id: UserId::new(r.user_id),
+                attested_session_id: SessionId::new(r.attested_session_id),
+                title: r.title,
+                last_seq: r.last_seq,
+                closed_at: r.closed_at,
+            },
+            r.owner_name,
+        )
+    }))
+}
+
 /// The picker's contents, most recently touched first — which is also the
 /// order that makes the head of the list the one to restore by default.
 pub async fn list_conversations(

@@ -22,13 +22,12 @@ export const PIN_SLACK_PX = 32;
 export const MAX_LINES = 1200;
 export const TRIM_BATCH = 200;
 
-/** Stats poll. Matches the interval the pane beside this one already uses. */
-export const STATS_MS = 3000;
-
-/** Capacity meter poll. The queued cadence doubles as the waitlist heartbeat —
- *  the server drops a waiter it has not heard from in 30s, so this must stay
- *  well inside that. */
-export const CAPACITY_MS = 10000;
+/** Capacity meter poll. Deliberately still a poll: an anonymous visitor has no
+ *  conversation, so there is no SSE stream to push the meter to them — and the
+ *  endpoint is an in-memory registry read. The queued cadence doubles as the
+ *  waitlist heartbeat — the server drops a waiter it has not heard from in
+ *  30s, so that one must stay well inside it. */
+export const CAPACITY_MS = 30000;
 export const CAPACITY_QUEUE_MS = 5000;
 
 /** Prompts kept for ↑/↓ recall. In memory only — a governed transcript is not

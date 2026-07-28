@@ -93,7 +93,8 @@ export const CANNED = [
   { cls: 'tool', name: 'email.send', arg: 'board@acme.com', state: 'pending', ms: 900,
     input: { to: 'board@acme.com', subject: 'Q3 churn' } },
   { cls: 'approval', tool: 'email.send', stages: CANNED_STAGES_SEND, ms: 4600,
-    input: { to: 'board@acme.com', subject: 'Q3 churn' } },
+    input: { to: 'board@acme.com', subject: 'Q3 churn' },
+    resolve: { by: 'Ed', action: 'approved', afterMs: 3200 } },
   { cls: 'tool-end', name: 'email.send', state: 'ok', ms: 900,
     meters: { calls: 2, blocked: 0, tokens: 2100, cost: '$0.04' } },
   { cls: 'note', ms: 3400, text:

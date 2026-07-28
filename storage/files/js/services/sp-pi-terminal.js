@@ -41,7 +41,6 @@ class SpPiTerminal extends HTMLElement {
     this._lines = 0;
     this._history = [];
     this._historyAt = -1;
-    this._statsTimer = null;
     this._capTimer = null;
     this._queued = false;
     this._cannedTimers = [];
@@ -68,7 +67,6 @@ class SpPiTerminal extends HTMLElement {
     if (this._onDocKey) document.removeEventListener('keydown', this._onDocKey);
     this._teardownStream();
     if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
-    if (this._statsTimer) clearInterval(this._statsTimer);
     if (this._capTimer) clearTimeout(this._capTimer);
     this._cannedTimers.forEach(clearTimeout);
     this._cannedCards.forEach((c) => c.settle());

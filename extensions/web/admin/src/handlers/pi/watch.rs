@@ -82,6 +82,13 @@ pub(super) async fn stream(
         for event in backlog {
             yield Ok(sse_event(&event));
         }
+        // Why: stats frames never enter the replay buffer, so without this a
+        // fresh viewer would show stale meters until the next turn
+        if let Some(stats) = super::stats::snapshot(&pool, &session).await {
+            yield Ok(sse_event(&events::PiEvent::ephemeral(
+                events::PiEventBody::Stats { stats },
+            )));
+        }
         loop {
             match rx.recv().await {
                 Ok(event) => yield Ok(sse_event(&event)),
@@ -102,5 +109,11 @@ pub(super) async fn stream(
 fn sse_event(event: &events::PiEvent) -> Event {
     let data = serde_json::to_string(event)
         .unwrap_or_else(|_| "{\"type\":\"error\",\"message\":\"unserialisable\"}".to_owned());
-    Event::default().id(event.seq().to_string()).data(data)
+    let sse = Event::default().data(data);
+    // Why: an ephemeral frame must not become the browser's Last-Event-ID —
+    // a reconnect would resume from a seq the transcript never had
+    match event.seq() {
+        Some(seq) => sse.id(seq.to_string()),
+        None => sse,
+    }
 }

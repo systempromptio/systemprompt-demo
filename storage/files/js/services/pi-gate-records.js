@@ -1,5 +1,7 @@
 import { motionOk } from './pi-gate-view.js';
-import { approvalGrid, detailChip, metaRow, toolTitle } from './pi-gate-parts.js';
+import {
+  approvalGrid, attributionStamp, detailChip, metaRow, toolTitle,
+} from './pi-gate-parts.js';
 
 /**
  * The two rows a decision leaves behind once no person is involved: a call
@@ -28,6 +30,7 @@ export function autoApprovedCard(frame) {
     head,
     approvalGrid(frame, 'cleared'),
     metaRow(frame.policy_chain || [], ['auto-approved']),
+    attributionStamp({ name: 'policy', actor: 'system', action: 'cleared this call — no human asked' }),
   );
   return card;
 }

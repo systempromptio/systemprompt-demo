@@ -107,6 +107,9 @@ tools:
   - mcp__systemprompt__fetch_site_page
   - mcp__systemprompt__governance_stats
   - mcp__systemprompt__safety_findings
+  # The artifact showcase: one artifact of any visual type, so the shelf can
+  # be demonstrated through the same governed path as every other call.
+  - mcp__systemprompt__render_artifact
   # The next two are registered on purpose so that a policy has something to
   # refuse. Removing either removes a demonstration, not the risk it stands for.
   #
@@ -175,11 +178,15 @@ throttle:
 limits:
   nproc: 2048
   fsize: 67108864          # 64 MiB per file
-  # Measured floor for node 22 `fetch`: undici instantiates llhttp Wasm, whose
-  # guard regions reserve ~10 GiB of *virtual* space — 8 GiB dies, 12 GiB
-  # works (`ulimit -v N; node -e "fetch(...)"`). Virtual, not resident: RSS
-  # stays 100–300 MiB per session regardless.
-  address_space: 17179869184 # 16 GiB
+  # Measured floor for pi 0.82.0 / node 22: the provider fetch path (undici's
+  # llhttp Wasm guard regions on top of V8's pointer cage) dies under a 20 GiB
+  # ceiling and works at 24 GiB — the child starts fine either way, then every
+  # provider request fails instantly as "Connection error." with no connect()
+  # ever issued, which is what makes a too-low value so misleading. Measured
+  # with the real jailed child, not bare `node -e "fetch(...)"` (that floor is
+  # ~10 GiB and undershoots). Virtual, not resident: RSS stays 100–300 MiB per
+  # session regardless. Re-measure when moving the version pin.
+  address_space: 34359738368 # 32 GiB
 
 # Where the systemprompt MCP hub answers. Called server-side by the proxy in
 # handlers/pi/mcp.rs — never by the child, which cannot reach this port. The

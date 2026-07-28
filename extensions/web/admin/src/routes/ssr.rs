@@ -49,6 +49,22 @@ pub fn admin_ssr_router(pool: Arc<PgPool>, engine: AdminTemplateEngine) -> Route
     )
 }
 
+/// The shareable audit-trail page, mounted at the site root.
+///
+/// Not under `/admin`, because the whole point of the report is that the
+/// operator can hand the link to someone who was never in the session. The
+/// conversation id in the path is the capability; see
+/// `handlers::ssr::demo_trace_page`.
+pub fn trace_ssr_router(pool: Arc<PgPool>, engine: AdminTemplateEngine) -> Router {
+    Router::new()
+        .route(
+            "/trace/{conversation_id}",
+            get(handlers::ssr::demo_trace_page),
+        )
+        .layer(Extension(engine))
+        .with_state(pool)
+}
+
 fn public_routes() -> Router<Arc<PgPool>> {
     Router::new()
         .route("/login", get(handlers::ssr::login_page))
@@ -73,7 +89,6 @@ fn account_routes() -> Router<Arc<PgPool>> {
     Router::new()
         .route("/pending", get(handlers::ssr::pending_page))
         .route("/continue", get(handlers::onboarding::post_login_redirect))
-        .route("/demo/trace", get(handlers::ssr::demo_trace_page))
 }
 
 fn device_routes() -> Router<Arc<PgPool>> {

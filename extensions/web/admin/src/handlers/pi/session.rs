@@ -60,6 +60,7 @@ pub(super) struct PiSession {
     pending: Mutex<HashMap<String, oneshot::Sender<Verdict>>>,
     seq: AtomicU64,
     dedupe: Mutex<ErrorDeduper>,
+    stats_push_pending: AtomicBool,
     last_activity: Mutex<Instant>,
     started: Instant,
     closed: AtomicBool,
@@ -93,6 +94,7 @@ impl PiSession {
             pending: Mutex::new(HashMap::new()),
             seq: AtomicU64::new(start_seq),
             dedupe: Mutex::new(ErrorDeduper::default()),
+            stats_push_pending: AtomicBool::new(false),
             last_activity: Mutex::new(Instant::now()),
             started: Instant::now(),
             closed: AtomicBool::new(false),
@@ -126,6 +128,22 @@ impl PiSession {
         seq
     }
 
+    // Why: no seq, no replay, no persist — an ephemeral frame must not create
+    // a gap a reconnecting viewer would read as lost transcript.
+    pub(super) fn emit_ephemeral(&self, body: PiEventBody) {
+        _ = self.events.send(PiEvent::ephemeral(body));
+    }
+
+    // Why: one in-flight push per session — the claimer must call
+    // stats_push_done, and a false return means someone else already holds it
+    pub(super) fn stats_push_begin(&self) -> bool {
+        !self.stats_push_pending.swap(true, Ordering::SeqCst)
+    }
+
+    pub(super) fn stats_push_done(&self) {
+        self.stats_push_pending.store(false, Ordering::SeqCst);
+    }
+
     pub(super) fn subscribe(&self) -> broadcast::Receiver<PiEvent> {
         self.events.subscribe()
     }
@@ -133,7 +151,12 @@ impl PiSession {
     pub(super) fn replay_since(&self, after_seq: u64) -> Vec<PiEvent> {
         self.replay.lock().map_or_else(
             |_| Vec::new(),
-            |r| r.iter().filter(|e| e.seq() > after_seq).cloned().collect(),
+            |r| {
+                r.iter()
+                    .filter(|e| e.seq().is_some_and(|s| s > after_seq))
+                    .cloned()
+                    .collect()
+            },
         )
     }
 

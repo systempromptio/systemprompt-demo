@@ -21,8 +21,8 @@ export function policyStages(el, f) {
 /** The audit-trail URL for the decision the held rail is rendering. */
 export function railTraceHref(el) {
   if (!el._railDecision || !el._conversationId) return null;
-  return '/admin/demo/trace?session=' + encodeURIComponent(el._conversationId)
-    + '&call=' + encodeURIComponent(el._railDecision);
+  return '/trace/' + encodeURIComponent(el._conversationId)
+    + '#call-' + encodeURIComponent(el._railDecision);
 }
 
 /** Draw a held chain inline, or on its own line if nothing claimed it. */

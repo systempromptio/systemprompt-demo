@@ -34,6 +34,7 @@ plugin:
       - demonstrate_scope_rejection
       - demonstrate_gateway_safety
       - analyse_governance_stats
+      - demonstrate_artifacts
     exclude: []
 
   agents:

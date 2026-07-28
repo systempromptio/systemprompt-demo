@@ -135,10 +135,14 @@ pub(super) async fn history(
 /// vocabulary first (`events::upgrade_legacy_error`) so differently-worded
 /// duplicates of one failed request become identical and collapse.
 /// `turn_start`/`turn_end` are transparent for the same reason as in the
-/// live path: they are what a provider retry interleaves.
+/// live path: they are what a provider retry interleaves. A turn stripped
+/// empty by that suppression — retries carry nothing but the duplicate — is
+/// dropped whole, so a restored transcript does not replay a run of no-op
+/// busy flickers.
 pub fn collapse_duplicate_errors(events: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
     let mut out = Vec::with_capacity(events.len());
     let mut last_error: Option<serde_json::Value> = None;
+    let mut pending_turn_start: Option<serde_json::Value> = None;
     for mut event in events {
         match event.get("type").and_then(serde_json::Value::as_str) {
             Some("error") => {
@@ -147,15 +151,29 @@ pub fn collapse_duplicate_errors(events: Vec<serde_json::Value>) -> Vec<serde_js
                     continue;
                 }
                 last_error = Some(event.clone());
+                out.extend(pending_turn_start.take());
                 out.push(event);
             },
-            Some("turn_start" | "turn_end") => out.push(event),
+            Some("turn_start") => {
+                out.extend(pending_turn_start.take());
+                pending_turn_start = Some(event);
+            },
+            Some("turn_end") => {
+                if pending_turn_start.take().is_some() {
+                    continue;
+                }
+                out.push(event);
+            },
             _ => {
                 last_error = None;
+                out.extend(pending_turn_start.take());
                 out.push(event);
             },
         }
     }
+    // Why: a conversation captured mid-turn ends on its `turn_start`; it must
+    // survive so the replayed view still shows the turn in progress.
+    out.extend(pending_turn_start);
     out
 }
 

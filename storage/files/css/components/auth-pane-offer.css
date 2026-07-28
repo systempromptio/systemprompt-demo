@@ -206,3 +206,11 @@
   color: var(--sp-color-error);
 }
 
+
+/* The human by-line under a decision — who answered the gate, and when. */
+.auth-pane .pane-feed-by {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--sp-color-success);
+  font-variant-numeric: tabular-nums;
+}

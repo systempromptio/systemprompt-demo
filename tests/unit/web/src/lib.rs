@@ -51,6 +51,8 @@ mod pi_token;
 #[cfg(test)]
 mod pi_transcript;
 #[cfg(test)]
+mod pi_version;
+#[cfg(test)]
 mod seed_contract;
 #[cfg(test)]
 mod site_markdown_routes;

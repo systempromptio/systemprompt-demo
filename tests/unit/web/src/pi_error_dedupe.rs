@@ -129,13 +129,18 @@ fn persisted_duplicates_collapse_on_history_read() {
         errors[0]["message"],
         "Credit exhausted. Add credit to continue."
     );
-    // The non-error frames all survive.
+    // The retry turns were stripped to nothing by the suppression, so only
+    // the turn that surfaced the error survives; no bare start/end pairs.
     assert_eq!(
         collapsed
             .iter()
             .filter(|e| e["type"] == "turn_start")
             .count(),
-        4
+        1
+    );
+    assert_eq!(
+        collapsed.iter().filter(|e| e["type"] == "turn_end").count(),
+        1
     );
     assert_eq!(
         collapsed
@@ -144,6 +149,24 @@ fn persisted_duplicates_collapse_on_history_read() {
             .count(),
         1
     );
+}
+
+/// A turn with real content keeps its start/end frames; only turns stripped
+/// empty collapse. A trailing `turn_start` with no `turn_end` — a
+/// conversation captured mid-turn — also survives.
+#[test]
+fn empty_turns_collapse_but_substantive_and_open_turns_survive() {
+    let events = vec![
+        serde_json::json!({ "type": "turn_start", "seq": 1 }),
+        serde_json::json!({ "type": "text_delta", "text": "hi", "seq": 2 }),
+        serde_json::json!({ "type": "turn_end", "seq": 3 }),
+        serde_json::json!({ "type": "turn_start", "seq": 4 }),
+        serde_json::json!({ "type": "turn_end", "seq": 5 }),
+        serde_json::json!({ "type": "turn_start", "seq": 6 }),
+    ];
+    let collapsed = collapse_duplicate_errors(events);
+    let kinds: Vec<_> = collapsed.iter().map(|e| e["type"].clone()).collect();
+    assert_eq!(kinds, ["turn_start", "text_delta", "turn_end", "turn_start"]);
 }
 
 /// The classification needle must keep matching the credit guard's actual

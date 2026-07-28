@@ -1,6 +1,6 @@
-/* /admin/demo/trace — the audit report behind the terminal's governance rail.
-   One column, time-ordered; a deep-linked call is haloed, a denial is the only
-   thing allowed to be loud. */
+/* /trace/{conversation-id} — the audit report behind the terminal's
+   governance rail. One column, time-ordered; a deep-linked call (#call-<id>)
+   is haloed, a denial is the only thing allowed to be loud. */
 
 .trace-page {
   margin: 0;
@@ -91,9 +91,10 @@
   border-left-color: var(--sp-status-error, #c0392b);
 }
 
-.trace-event.is-focus {
+.trace-event:target {
   border-color: var(--sp-brand-primary, var(--sp-text-primary));
   box-shadow: 0 0 0 2px color-mix(in oklch, var(--sp-brand-primary, currentColor) 25%, transparent);
+  scroll-margin-block: 30vh;
 }
 
 .trace-event-head {
@@ -189,4 +190,128 @@
   text-align: center;
   color: var(--sp-text-tertiary);
   font-size: 0.85rem;
+}
+
+.trace-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.trace-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trace-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--sp-border-default, currentColor);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--sp-text-primary) 4%, transparent);
+  color: var(--sp-text-secondary);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease,
+    background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.trace-action svg {
+  flex: none;
+  opacity: 0.75;
+}
+
+.trace-action:hover {
+  color: var(--sp-text-primary);
+  border-color: var(--sp-text-primary);
+  background: color-mix(in oklch, var(--sp-text-primary) 9%, transparent);
+}
+
+.trace-action:hover svg {
+  opacity: 1;
+}
+
+.trace-action:focus-visible {
+  outline: none;
+  color: var(--sp-text-primary);
+  border-color: var(--sp-brand-primary, var(--sp-text-primary));
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--sp-brand-primary, currentColor) 30%, transparent);
+}
+
+.trace-action:active {
+  transform: translateY(1px);
+}
+
+/* The copied state is a confirmation, not a hover — let it read as success. */
+.trace-action.is-copied {
+  color: var(--sp-color-success, #2e9e5b);
+  border-color: var(--sp-color-success, #2e9e5b);
+  background: color-mix(in oklch, var(--sp-color-success, #2e9e5b) 10%, transparent);
+}
+
+/* Who answered the human gate — the by-line the whole page exists to prove. */
+.trace-approver {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+}
+
+.trace-approver-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--sp-color-success, #2e9e5b) 25%, transparent);
+  border: 1px solid var(--sp-color-success, #2e9e5b);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.trace-approver[data-action='denied'] .trace-approver-avatar {
+  background: color-mix(in oklch, var(--sp-color-warning, #b5651d) 25%, transparent);
+  border-color: var(--sp-color-warning, #b5651d);
+}
+
+.trace-approver-id {
+  font-size: 0.68rem;
+  color: var(--sp-text-tertiary);
+}
+
+/* Print: the page becomes the report it links to — chrome out, evidence in. */
+@media print {
+  .trace-page {
+    background: #fff;
+    color: #000;
+  }
+
+  .trace-actions {
+    display: none;
+  }
+
+  .trace-shell {
+    max-width: none;
+    padding: 0;
+  }
+
+  .trace-event,
+  .trace-stages {
+    break-inside: avoid;
+  }
+
+  .trace-stages th,
+  .trace-stages td {
+    border-color: #999;
+  }
 }

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE user_api_keys\n        SET revoked_at = CURRENT_TIMESTAMP\n        WHERE name LIKE $1 ESCAPE '\\' AND revoked_at IS NULL AND name <> ALL($2)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5afadb40277953f73d682a6cdd0dcd9be6574f6df02bc786d5a48ddd5b418de1"
+}

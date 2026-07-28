@@ -8,6 +8,11 @@
 //! `governance_stats` reports the tool-call gate, `safety_findings` the
 //! gateway's scan of conversation content on the way to a provider.
 //!
+//! `render_artifact` is the showcase tool: it emits one artifact of any
+//! requested visual type — table, chart, dashboard, list, card, message,
+//! copy-paste text, or text — so the terminal's artifact shelf can be
+//! demonstrated end-to-end through the same governed path as every other call.
+//!
 //! `fetch_remote_docs` and `admin_audit_dump` are the odd ones out, and are
 //! meant to be. Each exists to be refused by a different policy —
 //! `tool_blocklist` for the first, which reaches an internet this deployment
@@ -103,6 +108,45 @@ impl SitePageSection {
     }
 }
 
+/// The artifact types `render_artifact` can produce. An enum rather than a
+/// string so an unknown type is a schema error, not a runtime branch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DemoArtifactType {
+    Table,
+    Chart,
+    List,
+    Dashboard,
+    PresentationCard,
+    Message,
+    CopyPasteText,
+    Text,
+}
+
+impl DemoArtifactType {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Table => "table",
+            Self::Chart => "chart",
+            Self::List => "list",
+            Self::Dashboard => "dashboard",
+            Self::PresentationCard => "presentation_card",
+            Self::Message => "message",
+            Self::CopyPasteText => "copy_paste_text",
+            Self::Text => "text",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
+pub struct RenderArtifactInput {
+    /// Which artifact type to render, e.g. "chart". One of: `table`, `chart`,
+    /// `list`, `dashboard`, `presentation_card`, `message`, `copy_paste_text`,
+    /// `text`.
+    pub artifact_type: DemoArtifactType,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct FetchSitePageInput {
     /// Which section of the site the page lives in.
@@ -157,8 +201,26 @@ pub fn list_tools() -> Vec<Tool> {
     let mut tools = docs_tools(&output);
     tools.append(&mut site_tools(&output));
     tools.append(&mut readback_tools(&output));
+    tools.append(&mut showcase_tools(&output));
     tools.append(&mut refusal_tools(&output));
     tools
+}
+
+fn showcase_tools(output: &serde_json::Value) -> Vec<Tool> {
+    vec![create_tool(&ToolDef {
+        server_name: SERVER_NAME,
+        name: "render_artifact",
+        title: "Render a Demo Artifact",
+        description: "Render one artifact of the requested type so the terminal's \
+             artifact shelf can be seen working, e.g. {\"artifact_type\": \"chart\"}. \
+             Valid types: table, chart, list, dashboard, presentation_card, message, \
+             copy_paste_text, text. The table, chart, and dashboard variants are built \
+             from the calling session's own governance spine — the same rows \
+             `governance_stats` reports — while the rest carry curated content about \
+             systemprompt.io.",
+        input_schema: schemars::schema_for!(RenderArtifactInput).to_value(),
+        output_schema: output,
+    })]
 }
 
 fn docs_tools(output: &serde_json::Value) -> Vec<Tool> {

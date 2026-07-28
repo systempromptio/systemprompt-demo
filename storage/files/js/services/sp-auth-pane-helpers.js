@@ -32,6 +32,13 @@ export function feedItem(e) {
   tail.className = 'pane-feed-tail';
   tail.textContent = [e.policy, e.detail].filter(Boolean).join(' — ');
   li.append(head, tail);
+  if (e.approver) {
+    const by = document.createElement('span');
+    by.className = 'pane-feed-by';
+    const at = e.approver_at ? ' at ' + new Date(e.approver_at).toLocaleTimeString() : '';
+    by.textContent = (e.approver_action || 'approved') + ' by ' + e.approver + at;
+    li.append(by);
+  }
   return li;
 }
 

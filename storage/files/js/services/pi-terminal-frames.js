@@ -6,6 +6,7 @@ import {
   approvalAuto,
 } from './pi-terminal-gate.js';
 import { toolArtifact } from './pi-terminal-artifacts.js';
+import { meters } from './pi-terminal-meters.js';
 import { remember } from './pi-terminal-input.js';
 
 /** The one dispatcher every frame goes through, live or replayed. */
@@ -56,6 +57,10 @@ export function onFrame(el, raw) {
     case 'approval_auto': return approvalAuto(el, f);
     case 'approval_resolved': return approvalResolved(el, f);
     case 'turn_end': return turnEnd(el);
+    // Pushed after every settled turn and once on connect — this frame is why
+    // the terminal no longer polls GET stats/{id}. No seq: it is ephemeral,
+    // so it bypasses the dedupe above by design.
+    case 'stats': return meters(el, f.stats || {});
     case 'stderr': return stderr(el, f.line);
     case 'error': return error(el, f);
     case 'exit': return exit(el, f);
@@ -142,7 +147,6 @@ function turnEnd(el) {
 function exit(el, f) {
   el._closed = true;
   el._teardownStream();
-  if (el._statsTimer) clearInterval(el._statsTimer);
   flushStream(el);
   el._status('ended');
   el._input.disabled = true;

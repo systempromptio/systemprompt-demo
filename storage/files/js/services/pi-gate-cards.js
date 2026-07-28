@@ -1,4 +1,4 @@
-import { approvalGrid, metaRow, toolTitle } from './pi-gate-parts.js';
+import { approvalGrid, attributionStamp, metaRow, toolTitle } from './pi-gate-parts.js';
 
 /**
  * The approval card — the one row of the gate that asks a question.
@@ -85,9 +85,34 @@ export function approvalCard(frame, onDecide) {
   const handle = {
     el: card,
     timer: setInterval(tick, 1000),
-    settle() {
+    /**
+     * Resolution arrived. With an attributed frame the card becomes a
+     * permanent record — buttons and countdown out, "Approved by X at T"
+     * stamp in — and is returned so the caller can move it into the
+     * transcript. Without one (expired, torn down) it just goes away.
+     */
+    settle(frame) {
       clearInterval(handle.timer);
+      if (!frame || !frame.outcome) {
+        card.remove();
+        return null;
+      }
+      actions.remove();
+      countdown.remove();
+      ring.remove();
+      card.classList.remove('is-settling');
+      card.classList.add('is-settled');
+      card.dataset.outcome = frame.outcome;
+      card.removeAttribute('role');
+      card.setAttribute('aria-label', frame.tool_name + ' ' + frame.outcome);
+      card.append(attributionStamp({
+        name: frame.approved_by,
+        at: frame.decided_at,
+        actor: frame.actor,
+        action: frame.outcome === 'approved' ? 'approved this call' : 'denied this call',
+      }));
       card.remove();
+      return card;
     },
     /** Freeze the card while the POST is in flight, so it cannot be answered
      *  twice from one click. */

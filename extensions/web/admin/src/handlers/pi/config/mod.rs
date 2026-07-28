@@ -214,6 +214,14 @@ impl PiConfig {
         self.sandbox
     }
 
+    pub fn expected_version(&self) -> Option<&str> {
+        self.expected_version.as_deref()
+    }
+
+    pub const fn version_check(&self) -> VersionCheckMode {
+        self.version_check
+    }
+
     pub const fn approve_all(&self) -> bool {
         self.approve_all
     }

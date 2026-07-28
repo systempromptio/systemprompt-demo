@@ -255,3 +255,58 @@
   margin-top: var(--sp-space-3);
 }
 
+
+/* Who decided, and when. A human decision carries an initials avatar and a
+   timestamp; a system decision (timeout, auto-approve) is muted and
+   avatar-less so a machine's verdict never dresses up as a person's. */
+.pi-attribution {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-space-1);
+  margin-top: var(--sp-space-2);
+  font-size: 0.72rem;
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-attribution-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: var(--sp-radius-full);
+  background: color-mix(in oklch, var(--sp-color-success) 25%, transparent);
+  border: 1px solid color-mix(in oklch, var(--sp-color-success) 55%, transparent);
+  color: var(--sp-color-terminal-text);
+  font-family: var(--sp-font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.pi-attribution-text strong {
+  color: var(--sp-color-terminal-text);
+  font-weight: 600;
+}
+
+.pi-attribution-at {
+  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.pi-attribution[data-actor='system'] {
+  opacity: 0.75;
+  font-style: italic;
+}
+
+/* A settled card is a record, not a question: the verdict edge replaces the
+   countdown chrome the settle() pass already removed. */
+.pi-approval-card.is-settled {
+  border-left: 2px solid var(--sp-color-success);
+}
+
+.pi-approval-card.is-settled[data-outcome='denied'],
+.pi-approval-card.is-settled[data-outcome='timeout'],
+.pi-approval-card.is-settled[data-outcome='abandoned'] {
+  border-left-color: var(--sp-color-warning);
+}

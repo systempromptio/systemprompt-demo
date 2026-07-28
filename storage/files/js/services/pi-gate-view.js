@@ -123,6 +123,8 @@ export function chainRail(stages, opts) {
     const audit = document.createElement('a');
     audit.className = 'pi-rail-audit';
     audit.href = opts.traceHref;
+    audit.target = '_blank';
+    audit.rel = 'noopener';
     audit.textContent = 'audit →';
     audit.setAttribute('aria-label', 'Open the audit trail for this call');
     rail.append(audit);

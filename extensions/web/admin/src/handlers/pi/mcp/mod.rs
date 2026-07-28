@@ -67,6 +67,7 @@ pub const FORWARDABLE: &[&str] = &[
     "fetch_site_page",
     "governance_stats",
     "safety_findings",
+    "render_artifact",
     "admin_audit_dump",
     "fetch_remote_docs",
 ];

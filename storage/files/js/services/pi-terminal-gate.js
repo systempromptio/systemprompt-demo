@@ -153,15 +153,30 @@ async function decide(el, approvalId, decision) {
 export function approvalResolved(el, f) {
   // Resolution can arrive from another tab or from the server's own timeout,
   // so this must clear the card regardless of what this tab did.
-  settle(el, f.approval_id, f.outcome);
+  settle(el, f.approval_id, f.outcome, f);
 }
 
-function settle(el, approvalId, outcome) {
+function settle(el, approvalId, outcome, frame) {
   const entry = el._approvals.get(approvalId);
   if (!entry) return;
-  entry.settle();
+  const record = entry.settle(frame);
+  if (record) append(el, record);
   el._approvals.delete(approvalId);
-  line(el, outcome === 'approved' ? 'output-dim' : 'output-warn', 'approval ' + outcome);
+  line(el, outcome === 'approved' ? 'output-dim' : 'output-warn', settleLine(outcome, frame));
   // Nothing else is queued, so put the caret back where typing continues.
   if (!el._approvals.size && !el._input.disabled) el._input.focus();
+}
+
+/**
+ * "approval approved by Ed — 14:02:11" when a person answered; the bare
+ * outcome (plus a system tag for timeouts) when nobody did. The transcript
+ * line is the glance version of the stamp on the card above it.
+ */
+function settleLine(outcome, frame) {
+  if (frame && frame.approved_by) {
+    const at = frame.decided_at ? ' — ' + new Date(frame.decided_at).toLocaleTimeString() : '';
+    return 'approval ' + outcome + ' by ' + frame.approved_by + at;
+  }
+  if (frame && frame.actor === 'system') return 'approval ' + outcome + ' (system)';
+  return 'approval ' + outcome;
 }

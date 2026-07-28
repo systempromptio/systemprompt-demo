@@ -76,6 +76,9 @@ fn handle_line(deps: &Arc<PiDeps>, session: &Arc<PiSession>, line: &str) {
             tokio::spawn(async move {
                 let allow = gate::decide(&deps, &session, &req.id, &payload).await;
                 answer(&session, &req.id, allow).await;
+                // Why: gate::decide has landed its audit rows by now, so this
+                // is the earliest point a snapshot would include the decision
+                super::stats::push_soon(Arc::clone(&deps.pool), session);
             });
         },
         RpcFrame::Response { success, error } => {
@@ -86,7 +89,11 @@ fn handle_line(deps: &Arc<PiDeps>, session: &Arc<PiSession>, line: &str) {
         },
         RpcFrame::Event(value) => {
             if let Some(body) = events::translate(&value) {
+                let settled = matches!(body, PiEventBody::TurnEnd | PiEventBody::ToolEnd { .. });
                 session.emit(body);
+                if settled {
+                    super::stats::push_soon(Arc::clone(&deps.pool), Arc::clone(session));
+                }
             }
         },
         RpcFrame::Unparseable(raw) => {

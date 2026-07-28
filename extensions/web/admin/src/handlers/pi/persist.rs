@@ -155,6 +155,7 @@ fn storable(event: &PiEvent) -> Option<NewPiEvent> {
             | PiEventBody::ThinkingDelta { .. }
             | PiEventBody::Stderr { .. }
             | PiEventBody::SessionReady { .. }
+            | PiEventBody::Stats { .. }
             | PiEventBody::Exit { .. }
     ) {
         return None;
@@ -206,6 +207,11 @@ async fn flush(pool: &PgPool, conversation_id: &ContextId, pending: &mut Vec<New
     pending.clear();
 }
 
+// Why: ephemeral frames (seq: None) never reach this writer — emit_ephemeral
+// does not tee to persist — so an absent seq here is a bug, not a case.
 fn seq_of(event: &PiEvent) -> i64 {
-    i64::try_from(event.seq()).unwrap_or(i64::MAX)
+    event
+        .seq()
+        .and_then(|s| i64::try_from(s).ok())
+        .unwrap_or(i64::MAX)
 }

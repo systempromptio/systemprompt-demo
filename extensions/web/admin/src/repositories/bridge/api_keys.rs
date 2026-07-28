@@ -188,13 +188,19 @@ pub async fn revoke_api_key(pool: &PgPool, user_id: &UserId, id: &str) -> Result
     Ok(result.rows_affected() > 0)
 }
 
-/// Revoke every unrevoked key whose name starts with `name_prefix`, returning
-/// how many rows changed.
+/// Revoke every unrevoked key whose name starts with `name_prefix`, sparing
+/// exact names in `keep_names`, returning how many rows changed.
 ///
-/// Written for the pi terminal's boot sweep: a hard kill leaves
+/// Written for the pi terminal's orphan sweep: a hard kill leaves
 /// per-conversation keys live, and the session rows the gateway checks ignore
-/// `expires_at` entirely, so nothing else would ever retire them.
-pub async fn revoke_api_keys_by_name_prefix(pool: &PgPool, name_prefix: &str) -> Result<u64> {
+/// `expires_at` entirely, so nothing else would ever retire them. The sweep
+/// also runs periodically while sessions are live, which is what `keep_names`
+/// exists for — the caller passes the keys of conversations still running.
+pub async fn revoke_api_keys_by_name_prefix(
+    pool: &PgPool,
+    name_prefix: &str,
+    keep_names: &[String],
+) -> Result<u64> {
     let mut pattern = String::with_capacity(name_prefix.len() + 8);
     for ch in name_prefix.chars() {
         if matches!(ch, '%' | '_' | '\\') {
@@ -207,9 +213,10 @@ pub async fn revoke_api_keys_by_name_prefix(pool: &PgPool, name_prefix: &str) ->
         r#"
         UPDATE user_api_keys
         SET revoked_at = CURRENT_TIMESTAMP
-        WHERE name LIKE $1 ESCAPE '\' AND revoked_at IS NULL
+        WHERE name LIKE $1 ESCAPE '\' AND revoked_at IS NULL AND name <> ALL($2)
         "#,
         pattern,
+        keep_names,
     )
     .execute(pool)
     .await?;

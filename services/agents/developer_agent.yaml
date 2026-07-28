@@ -49,6 +49,7 @@ agents:
           - demonstrate_governance
           - demonstrate_tool_rejection
           - analyse_governance_stats
+          - demonstrate_artifacts
         exclude: []
     oauth:
       required: true
