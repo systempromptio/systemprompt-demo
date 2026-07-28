@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.26.0 — 2026-07-28
+
+### Changed
+
+- Tracks systemprompt-core 0.26.0. The deployment manifests (Helm, CasaOS, DigitalOcean) pin the 0.26.0 image; the Helm chart is 0.6.0 with appVersion 0.26.0.
+
 ## bridge-0.18.4 — 2026-07-24
 
 ### Added
