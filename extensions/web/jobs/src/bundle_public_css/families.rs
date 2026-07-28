@@ -4,12 +4,12 @@
 //! order the templates used before bundling. Reordering an entry changes which
 //! rule wins, so entries are appended, never sorted.
 
-pub struct Family {
-    pub name: &'static str,
-    pub files: &'static [&'static str],
+pub(super) struct Family {
+    pub(super) name: &'static str,
+    pub(super) files: &'static [&'static str],
 }
 
-pub const FAMILIES: &[Family] = &[
+pub(super) const FAMILIES: &[Family] = &[
     Family {
         name: "core",
         files: CORE,

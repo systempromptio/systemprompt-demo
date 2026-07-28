@@ -21,8 +21,8 @@ use systemprompt::traits::{Job, JobContext, JobResult};
 use self::families::{FAMILIES, Family};
 use crate::error::JobError;
 
-pub const BUNDLE_DIR: &str = "bundles";
-pub const MANIFEST_NAME: &str = "css-manifest.json";
+const BUNDLE_DIR: &str = "bundles";
+const MANIFEST_NAME: &str = "css-manifest.json";
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct BundlePublicCssJob;
@@ -43,7 +43,7 @@ impl BundlePublicCssJob {
 
         for family in FAMILIES {
             let bundle = concatenate(&css_dir, family).await?;
-            let hash = short_hash(bundle.as_bytes());
+            let hash = short_hash(bundle.as_bytes())?;
             site_hasher.update(bundle.as_bytes());
 
             let filename = format!("{}-bundle.css", family.name);
@@ -63,7 +63,7 @@ impl BundlePublicCssJob {
             );
         }
 
-        let version = hex12(&site_hasher.finalize());
+        let version = hex12(&site_hasher.finalize())?;
         write_manifest(&css_dir, version, entries).await?;
 
         let duration_ms = u64::try_from(start_time.elapsed().as_millis()).unwrap_or(u64::MAX);
@@ -108,18 +108,20 @@ async fn write_manifest(
     Ok(())
 }
 
-fn short_hash(bytes: &[u8]) -> String {
+fn short_hash(bytes: &[u8]) -> Result<String, JobError> {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     hex12(&hasher.finalize())
 }
 
-fn hex12(digest: &[u8]) -> String {
-    digest
-        .iter()
-        .take(6)
-        .map(|b| format!("{b:02x}"))
-        .collect::<String>()
+fn hex12(digest: &[u8]) -> Result<String, JobError> {
+    use std::fmt::Write;
+
+    let mut out = String::with_capacity(12);
+    for byte in digest.iter().take(6) {
+        write!(out, "{byte:02x}")?;
+    }
+    Ok(out)
 }
 
 #[async_trait::async_trait]
