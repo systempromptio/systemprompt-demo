@@ -235,8 +235,13 @@ test-contract:
     fi
     cargo test --manifest-path tests/Cargo.toml -p admin-contract-tests
 
+# Front-end unit tests: node's built-in runner over pure ES modules under
+# storage/files/js — no package.json, no dependencies.
+test-frontend:
+    node --test "tests/frontend/**/*.test.mjs"
+
 # All tests
-test: test-unit test-integration test-contract
+test: test-unit test-integration test-contract test-frontend
 
 # Source gates ported from systemprompt-core (scripts/*.sh)
 # Front-end integrity: JS/CSS sources vs registrations vs template links

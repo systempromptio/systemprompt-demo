@@ -127,3 +127,6 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
         run: cargo test -p systemprompt-web-admin --tests
+
+      - name: Run front-end unit tests
+        run: node --test "tests/frontend/**/*.test.mjs"
