@@ -64,11 +64,15 @@ def is_registered(path, names):
 
 GENERATED = {'storage/files/css/admin-bundle.css'}
 BUNDLED_PREFIX = 'storage/files/css/admin/'
+# include_str!'d into server-rendered MCP artifacts rather than served: these
+# declare core's --mcpui-* vocabulary inside the artifact's own document, so
+# they are neither registered in css.rs nor subject to the --sp-/--pi- rule.
+EMBEDDED_PREFIX = 'storage/files/css/artifacts/'
 for p in sorted(js_sources):
     if not is_registered(p, registered_js):
         err(f'{p} exists but is not registered in js_services.rs - it is never served')
 for p in sorted(css_sources):
-    if p in GENERATED or p.startswith(BUNDLED_PREFIX):
+    if p in GENERATED or p.startswith((BUNDLED_PREFIX, EMBEDDED_PREFIX)):
         continue
     if not is_registered(p, registered_css):
         err(f'{p} exists but is not registered in css.rs - it is never served')
@@ -121,7 +125,7 @@ for p in sorted(js_sources):
 bad_prop = re.compile(r'^\s*--(?!sp-|pi-|webkit)[a-z][\w-]*\s*:')
 unprefixed = 0
 for p in sorted(css_sources):
-    if p in GENERATED:
+    if p in GENERATED or p.startswith(EMBEDDED_PREFIX):
         continue
     for i, line in enumerate(pathlib.Path(p).read_text().splitlines(), 1):
         if bad_prop.search(line):

@@ -10,7 +10,11 @@ workspace = true
 [dependencies]
 systemprompt-web-shared = { workspace = true }
 systemprompt-web-admin = { workspace = true }
+# Why: linked for its `register_artifact_theme!` submission, which
+# `artifact_theme` asserts actually reaches the renderer.
+systemprompt-web-extension = { workspace = true }
 systemprompt-pi-jail = { workspace = true }
 systemprompt = { workspace = true }
 base64 = { workspace = true }
 serde_json = { workspace = true }
+tokio = { workspace = true }

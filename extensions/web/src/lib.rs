@@ -16,6 +16,7 @@
 //!   helpers.
 //! - `site` — public homepage / blog / docs / features content providers.
 
+mod artifact_theme;
 mod config_loader;
 
 /// The admin template engine needs the same branding the server builds it

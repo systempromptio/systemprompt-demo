@@ -7,6 +7,8 @@
 //! re-exports: `PiConfig` parsing and validation.
 
 #[cfg(test)]
+mod artifact_theme;
+#[cfg(test)]
 mod bridge_downloads;
 #[cfg(test)]
 mod campaign_link_full_url;

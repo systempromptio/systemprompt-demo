@@ -1,0 +1,92 @@
+/* The systemprompt.io artifact theme.
+ *
+ * Re-declares core's --mcpui-* vocabulary with this site's own tokens. It is
+ * embedded into every rendered artifact by extensions/web/src/artifact_theme.rs,
+ * not served as a stylesheet — it lives here because CSS lives here, and it is
+ * deliberately absent from css.rs's asset list.
+ *
+ * Values are lifted from core/tokens.css, core/tokens-primitives.css,
+ * components/home-stage.css, and admin/01-tokens-data.css. Keep them in step:
+ * an artifact that drifts from the terminal it opens over is the whole bug this
+ * theme exists to fix.
+ *
+ * Dark is pinned rather than following prefers-color-scheme — an artifact opens
+ * as a panel over the terminal stage, which is dark in either site theme.
+ */
+
+color-scheme: dark;
+
+/* ── surfaces: the terminal stage ─────────────────────────────────────────── */
+--mcpui-bg: oklch(0.18 0 0);
+--mcpui-surface: oklch(0.23 0 0);
+--mcpui-surface-raised: oklch(0.26 0.006 50);
+--mcpui-surface-sunken: oklch(0.205 0.004 50);
+--mcpui-border: oklch(0.28 0 0);
+--mcpui-border-strong: oklch(0.36 0.006 50);
+
+/* ── ink ──────────────────────────────────────────────────────────────────── */
+--mcpui-ink: oklch(0.96 0.004 60);
+--mcpui-ink-dim: oklch(0.82 0.008 60);
+--mcpui-ink-faint: oklch(0.68 0.01 60);
+
+/* ── accent: the brand orange ─────────────────────────────────────────────── */
+--mcpui-accent: oklch(0.72 0.17 52);
+--mcpui-accent-ink: oklch(0.16 0.012 55);
+--mcpui-accent-wash: oklch(0.72 0.17 52 / 0.13);
+--mcpui-accent-rim: oklch(0.62 0.19 47 / 0.42);
+
+/* ── status ───────────────────────────────────────────────────────────────── */
+--mcpui-success: oklch(0.72 0.19 155);
+--mcpui-warning: oklch(0.83 0.16 85);
+--mcpui-danger: oklch(0.63 0.21 25);
+--mcpui-info: oklch(0.62 0.18 260);
+--mcpui-success-wash: oklch(0.72 0.19 155 / 0.14);
+--mcpui-warning-wash: oklch(0.83 0.16 85 / 0.14);
+--mcpui-danger-wash: oklch(0.63 0.21 25 / 0.14);
+--mcpui-info-wash: oklch(0.62 0.18 260 / 0.14);
+
+/* ── chart series: the admin data palette, dark values ────────────────────── */
+--mcpui-series-1: oklch(0.72 0.17 52);
+--mcpui-series-2: oklch(0.78 0.16 165);
+--mcpui-series-3: oklch(0.68 0.16 295);
+--mcpui-series-4: oklch(0.70 0.14 250);
+--mcpui-series-5: oklch(0.82 0.11 200);
+--mcpui-series-6: oklch(0.70 0.17 20);
+
+/* ── radii: the notched top-right corner ──────────────────────────────────── */
+--mcpui-radius-card: 1.125rem 0.375rem 1.125rem 1.125rem;
+--mcpui-radius-inner: 0.625rem 0.25rem 0.625rem 0.625rem;
+--mcpui-radius-sm: 0.25rem 0.0625rem 0.25rem 0.25rem;
+--mcpui-radius-pill: 9999px;
+
+/* ── elevation ────────────────────────────────────────────────────────────── */
+--mcpui-shadow-card: 0 1px 2px oklch(0 0 0 / 0.34);
+--mcpui-shadow-raised: 0 10px 30px -12px oklch(0 0 0 / 0.62),
+                       0 0 20px oklch(0.72 0.17 52 / 0.08);
+--mcpui-shadow-inset: inset 0 1px 0 oklch(1 0 0 / 0.055);
+
+/* ── glass: the homepage stage treatment ──────────────────────────────────── */
+--mcpui-glass-bg: oklch(0.24 0.012 55 / 0.58);
+--mcpui-glass-border: oklch(1 0 0 / 0.09);
+--mcpui-glass-blur: 24px;
+--mcpui-glass-specular: linear-gradient(160deg,
+    oklch(1 0 0 / 0.05) 0%,
+    oklch(1 0 0 / 0.012) 26%,
+    oklch(1 0 0 / 0) 52%,
+    oklch(1 0 0 / 0.02) 100%);
+
+/* ── type ─────────────────────────────────────────────────────────────────── */
+/* Inter and OpenSans are self-hosted under /files/fonts/, but the artifact
+ * frame is sandboxed without allow-same-origin, so its origin is opaque and
+ * `font-src 'self'` matches nothing — a webfont here would silently fail to
+ * load. The stacks below name the site faces first anyway, for the hosts that
+ * do render an artifact with a real origin, and fall back to system UI faces
+ * with the same humanist proportions. */
+--mcpui-font-heading: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+--mcpui-font-body: 'Open Sans', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+--mcpui-font-mono: ui-monospace, 'Cascadia Code', 'Fira Code', 'SF Mono', Menlo, monospace;
+
+--mcpui-tracking-tight: -0.02em;
+--mcpui-tracking-wide: 0.05em;
+
+--mcpui-ease: cubic-bezier(0.175, 0.885, 0.32, 1.275);

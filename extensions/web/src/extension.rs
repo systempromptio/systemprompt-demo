@@ -101,4 +101,13 @@ pub(crate) fn log_and_discard_err<T: Clone>(
 
 register_extension!(WebExtension);
 
+// Why: colocated with the registration above rather than kept in
+// `artifact_theme` — `inventory` submissions only survive linking if something
+// in their object file is reached, and `WebExtension` is the item in this crate
+// every binary touches.
+systemprompt::mcp::register_artifact_theme!(
+    crate::artifact_theme::systemprompt_theme,
+    name = "systemprompt.io"
+);
+
 pub type BlogExtension = WebExtension;
