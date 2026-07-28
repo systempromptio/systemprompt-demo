@@ -2,4 +2,6 @@
 //! domain.
 
 pub mod client_address;
-pub mod hmac;
+
+pub use systemprompt_web_shared::hmac;
+

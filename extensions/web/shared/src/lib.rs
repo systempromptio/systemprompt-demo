@@ -13,6 +13,10 @@
 //!   that originate in `systemprompt_identifiers`, prefer those directly.
 //! - [`models`] — content/link/search wire types shared between the content
 //!   extension and the admin dashboard.
+//! - [`hmac`] — HMAC-SHA256 keyed off the bootstrap secret, backing every
+//!   signed token scheme in the web crates.
+//! - [`UserContext`] — the resolved caller identity threaded through admin,
+//!   governance, and pi request handling.
 //! - [`BrandingConfig`] — branding fields parsed from
 //!   `services/web/config.yaml`.
 //! - [`html_escape`] — escape helper re-exported as `utils::html_escape`.
@@ -20,11 +24,15 @@
 pub mod config;
 pub mod config_errors;
 pub mod error;
+pub mod hmac;
 pub mod ids;
 pub mod models;
+mod user_context;
 mod utils;
 
 pub use ids::{MarketplaceId, PluginId, RankTier, RequestId, TierLevel, TraceId, UserId};
+
+pub use user_context::UserContext;
 
 pub use utils::html_escape;
 

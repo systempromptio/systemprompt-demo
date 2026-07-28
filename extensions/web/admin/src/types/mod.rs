@@ -14,7 +14,6 @@ mod plugins;
 mod plugins_config;
 mod plugins_requests;
 mod traffic;
-mod user_context;
 pub use departments::{Department, DepartmentInput, DepartmentSummary};
 mod users;
 pub mod webhook;
@@ -46,7 +45,7 @@ pub use plugins_requests::{
     UpdateMcpRequest, UpdatePluginEnvRequest, UpdatePluginRequest, UpdatePluginSkillsRequest,
     UpdateSkillFileRequest, UserQuery,
 };
-pub use user_context::UserContext;
+pub use systemprompt_web_shared::UserContext;
 
 #[derive(Debug, Default, Clone, serde::Deserialize)]
 pub struct IdQuery {
