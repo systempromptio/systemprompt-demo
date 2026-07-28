@@ -61,15 +61,14 @@ pub(crate) fn load_homepage_config() -> Result<Option<Arc<HomepageConfig>>, Conf
         })?;
 
     if let Ok(paths) = load_app_paths() {
-        match load_demo_scanner_meta()? {
-            Some(meta) => populate_demo_showcase(
+        if let Some(meta) = load_demo_scanner_meta()? {
+            populate_demo_showcase(
                 &mut homepage_config,
                 paths.system().root().join("demo").as_path(),
                 &meta,
-            ),
-            None => tracing::warn!(
-                "config/demo-scanner.yaml missing; homepage demo showcase disabled"
-            ),
+            );
+        } else {
+            tracing::warn!("config/demo-scanner.yaml missing; homepage demo showcase disabled");
         }
     }
 
