@@ -4,6 +4,7 @@
 //! the only name a symbol has and collisions between domains cannot arise.
 
 pub mod activity;
+pub mod bridge;
 pub mod analytics;
 pub mod dashboard;
 pub mod governance;

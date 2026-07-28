@@ -5,7 +5,6 @@
 //! domains cannot arise. The audit-side modules are re-exported from
 //! [`systemprompt_web_governance`] under the same paths.
 
-pub mod bridge;
 pub mod config;
 pub mod departments;
 pub mod jobs;
@@ -16,4 +15,4 @@ pub mod secrets;
 pub mod site_markdown;
 pub mod users;
 
-pub use systemprompt_web_governance::repositories::{analytics, dashboard, governance};
+pub use systemprompt_web_governance::repositories::{analytics, bridge, dashboard, governance};

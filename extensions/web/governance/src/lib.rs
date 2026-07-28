@@ -14,6 +14,8 @@
 //!   how the pi terminal governs its own tool calls without a network hop.
 //! - [`authz`] — the attribute dimensions this deployment declares, registered
 //!   with the core authorization engine.
+//! - [`identity`] / [`device_service`] — who is calling, and the API keys and
+//!   device certificates they call with.
 //! - [`repositories`] owns every `sqlx` call; handlers never touch the DB
 //!   directly. Errors normalise on [`error::GovernanceError`].
 
@@ -22,8 +24,10 @@ pub mod audit_event_bus;
 pub mod authz;
 pub mod error;
 pub mod event_hub;
+pub mod device_service;
 pub mod gateway_safety;
 pub mod hooks_track;
+pub mod identity;
 pub mod numeric;
 pub mod repositories;
 pub mod types;

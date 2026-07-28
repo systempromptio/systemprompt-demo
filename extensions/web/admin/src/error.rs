@@ -11,7 +11,8 @@ use systemprompt_web_shared::html_escape;
 use thiserror::Error;
 
 use crate::handlers::shared::ErrorBody;
-use crate::repositories::bridge::BridgeRepoError;
+use systemprompt_web_governance::GovernanceError;
+use systemprompt_web_governance::repositories::bridge::BridgeRepoError;
 use crate::repositories::secrets::secret_crypto::SecretCryptoError;
 use systemprompt::traits::ExtensionError;
 use systemprompt_web_shared::error::WebError;
@@ -51,6 +52,9 @@ pub enum AdminError {
     #[error("Bridge repository error: {0}")]
     BridgeRepo(BridgeRepoError),
 
+    #[error("Governance error: {0}")]
+    Governance(GovernanceError),
+
     #[error("Marketplace error: {0}")]
     Marketplace(WebError),
 
@@ -82,6 +86,7 @@ impl AdminError {
             Self::Unavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::Upstream(_) => StatusCode::BAD_GATEWAY,
             Self::BridgeRepo(e) => e.status(),
+            Self::Governance(e) => e.status(),
             Self::Marketplace(e) => ExtensionError::status(e),
             Self::Database(_) | Self::Crypto(_) | Self::Internal(_) => {
                 StatusCode::INTERNAL_SERVER_ERROR
@@ -99,6 +104,7 @@ impl AdminError {
             | Self::RateLimited(msg)
             | Self::Unavailable(msg) => msg.clone(),
             Self::BridgeRepo(e) => e.public_message(),
+            Self::Governance(e) => e.public_message(),
             Self::Marketplace(e) => e.public_message(),
             Self::Upstream(_) => "Upstream service error".to_owned(),
             Self::Unauthenticated(_) => "Unauthorized".to_owned(),
@@ -111,6 +117,12 @@ impl AdminError {
 impl From<BridgeRepoError> for AdminError {
     fn from(value: BridgeRepoError) -> Self {
         Self::BridgeRepo(value)
+    }
+}
+
+impl From<GovernanceError> for AdminError {
+    fn from(value: GovernanceError) -> Self {
+        Self::Governance(value)
     }
 }
 

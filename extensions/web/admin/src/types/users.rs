@@ -87,13 +87,6 @@ pub struct UserBasicInfo {
 }
 
 #[derive(Debug, Clone)]
-pub struct CookieSession {
-    pub user_id: UserId,
-    pub username: String,
-    pub email: Email,
-}
-
-#[derive(Debug, Clone)]
 pub struct DetectedEntity {
     pub entity_type: &'static str,
     pub entity_name: String,

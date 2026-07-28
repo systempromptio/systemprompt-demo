@@ -36,6 +36,9 @@ pub enum GovernanceError {
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
 
+    #[error("Bridge repository error: {0}")]
+    BridgeRepo(#[from] crate::repositories::bridge::BridgeRepoError),
+
     #[error("Internal error: {0}")]
     Internal(#[source] Box<dyn std::error::Error + Send + Sync>),
 }
@@ -64,6 +67,7 @@ impl GovernanceError {
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
             Self::Unauthorized(_) | Self::Unauthenticated(_) => StatusCode::UNAUTHORIZED,
             Self::Forbidden(_) => StatusCode::FORBIDDEN,
+            Self::BridgeRepo(e) => e.status(),
             Self::Database(_) | Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -75,6 +79,7 @@ impl GovernanceError {
             | Self::BadRequest(msg)
             | Self::Unauthorized(msg)
             | Self::Forbidden(msg) => msg.clone(),
+            Self::BridgeRepo(e) => e.public_message(),
             Self::Unauthenticated(_) => "Unauthorized".to_owned(),
             Self::Database(_) | Self::Internal(_) => "Internal server error".to_owned(),
         }

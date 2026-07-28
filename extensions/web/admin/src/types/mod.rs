@@ -40,6 +40,7 @@ pub use plugins_requests::{
     UpdateMcpRequest, UpdatePluginEnvRequest, UpdatePluginRequest, UpdatePluginSkillsRequest,
     UpdateSkillFileRequest, UserQuery,
 };
+pub use systemprompt_web_governance::identity::CookieSession;
 pub use systemprompt_web_governance::types::ContentBytes;
 pub use systemprompt_web_shared::UserContext;
 
@@ -91,7 +92,7 @@ pub use systemprompt_web_governance::types::{
     SessionEntityLink, SessionRating, SkillEffectiveness, SkillRating,
 };
 pub use users::{
-    CookieSession, CreateUserRequest, DepartmentStats, DetectedEntity,
+    CreateUserRequest, DepartmentStats, DetectedEntity,
     EventTypeCount, JwtIdentity, SkillSecret, ToolUsageCount, UpdateUserRequest,
     UpsertSkillSecretRequest, UserBasicInfo, UserDetail, UserIdentityRow, UserSession, UserSummary,
     UserTier, UserUsageEvent, UsersQuery,
