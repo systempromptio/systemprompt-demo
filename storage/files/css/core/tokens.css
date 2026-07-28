@@ -188,3 +188,15 @@
   --sp-shadow-inner-glow: inset 0 0 12px oklch(0.72 0.17 52 / 0.12);
   --sp-shadow-lift: 0 4px 12px oklch(0 0 0 / 0.30), 0 2px 4px oklch(0 0 0 / 0.15);
 }
+
+:root {
+  --sp-color-border-primary-10: rgba(var(--sp-color-primary-rgb), 0.1);
+  --sp-color-border-primary-15: rgba(var(--sp-color-primary-rgb), 0.15);
+  --sp-color-border-primary-20: rgba(var(--sp-color-primary-rgb), 0.2);
+  --sp-color-background-dark: #0A1222;
+  --sp-color-text-inverted: #111111;
+  --sp-shadow-accent: 0 4px 12px rgba(0, 113, 206, 0.3);
+  --sp-radius-xxl: 24px;
+  --sp-z-content: 10;
+  --sp-z-tooltip: 2000;
+}

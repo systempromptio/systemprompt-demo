@@ -64,6 +64,10 @@ def is_registered(path, names):
 
 GENERATED = {'storage/files/css/admin-bundle.css'}
 BUNDLED_PREFIX = 'storage/files/css/admin/'
+# Written by the bundle_public_css job from the registered sources below, and
+# gitignored: registered and linked, but never present in a clean checkout.
+GENERATED_PREFIX = 'storage/files/css/bundles/'
+GENERATED_REF = 'bundles/'
 # include_str!'d into server-rendered MCP artifacts rather than served: these
 # declare core's --mcpui-* vocabulary inside the artifact's own document, so
 # they are neither registered in css.rs nor subject to the --sp-/--pi- rule.
@@ -72,7 +76,7 @@ for p in sorted(js_sources):
     if not is_registered(p, registered_js):
         err(f'{p} exists but is not registered in js_services.rs - it is never served')
 for p in sorted(css_sources):
-    if p in GENERATED or p.startswith((BUNDLED_PREFIX, EMBEDDED_PREFIX)):
+    if p in GENERATED or p.startswith((BUNDLED_PREFIX, EMBEDDED_PREFIX, GENERATED_PREFIX)):
         continue
     if not is_registered(p, registered_css):
         err(f'{p} exists but is not registered in css.rs - it is never served')
@@ -87,6 +91,8 @@ for n in sorted(registered_js):
     if not source_exists(n, 'storage/files/js', ['services', 'utils']):
         err(f'js_services.rs registers {n} but no matching source under storage/files/js')
 for n in sorted(registered_css):
+    if n.startswith(GENERATED_REF) or n.startswith('css/' + GENERATED_REF):
+        continue
     if not source_exists(n, 'storage/files/css', ['core', 'components']):
         err(f'css.rs registers {n} but no matching source under storage/files/css')
 
@@ -101,6 +107,11 @@ top_binding = re.compile(r'^(?:const|let|class|function)\s', re.M)
 for t in templates:
     text = t.read_text()
     for ref in link_re.findall(text):
+        if ref.startswith(GENERATED_REF):
+            if not is_registered('storage/files/css/' + ref, registered_css):
+                err(f'{t} links the generated bundle {ref} but css.rs does not '
+                    'register it - it is never copied to web/dist')
+            continue
         root = 'storage/files/css' if ref.endswith('.css') else 'storage/files/js'
         if not (pathlib.Path(root) / ref).exists():
             err(f'{t} links {ref} but no such file under {root}')
@@ -125,7 +136,7 @@ for p in sorted(js_sources):
 bad_prop = re.compile(r'^\s*--(?!sp-|pi-|webkit)[a-z][\w-]*\s*:')
 unprefixed = 0
 for p in sorted(css_sources):
-    if p in GENERATED or p.startswith(EMBEDDED_PREFIX):
+    if p in GENERATED or p.startswith((EMBEDDED_PREFIX, GENERATED_PREFIX)):
         continue
     for i, line in enumerate(pathlib.Path(p).read_text().splitlines(), 1):
         if bad_prop.search(line):
@@ -169,7 +180,7 @@ for p in sorted(js_sources - reachable):
         'or wire it to a template')
 
 for p, cap, hard in [*((s, 150, 300) for s in js_sources), *((s, 200, 400) for s in css_sources)]:
-    if p in GENERATED:
+    if p in GENERATED or p.startswith(GENERATED_PREFIX):
         continue
     n = len(pathlib.Path(p).read_text().splitlines())
     if n > hard * 2:
