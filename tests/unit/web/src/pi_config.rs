@@ -8,7 +8,7 @@
 //! exercises it until startup, where a failure means the deployment runs on
 //! defaults instead of on what the file says.
 
-use systemprompt_web_admin::test_support::{PiConfig, SandboxMode, VersionCheckMode};
+use systemprompt_web_pi::test_support::{PiConfig, SandboxMode, VersionCheckMode};
 
 #[test]
 fn empty_file_is_all_defaults() {

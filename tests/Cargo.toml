@@ -36,6 +36,8 @@ systemprompt-mcp-shared = { path = "../extensions/mcp/shared" }
 systemprompt-mcp-agent = { path = "../extensions/mcp/systemprompt" }
 systemprompt-web-shared = { path = "../extensions/web/shared" }
 systemprompt-web-admin = { path = "../extensions/web/admin" }
+systemprompt-web-governance = { path = "../extensions/web/governance" }
+systemprompt-web-pi = { path = "../extensions/web/pi" }
 systemprompt-pi-jail = { path = "../extensions/pi-jail" }
 systemprompt-web-extension = { path = "../extensions/web" }
 

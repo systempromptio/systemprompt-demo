@@ -8,7 +8,9 @@
 //! — stay out of the record entirely.
 
 use systemprompt::identifiers::ContextId;
-use systemprompt_web_admin::test_support::{Journal, NewPiEvent, PiEvent, PiEventBody};
+use systemprompt_web_pi::test_support::{PiEvent, PiEventBody};
+use systemprompt_web_pi::test_support::Journal;
+use systemprompt_web_pi::test_support::NewPiEvent;
 
 /// Drive a whole conversation through the journal, as the writer task does.
 fn journal(bodies: Vec<PiEventBody>) -> Vec<NewPiEvent> {

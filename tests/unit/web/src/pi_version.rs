@@ -5,7 +5,7 @@
 //! pinned: a bare number, a `v` prefix, and a wordy banner all resolve to the
 //! same token, and output with no version in it resolves to none.
 
-use systemprompt_web_admin::test_support::extract_version;
+use systemprompt_web_pi::test_support::extract_version;
 
 #[test]
 fn a_bare_version_is_itself() {

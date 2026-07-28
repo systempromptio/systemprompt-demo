@@ -43,44 +43,16 @@ pub use types::{CreateUserRequest, MarketplaceContext, UserContext, UserSummary,
 ///
 /// The tests for these live in `tests/unit/web` rather than beside the code,
 /// so anything they touch needs a public name. Re-exporting here keeps that
-/// list explicit and reviewable instead of widening each item in place.
+/// list explicit and reviewable instead of widening each item in place. Only
+/// admin-owned items belong here — the governance and pi crates are depended
+/// on directly by the test crate.
 pub mod test_support {
-    pub use systemprompt_web_pi::SHIM_SOURCE;
-    pub use systemprompt_web_pi::config::{PiConfig, SandboxMode, VersionCheckMode};
-    pub use systemprompt_web_pi::conversations::collapse_duplicate_errors;
-    pub use systemprompt_web_pi::events::{
-        CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind, PiEvent,
-        PiEventBody, readable_provider_error, translate, upgrade_legacy_error,
-    };
-    pub use systemprompt_web_pi::format::{cost, cost_round, median};
-    pub use systemprompt_web_pi::jail::gateway_port;
-    pub use systemprompt_web_pi::ledger::CallLedger;
-    pub use systemprompt_web_pi::mcp::FORWARDABLE;
-    pub use systemprompt_web_pi::mcp::render::{McpCallResult, first_frame, render};
-    pub use systemprompt_web_pi::normalize::{
-        MIN_PEOPLE, bucket, bucket_tokens, window_is_publishable,
-    };
-    pub use systemprompt_web_pi::persist::Journal;
-    pub use systemprompt_web_pi::rpc::{
-        GovernancePayload, PayloadKind, RpcCommand, RpcFrame, UiRequest, parse_frame,
-    };
-    pub use systemprompt_web_pi::scope::escape_reason;
-    pub use systemprompt_web_pi::skills::{escape, scalar};
-    pub use systemprompt_web_pi::stage::PolicyStage;
-    pub use systemprompt_web_pi::token::{B64, Invalid, sign, verify};
-    pub use systemprompt_web_pi::transcript::{MAX_CHARS, clamp, section};
-    pub use systemprompt_web_pi::version::extract_version;
     pub use crate::handlers::resolve_principal;
     pub use crate::handlers::site_markdown::parse_md_path;
     pub use crate::handlers::ssr::bridge_downloads::{
         LINUX, MAC_ARM, MAC_INTEL, RELEASE_PAGE, WINDOWS,
     };
-    pub use systemprompt_web_governance::webhook::governance::policies::rate_limit::RateLimit;
-    pub use systemprompt_web_governance::webhook::governance::scope::cap_at;
-    pub use systemprompt_web_governance::webhook::governance::secrets::scan_str_for_secret;
     pub use crate::middleware::gates::{is_pending_allowed_path, may_pass_pending_gate};
-    pub use systemprompt_web_pi::repositories::events::NewPiEvent;
-    pub use crate::util::hmac;
 }
 
 

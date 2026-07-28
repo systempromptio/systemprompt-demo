@@ -4,7 +4,7 @@
 //! the least trusted process in the system. These read the shipped TypeScript
 //! to confirm it stays a relay, and that it fails closed.
 
-use systemprompt_web_admin::test_support::SHIM_SOURCE;
+use systemprompt_web_pi::SHIM_SOURCE;
 
 /// Executable lines only. The shim's own comments discuss the things these
 /// tests forbid — a naive substring search over the whole file would match

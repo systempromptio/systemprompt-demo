@@ -1,7 +1,8 @@
 //! Parsing skill front-matter, escaping what goes back out, and keeping the
 //! shipped skill bodies inert to the gateway's secret scanner.
 
-use systemprompt_web_admin::test_support::{escape, scalar, scan_str_for_secret};
+use systemprompt_web_governance::test_support::scan_str_for_secret;
+use systemprompt_web_pi::test_support::{escape, scalar};
 
 /// The credential-shaped literal `demonstrate_governance` sends to trigger a
 /// `secret_scan` deny. It matches an operator `extra_pattern`, never a

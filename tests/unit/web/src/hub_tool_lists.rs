@@ -15,7 +15,7 @@
 //!
 //! Four hand-maintained lists is three too many to keep in step by eye.
 
-use systemprompt_web_admin::test_support::FORWARDABLE;
+use systemprompt_web_pi::test_support::FORWARDABLE;
 
 fn repo_file(rel: &str) -> String {
     let path = std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../..")).join(rel);

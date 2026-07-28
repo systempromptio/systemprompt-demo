@@ -5,7 +5,7 @@
 //! `workspace_scope` denial rather than a bare `EACCES`, and it has to reject
 //! every way out, not the obvious one.
 
-use systemprompt_web_admin::test_support::escape_reason;
+use systemprompt_web_pi::test_support::escape_reason;
 
 use std::path::Path;
 

@@ -6786,6 +6786,8 @@ dependencies = [
  "systemprompt-pi-jail",
  "systemprompt-web-admin",
  "systemprompt-web-extension",
+ "systemprompt-web-governance",
+ "systemprompt-web-pi",
  "systemprompt-web-shared",
  "tokio",
 ]

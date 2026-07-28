@@ -1,7 +1,7 @@
 //! The call ledger: which evaluations of a call share its identity.
 
 use serde_json::json;
-use systemprompt_web_admin::test_support::CallLedger;
+use systemprompt_web_pi::test_support::CallLedger;
 
 #[test]
 fn claim_inherits_the_identity_the_gate_minted() {

@@ -9,7 +9,7 @@ use systemprompt::identifiers::{CallId, McpToolName, SessionId, UserId};
 use systemprompt::security::authz::Decision;
 use systemprompt::security::policy::types::AccessScope;
 use systemprompt::security::policy::{AgentScope, GovernancePolicy, McpToolInput, PolicyContext};
-use systemprompt_web_admin::test_support::RateLimit;
+use systemprompt_web_governance::test_support::RateLimit;
 
 struct Fixture {
     tool: McpToolName,

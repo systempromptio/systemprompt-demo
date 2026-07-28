@@ -3,11 +3,11 @@
 //! - `BlogConfigValidated::validate` base-URL scheme/parse validation
 //! - hook-event ingest leniency, which the governance record depends on
 //!
-//! and for `systemprompt-web-admin` items reached through its `test_support`
-//! re-exports: `PiConfig` parsing and validation.
+//! and for the admin, governance, and pi crates, each reached through its own
+//! `test_support` re-exports so those crates' internals stay crate-private.
 //!
-//! `secret_crypto` drives the envelope-encryption primitives directly, since
-//! `repositories::secrets` is already public.
+//! `secret_crypto`, `acl_yaml`, and `template_helpers` drive admin surfaces
+//! that are already public and need no such re-export.
 
 #[cfg(test)]
 mod acl_yaml;

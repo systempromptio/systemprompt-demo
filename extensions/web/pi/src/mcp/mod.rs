@@ -33,7 +33,7 @@
 //! call is the cheap half of the trade.
 
 mod hub;
-pub mod render;
+pub(crate) mod render;
 
 use std::sync::Arc;
 

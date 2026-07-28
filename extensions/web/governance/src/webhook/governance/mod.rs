@@ -8,10 +8,10 @@ mod audit;
 mod authz;
 mod handler;
 pub mod inproc;
-pub mod policies;
+pub(crate) mod policies;
 pub mod policy;
-pub mod scope;
-pub mod secrets;
+pub(crate) mod scope;
+pub(crate) mod secrets;
 pub mod stages;
 pub mod types;
 

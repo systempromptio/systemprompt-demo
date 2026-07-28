@@ -11,7 +11,7 @@
 //! for an admin — real egress from the demo whose entire point is refusing it.
 
 use systemprompt::security::policy::types::AccessScope;
-use systemprompt_web_admin::test_support::cap_at;
+use systemprompt_web_governance::test_support::cap_at;
 
 #[test]
 fn a_ceiling_lowers_admin_to_user() {

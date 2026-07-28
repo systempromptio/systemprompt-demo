@@ -7,7 +7,8 @@
 
 use base64::Engine as _;
 use systemprompt::identifiers::UserId;
-use systemprompt_web_admin::test_support::{B64, Invalid, hmac, sign, verify};
+use systemprompt_web_pi::test_support::{B64, Invalid, sign, verify};
+use systemprompt_web_shared::hmac;
 
 const SECRET: &[u8] = b"test-signing-secret";
 

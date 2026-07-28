@@ -41,6 +41,17 @@ use sqlx::PgPool;
 
 pub use error::{GovernanceError, GovernanceResult};
 
+/// Crate-private items that out-of-crate unit tests drive directly.
+///
+/// The tests live in `tests/unit/web` rather than beside the code, so anything
+/// they touch needs a public name. Re-exporting here keeps that list explicit
+/// and reviewable instead of widening each item in place.
+pub mod test_support {
+    pub use crate::webhook::governance::policies::rate_limit::RateLimit;
+    pub use crate::webhook::governance::scope::cap_at;
+    pub use crate::webhook::governance::secrets::scan_str_for_secret;
+}
+
 pub fn hooks_webhook_router(
     pool: Arc<PgPool>,
     session_service: Arc<systemprompt::oauth::SessionCreationService>,

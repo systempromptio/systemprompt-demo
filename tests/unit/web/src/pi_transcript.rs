@@ -2,7 +2,7 @@
 //! clamping keeps both ends of a long message, and governance frames never
 //! reach the model.
 
-use systemprompt_web_admin::test_support::{MAX_CHARS, clamp, section};
+use systemprompt_web_pi::test_support::{MAX_CHARS, clamp, section};
 
 #[test]
 fn a_short_message_is_untouched() {

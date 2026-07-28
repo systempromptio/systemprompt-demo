@@ -1,6 +1,6 @@
 //! Cost and latency formatting for the live profile pane.
 
-use systemprompt_web_admin::test_support::{cost, cost_round, median};
+use systemprompt_web_pi::test_support::{cost, cost_round, median};
 
 /// A round grant should read as the figure someone chose, not as a
 /// measurement of it.

@@ -5,7 +5,8 @@
 //! hand the child tools nobody reviewed; a frame that renders blank reads to a
 //! model as success.
 
-use systemprompt_web_admin::test_support::{FORWARDABLE, first_frame, render};
+use systemprompt_web_pi::test_support::FORWARDABLE;
+use systemprompt_web_pi::test_support::{first_frame, render};
 
 /// The allowlist is the whole of the proxy's authority over what the child
 /// can reach, so an accidental `*` would be silent.

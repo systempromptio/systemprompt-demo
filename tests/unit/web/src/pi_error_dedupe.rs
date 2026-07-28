@@ -7,9 +7,10 @@
 //! rule over rows persisted before the deduper existed, and an agreement test
 //! pins the classification needle to the credit guard's actual wording.
 
-use systemprompt_web_admin::test_support::{
+use systemprompt_web_pi::test_support::collapse_duplicate_errors;
+use systemprompt_web_pi::test_support::{
     CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, PiEventBody,
-    collapse_duplicate_errors, upgrade_legacy_error,
+    upgrade_legacy_error,
 };
 
 fn provider_error(message: &str) -> PiEventBody {
@@ -22,7 +23,7 @@ fn provider_error(message: &str) -> PiEventBody {
         "message": { "role": "assistant", "content": [], "stopReason": "error",
                      "errorMessage": format!("400 {envelope}") }
     });
-    systemprompt_web_admin::test_support::translate(&frame)
+    systemprompt_web_pi::test_support::translate(&frame)
         .unwrap_or_else(|| panic!("a failed turn must surface an error"))
 }
 

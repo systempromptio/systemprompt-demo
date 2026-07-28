@@ -3,7 +3,7 @@
 //! The jail grants outbound TCP to the gateway's port alone. Misreading the
 //! port would either strand every session or widen the grant.
 
-use systemprompt_web_admin::test_support::gateway_port;
+use systemprompt_web_pi::test_support::gateway_port;
 
 #[test]
 fn reads_the_port_the_child_will_dial() {

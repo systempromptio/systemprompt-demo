@@ -56,35 +56,35 @@ mod artifacts;
 mod auth;
 mod capacity;
 mod commands;
-pub mod config;
-pub mod conversations;
+pub(crate) mod config;
+pub(crate) mod conversations;
 mod credentials;
-pub mod events;
+pub(crate) mod events;
 mod events_error;
-pub mod format;
+pub(crate) mod format;
 mod gate;
-pub mod jail;
-pub mod ledger;
-pub mod mcp;
+pub(crate) mod jail;
+pub(crate) mod ledger;
+pub(crate) mod mcp;
 mod models;
-pub mod normalize;
-pub mod persist;
+pub(crate) mod normalize;
+pub(crate) mod persist;
 mod pulse;
 mod pump;
 mod registry;
-pub mod rpc;
-pub mod scope;
+pub(crate) mod rpc;
+pub(crate) mod scope;
 mod session;
-pub mod skills;
+pub(crate) mod skills;
 mod spawn;
-pub mod stage;
+pub(crate) mod stage;
 mod stats;
 mod summary;
 mod throttle;
 mod tier;
-pub mod token;
-pub mod transcript;
-pub mod version;
+pub(crate) mod token;
+pub(crate) mod transcript;
+pub(crate) mod version;
 mod watch;
 
 use std::sync::Arc;
@@ -92,6 +92,37 @@ use std::sync::Arc;
 use axum::routing::{get, patch, post};
 use axum::{Extension, Router};
 use sqlx::PgPool;
+
+/// Crate-private items that out-of-crate unit tests drive directly.
+///
+/// The tests live in `tests/unit/web` rather than beside the code, so anything
+/// they touch needs a public name. Re-exporting here keeps that list explicit
+/// and reviewable instead of widening each module in place.
+pub mod test_support {
+    pub use crate::config::{PiConfig, SandboxMode, VersionCheckMode};
+    pub use crate::conversations::collapse_duplicate_errors;
+    pub use crate::events::{
+        CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind, PiEvent,
+        PiEventBody, readable_provider_error, translate, upgrade_legacy_error,
+    };
+    pub use crate::format::{cost, cost_round, median};
+    pub use crate::jail::gateway_port;
+    pub use crate::ledger::CallLedger;
+    pub use crate::mcp::FORWARDABLE;
+    pub use crate::mcp::render::{first_frame, render};
+    pub use crate::normalize::{MIN_PEOPLE, bucket, bucket_tokens, window_is_publishable};
+    pub use crate::persist::Journal;
+    pub use crate::repositories::events::NewPiEvent;
+    pub use crate::rpc::{
+        GovernancePayload, PayloadKind, RpcCommand, RpcFrame, UiRequest, parse_frame,
+    };
+    pub use crate::scope::escape_reason;
+    pub use crate::skills::{escape, scalar};
+    pub use crate::stage::PolicyStage;
+    pub use crate::token::{B64, Invalid, sign, verify};
+    pub use crate::transcript::{MAX_CHARS, clamp, section};
+    pub use crate::version::extract_version;
+}
 
 pub use auth::issue_embed_token_handler;
 pub use config::PiConfig;
