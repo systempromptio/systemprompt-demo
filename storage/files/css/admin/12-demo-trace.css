@@ -10,7 +10,7 @@
 }
 
 .trace-shell {
-  max-width: 90rem;
+  max-width: 110rem;
   margin: 0 auto;
   padding: var(--sp-space-6, 2rem) clamp(1rem, 4vw, 3rem) var(--sp-space-8, 3rem);
 }
@@ -23,8 +23,12 @@
   color: var(--sp-text-tertiary);
 }
 
+.trace-head {
+  margin-bottom: 1.25rem;
+}
+
 .trace-head h1 {
-  margin: 0 0 0.75rem;
+  margin: 0;
   font-size: 1.7rem;
 }
 
@@ -45,6 +49,100 @@
 
 .trace-identity dd {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The seal on the report: one digest over everything rendered below it,
+   keyed to the attested session — quiet, but unmistakably part of the
+   evidence rather than page chrome. */
+.trace-attestation {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 0.35rem 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--sp-border-subtle);
+  border-left: 3px solid var(--sp-color-success, #2e9e5b);
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--sp-color-success, #2e9e5b) 4%, transparent);
+}
+
+.trace-attestation-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sp-text-tertiary);
+  white-space: nowrap;
+}
+
+.trace-attestation-hash {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.trace-attestation-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--sp-text-secondary);
+}
+
+.trace-attestation-note code {
+  overflow-wrap: anywhere;
+}
+
+.trace-section-title {
+  margin: 2rem 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+/* What was said — the context the governance decisions were made in. */
+.trace-conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trace-message {
+  border: 1px solid var(--sp-border-subtle);
+  border-left-width: 3px;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  background: color-mix(in oklch, var(--sp-text-primary) 2%, transparent);
+}
+
+.trace-message[data-role="user"] {
+  border-left-color: var(--sp-brand-primary, var(--sp-text-primary));
+  background: color-mix(in oklch, var(--sp-brand-primary, currentColor) 5%, transparent);
+}
+
+.trace-message-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.trace-message-role {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sp-text-tertiary);
+}
+
+.trace-message[data-role="user"] .trace-message-role {
+  color: var(--sp-brand-primary, var(--sp-text-secondary));
+  font-weight: 700;
+}
+
+.trace-message-text {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--sp-text-primary);
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
@@ -204,12 +302,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 1rem;
 }
 
 .trace-actions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
 }
 
 .trace-action {
@@ -314,6 +416,8 @@
   }
 
   .trace-event,
+  .trace-message,
+  .trace-attestation,
   .trace-stages {
     break-inside: avoid;
   }

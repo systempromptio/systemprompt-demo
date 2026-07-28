@@ -18,6 +18,13 @@ pub struct PiStoredEvent {
 }
 
 #[derive(Debug, Clone)]
+pub struct TranscriptMessage {
+    pub kind: String,
+    pub text: String,
+    pub at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone)]
 pub struct NewPiEvent {
     pub seq: i64,
     pub kind: String,
@@ -56,6 +63,31 @@ pub async fn list_conversation_events(
             at: r.at,
         })
         .collect())
+}
+
+/// The prose lanes of a transcript: what the user typed (`user_message`) and
+/// the coalesced text the model streamed back (`text_delta`), in replay order.
+pub async fn list_transcript_messages(
+    pool: &PgPool,
+    id: &ContextId,
+    limit: i64,
+) -> Result<Vec<TranscriptMessage>, sqlx::Error> {
+    sqlx::query_as!(
+        TranscriptMessage,
+        r#"
+        SELECT kind as "kind!", body->>'text' as "text!", at as "at!"
+        FROM pi_conversation_events
+        WHERE conversation_id = $1
+          AND kind IN ('user_message', 'text_delta')
+          AND body->>'text' IS NOT NULL
+        ORDER BY seq
+        LIMIT $2
+        "#,
+        id.as_str(),
+        limit
+    )
+    .fetch_all(pool)
+    .await
 }
 
 /// Write a batch of frames and advance the conversation's watermark.

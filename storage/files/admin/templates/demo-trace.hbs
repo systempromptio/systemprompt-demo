@@ -36,6 +36,14 @@
         </header>
 
         {{#if has_session}}
+        <section class="trace-attestation" aria-label="Integrity attestation">
+            <span class="trace-attestation-label">integrity · sha-256</span>
+            <code class="trace-attestation-hash">{{integrity_hash}}</code>
+            <p class="trace-attestation-note">Computed over the transcript and every governed
+            event below, keyed to attested session <code>{{session_id}}</code>. Re-hash the
+            page's data and a changed digest means changed evidence.</p>
+        </section>
+
         <section class="trace-summary" aria-label="Session summary">
             <div class="trace-stat"><b>{{summary.events}}</b><span>events</span></div>
             <div class="trace-stat" {{#if summary.denials}}data-hot="1"{{/if}}><b>{{summary.denials}}</b><span>denied</span></div>
@@ -44,6 +52,21 @@
             <div class="trace-stat"><b>{{summary.output_tokens}}</b><span>tokens out</span></div>
             <div class="trace-stat"><b>{{summary.cost_display}}</b><span>cost</span></div>
         </section>
+
+        {{#if has_messages}}
+        <section class="trace-conversation" aria-label="Conversation transcript">
+            <h2 class="trace-section-title">Conversation</h2>
+            {{#each messages}}
+            <article class="trace-message" data-role="{{role}}">
+                <header class="trace-message-head">
+                    <span class="trace-message-role">{{role}}</span>
+                    <time class="trace-at">{{at}}</time>
+                </header>
+                <p class="trace-message-text">{{text}}</p>
+            </article>
+            {{/each}}
+        </section>
+        {{/if}}
 
         {{#if has_artifacts}}
         <section class="trace-artifacts" aria-label="Artifacts this session produced">

@@ -1,17 +1,21 @@
 //! `/trace/{conversation_id}` — the audit report behind the terminal's rail.
 //!
 //! The terminal shows a four-pip summary per governed call; this page is the
-//! evidence it links to: the merged, time-ordered union of governance
-//! decisions, AI requests, and tool fires for one conversation, with every
-//! policy stage and its measured cost. The path segment names the conversation
-//! and a `#call-<id>` fragment deep-links one governance decision by its
-//! `governance_decisions.id`.
+//! evidence it links to: the conversation transcript plus the merged,
+//! time-ordered union of governance decisions, AI requests, and tool fires for
+//! one conversation, with every policy stage and its measured cost, sealed
+//! under a SHA-256 digest keyed to the attested session. The path segment
+//! names the conversation and a `#call-<id>` fragment deep-links one
+//! governance decision by its `governance_decisions.id`.
 //!
 //! The page is public on purpose: an audit trail you cannot hand to someone
 //! who wasn't in the session is not evidence. The conversation id is an
 //! unguessable capability — holding the link is the authorization, the same
 //! posture as the artifact viewer routes. An unknown id renders the empty
 //! state, indistinguishable from a conversation with no activity.
+
+mod transcript;
+mod views;
 
 use std::sync::Arc;
 
@@ -24,44 +28,13 @@ use systemprompt::identifiers::ContextId;
 
 use crate::error::{AdminHtmlError, AdminHtmlResult};
 use crate::repositories::analytics::session_detail;
-use crate::repositories::governance::demo_trace::{self, DemoTraceRow};
-use crate::repositories::pi::conversations;
+use crate::repositories::governance::demo_trace;
+use crate::repositories::pi::{conversations, events as event_repo};
 use crate::templates::AdminTemplateEngine;
 
 use super::branding_context;
 
 const TRACE_LIMIT: i64 = 200;
-
-#[derive(Debug, Serialize)]
-struct StageView {
-    policy: String,
-    result: String,
-    detail: String,
-    duration: String,
-}
-
-#[derive(Debug, Serialize)]
-struct EventView {
-    id: String,
-    at: String,
-    kind: String,
-    subject: String,
-    outcome: String,
-    policy: String,
-    detail: String,
-    is_denied: bool,
-    stages: Vec<StageView>,
-    has_stages: bool,
-    approver: Option<ApproverView>,
-}
-
-#[derive(Debug, Serialize)]
-struct ApproverView {
-    name: String,
-    action: String,
-    at: String,
-    user_id: systemprompt::identifiers::UserId,
-}
 
 #[derive(Debug, Serialize)]
 struct ArtifactView {
@@ -111,19 +84,35 @@ pub(crate) async fn demo_trace_page(
             .await
             // lint-ok: http-error — every read failure on this page is a 500.
             .map_err(|e| AdminHtmlError::internal(format!("demo trace kpi read failed: {e:?}")))?;
+        let stored = event_repo::list_transcript_messages(&pool, &row.id, TRACE_LIMIT)
+            .await
+            // lint-ok: http-error — every read failure on this page is a 500.
+            .map_err(|e| {
+                AdminHtmlError::internal(format!("demo trace transcript read failed: {e:?}"))
+            })?;
 
         insert_artifacts(obj, &pool, &row.id, &row.user_id).await?;
 
-        let events: Vec<EventView> = trace.iter().map(event_view).collect();
+        let events: Vec<views::EventView> = trace.iter().map(views::event_view).collect();
         let denials = events.iter().filter(|e| e.is_denied).count();
+        let messages = transcript::message_views(&stored);
+        let events_value =
+            serde_json::to_value(&events).unwrap_or_else(|_| serde_json::Value::Array(vec![]));
+        let digest = transcript::integrity_digest(&row.id, attested.as_str(), &messages, &events_value);
 
         obj.insert("has_session".to_owned(), true.into());
         obj.insert("username".to_owned(), owner_name.into());
         obj.insert("conversation_id".to_owned(), row.id.to_string().into());
         obj.insert("session_id".to_owned(), attested.to_string().into());
+        obj.insert("integrity_hash".to_owned(), digest.into());
         if let Some(title) = &row.title {
             obj.insert("conversation_title".to_owned(), title.clone().into());
         }
+        obj.insert("has_messages".to_owned(), (!messages.is_empty()).into());
+        obj.insert(
+            "messages".to_owned(),
+            serde_json::to_value(messages).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
+        );
         obj.insert(
             "summary".to_owned(),
             serde_json::to_value(SummaryView {
@@ -136,10 +125,7 @@ pub(crate) async fn demo_trace_page(
             })
             .unwrap_or(serde_json::Value::Null),
         );
-        obj.insert(
-            "events".to_owned(),
-            serde_json::to_value(events).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
-        );
+        obj.insert("events".to_owned(), events_value);
     } else {
         obj.insert("has_session".to_owned(), false.into());
     }
@@ -185,93 +171,4 @@ async fn insert_artifacts(
         serde_json::to_value(artifacts).unwrap_or_else(|_| serde_json::Value::Array(vec![])),
     );
     Ok(())
-}
-
-fn event_view(row: &DemoTraceRow) -> EventView {
-    let stages = row
-        .evaluated_rules
-        .as_ref()
-        .map(stage_views)
-        .unwrap_or_default();
-    EventView {
-        id: row.id.clone(),
-        at: row.at.format("%Y-%m-%d %H:%M:%S%.3f UTC").to_string(),
-        kind: row.kind.clone(),
-        subject: row.subject.clone(),
-        outcome: row.outcome.clone(),
-        policy: row.policy.clone(),
-        detail: row.detail.clone(),
-        is_denied: matches!(
-            row.outcome.as_str(),
-            "deny" | "denied" | "failed" | "rejected"
-        ),
-        has_stages: !stages.is_empty(),
-        stages,
-        approver: row.evaluated_rules.as_ref().and_then(approver_view),
-    }
-}
-
-fn approver_view(evaluated_rules: &serde_json::Value) -> Option<ApproverView> {
-    let approver = evaluated_rules.get("approver")?;
-    let text = |key: &str| {
-        approver
-            .get(key)
-            .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_owned()
-    };
-    let at = approver
-        .get("decided_at")
-        .and_then(|v| v.as_str())
-        .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-        .map(|t| t.format("%Y-%m-%d %H:%M:%S%.3f UTC").to_string())
-        .unwrap_or_default();
-    Some(ApproverView {
-        name: text("username"),
-        action: text("action"),
-        at,
-        user_id: systemprompt::identifiers::UserId::new(text("user_id")),
-    })
-}
-
-fn stage_views(evaluated_rules: &serde_json::Value) -> Vec<StageView> {
-    let Some(chain) = evaluated_rules.get("chain").and_then(|c| c.as_array()) else {
-        return Vec::new();
-    };
-    chain
-        .iter()
-        .map(|entry| {
-            let text = |key: &str| {
-                entry
-                    .get(key)
-                    .and_then(|v| v.as_str())
-                    .unwrap_or_default()
-                    .to_owned()
-            };
-            StageView {
-                policy: text("policy_id"),
-                result: text("result"),
-                detail: text("detail"),
-                duration: format_duration(
-                    entry
-                        .get("duration_ms")
-                        .and_then(serde_json::Value::as_f64)
-                        .unwrap_or(0.0),
-                ),
-            }
-        })
-        .collect()
-}
-
-// Why: 0 is the backfill sentinel for "recorded before timings existed" (see
-// migrations/2026-07-28-governance-chain-duration-backfill.sql) — it renders
-// as an em dash, never as a measured figure.
-fn format_duration(ms: f64) -> String {
-    if ms > 0.0 && ms < 1.0 {
-        "<1ms".to_owned()
-    } else if ms >= 1.0 {
-        format!("{}ms", ms.round() as i64)
-    } else {
-        "—".to_owned()
-    }
 }
