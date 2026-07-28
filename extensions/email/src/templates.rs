@@ -1,4 +1,4 @@
-//! The welcome / $5-credit email, rendered as an HTML + plain-text
+//! The welcome / $1-credit email, rendered as an HTML + plain-text
 //! multipart message.
 
 use lettre::Message;
@@ -20,7 +20,9 @@ const FONT: &str =
 pub const BRIDGE_MAC_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-aarch64-apple-darwin-app.zip";
 pub const BRIDGE_WINDOWS_URL: &str = "https://github.com/systempromptio/systemprompt-demo/releases/download/bridge-v0.18.4/systemprompt-bridge-x86_64-pc-windows-msvc.exe";
 
-const SUBJECT: &str = "Your $5 systemprompt credit is ready";
+pub const DEMO_URL: &str = "https://demo.systemprompt.io";
+
+const SUBJECT: &str = "Your $1 systemprompt credit is ready";
 
 pub fn build_welcome_email(
     from: Mailbox,
@@ -63,23 +65,22 @@ fn build_plain_body(display_name: &str, site_url: &str) -> String {
     let setup_url = format!("{site_url}/setup");
     format!(
         "{greeting}\n\n\
-         You've been given $5 of credit to try systemprompt with Claude Desktop.\n\
-         No card, no setup fees — just connect and start building. Here's how:\n\n\
-         1. DOWNLOAD THE BRIDGE\n\
+         You've been given $1 of credit to try systemprompt in the embedded web demo.\n\
+         No card, no setup fees — just open it and start building. Here's how:\n\n\
+         1. OPEN THE WEB DEMO\n\
+         Head to {demo} and sign in. Your $1 credit is applied to\n\
+         every request through the governed gateway.\n\n\
+         2. PREFER CLAUDE DESKTOP?\n\
          The Systemprompt Bridge connects Claude Desktop (or Cowork) to your account.\n\
          Mac:     {mac}\n\
-         Windows: {win}\n\n\
-         2. SIGN IN WITH YOUR CODE\n\
+         Windows: {win}\n\
          Open {setup_url} and copy your one-time bridge sign-in code,\n\
          then paste it into the bridge on first launch.\n\n\
-         3. OPEN CLAUDE DESKTOP\n\
-         Once the bridge is signed in, Claude Desktop and Cowork are configured\n\
-         automatically. Your $5 credit is applied to every request through the\n\
-         governed gateway — watch it work, and stop worrying about surprise bills.\n\n\
          ---\n\n\
          systemprompt.io | the governed gateway for AI agents\n\
          Setup guide: {setup_url}",
         greeting = greeting(display_name),
+        demo = DEMO_URL,
         mac = BRIDGE_MAC_URL,
         win = BRIDGE_WINDOWS_URL,
         setup_url = setup_url,
@@ -95,7 +96,7 @@ fn build_html_body(display_name: &str, site_url: &str) -> String {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light">
-<title>Your $5 systemprompt credit is ready</title>
+<title>Your $1 systemprompt credit is ready</title>
 </head>
 <body style="margin:0;padding:0;background-color:{BG_PAGE};-webkit-text-size-adjust:100%;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:{BG_PAGE};">
@@ -118,7 +119,7 @@ fn build_html_body(display_name: &str, site_url: &str) -> String {
 <td style="padding:20px 48px 0 48px;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:{ACCENT_TINT};border-radius:8px;">
 <tr><td style="padding:18px 20px;font-family:{FONT};font-size:16px;line-height:1.6;color:{TEXT_PRIMARY};">
-<span style="font-weight:700;color:{BRAND_ORANGE};">You've been given $5 of credit</span> to try systemprompt with Claude Desktop. No card, no setup fees — just connect and start building.
+<span style="font-weight:700;color:{BRAND_ORANGE};">You've been given $1 of credit</span> to try systemprompt in the embedded <a href="{DEMO_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">web demo</a>. No card, no setup fees — just open it and start building.
 </td></tr>
 </table>
 </td>
@@ -157,25 +158,21 @@ systemprompt.io | the governed gateway for AI agents
 fn html_steps(setup_url: &str) -> String {
     let step1 = html_step(
         "1",
-        "Download the Bridge",
+        "Open the web demo",
         &format!(
-            r#"The Systemprompt Bridge connects Claude Desktop (or Cowork) to your account.<br>
-<a href="{BRIDGE_MAC_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">Download for Mac &#8594;</a> &nbsp; <a href="{BRIDGE_WINDOWS_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">Download for Windows &#8594;</a>"#,
+            r#"Head to <a href="{DEMO_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">demo.systemprompt.io</a> and sign in. Your $1 credit is applied to every request through the governed gateway."#,
         ),
     );
     let step2 = html_step(
         "2",
-        "Sign in with your code",
+        "Prefer Claude Desktop?",
         &format!(
-            r#"Open your <a href="{setup_url}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">setup page</a>, copy your one-time bridge sign-in code, and paste it into the bridge on first launch."#,
+            r#"The Systemprompt Bridge connects Claude Desktop (or Cowork) to your account.<br>
+<a href="{BRIDGE_MAC_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">Download for Mac &#8594;</a> &nbsp; <a href="{BRIDGE_WINDOWS_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">Download for Windows &#8594;</a><br>
+Open your <a href="{setup_url}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">setup page</a>, copy your one-time bridge sign-in code, and paste it into the bridge on first launch."#,
         ),
     );
-    let step3 = html_step(
-        "3",
-        "Open Claude Desktop",
-        "Once the bridge is signed in, Claude Desktop and Cowork are configured automatically. Your $5 credit is applied to every request through the governed gateway.",
-    );
-    format!("{step1}\n{step2}\n{step3}")
+    format!("{step1}\n{step2}")
 }
 
 fn html_step(number: &str, title: &str, body: &str) -> String {

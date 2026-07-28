@@ -1,7 +1,7 @@
 //! The two seams of the reviewed-signup funnel.
 //!
 //! [`registration_submitted`] fires when someone registers and notifies the
-//! admins. [`account_approved`] is the only path that grants the 5,000,000 µ$
+//! admins. [`account_approved`] is the only path that grants the $1
 //! signup credit or sends the welcome email. Signups are auto-approved, so
 //! registration calls it directly; the admin approve endpoint still calls it
 //! too, harmlessly, because the grant is idempotent.

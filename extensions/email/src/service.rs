@@ -1,7 +1,6 @@
-//! SMTP-backed send service. Configuration is read from `SMTP_*` environment
-//! variables, falling back to the `smtp_*` / `site_url` secrets in the
-//! `SecretsBootstrap` store. When SMTP is not configured the service is absent
-//! and callers degrade to a logged no-op.
+//! SMTP-backed send service. Configuration is read from the `smtp_*` /
+//! `site_url` secrets in the validated `SecretsBootstrap` store. When SMTP is
+//! not configured the service is absent and callers degrade to a logged no-op.
 
 use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
@@ -10,12 +9,10 @@ use lettre::{AsyncSmtpTransport, AsyncTransport, Tokio1Executor};
 use crate::error::EmailError;
 use crate::{notice, templates};
 
-pub(crate) fn read_secret(env_key: &str, secrets_key: &str) -> Option<String> {
-    std::env::var(env_key).ok().or_else(|| {
-        systemprompt::config::SecretsBootstrap::get()
-            .ok()
-            .and_then(|s| s.get(secrets_key).cloned())
-    })
+pub(crate) fn secret(key: &str) -> Option<String> {
+    systemprompt::config::SecretsBootstrap::get()
+        .ok()
+        .and_then(|s| s.get(key).cloned())
 }
 
 pub struct EmailService {
@@ -34,29 +31,28 @@ impl std::fmt::Debug for EmailService {
 }
 
 impl EmailService {
-    /// Build a service from the environment/secrets. Returns `None` when any
-    /// required SMTP secret is missing, so registration and onboarding never
-    /// fail because email is unconfigured.
+    /// Build a service from the validated secrets store. Returns `None` when
+    /// any required SMTP secret is missing, so registration and onboarding
+    /// never fail because email is unconfigured.
     #[must_use]
-    pub fn from_env() -> Option<Self> {
-        let host = read_secret("SMTP_HOST", "smtp_host").or_else(|| {
-            tracing::warn!("SMTP_HOST secret not configured; email disabled");
+    pub fn from_secrets() -> Option<Self> {
+        let host = secret("smtp_host").or_else(|| {
+            tracing::warn!("smtp_host secret not configured; email disabled");
             None
         })?;
-        let port: u16 = read_secret("SMTP_PORT", "smtp_port")
+        let port: u16 = secret("smtp_port")
             .and_then(|p| p.parse().ok())
             .unwrap_or(587);
-        let username = read_secret("SMTP_USERNAME", "smtp_username")?;
-        let password = read_secret("SMTP_PASSWORD", "smtp_password")?;
-        let from_str = read_secret("SMTP_FROM", "smtp_from").unwrap_or_else(|| username.clone());
-        let site_url =
-            read_secret("SITE_URL", "site_url").unwrap_or_else(|| "https://systemprompt.io".into());
+        let username = secret("smtp_username")?;
+        let password = secret("smtp_password")?;
+        let from_str = secret("smtp_from").unwrap_or_else(|| username.clone());
+        let site_url = secret("site_url").unwrap_or_else(|| "https://systemprompt.io".into());
 
         let from: Mailbox = if from_str.contains('<') {
             from_str
                 .parse()
                 .map_err(|e| {
-                    tracing::error!(from = %from_str, error = %e, "Failed to parse SMTP_FROM address");
+                    tracing::error!(from = %from_str, error = %e, "Failed to parse smtp_from address");
                 })
                 .ok()?
         } else {
@@ -65,7 +61,7 @@ impl EmailService {
                 from_str
                     .parse()
                     .map_err(|e| {
-                        tracing::error!(from = %from_str, error = %e, "Failed to parse SMTP_FROM as email address");
+                        tracing::error!(from = %from_str, error = %e, "Failed to parse smtp_from as email address");
                     })
                     .ok()?,
             )
