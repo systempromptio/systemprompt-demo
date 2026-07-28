@@ -7,7 +7,7 @@ Deploys the `systemprompt-gateway` server on [Coolify](https://coolify.io), a se
 Paste the compose in directly:
 
 1. Open your Coolify dashboard → **Services** → **New Service** → **Docker Compose**.
-2. Paste the compose from [`deploy/coolify/service-template.json`](https://github.com/systempromptio/systemprompt-template/blob/main/deploy/coolify/service-template.json) (the `compose` field), or use [`docker-compose.yml`](https://github.com/systempromptio/systemprompt-template/blob/main/docker-compose.yml) from the repo root with `build: .` swapped for `image: ghcr.io/systempromptio/systemprompt-template:latest`.
+2. Paste the compose from [`deploy/coolify/service-template.json`](https://github.com/systempromptio/systemprompt-template/blob/main/deploy/coolify/service-template.json) (the `compose` field), or use [`docker-compose.yml`](https://github.com/systempromptio/systemprompt-template/blob/main/docker-compose.yml) from the repo root with `build: .` swapped for `image: ghcr.io/systempromptio/systemprompt-demo:latest`.
 3. Coolify pre-creates the env vars it finds in the compose: fill them in on the **Environment Variables** tab:
    - `POSTGRES_PASSWORD`: strong random. Set it **before the first deploy**: Postgres initialises its volume with whatever password is present on first boot, and changing it later fails auth until the volume is wiped.
    - `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` / `GEMINI_API_KEY`: at least one; the container refuses to boot without a provider key.

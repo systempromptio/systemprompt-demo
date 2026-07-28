@@ -80,7 +80,7 @@ with the `GHCR_PRUNE_TOKEN`.
 ## Rollback
 
 1. Re-point `latest` to the previous good release:
-   `crane tag ghcr.io/systempromptio/systemprompt-template:X.Y.(Z-1) latest`
+   `crane tag ghcr.io/systempromptio/systemprompt-demo:X.Y.(Z-1) latest`
    (same for the `:X` and `:X.Y` aliases if the bad release moved them).
 2. Mark the GitHub Release as pre-release or delete it.
 3. Never reuse a tag — fix forward and cut the next patch version.

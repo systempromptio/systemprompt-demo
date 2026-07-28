@@ -56,7 +56,7 @@ annotations:
       url: https://discord.gg/wkAbSuPWpr
   artifacthub.io/images: |
     - name: gateway
-      image: ghcr.io/systempromptio/systemprompt-template:0.25.0
+      image: ghcr.io/systempromptio/systemprompt-demo:0.25.0
       platforms:
         - linux/amd64
         - linux/arm64

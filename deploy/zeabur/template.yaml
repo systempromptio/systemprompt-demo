@@ -79,7 +79,7 @@ spec:
         - postgres
       spec:
         source:
-          image: ghcr.io/systempromptio/systemprompt-template:0
+          image: ghcr.io/systempromptio/systemprompt-demo:0
         ports:
           - id: web
             port: 8080

@@ -34,7 +34,7 @@ helm install gateway systemprompt/gateway \
 | Value | Default | Purpose |
 |---|---|---|
 | `replicaCount` | `1` | Number of gateway pods |
-| `image.repository` | `ghcr.io/systempromptio/systemprompt-template` | Image source |
+| `image.repository` | `ghcr.io/systempromptio/systemprompt-demo` | Image source |
 | `image.tag` | `Chart.appVersion` | Override to pin a version |
 | `postgresql.enabled` | `true` | Deploy bundled bitnami Postgres |
 | `externalDatabase.url` | — | Required when `postgresql.enabled=false` |

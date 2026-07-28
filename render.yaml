@@ -5,7 +5,7 @@ services:
     plan: free
     autoDeploy: false  # button-deployed instances shouldn't redeploy on every push to this repo
     image:
-      url: ghcr.io/systempromptio/systemprompt-template:latest
+      url: ghcr.io/systempromptio/systemprompt-demo:latest
     healthCheckPath: /api/v1/health
     envVars:
       - key: HOST

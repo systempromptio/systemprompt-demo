@@ -46,7 +46,7 @@ Add the same environment variables as above, then deploy.
 
 ## Notes
 
-- Runs the published image `ghcr.io/systempromptio/systemprompt-template:0`
+- Runs the published image `ghcr.io/systempromptio/systemprompt-demo:0`
   (floating major tag — minor/patch releases are picked up on redeploy
   without a template change).
 - Postgres 18 is bundled in the stack; no external database needed.

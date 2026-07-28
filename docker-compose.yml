@@ -22,7 +22,7 @@ services:
     # Default: build from source. To use a pre-published image, comment `build:`
     # and uncomment `image:` below (requires GHCR publishing workflow).
     build: .
-    # image: ghcr.io/systempromptio/systemprompt-template:latest
+    # image: ghcr.io/systempromptio/systemprompt-demo:latest
     restart: unless-stopped
     depends_on:
       postgres:

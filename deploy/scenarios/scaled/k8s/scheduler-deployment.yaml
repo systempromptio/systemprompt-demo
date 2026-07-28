@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: systemprompt
-          image: ghcr.io/systempromptio/systemprompt-template:latest
+          image: ghcr.io/systempromptio/systemprompt-demo:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

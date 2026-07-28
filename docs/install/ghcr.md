@@ -1,6 +1,6 @@
 # Install the gateway via GitHub Container Registry
 
-`systemprompt` is published to GHCR as [`ghcr.io/systempromptio/systemprompt-template`](https://github.com/systempromptio/systemprompt-template/pkgs/container/systemprompt-template). The image is a single compiled Rust binary plus the `services/` config tree: same binary that ships via Helm and Render.
+`systemprompt` is published to GHCR as [`ghcr.io/systempromptio/systemprompt-demo`](https://github.com/systempromptio/systemprompt-template/pkgs/container/systemprompt-demo). The image is a single compiled Rust binary plus the `services/` config tree: same binary that ships via Helm and Render.
 
 Pick GHCR when:
 - You want a public, rate-limit-free OCI pull source backed by GitHub auth.
@@ -29,7 +29,7 @@ You must provide `DATABASE_URL` pointing at a Postgres the container can reach, 
 docker run --rm -p 8080:8080 \
   -e DATABASE_URL=postgres://user:pw@host.docker.internal:5432/systemprompt \
   -e ANTHROPIC_API_KEY=sk-ant-... \
-  ghcr.io/systempromptio/systemprompt-template:latest
+  ghcr.io/systempromptio/systemprompt-demo:latest
 ```
 
 On first boot the entrypoint writes `/app/services/profiles/docker/{profile.yaml,secrets.json}`, waits for Postgres, runs migrations, and starts the API on port 8080.
@@ -39,7 +39,7 @@ On first boot the entrypoint writes `/app/services/profiles/docker/{profile.yaml
 - `latest`: most recent release.
 - `<major>.<minor>.<patch>` (e.g. `0.5.0`), `<major>.<minor>` (e.g. `0.5`), `<major>` (e.g. `0`): published when a `v*` tag ships through the release pipeline.
 
-If a version tag is missing from GHCR, the release workflow hasn't completed for it yet: pin to `latest` or a tag you can see on the [package page](https://github.com/systempromptio/systemprompt-template/pkgs/container/systemprompt-template).
+If a version tag is missing from GHCR, the release workflow hasn't completed for it yet: pin to `latest` or a tag you can see on the [package page](https://github.com/systempromptio/systemprompt-template/pkgs/container/systemprompt-demo).
 
 ## Authenticated pulls
 
@@ -59,13 +59,13 @@ Versioned tags are signed with cosign (keyless, GitHub OIDC). `latest` is not re
 cosign verify \
   --certificate-identity-regexp='https://github.com/systempromptio/systemprompt-deploy/' \
   --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
-  ghcr.io/systempromptio/systemprompt-template:<version>
+  ghcr.io/systempromptio/systemprompt-demo:<version>
 ```
 
 The SBOM is attached as a cosign attestation:
 
 ```bash
-cosign download attestation ghcr.io/systempromptio/systemprompt-template:<version> \
+cosign download attestation ghcr.io/systempromptio/systemprompt-demo:<version> \
   | jq -r '.payload | @base64d | fromjson | .predicate' > sbom.json
 ```
 
@@ -94,7 +94,7 @@ Multi-arch (`linux/amd64`, `linux/arm64`) for versioned releases. The `latest` t
 To poke around:
 
 ```bash
-docker run --rm -it --entrypoint /bin/bash ghcr.io/systempromptio/systemprompt-template:latest
+docker run --rm -it --entrypoint /bin/bash ghcr.io/systempromptio/systemprompt-demo:latest
 ```
 
 Docs: https://systemprompt.io/documentation/?utm_source=ghcr&utm_medium=install_doc

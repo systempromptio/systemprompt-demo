@@ -8,7 +8,7 @@ One-click deploy of the `systemprompt-gateway` server on [Railway](https://railw
 
 The published template ([`systempromptio-the-self-owned-ai-control`](https://railway.com/deploy/systempromptio-the-self-owned-ai-control)) provisions:
 
-- A `gateway` service from `ghcr.io/systempromptio/systemprompt-template:latest`
+- A `gateway` service from `ghcr.io/systempromptio/systemprompt-demo:latest`
 - A Postgres service, with `DATABASE_URL` wired into the gateway automatically
 - `HOST=::` on the gateway: Railway's private network is IPv6-only, so the server must bind the IPv6 wildcard to reach Postgres and accept proxied traffic
 

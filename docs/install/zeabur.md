@@ -10,7 +10,7 @@ Deploy from the template page, set at least one of `ANTHROPIC_API_KEY` / `OPENAI
 
 ## Manual path
 
-1. Create a project → **Deploy New Service** → **Docker Image** → `ghcr.io/systempromptio/systemprompt-template:0`, plus a `postgres:18-alpine` service (volume at `/var/lib/postgresql`).
+1. Create a project → **Deploy New Service** → **Docker Image** → `ghcr.io/systempromptio/systemprompt-demo:0`, plus a `postgres:18-alpine` service (volume at `/var/lib/postgresql`).
 2. On the gateway service set:
    - `DATABASE_URL`: `postgres://systemprompt:<password>@postgres.zeabur.internal:5432/systemprompt`
    - `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` / `GEMINI_API_KEY`: at least one.

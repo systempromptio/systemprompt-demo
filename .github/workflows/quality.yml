@@ -81,6 +81,8 @@ jobs:
         run: bash scripts/check-file-headers.sh
       - name: No synthesized principals (UserId::new with string literal)
         run: bash scripts/check-no-synthesis.sh
+      - name: Deploy targets reference the published image
+        run: bash scripts/check-image-name.sh
 
   file-size:
     name: Source file size guard

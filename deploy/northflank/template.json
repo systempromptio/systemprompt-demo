@@ -61,7 +61,7 @@
                   "deployment": {
                     "instances": 1,
                     "external": {
-                      "imagePath": "ghcr.io/systempromptio/systemprompt-template:0"
+                      "imagePath": "ghcr.io/systempromptio/systemprompt-demo:0"
                     }
                   },
                   "ports": [

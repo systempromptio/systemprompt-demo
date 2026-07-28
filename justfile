@@ -273,6 +273,7 @@ lint-gates:
     bash scripts/check-file-size.sh
     bash scripts/check-function-size.sh
     bash scripts/check-frontend.sh
+    bash scripts/check-image-name.sh
 
 # Shared sources that differ from the sibling fork must be recorded in
 # .fork-divergence. Needs SIBLING_REPO; skips cleanly without it.

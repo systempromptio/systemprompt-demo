@@ -38,7 +38,7 @@ spec:
       containers:
         - name: systemprompt
           # Replace with your published image (or build & push from Dockerfile).
-          image: ghcr.io/systempromptio/systemprompt-template:latest
+          image: ghcr.io/systempromptio/systemprompt-demo:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

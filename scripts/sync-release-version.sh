@@ -27,7 +27,7 @@ $VERSION
 EOV
 : "${PATCH:?ERROR: version must have three components}"
 
-IMAGE="ghcr.io/systempromptio/systemprompt-template"
+IMAGE="ghcr.io/systempromptio/systemprompt-demo"
 fail=0
 
 # file, description, grep pattern that must match post-apply

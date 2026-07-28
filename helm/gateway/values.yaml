@@ -2,7 +2,7 @@
 # See values-ha.yaml for a 3-replica + external-Postgres example.
 
 image:
-  repository: ghcr.io/systempromptio/systemprompt-template
+  repository: ghcr.io/systempromptio/systemprompt-demo
   tag: ""         # defaults to Chart.appVersion
   pullPolicy: IfNotPresent
 imagePullSecrets: []
