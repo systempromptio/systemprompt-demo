@@ -217,7 +217,7 @@ async fn spine_dashboard(
     let status = DashboardSection::new("spine-status", "Pipeline stages", SectionType::Status)
         .with_data(StatusSectionData {
             services: ["scope_check", "secret_scan", "tool_blocklist", "rate_limit"]
-                .map(|s| stage(s))
+                .map(stage)
                 .to_vec(),
             database: None,
             recent_errors: None,
