@@ -7,6 +7,8 @@
 
 import { ms, pct, compactTokens } from './sp-auth-pane-helpers.js';
 import { applyGovChip, applyStages, renderFeed } from './sp-auth-pane-governance.js';
+import { refreshRequests } from './sp-auth-pane-requests.js';
+import { refreshActivity } from './sp-auth-pane-activity.js';
 
 /** How often the fallback checks whether the push has gone quiet. */
 export const FALLBACK_POLL_MS = 15000;
@@ -96,6 +98,11 @@ export function applyStats(pane, s) {
   applyModelMix(pane, s.model_mix);
   applyGovChip(pane, (s.events || []).length, denials);
   renderFeed(pane, s.events || []);
+  // The headline snapshot is the signal that new rows landed; the drilldowns
+  // (per-request list, timeseries, cross-conversation rollup) refresh off the
+  // same beat, each behind its own throttle.
+  refreshRequests(pane);
+  refreshActivity(pane);
 }
 
 /**

@@ -91,7 +91,20 @@ export function renderFeed(pane, events) {
   pane._feed.innerHTML = '';
   // Newest first: the pane is short, and the thing that just happened is the
   // thing being watched for.
-  events.slice(-40).reverse().forEach((e) => pane._feed.append(feedItem(e)));
+  events.slice(-40).reverse().forEach((e) => {
+    const li = feedItem(e);
+    // Stored decisions carry their audit row's id; a live pushFeed entry does
+    // not, so only the durable ones get a deep link.
+    if (e.id && pane._conversation) {
+      const audit = document.createElement('a');
+      audit.className = 'pane-link pane-link--sm pane-feed-audit';
+      audit.href = '/trace/' + encodeURIComponent(pane._conversation)
+        + '#call-' + encodeURIComponent(e.id);
+      audit.textContent = 'audit →';
+      li.append(audit);
+    }
+    pane._feed.append(li);
+  });
   syncFeedPreview(pane);
 }
 

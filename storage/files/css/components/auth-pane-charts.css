@@ -1,0 +1,161 @@
+/* Chart, request-list, and activity widgets for <sp-auth-pane>.
+   Companion to auth-pane-telemetry.css, which is at its size budget. */
+
+.auth-pane .pane-chart,
+.auth-pane .pane-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 44px;
+  padding: 4px 6px;
+  border: 1px solid var(--sp-ap-border);
+  border-radius: var(--sp-radius-sm);
+  background: var(--sp-ap-well);
+}
+
+.auth-pane .pane-strip {
+  height: 30px;
+  margin-top: 10px;
+}
+
+.auth-pane .pane-strip .pane-chart {
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  flex: 1;
+}
+
+.auth-pane .pane-chart-col {
+  flex: 1;
+  min-width: 3px;
+  max-width: 14px;
+  border-radius: 2px 2px 0 0;
+  background: var(--sp-color-primary);
+  opacity: 0.75;
+}
+
+.auth-pane .pane-chart-col[data-hot="1"] {
+  background: var(--sp-color-error);
+  opacity: 1;
+}
+
+.auth-pane .pane-ribbon {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--sp-ap-text-muted);
+}
+
+/* success / failure split bar */
+.auth-pane .pane-split {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.auth-pane .pane-split-bar {
+  flex: 1;
+  display: flex;
+  height: 6px;
+  border-radius: var(--sp-radius-full);
+  overflow: hidden;
+  background: var(--sp-ap-well);
+}
+
+.auth-pane .pane-split-ok { background: var(--sp-color-success); }
+
+.auth-pane .pane-split-bad { background: var(--sp-color-error); }
+
+.auth-pane .pane-split-legend {
+  font-size: 0.68rem;
+  color: var(--sp-ap-text-muted);
+  white-space: nowrap;
+}
+
+/* per-request rows */
+.auth-pane .pane-reqs,
+.auth-pane .pane-convs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.auth-pane .pane-req,
+.auth-pane .pane-conv {
+  display: grid;
+  gap: 2px 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--sp-ap-border);
+  border-radius: var(--sp-radius-sm);
+  background: var(--sp-ap-raise);
+  font-size: 0.72rem;
+}
+
+.auth-pane .pane-req--failed { border-color: var(--sp-color-error); }
+
+.auth-pane .pane-req-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.auth-pane summary.pane-req-head { cursor: pointer; }
+
+.auth-pane .pane-req-at,
+.auth-pane .pane-conv-when {
+  font-family: var(--sp-font-mono);
+  color: var(--sp-ap-text-dim);
+}
+
+.auth-pane .pane-req-model { color: var(--sp-ap-text); }
+
+.auth-pane .pane-req-lat,
+.auth-pane .pane-conv-tally {
+  color: var(--sp-ap-text-muted);
+}
+
+.auth-pane .pane-req-status {
+  margin-left: auto;
+  font-family: var(--sp-font-mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  color: var(--sp-color-success);
+}
+
+.auth-pane .pane-req-status[data-state="failed"],
+.auth-pane .pane-req-status[data-state="rejected"] {
+  color: var(--sp-color-error);
+}
+
+.auth-pane .pane-req-error {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  border-left: 2px solid var(--sp-color-error);
+  font-family: var(--sp-font-mono);
+  font-size: 0.68rem;
+  color: var(--sp-ap-text);
+  word-break: break-word;
+}
+
+/* activity rows */
+.auth-pane .pane-conv-title {
+  color: var(--sp-ap-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-pane .pane-conv-title:hover { text-decoration: underline; }
+
+.auth-pane .pane-conv--live { border-color: var(--sp-color-primary); }
+
+.auth-pane .pane-conv-cost {
+  font-family: var(--sp-font-mono);
+  color: var(--sp-ap-text);
+}
+
+.auth-pane .pane-feed-audit { margin-left: auto; }

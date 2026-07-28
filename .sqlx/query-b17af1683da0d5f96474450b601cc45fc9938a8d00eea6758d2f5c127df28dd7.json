@@ -1,0 +1,73 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id as \"id!\", created_at as \"at!\", kind as \"kind!\", subject as \"subject!\",\n                  outcome as \"outcome!\", policy as \"policy!\", detail as \"detail!\",\n                  evaluated_rules as \"evaluated_rules?\"\n           FROM (\n             SELECT id,\n                    created_at,\n                    CASE WHEN tool_name = 'user_prompt' THEN 'prompt'\n                         WHEN policy = 'authz_rule_based' THEN 'route'\n                         ELSE 'tool' END as kind,\n                    tool_name as subject,\n                    decision as outcome,\n                    policy,\n                    reason as detail,\n                    evaluated_rules\n             FROM governance_decisions\n             WHERE session_id IN (SELECT session_id FROM pi_conversation_sessions\n                                  WHERE conversation_id = $1)\n             UNION ALL\n             SELECT id,\n                    created_at,\n                    'request' as kind,\n                    -- A request refused before routing carries neither model,\n                    -- and `subject` is asserted non-null by the outer select.\n                    -- The row is precisely the one this feed exists to show, so\n                    -- it gets a label rather than being dropped.\n                    COALESCE(requested_model, model, 'unrouted') as subject,\n                    status as outcome,\n                    '' as policy,\n                    COALESCE(NULLIF(error_message, ''),\n                             COALESCE(input_tokens, 0)::text || ' in / '\n                               || COALESCE(output_tokens, 0)::text || ' out tokens · '\n                               || COALESCE(latency_ms, 0)::text || 'ms · $'\n                               || ROUND(cost_microdollars / 1000000.0, 4)::text) as detail,\n                    NULL::jsonb as evaluated_rules\n             FROM ai_requests\n             WHERE session_id IN (SELECT session_id FROM pi_conversation_sessions\n                                  WHERE conversation_id = $1)\n             UNION ALL\n             -- Tool fires live in `user_activity`, where `record_mcp_access`\n             -- writes them, with the session stamped into `metadata`.\n             -- `plugin_usage_events` carries only marketplace-webhook rows, so\n             -- reading it here showed an empty fire lane for every session.\n             SELECT id,\n                    created_at,\n                    'fire' as kind,\n                    COALESCE(NULLIF(entity_name, ''), 'unknown') as subject,\n                    'ok' as outcome,\n                    '' as policy,\n                    description as detail,\n                    NULL::jsonb as evaluated_rules\n             FROM user_activity\n             WHERE metadata->>'session_id' IN (SELECT session_id FROM pi_conversation_sessions\n                                               WHERE conversation_id = $1)\n               AND category = 'mcp_access' AND action = 'used'\n           ) trace\n           ORDER BY created_at ASC\n           LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "at!",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "kind!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "subject!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "outcome!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "policy!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "detail!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "evaluated_rules?",
+        "type_info": "Jsonb",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "b17af1683da0d5f96474450b601cc45fc9938a8d00eea6758d2f5c127df28dd7"
+}

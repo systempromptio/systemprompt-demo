@@ -40,6 +40,7 @@ pub async fn insert_conversation(
     user_id: &UserId,
     attested: &SessionId,
 ) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
     sqlx::query!(
         r#"
         INSERT INTO pi_conversations (id, user_id, attested_session_id)
@@ -50,7 +51,30 @@ pub async fn insert_conversation(
         user_id.as_str(),
         attested.as_str()
     )
-    .execute(pool)
+    .execute(&mut *tx)
+    .await?;
+    insert_session_binding(&mut tx, id, attested).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+// Why: the stat queries join through this binding history; without the row,
+// everything written before a resume keys on a session id no query can reach.
+async fn insert_session_binding(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    id: &ContextId,
+    attested: &SessionId,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        INSERT INTO pi_conversation_sessions (conversation_id, session_id)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING
+        "#,
+        id.as_str(),
+        attested.as_str()
+    )
+    .execute(&mut **tx)
     .await?;
     Ok(())
 }
@@ -216,6 +240,7 @@ pub async fn update_conversation_session(
     id: &ContextId,
     attested: &SessionId,
 ) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
     sqlx::query!(
         r#"
         UPDATE pi_conversations
@@ -225,8 +250,10 @@ pub async fn update_conversation_session(
         id.as_str(),
         attested.as_str()
     )
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    insert_session_binding(&mut tx, id, attested).await?;
+    tx.commit().await?;
     Ok(())
 }
 

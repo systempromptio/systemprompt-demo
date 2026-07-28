@@ -63,6 +63,7 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/auth-pane-core.css"),
         css!(p, "components/auth-pane-offer.css"),
         css!(p, "components/auth-pane-telemetry.css"),
+        css!(p, "components/auth-pane-charts.css"),
         css!(p, "components/analytics-pane.css"),
         css!(p, "components/conversation-list.css"),
     ]

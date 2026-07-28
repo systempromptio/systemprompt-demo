@@ -62,14 +62,7 @@ pub(in crate::handlers::pi) async fn snapshot(
     if let Some(body) = cached_body(&session.conversation_id) {
         return serde_json::from_str(&body).ok();
     }
-    match super::collect(
-        pool,
-        &session.conversation_id,
-        &session.attested_session,
-        &session.user_id,
-    )
-    .await
-    {
+    match super::collect(pool, &session.conversation_id, &session.user_id).await {
         Ok(stats) => {
             let value = serde_json::to_value(&stats).ok()?;
             if let Ok(body) = serde_json::to_string(&stats) {

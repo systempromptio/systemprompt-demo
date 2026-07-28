@@ -103,16 +103,16 @@ pub(crate) async fn demo_trace_page(
 
     if let Some((row, owner_name)) = conversation {
         let attested = &row.attested_session_id;
-        let trace = demo_trace::list_demo_trace(&pool, attested, TRACE_LIMIT)
+        let trace = demo_trace::list_demo_trace(&pool, &row.id, TRACE_LIMIT)
             .await
             // lint-ok: http-error — every read failure on this page is a 500.
             .map_err(|e| AdminHtmlError::internal(format!("demo trace read failed: {e:?}")))?;
-        let kpis = session_detail::get_session_kpis(&pool, attested)
+        let kpis = session_detail::get_conversation_kpis(&pool, &row.id)
             .await
             // lint-ok: http-error — every read failure on this page is a 500.
             .map_err(|e| AdminHtmlError::internal(format!("demo trace kpi read failed: {e:?}")))?;
 
-        insert_artifacts(obj, &pool, attested, &row.user_id).await?;
+        insert_artifacts(obj, &pool, &row.id, &row.user_id).await?;
 
         let events: Vec<EventView> = trace.iter().map(event_view).collect();
         let denials = events.iter().filter(|e| e.is_denied).count();
@@ -151,19 +151,19 @@ pub(crate) async fn demo_trace_page(
     Ok(Html(html).into_response())
 }
 
-// Why: same session key as the trace; rendered by the same viewer routes the
-// terminal uses, scoped to the conversation's owner — the id in the URL is
+// Why: same conversation key as the trace; rendered by the same viewer routes
+// the terminal uses, scoped to the conversation's owner — the id in the URL is
 // the capability, so the owner's artifacts are what the link discloses.
 async fn insert_artifacts(
     obj: &mut serde_json::Map<String, serde_json::Value>,
     pool: &PgPool,
-    attested: &systemprompt::identifiers::SessionId,
+    conversation_id: &ContextId,
     owner_id: &systemprompt::identifiers::UserId,
 ) -> AdminHtmlResult<()> {
     let artifacts: Vec<ArtifactView> =
-        crate::repositories::pi::artifacts::list_artifacts_for_session(
+        crate::repositories::pi::artifacts::list_artifacts_for_conversation(
             pool,
-            attested,
+            conversation_id,
             owner_id,
             TRACE_LIMIT,
         )

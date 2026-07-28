@@ -63,6 +63,7 @@ export function createPulse(pane) {
 
   function render(p) {
     if (!p) return;
+    renderRibbon(p);
     if (!p.detail) {
       stop();
       return;
@@ -72,6 +73,26 @@ export function createPulse(pane) {
     renderWindow(p.window);
     renderAllTime(p.all_time || {});
     renderDetail(p.detail);
+  }
+
+  /**
+   * The Overview's one-line proof of scale, for every tier. All-time totals
+   * are always present; the 24h window joins the sentence when the tier (and
+   * the aggregation floor) allows it. Numbers arrive pre-rounded server-side,
+   * so nothing identifying is on this line for a member to see.
+   */
+  function renderRibbon(p) {
+    const ribbon = pane.querySelector('[data-role="platform-ribbon"]');
+    if (!ribbon || !p.all_time) return;
+    const all = p.all_time;
+    let text = 'Across this deployment: ' + all.requests + ' governed requests, '
+      + all.tool_calls + ' tool calls, ' + all.secrets_caught + ' secrets caught.';
+    if (p.window) {
+      text += ' Last ' + (p.window_hours || 24) + 'h: ' + p.window.requests
+        + ' requests from ' + p.window.people + ' people.';
+    }
+    ribbon.textContent = text;
+    ribbon.hidden = false;
   }
 
   /**

@@ -13,11 +13,11 @@
 //! 404 for "not yours" as for "does not exist".
 //!
 //! The ownership check reads `pi_conversations`, not the live-session registry.
-//! Every number below is a database query, and so is the attested session id
-//! they key on — which is what makes these stats survive a reload and a server
-//! restart. Resolving that id from memory instead would make a conversation
-//! uncostable the moment its child exited, with every row explaining it still
-//! sitting in Postgres.
+//! Every number below is a database query keyed on the conversation, joined
+//! through `pi_conversation_sessions` to every attested session the
+//! conversation was ever bound to — which is what makes these stats survive a
+//! reload (each resume mints a fresh session) and a server restart. Keying on
+//! the current session alone would zero the pane at every F5.
 
 use std::sync::Arc;
 
@@ -27,8 +27,9 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 use sqlx::PgPool;
-use systemprompt::identifiers::{ContextId, SessionId};
+use systemprompt::identifiers::ContextId;
 
+pub(super) mod detail;
 mod facets;
 mod push;
 
@@ -155,14 +156,7 @@ pub(super) async fn stats(
         return json_body(body);
     }
 
-    match collect(
-        &pool,
-        &conversation_id,
-        &row.attested_session_id,
-        &row.user_id,
-    )
-    .await
-    {
+    match collect(&pool, &conversation_id, &row.user_id).await {
         Ok(stats) => serde_json::to_string(&stats).map_or_else(
             |_| Json(&stats).into_response(),
             |body| {
@@ -180,15 +174,14 @@ pub(super) async fn stats(
 async fn collect(
     pool: &PgPool,
     conversation_id: &ContextId,
-    attested: &SessionId,
     user_id: &systemprompt::identifiers::UserId,
 ) -> Result<PiStats, sqlx::Error> {
     let credit = credit_position(pool, user_id).await;
-    let kpis = session_detail::get_session_kpis(pool, attested).await?;
-    let requests = session_detail::list_session_requests(pool, attested).await?;
-    let trace = demo_trace::list_demo_trace(pool, attested, TRACE_LIMIT).await?;
-    let counts = stages::get_session_governance_counts(pool, attested).await?;
-    let stage_rows = stages::list_session_policy_stages(pool, attested).await?;
+    let kpis = session_detail::get_conversation_kpis(pool, conversation_id).await?;
+    let requests = session_detail::list_conversation_requests(pool, conversation_id).await?;
+    let trace = demo_trace::list_demo_trace(pool, conversation_id, TRACE_LIMIT).await?;
+    let counts = stages::get_conversation_governance_counts(pool, conversation_id).await?;
+    let stage_rows = stages::list_conversation_policy_stages(pool, conversation_id).await?;
 
     let Facets {
         latency_last_ms,

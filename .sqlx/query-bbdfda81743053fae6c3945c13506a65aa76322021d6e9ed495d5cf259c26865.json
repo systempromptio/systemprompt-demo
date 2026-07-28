@@ -1,0 +1,73 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            date_bin(make_interval(secs => $2::double precision),\n                     created_at, TIMESTAMPTZ '2001-01-01') AS \"at!\",\n            COUNT(*)::bigint                                  AS \"requests!\",\n            COUNT(*) FILTER (WHERE status = 'failed')::bigint AS \"errors!\",\n            percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms)  AS \"latency_p50_ms?\",\n            percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) AS \"latency_p95_ms?\",\n            COALESCE(SUM(cost_microdollars), 0)::bigint       AS \"cost_microdollars!\",\n            COALESCE(SUM(input_tokens), 0)::bigint            AS \"input_tokens!\",\n            COALESCE(SUM(output_tokens), 0)::bigint           AS \"output_tokens!\"\n        FROM ai_requests\n        WHERE session_id IN (\n            SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1\n        )\n        GROUP BY 1\n        ORDER BY 1\n        LIMIT 200\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "at!",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "requests!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "errors!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "latency_p50_ms?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "latency_p95_ms?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "cost_microdollars!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "input_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "output_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "bbdfda81743053fae6c3945c13506a65aa76322021d6e9ed495d5cf259c26865"
+}

@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT artifact_id AS \"artifact_id: ArtifactId\",\n               artifact_type,\n               title,\n               server_name,\n               created_at\n        FROM mcp_artifacts\n        WHERE metadata->>'session_id' IN (\n              SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1)\n          AND user_id = $2\n          AND (expires_at IS NULL OR expires_at > NOW())\n        ORDER BY created_at DESC\n        LIMIT $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "artifact_id: ArtifactId",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "mcp_artifacts",
+            "name": "artifact_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "artifact_type",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "mcp_artifacts",
+            "name": "artifact_type"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "mcp_artifacts",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "server_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "mcp_artifacts",
+            "name": "server_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_artifacts",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "c50214288708efaaa65e48946b67fe2c5f54c78a6c92e182742a8900ec914ce6"
+}

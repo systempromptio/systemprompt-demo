@@ -16,7 +16,7 @@
 //! below match `'pass'` and `'fail'`, not the Rust variant names.
 
 use sqlx::PgPool;
-use systemprompt::identifiers::SessionId;
+use systemprompt::identifiers::ContextId;
 
 use super::{GovernanceCounts, PerPolicyCounts};
 
@@ -40,13 +40,14 @@ pub const STAGES: [(&str, &str); 4] = [
     ("rate_limit", "Rate limit"),
 ];
 
-/// Pass/fail counts per policy for one session, newest activity noted.
+/// Pass/fail counts per policy for one conversation (across every attested
+/// session it was ever bound to), newest activity noted.
 ///
 /// Only stages that actually ran come back; callers fold these onto [`STAGES`]
 /// to fill in the zeros.
-pub async fn list_session_policy_stages(
+pub async fn list_conversation_policy_stages(
     pool: &PgPool,
-    session_id: &SessionId,
+    conversation_id: &ContextId,
 ) -> Result<Vec<PerPolicyCounts>, sqlx::Error> {
     sqlx::query_as!(
         PerPolicyCounts,
@@ -56,25 +57,26 @@ pub async fn list_session_policy_stages(
                   MAX(created_at)                                          AS "last_at?"
            FROM governance_decisions,
                 LATERAL jsonb_array_elements(evaluated_rules->'chain') entry
-           WHERE session_id = $1
-             AND session_id <> ''
+           WHERE session_id IN (
+                 SELECT session_id FROM pi_conversation_sessions
+                 WHERE conversation_id = $1)
              AND jsonb_typeof(evaluated_rules->'chain') = 'array'
              AND entry->>'policy_id' IS NOT NULL
            GROUP BY entry->>'policy_id'"#,
-        session_id.as_str(),
+        conversation_id.as_str(),
     )
     .fetch_all(pool)
     .await
 }
 
-/// The session's headline verdict counts.
+/// The conversation's headline verdict counts.
 ///
 /// `secret_breaches` counts denials attributed to `secret_scan` — the stage
 /// whose trips are worth calling out on their own, because a caught credential
 /// is the demo's sharpest single moment.
-pub async fn get_session_governance_counts(
+pub async fn get_conversation_governance_counts(
     pool: &PgPool,
-    session_id: &SessionId,
+    conversation_id: &ContextId,
 ) -> Result<GovernanceCounts, sqlx::Error> {
     let row = sqlx::query!(
         r#"SELECT COUNT(*)::bigint                                          AS "total!",
@@ -83,8 +85,10 @@ pub async fn get_session_governance_counts(
                   COUNT(*) FILTER (WHERE decision = 'deny'
                                      AND policy = 'secret_scan')::bigint    AS "secret_breaches!"
            FROM governance_decisions
-           WHERE session_id = $1 AND session_id <> ''"#,
-        session_id.as_str(),
+           WHERE session_id IN (
+                 SELECT session_id FROM pi_conversation_sessions
+                 WHERE conversation_id = $1)"#,
+        conversation_id.as_str(),
     )
     .fetch_one(pool)
     .await?;

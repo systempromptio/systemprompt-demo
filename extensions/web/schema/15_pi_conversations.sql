@@ -36,6 +36,21 @@ CREATE INDEX IF NOT EXISTS idx_pi_conversations_user
     ON pi_conversations(user_id, updated_at DESC)
     WHERE deleted_at IS NULL;
 
+-- Every attested session this conversation has ever been bound to.
+-- `attested_session_id` above is only the *current* binding; resumes rewrite
+-- it, and the spend/governance rows written under earlier sessions would be
+-- unreachable without this history. Stat queries key on the conversation and
+-- join through here.
+CREATE TABLE IF NOT EXISTS pi_conversation_sessions (
+    conversation_id TEXT NOT NULL REFERENCES pi_conversations(id) ON DELETE CASCADE,
+    session_id TEXT NOT NULL,
+    bound_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (conversation_id, session_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pi_conversation_sessions_session
+    ON pi_conversation_sessions(session_id);
+
 CREATE TABLE IF NOT EXISTS pi_conversation_events (
     conversation_id TEXT NOT NULL REFERENCES pi_conversations(id) ON DELETE CASCADE,
     -- The same monotonic per-session counter the SSE stream uses as its event id.

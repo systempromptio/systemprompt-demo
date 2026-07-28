@@ -9,6 +9,7 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'traffic', label: 'Traffic' },
   { id: 'usage', label: 'Usage' },
+  { id: 'activity', label: 'Activity' },
   { id: 'governance', label: 'Governance' },
   // Hidden until the pulse endpoint answers with the admin detail block. The
   // server never tells the client its role — the payload shape is the tier —
@@ -55,6 +56,8 @@ export function overviewHtml() {
     + '<span class="pane-model-sep">·</span><span data-stat="route">—</span></p>'
     + '<div class="pane-stage-mini" data-role="stage-mini"'
     + ' aria-label="policy pipeline"></div>'
+    + '<div class="pane-strip" data-role="req-strip" hidden></div>'
+    + '<p class="pane-ribbon" data-role="platform-ribbon" hidden></p>'
     + '<section class="pane-section pane-section--feed">'
     + '<h3 class="pane-h3">Latest decisions '
     + '<button type="button" class="pane-link pane-link--sm" data-role="view-gov">'
@@ -78,7 +81,45 @@ export function trafficHtml() {
   + latencyRowHtml('latency95', 'p95')
   + latencyRowHtml('latencyLast', 'Last turn')
   + '</div>'
+  + '</section>'
+  + '<section class="pane-section" data-role="lat-chart-section" hidden>'
+  + '<h3 class="pane-h3">Latency over time '
+  + '<span class="pane-h3-sub">p95 per bucket, red where a request failed</span></h3>'
+  + '<div class="pane-chart-host" data-role="lat-chart"></div>'
+  + '</section>'
+  + '<div data-role="ok-bar" hidden></div>'
+  + '<section class="pane-section pane-section--feed">'
+  + '<h3 class="pane-h3">Requests <span class="pane-h3-sub">newest first, each with '
+  + 'its audit trail</span></h3>'
+  + '<ol class="pane-reqs" data-role="req-list">'
+  + '<li class="pane-feed-empty">No requests yet — send a prompt in the terminal and '
+  + 'each one lands here with its latency, cost, and audit trail.</li>'
+  + '</ol>'
   + '</section>';
+}
+
+/**
+ * The Activity tab: this account across every conversation. The per-session
+ * tabs answer "what is this run doing"; this one answers "what have I been
+ * doing here", which is the record the governance spine exists to keep.
+ */
+export function activityHtml() {
+  return '<section class="pane-section">'
+    + '<h3 class="pane-h3">All time</h3>'
+    + '<dl class="pane-stats" data-role="act-totals"></dl>'
+    + '</section>'
+    + '<section class="pane-section pane-section--feed">'
+    + '<h3 class="pane-h3">Conversations <span class="pane-h3-sub">cost bars share '
+    + 'one scale</span></h3>'
+    + '<ol class="pane-convs" data-role="act-list">'
+    + '<li class="pane-feed-empty">No conversations yet — start one in the terminal '
+    + 'and its full audit trail appears here.</li>'
+    + '</ol>'
+    + '</section>'
+    + '<section class="pane-section" data-role="act-tools-section" hidden>'
+    + '<h3 class="pane-h3">Most used tools</h3>'
+    + '<div class="pane-mix" data-role="act-tools"></div>'
+    + '</section>';
 }
 
 export function latencyRowHtml(key, label) {

@@ -5,8 +5,8 @@
  */
 
 import {
-  tabsHtml, panelHtml, overviewHtml, trafficHtml, usageHtml, governanceHtml,
-  platformHtml,
+  tabsHtml, panelHtml, overviewHtml, trafficHtml, usageHtml, activityHtml,
+  governanceHtml, platformHtml,
 } from './sp-auth-pane-view.js';
 
 const TEAM_SIZES = ['1–10', '11–50', '51–200', '201–1000', '1000+'];
@@ -122,14 +122,16 @@ export function profileHtml(pending) {
     + '<p class="pane-credit-note" data-role="credit-note"></p>'
     + '</div>'
     + '</section>'
-    // Four tabs, each one question: what is happening, how much and how
-    // fast, what it consumed, and what policy did about it. Every panel is
-    // rendered once and stays in the DOM; switching only toggles `hidden`,
-    // so live updates keep landing in panels the visitor is not looking at.
+    // One tab per question: what is happening, how much and how fast, what
+    // it consumed, what this account has done overall, and what policy did
+    // about it. Every panel is rendered once and stays in the DOM; switching
+    // only toggles `hidden`, so live updates keep landing in panels the
+    // visitor is not looking at.
     + tabsHtml()
     + panelHtml('overview', overviewHtml(), false)
     + panelHtml('traffic', trafficHtml(), true)
     + panelHtml('usage', usageHtml(), true)
+    + panelHtml('activity', activityHtml(), true)
     + panelHtml('governance', governanceHtml(), true)
     + panelHtml('platform', platformHtml(), true)
     + '<footer class="pane-foot">'

@@ -12,7 +12,7 @@
 //! `ai_requests` row that never happened, which is the whole point.
 
 use sqlx::PgPool;
-use systemprompt::identifiers::SessionId;
+use systemprompt::identifiers::ContextId;
 
 #[derive(Debug, Clone)]
 pub struct DemoTraceRow {
@@ -27,7 +27,8 @@ pub struct DemoTraceRow {
     pub evaluated_rules: Option<serde_json::Value>,
 }
 
-/// The merged, time-ordered trace for one session.
+/// The merged, time-ordered trace for one conversation, joined through
+/// `pi_conversation_sessions` so activity from before a resume stays visible.
 ///
 /// A `policy` of `authz_rule_based` is the gateway deciding whether the caller
 /// may reach a model route at all, which is a different gate from the tool
@@ -35,7 +36,7 @@ pub struct DemoTraceRow {
 /// does not label a model id as a tool.
 pub async fn list_demo_trace(
     pool: &PgPool,
-    session_id: &SessionId,
+    conversation_id: &ContextId,
     limit: i64,
 ) -> Result<Vec<DemoTraceRow>, sqlx::Error> {
     sqlx::query_as!(
@@ -55,7 +56,8 @@ pub async fn list_demo_trace(
                     reason as detail,
                     evaluated_rules
              FROM governance_decisions
-             WHERE session_id = $1 AND session_id <> ''
+             WHERE session_id IN (SELECT session_id FROM pi_conversation_sessions
+                                  WHERE conversation_id = $1)
              UNION ALL
              SELECT id,
                     created_at,
@@ -74,7 +76,8 @@ pub async fn list_demo_trace(
                                || ROUND(cost_microdollars / 1000000.0, 4)::text) as detail,
                     NULL::jsonb as evaluated_rules
              FROM ai_requests
-             WHERE session_id = $1 AND session_id <> ''
+             WHERE session_id IN (SELECT session_id FROM pi_conversation_sessions
+                                  WHERE conversation_id = $1)
              UNION ALL
              -- Tool fires live in `user_activity`, where `record_mcp_access`
              -- writes them, with the session stamped into `metadata`.
@@ -89,12 +92,13 @@ pub async fn list_demo_trace(
                     description as detail,
                     NULL::jsonb as evaluated_rules
              FROM user_activity
-             WHERE metadata->>'session_id' = $1 AND $1 <> ''
+             WHERE metadata->>'session_id' IN (SELECT session_id FROM pi_conversation_sessions
+                                               WHERE conversation_id = $1)
                AND category = 'mcp_access' AND action = 'used'
            ) trace
            ORDER BY created_at ASC
            LIMIT $2"#,
-        session_id.as_str(),
+        conversation_id.as_str(),
         limit,
     )
     .fetch_all(pool)

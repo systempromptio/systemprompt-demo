@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*)::bigint                                          AS \"total!\",\n                  COUNT(*) FILTER (WHERE decision = 'allow')::bigint        AS \"allowed!\",\n                  COUNT(*) FILTER (WHERE decision = 'deny')::bigint         AS \"denied!\",\n                  COUNT(*) FILTER (WHERE decision = 'deny'\n                                     AND policy = 'secret_scan')::bigint    AS \"secret_breaches!\"\n           FROM governance_decisions\n           WHERE session_id IN (\n                 SELECT session_id FROM pi_conversation_sessions\n                 WHERE conversation_id = $1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "allowed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "denied!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "secret_breaches!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "1d0e38f4f90d43fcf292c09cfc64691f8a16a1ecc6e1dc145e126bfce537b84b"
+}

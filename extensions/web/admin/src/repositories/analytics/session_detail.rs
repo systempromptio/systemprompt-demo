@@ -1,11 +1,14 @@
-//! Session-detail repository.
+//! Conversation-detail repository.
 //!
-//! A session groups every AI request produced by a single interactive run.
-//! This module serves the KPI rollup and the request list for one session.
+//! A conversation may span many attested sessions — every resume binds a fresh
+//! one — so each query here joins through `pi_conversation_sessions` rather
+//! than keying on a single session id. That join is what makes the numbers
+//! survive a reload: the rows written before a resume keep their old session
+//! id, and the binding history is the only path back to them.
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
-use systemprompt::identifiers::{ContextId, SessionId, TraceId};
+use systemprompt::identifiers::{ContextId, TraceId};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SessionKpis {
@@ -44,12 +47,28 @@ pub struct SessionRequestRow {
     pub latency_ms: Option<i32>,
     pub cost_microdollars: i64,
     pub cache_hit: bool,
+    /// Populated on `failed` rows; the drilldown the error count summarizes.
+    pub error_message: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
-pub async fn get_session_kpis(
+/// One time bucket of request activity — enough to draw latency and error
+/// rate over the conversation's life without shipping every row.
+#[derive(Debug, Clone, Copy)]
+pub struct RequestBucket {
+    pub at: DateTime<Utc>,
+    pub requests: i64,
+    pub errors: i64,
+    pub latency_p50_ms: Option<f64>,
+    pub latency_p95_ms: Option<f64>,
+    pub cost_microdollars: i64,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+}
+
+pub async fn get_conversation_kpis(
     pool: &PgPool,
-    session_id: &SessionId,
+    conversation_id: &ContextId,
 ) -> Result<SessionKpis, sqlx::Error> {
     let row = sqlx::query!(
         r#"
@@ -65,9 +84,11 @@ pub async fn get_session_kpis(
             COALESCE(SUM(cache_creation_tokens), 0)::bigint    AS "total_cache_creation_tokens!",
             COUNT(*) FILTER (WHERE cache_hit)::bigint          AS "cache_hit_count!"
         FROM ai_requests
-        WHERE session_id = $1
+        WHERE session_id IN (
+            SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1
+        )
         "#,
-        session_id.as_str()
+        conversation_id.as_str()
     )
     .fetch_one(pool)
     .await?;
@@ -85,9 +106,9 @@ pub async fn get_session_kpis(
     })
 }
 
-pub async fn list_session_requests(
+pub async fn list_conversation_requests(
     pool: &PgPool,
-    session_id: &SessionId,
+    conversation_id: &ContextId,
 ) -> Result<Vec<SessionRequestRow>, sqlx::Error> {
     sqlx::query_as!(
         SessionRequestRow,
@@ -104,13 +125,54 @@ pub async fn list_session_requests(
             latency_ms                          AS "latency_ms?",
             cost_microdollars                   AS "cost_microdollars!",
             cache_hit                           AS "cache_hit!",
+            NULLIF(error_message, '')           AS "error_message?",
             created_at                          AS "created_at!"
         FROM ai_requests
-        WHERE session_id = $1
+        WHERE session_id IN (
+            SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1
+        )
         ORDER BY created_at DESC
         LIMIT 200
         "#,
-        session_id.as_str()
+        conversation_id.as_str()
+    )
+    .fetch_all(pool)
+    .await
+}
+
+/// Requests folded into fixed-width time buckets, oldest first.
+///
+/// `bucket_secs` is clamped by the caller; percentiles come from
+/// `percentile_cont` so a bucket with one row reports that row rather than an
+/// interpolation artifact.
+pub async fn list_conversation_request_buckets(
+    pool: &PgPool,
+    conversation_id: &ContextId,
+    bucket_secs: i64,
+) -> Result<Vec<RequestBucket>, sqlx::Error> {
+    sqlx::query_as!(
+        RequestBucket,
+        r#"
+        SELECT
+            date_bin(make_interval(secs => $2::double precision),
+                     created_at, TIMESTAMPTZ '2001-01-01') AS "at!",
+            COUNT(*)::bigint                                  AS "requests!",
+            COUNT(*) FILTER (WHERE status = 'failed')::bigint AS "errors!",
+            percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms)  AS "latency_p50_ms?",
+            percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) AS "latency_p95_ms?",
+            COALESCE(SUM(cost_microdollars), 0)::bigint       AS "cost_microdollars!",
+            COALESCE(SUM(input_tokens), 0)::bigint            AS "input_tokens!",
+            COALESCE(SUM(output_tokens), 0)::bigint           AS "output_tokens!"
+        FROM ai_requests
+        WHERE session_id IN (
+            SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1
+        )
+        GROUP BY 1
+        ORDER BY 1
+        LIMIT 200
+        "#,
+        conversation_id.as_str(),
+        bucket_secs as f64
     )
     .fetch_all(pool)
     .await

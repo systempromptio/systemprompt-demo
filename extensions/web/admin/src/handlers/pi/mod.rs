@@ -75,6 +75,7 @@ pub(crate) mod skills;
 mod spawn;
 pub(crate) mod stage;
 mod stats;
+mod summary;
 mod throttle;
 mod tier;
 pub(crate) mod token;
@@ -139,6 +140,15 @@ pub(crate) fn pi_router(
             get(watch::stream),
         )
         .route("/api/public/pi/stats/{conversation_id}", get(stats::stats))
+        .route(
+            "/api/public/pi/stats/{conversation_id}/requests",
+            get(stats::detail::requests),
+        )
+        .route(
+            "/api/public/pi/stats/{conversation_id}/timeseries",
+            get(stats::detail::timeseries),
+        )
+        .route("/api/public/pi/me/summary", get(summary::me_summary))
         .route("/api/public/pi/pulse", get(pulse::pulse))
         .route("/api/public/pi/capacity", get(capacity::capacity))
         .route("/api/public/pi/models", get(api::models))

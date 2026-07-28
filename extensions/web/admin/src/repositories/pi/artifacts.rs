@@ -6,7 +6,7 @@
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
-use systemprompt::identifiers::{ArtifactId, ContextId, SessionId, UserId};
+use systemprompt::identifiers::{ArtifactId, ContextId, UserId};
 
 #[derive(Debug, Clone)]
 pub struct McpArtifactRow {
@@ -29,13 +29,15 @@ pub struct McpArtifactSummary {
     pub created_at: DateTime<Utc>,
 }
 
-/// Every artifact this attested session's tool calls produced, newest first.
+/// Every artifact this conversation's tool calls produced, newest first —
+/// across every attested session it was ever bound to, so a resume does not
+/// hide the rail's history.
 ///
 /// The session id lives in the execution metadata the hub stamped, not in a
 /// column — the `->>'session_id'` filter is the price of not owning the table.
-pub async fn list_artifacts_for_session(
+pub async fn list_artifacts_for_conversation(
     pool: &PgPool,
-    session_id: &SessionId,
+    conversation_id: &ContextId,
     user_id: &UserId,
     limit: i64,
 ) -> Result<Vec<McpArtifactSummary>, sqlx::Error> {
@@ -48,13 +50,14 @@ pub async fn list_artifacts_for_session(
                server_name,
                created_at
         FROM mcp_artifacts
-        WHERE metadata->>'session_id' = $1
+        WHERE metadata->>'session_id' IN (
+              SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1)
           AND user_id = $2
           AND (expires_at IS NULL OR expires_at > NOW())
         ORDER BY created_at DESC
         LIMIT $3
         "#,
-        session_id.as_str(),
+        conversation_id.as_str(),
         user_id.as_str(),
         limit,
     )
