@@ -10,6 +10,8 @@
 //! `repositories::secrets` is already public.
 
 #[cfg(test)]
+mod acl_yaml;
+#[cfg(test)]
 mod artifact_theme;
 #[cfg(test)]
 mod bridge_downloads;

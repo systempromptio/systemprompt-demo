@@ -45,16 +45,25 @@ pub async fn load_from_yaml(pool: &PgPool, services_path: &Path) -> Result<LoadR
     Ok(report)
 }
 
+/// An empty or whitespace-only file reads as an empty document rather than a
+/// parse error, so commenting a file out is a startup no-op.
+pub fn parse_yaml_doc<T>(rel: &str, contents: &str) -> Result<T, WebError>
+where
+    T: for<'de> Deserialize<'de> + Default,
+{
+    if contents.trim().is_empty() {
+        return Ok(T::default());
+    }
+    serde_yaml::from_str(contents).map_err(|e| WebError::Internal(format!("{rel}: {e}")))
+}
+
 async fn read_yaml<T: for<'de> Deserialize<'de> + Default>(
     services_path: &Path,
     rel: &str,
 ) -> Result<Option<T>, WebError> {
     let path = services_path.join(rel);
     match tokio::fs::read_to_string(&path).await {
-        Ok(s) if s.trim().is_empty() => Ok(Some(T::default())),
-        Ok(s) => serde_yaml::from_str::<T>(&s)
-            .map(Some)
-            .map_err(|e| WebError::Internal(format!("{rel}: {e}"))),
+        Ok(s) => parse_yaml_doc(rel, &s).map(Some),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(e) => Err(e.into()),
     }
