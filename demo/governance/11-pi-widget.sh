@@ -64,7 +64,7 @@ fi
 assert_eq "$PROBE" "401" "an unauthenticated probe is rejected, not 404"
 
 # pi itself still has to be installed for a session to spawn:
-#   npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+#   npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.82.0
 # If it is not on `child_path` in services/config/pi.yaml, case 3 fails at spawn.
 
 # ── 2. Mint an embed token ───────────────────────────────────────────────────

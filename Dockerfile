@@ -68,6 +68,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && rm -rf /var/lib/apt/lists/*
 
+# The pi web terminal spawns `pi` (a node script) with a cleared environment;
+# services/config/pi.yaml resolves it on child_path, which includes
+# /usr/bin. The pin must match pi.yaml's expected_version — the version
+# gate 500s every /api/public/pi/session otherwise.
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.82.0 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m -u 1000 app
 WORKDIR /app
 

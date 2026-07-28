@@ -60,7 +60,7 @@ if ! $REFRESH_ONLY; then
   else
     say "Installing Pi coding agent"
     command -v npm >/dev/null 2>&1 || die "npm not found; install Node.js first"
-    npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+    npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.82.0
     pass "Pi installed"
   fi
 fi

@@ -11,8 +11,8 @@
 # that fails to parse or validate is reported at ERROR and replaced by these
 # same defaults.
 #
-# Install pi first:
-#   npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+# Install pi first (pin must match expected_version below):
+#   npm install -g --ignore-scripts @earendil-works/pi-coding-agent@0.82.0
 #
 # There is no gateway credential to configure: each conversation mints a
 # short-lived PAT for the signed-in user who opened it, and revokes it — along
@@ -24,7 +24,10 @@
 # dies at exec:
 #   binary: /home/you/.nvm/versions/node/v22.19.0/bin/pi
 #   child_path: /home/you/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin
-binary: /home/ejb503/.nvm/versions/node/v22.19.0/bin/pi
+# A bare `pi` resolves against child_path, so one config works everywhere the
+# PATH below covers: the nvm install on the dev host and /usr/bin in the
+# Docker image (the Dockerfile installs the pinned pi via nodesource npm).
+binary: pi
 child_path: /home/ejb503/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin
 
 # The pin is asserted by running `pi --version` once at first spawn. It is
@@ -48,8 +51,8 @@ provider: systemprompt
 # Default model: gpt-oss-120b served via the Cerebras backend route — picked
 # for first-token speed, which is what a demo terminal lives or dies on. The
 # registry entry is `surface: backend`, so it is offered here only because an
-# explicit gateway route (`gpt-oss-120b -> cerebras`) exists. Claude, GPT and
-# Gemini stay one click away in the picker below.
+# explicit gateway route (`gpt-oss-120b -> cerebras`) exists. Claude and GPT
+# stay one click away in the picker below.
 model: gpt-oss-120b
 
 # The models a visitor may pick in the terminal come from the profile's
@@ -74,8 +77,10 @@ models:
   - claude-haiku-4-5-20251001    # Anthropic: latest Haiku
   - gpt-5.1                      # OpenAI: latest flagship
   - gpt-5-mini                   # OpenAI: latest mini
-  - gemini-3.1-pro-preview       # Google: latest Pro
-  - gemini-3.5-flash             # Google: latest Flash
+  # Gemini is withheld for now: pi's Anthropic client drops the per-turn
+  # thoughtSignature Gemini requires on replayed functionCall parts, so every
+  # second turn is rejected upstream. Restore once the gateway re-injects
+  # cached signatures server-side.
 
 # Who the agent says it is. Omitted here on purpose: it defaults to
 # services/config/pi-persona.md, which is compiled into the binary — the child
