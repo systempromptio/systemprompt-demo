@@ -10,7 +10,8 @@ macro_rules! css {
 }
 
 pub(super) fn css_assets(storage_css: &Path) -> Vec<AssetDefinition> {
-    let mut v = core_css(storage_css);
+    let mut v = bundle_css(storage_css);
+    v.extend(core_css(storage_css));
     v.extend(homepage_css(storage_css));
     v.extend(blog_css(storage_css));
     v.extend(docs_css(storage_css));
@@ -18,6 +19,21 @@ pub(super) fn css_assets(storage_css: &Path) -> Vec<AssetDefinition> {
     v.extend(syntax_css(storage_css));
     v.extend(feature_base_css(storage_css));
     v
+}
+
+// Why: emitted by the bundle_public_css job, which runs immediately before the
+// asset copy — the sources stay registered because the bundles are built from
+// them on every publish, not checked in.
+fn bundle_css(p: &Path) -> Vec<AssetDefinition> {
+    vec![
+        css!(p, "bundles/core-bundle.css"),
+        css!(p, "bundles/blog-bundle.css"),
+        css!(p, "bundles/blog-list-bundle.css"),
+        css!(p, "bundles/docs-bundle.css"),
+        css!(p, "bundles/feature-bundle.css"),
+        css!(p, "bundles/homepage-bundle.css"),
+        css!(p, "bundles/resources-bundle.css"),
+    ]
 }
 
 fn core_css(p: &Path) -> Vec<AssetDefinition> {

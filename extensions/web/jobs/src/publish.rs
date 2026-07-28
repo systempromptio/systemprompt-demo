@@ -1,9 +1,12 @@
 //! `publish_pipeline` job: the ordered composite every other job runs under.
 //!
 //! Order is load-bearing — bundles must exist before assets are copied, and
-//! content must be ingested before it can be prerendered. A failing sub-job is
-//! recorded and the pipeline continues, so one broken stage does not block the
-//! rest.
+//! content must be ingested before it can be prerendered.
+//!
+//! Two stages are fatal: the CSS bundle jobs and the asset copy. Everything the
+//! site renders is linked against their output, so continuing past them
+//! publishes pages whose stylesheets 404. Every other stage is recorded and the
+//! pipeline continues, so one broken stage does not block the rest.
 
 use std::sync::Arc;
 
@@ -13,8 +16,8 @@ use systemprompt::models::AppPaths;
 use systemprompt::traits::{Job, JobContext, JobResult};
 
 use super::{
-    BundleAdminCssJob, ContentIngestionJob, ContentPrerenderJob, CopyExtensionAssetsJob,
-    LlmsTxtGenerationJob, RobotsTxtGenerationJob, SitemapGenerationJob,
+    BundleAdminCssJob, BundlePublicCssJob, ContentIngestionJob, ContentPrerenderJob,
+    CopyExtensionAssetsJob, LlmsTxtGenerationJob, RobotsTxtGenerationJob, SitemapGenerationJob,
 };
 use crate::error::JobError;
 use systemprompt_web_shared::error::WebError;
@@ -56,37 +59,41 @@ impl PublishPipelineJob {
         }
     }
 
-    async fn run_bundle_admin_css(&self, paths: &AppPaths, stats: &mut PipelineStats) {
-        match BundleAdminCssJob::execute_bundle(paths).await {
-            Ok(result) => {
-                tracing::debug!(
-                    bundled = result.items_processed.unwrap_or(0),
-                    "Admin CSS bundle completed"
-                );
-                stats.record_success();
-            },
-            Err(e) => {
-                tracing::error!(error = %e, "Admin CSS bundle failed");
-                stats.record_failure();
-            },
-        }
+    async fn run_bundles(
+        &self,
+        paths: &AppPaths,
+        stats: &mut PipelineStats,
+    ) -> Result<(), JobError> {
+        let admin = BundleAdminCssJob::execute_bundle(paths).await?;
+        tracing::debug!(
+            bundled = admin.items_processed.unwrap_or(0),
+            "Admin CSS bundle completed"
+        );
+        stats.record_success();
+
+        let public = BundlePublicCssJob::execute_bundle(paths).await?;
+        tracing::debug!(
+            bundled = public.items_processed.unwrap_or(0),
+            "Public CSS bundle completed"
+        );
+        stats.record_success();
+
+        Ok(())
     }
 
-    async fn run_asset_copy(&self, paths: &AppPaths, stats: &mut PipelineStats) {
-        match CopyExtensionAssetsJob::execute_copy(paths).await {
-            Ok(result) => {
-                tracing::debug!(
-                    copied = result.items_processed.unwrap_or(0),
-                    failed = result.items_failed.unwrap_or(0),
-                    "Asset copy completed"
-                );
-                stats.record_success();
-            },
-            Err(e) => {
-                tracing::error!(error = %e, "Asset copy failed");
-                stats.record_failure();
-            },
-        }
+    async fn run_asset_copy(
+        &self,
+        paths: &AppPaths,
+        stats: &mut PipelineStats,
+    ) -> Result<(), JobError> {
+        let result = CopyExtensionAssetsJob::execute_copy(paths).await?;
+        tracing::debug!(
+            copied = result.items_processed.unwrap_or(0),
+            failed = result.items_failed.unwrap_or(0),
+            "Asset copy completed"
+        );
+        stats.record_success();
+        Ok(())
     }
 
     async fn run_prerender(&self, ctx: &JobContext, stats: &mut PipelineStats) {
@@ -244,8 +251,8 @@ impl PublishPipelineJob {
         let mut stats = PipelineStats::default();
 
         self.run_ingestion(ctx, &mut stats).await;
-        self.run_bundle_admin_css(paths, &mut stats).await;
-        self.run_asset_copy(paths, &mut stats).await;
+        self.run_bundles(paths, &mut stats).await?;
+        self.run_asset_copy(paths, &mut stats).await?;
         self.run_prerender(ctx, &mut stats).await;
         self.run_page_prerender(paths, db_pool, &mut stats).await;
         self.run_derived_files(ctx, paths, db_pool, &mut stats)

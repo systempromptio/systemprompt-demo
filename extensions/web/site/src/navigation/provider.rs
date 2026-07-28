@@ -1,5 +1,9 @@
 //! Supplies header, footer, and branding navigation context to every public
 //! page.
+//!
+//! Why the CSS bundle version rides along: it is needed by every public
+//! template, and this is the only wildcard (`applies_to_pages() == []`)
+//! provider this extension registers.
 
 use std::sync::Arc;
 
@@ -7,6 +11,8 @@ use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::Value;
 use systemprompt::extension::prelude::*;
+
+use crate::assets::css_bundle_version;
 
 use super::config::{
     BrandingConfig, DocsSidebarSection, FooterConfig, HeaderNavConfig, NavigationConfig, SocialLink,
@@ -16,6 +22,8 @@ use super::config::{
 struct NavigationContext<'a> {
     site: NavigationSite<'a>,
     nav: NavLinks,
+    #[serde(rename = "CSS_BUNDLE_VERSION")]
+    css_bundle_version: &'static str,
 }
 
 #[derive(Debug, Serialize)]
@@ -93,6 +101,7 @@ impl PageDataProvider for NavigationPageDataProvider {
                 blog: "/blog",
                 docs: "/documentation",
             },
+            css_bundle_version: css_bundle_version(),
         };
         Ok(serde_json::to_value(context)?)
     }
