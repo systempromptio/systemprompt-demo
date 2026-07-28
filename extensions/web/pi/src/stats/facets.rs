@@ -15,11 +15,11 @@ pub(super) async fn credit_position(
     pool: &PgPool,
     user_id: &systemprompt::identifiers::UserId,
 ) -> PiCredit {
-    let balance = systemprompt_credits_extension::get_balance(pool, user_id.as_str())
+    let balance = systemprompt_credits::get_balance(pool, user_id.as_str())
         .await
         .unwrap_or_else(|e| {
             tracing::warn!(error = %e, "could not read a credit balance for the pi stats pane");
-            systemprompt_credits_extension::CreditBalance {
+            systemprompt_credits::CreditBalance {
                 balance_microdollars: 0,
                 granted_microdollars: 0,
                 spent_microdollars: 0,

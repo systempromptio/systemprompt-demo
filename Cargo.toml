@@ -10,7 +10,7 @@ members = [
     "extensions/web/jobs",
     "extensions/email",
     "extensions/credits",
-    "extensions/mcp/systemprompt",
+    "extensions/mcp/agent",
     "extensions/mcp/shared",
     "extensions/pi-jail",
 ]
@@ -58,8 +58,8 @@ systemprompt-web-pi = { path = "extensions/web/pi" }
 systemprompt-web-content = { path = "extensions/web/content" }
 systemprompt-web-site = { path = "extensions/web/site" }
 systemprompt-web-jobs = { path = "extensions/web/jobs" }
-systemprompt-email-extension = { path = "extensions/email" }
-systemprompt-credits-extension = { path = "extensions/credits" }
+systemprompt-email = { path = "extensions/email" }
+systemprompt-credits = { path = "extensions/credits" }
 systemprompt-mcp-shared = { path = "extensions/mcp/shared" }
 systemprompt-pi-jail = { path = "extensions/pi-jail" }
 
@@ -258,8 +258,8 @@ systemprompt = { workspace = true, features = ["full"] }
 
 # Local extensions
 systemprompt-web-extension = { workspace = true }
-systemprompt-email-extension = { workspace = true }
-systemprompt-credits-extension = { workspace = true }
+systemprompt-email = { workspace = true }
+systemprompt-credits = { workspace = true }
 
 # Runtime
 tokio = { workspace = true }

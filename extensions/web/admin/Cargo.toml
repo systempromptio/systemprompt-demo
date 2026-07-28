@@ -16,8 +16,8 @@ systemprompt-web-governance = { workspace = true }
 systemprompt-web-pi = { workspace = true }
 # Audit: uses ai, identifiers, models, oauth, security — requires `full`.
 systemprompt = { workspace = true, features = ["full"] }
-systemprompt-email-extension = { workspace = true }
-systemprompt-credits-extension = { workspace = true }
+systemprompt-email = { workspace = true }
+systemprompt-credits = { workspace = true }
 systemprompt-security = { workspace = true }
 
 # Database

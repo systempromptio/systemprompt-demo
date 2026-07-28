@@ -1,5 +1,5 @@
 [package]
-name = "systemprompt-credits-extension"
+name = "systemprompt-credits"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

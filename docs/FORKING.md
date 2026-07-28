@@ -21,7 +21,7 @@ What deliberately keeps the upstream name:
   rewriting anyway.
 - `demo/recording/` asciicast/SVG assets — baked recordings; re-record to
   rebrand.
-- The MCP docs corpus under `extensions/mcp/systemprompt/content/` — embedded
+- The MCP docs corpus under `extensions/mcp/agent/content/` — embedded
   by design so that binary is self-contained; edit the markdown there.
 
 `scripts/check-image-name.sh` and `scripts/check-fork-drift.sh` are the two

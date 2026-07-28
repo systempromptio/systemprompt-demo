@@ -12,7 +12,7 @@ publish = false
 [dependencies]
 systemprompt-web-shared = { workspace = true }
 systemprompt-web-governance = { workspace = true }
-systemprompt-credits-extension = { workspace = true }
+systemprompt-credits = { workspace = true }
 # Audit: uses ai, identifiers, models, oauth, traits — requires `full`.
 systemprompt = { workspace = true, features = ["full"] }
 systemprompt-security = { workspace = true }

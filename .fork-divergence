@@ -37,7 +37,7 @@ extensions/web/admin/src/handlers/catalog/view.rs	# renders the catalog families
 extensions/web/admin/src/handlers/public_register.rs	# astound limits registration to @astounddigital.com / @astoundcommerce.com; template takes a role argument
 extensions/web/admin/src/handlers/users.rs	# astound adds extract_mcp_accessor_user, accepting an Mcp-audience JWT for the Salesforce token accessor
 extensions/web/admin/src/lib.rs	# astound mounts the Salesforce token + Slack alert surface; template mounts the bridge plugin-file plane
-extensions/mcp/systemprompt/src/server/mod.rs	# astound serves artifact resources by URI (parse/read/shell template); template serves only the viewer resource
+extensions/mcp/agent/src/server/mod.rs	# astound serves artifact resources by URI (parse/read/shell template); template serves only the viewer resource
 extensions/web/src/schemas.rs	# astound ships the Salesforce identity schema
 extensions/web/jobs/src/llms_txt.rs	# template emits a blog section; astound has no blog
 extensions/web/site/src/lib.rs	# template ships blog + features sections; astound ships the skills page

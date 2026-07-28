@@ -1,5 +1,5 @@
 [package]
-name = "systemprompt-email-extension"
+name = "systemprompt-email"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

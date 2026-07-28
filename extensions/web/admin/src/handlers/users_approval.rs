@@ -87,14 +87,14 @@ pub(crate) async fn grant_credit_handler(
     }
 
     let microdollars =
-        (body.usd * systemprompt_credits_extension::MICRODOLLARS_PER_USD as f64).round() as i64;
+        (body.usd * systemprompt_credits::MICRODOLLARS_PER_USD as f64).round() as i64;
     let reason = body
         .reason
         .map(|r| r.trim().to_owned())
         .filter(|r| !r.is_empty())
         .unwrap_or_else(|| format!("manual-{}", chrono::Utc::now().format("%Y%m%dT%H%M%SZ")));
 
-    let granted = systemprompt_credits_extension::grant_credit(
+    let granted = systemprompt_credits::grant_credit(
         &pool,
         user_id.as_str(),
         microdollars,
@@ -102,7 +102,7 @@ pub(crate) async fn grant_credit_handler(
     )
     .await
     .map_err(AdminError::internal)?;
-    let balance = systemprompt_credits_extension::get_balance(&pool, user_id.as_str())
+    let balance = systemprompt_credits::get_balance(&pool, user_id.as_str())
         .await
         .map_err(AdminError::internal)?;
 

@@ -2,7 +2,7 @@
 //!
 //! A tool reaches the model only if every one of these lists carries it:
 //!
-//! * `extensions/mcp/systemprompt/src/tools.rs` — declared to MCP
+//! * `extensions/mcp/agent/src/tools.rs` — declared to MCP
 //! * `handlers/pi/shim/mcp-client.ts` — registered with pi
 //! * `handlers/pi/mcp/mod.rs` `FORWARDABLE` — accepted by the proxy
 //! * `services/config/pi.yaml` `tools:` — allowed by pi itself
@@ -37,7 +37,7 @@ fn pi_yaml_hub_tools() -> Vec<String> {
 /// Matched off the `name:` field of each `ToolDef`, which is the same string
 /// the proxy and the shim concatenate onto the server prefix.
 fn declared_tools() -> Vec<String> {
-    repo_file("extensions/mcp/systemprompt/src/tools.rs")
+    repo_file("extensions/mcp/agent/src/tools.rs")
         .lines()
         .filter_map(|l| l.trim().strip_prefix("name: \""))
         .filter_map(|r| r.split_once('"').map(|(n, _)| n.to_owned()))

@@ -41,8 +41,8 @@ pub(crate) fn registration_submitted(
 
     let (email, name, profile) = (email.to_owned(), name.to_owned(), profile.clone());
     tokio::spawn(async move {
-        let site_url = systemprompt_email_extension::configured_site_url();
-        let notice = systemprompt_email_extension::RegistrationNotice {
+        let site_url = systemprompt_email::configured_site_url();
+        let notice = systemprompt_email::RegistrationNotice {
             name: &name,
             email: &email,
             company: &profile.company,
@@ -52,7 +52,7 @@ pub(crate) fn registration_submitted(
             credit_plans: profile.credit_plans.as_deref(),
         };
         if let Err(e) =
-            systemprompt_email_extension::send_registration_notice(&notice, &site_url).await
+            systemprompt_email::send_registration_notice(&notice, &site_url).await
         {
             tracing::warn!(email = %email, error = %e, "registration notice not sent");
         }
@@ -65,7 +65,7 @@ pub(crate) fn registration_submitted(
 pub(crate) async fn account_approved(pool: &PgPool, user_id: &UserId, email: &str, name: &str) {
     tracing::info!(user_id = %user_id, email, name, "account approved");
 
-    match systemprompt_credits_extension::grant_signup_credit(pool, user_id.as_str()).await {
+    match systemprompt_credits::grant_signup_credit(pool, user_id.as_str()).await {
         Ok(newly_granted) => {
             if !newly_granted {
                 tracing::info!(user_id = %user_id, "signup credit already granted; skipping");
@@ -81,9 +81,9 @@ pub(crate) async fn account_approved(pool: &PgPool, user_id: &UserId, email: &st
     let to = email.to_owned();
     let recipient_name = name.to_owned();
     tokio::spawn(async move {
-        let site_url = systemprompt_email_extension::configured_site_url();
+        let site_url = systemprompt_email::configured_site_url();
         if let Err(e) =
-            systemprompt_email_extension::send_welcome_email(&to, &recipient_name, &site_url).await
+            systemprompt_email::send_welcome_email(&to, &recipient_name, &site_url).await
         {
             tracing::warn!(email = %to, error = %e, "welcome email not sent");
         }
