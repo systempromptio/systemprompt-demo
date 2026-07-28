@@ -83,29 +83,47 @@ async fn the_cap_is_per_address_not_global() {
     db.cleanup().await;
 }
 
-/// Re-submitting an address that already has an account writes nothing and
-/// grants nothing, so it must not spend the network's quota. Shared office NAT
-/// is the case this protects: three colleagues rediscovering they already have
-/// accounts should not lock out the fourth who does not.
+/// Quota is spent per account minted, not per request served. Re-submitting an
+/// email that already has a row re-issues a setup token and grants no further
+/// credit, so it must not count. Shared office NAT is the case this protects:
+/// colleagues retrying a half-finished signup — which is the common way to
+/// recover a lost setup token — must not lock out someone who has not signed up
+/// at all.
 #[tokio::test(flavor = "multi_thread")]
 async fn resubmitting_a_registered_email_does_not_spend_quota() {
     let Some((db, app)) = harness().await else {
         return;
     };
 
-    let (status, body) = register(&app, "203.0.113.20", "known@example.com").await;
-    assert_eq!(status, StatusCode::OK, "body: {body}");
+    const IP: &str = "203.0.113.20";
 
-    for _ in 0..5 {
-        let (status, body) = register(&app, "203.0.113.20", "known@example.com").await;
+    for email in ["first@example.com", "second@example.com"] {
+        let (status, body) = register(&app, IP, email).await;
+        assert_eq!(status, StatusCode::OK, "{email}: {body}");
+    }
+
+    // Three repeats, not more: the separate email-keyed limiter allows five
+    // setup tokens per address per quarter hour, and tripping that would prove
+    // nothing about the per-IP quota this test is here for.
+    for _ in 0..3 {
+        let (status, body) = register(&app, IP, "first@example.com").await;
         assert_eq!(status, StatusCode::OK, "repeat submission: {body}");
     }
 
-    let (status, body) = register(&app, "203.0.113.20", "fresh@example.com").await;
+    // Two accounts minted, so the third is still within the cap. Were repeats
+    // counted, five requests would already have exhausted it.
+    let (status, body) = register(&app, IP, "third@example.com").await;
     assert_eq!(
         status,
         StatusCode::OK,
         "repeats of a known email must not have consumed the quota: {body}"
+    );
+
+    let (status, _) = register(&app, IP, "fourth@example.com").await;
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "the cap must still bite once three accounts really have been minted"
     );
 
     db.cleanup().await;

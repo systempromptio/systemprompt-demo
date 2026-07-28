@@ -126,10 +126,15 @@ pub(crate) async fn public_register_handler(
         return Ok(already_registered_response(&email_str, &name));
     }
 
-    // Why: deliberately after the branch above. That branch writes nothing and
-    // grants nothing, so people behind one office NAT re-submitting an address
-    // that already has an account must not spend the network's quota on it.
-    check_ip_rate_limit(&pool, client_ip).await?;
+    // Why: the quota counts accounts minted, not requests received, because the
+    // credit worth farming is granted once per account. An email that already
+    // has a row re-issues a setup token and grants nothing further, so charging
+    // a shared office NAT for those would lock out the colleague who has not
+    // signed up yet.
+    let mints_account = existing.is_none();
+    if mints_account {
+        check_ip_rate_limit(&pool, client_ip).await?;
+    }
 
     let user_id = existing.map_or_else(
         || UserId::new(uuid::Uuid::new_v4().to_string()),
@@ -153,7 +158,7 @@ pub(crate) async fn public_register_handler(
     // Why: outside the transaction above, and only once it has committed — a
     // registration that failed must not spend quota, and a failed write here
     // must not undo a signup that succeeded.
-    if let Some(ip) = client_ip.filter(|ip| !is_private_range(*ip)) {
+    if mints_account && let Some(ip) = client_ip.filter(|ip| !is_private_range(*ip)) {
         repositories::users::registration::insert_registration_attempt(&pool, ip, &email_str).await;
     }
 
