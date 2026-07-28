@@ -57,10 +57,7 @@ struct ManifestStep {
     outcome: String,
 }
 
-pub fn scan_demos(
-    demo_root: &Path,
-    meta: &DemoScannerMeta,
-) -> Result<DemosConfig, DemoScanError> {
+pub fn scan_demos(demo_root: &Path, meta: &DemoScannerMeta) -> Result<DemosConfig, DemoScanError> {
     if !demo_root.is_dir() {
         return Err(DemoScanError::RootMissing(demo_root.display().to_string()));
     }

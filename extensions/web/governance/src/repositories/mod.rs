@@ -4,8 +4,8 @@
 //! the only name a symbol has and collisions between domains cannot arise.
 
 pub mod activity;
-pub mod bridge;
 pub mod analytics;
+pub mod bridge;
 pub mod dashboard;
 pub mod governance;
 pub mod share_token;

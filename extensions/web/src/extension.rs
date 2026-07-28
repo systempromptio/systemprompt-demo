@@ -68,7 +68,6 @@ impl WebExtension {
             "Homepage config error",
         )
     }
-
 }
 
 pub(crate) fn log_and_discard_err<T: Clone>(

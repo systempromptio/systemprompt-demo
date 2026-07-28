@@ -25,11 +25,11 @@
 //!
 //! - **Nothing identifying leaves below the admin tier.** The repository layer
 //!   returns only counts for the window (see
-//!   [`systemprompt_web_governance::repositories::analytics::pulse`]), the member tier rounds those
-//!   counts, and a window with fewer than [`super::normalize::MIN_PEOPLE`]
-//!   accounts in it is not sent at all. The admin tier is the sole exception,
-//!   and it is the tier that could already read every one of these rows from
-//!   the CLI.
+//!   [`systemprompt_web_governance::repositories::analytics::pulse`]), the
+//!   member tier rounds those counts, and a window with fewer than
+//!   [`super::normalize::MIN_PEOPLE`] accounts in it is not sent at all. The
+//!   admin tier is the sole exception, and it is the tier that could already
+//!   read every one of these rows from the CLI.
 //! - **It cannot be polled into a table scan.** The pane refreshes the pulse
 //!   once a minute and the admin block is far more expensive than the member
 //!   one, so each tier's answer is computed at most once per its own TTL and

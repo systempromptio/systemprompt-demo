@@ -11,7 +11,10 @@ use crate::repositories::dashboard::queries::{
     list_tool_success_rates, list_top_users,
 };
 use crate::repositories::dashboard::traffic;
-use crate::types::{ContentPerformanceRow, DashboardData, EventFeedRow, EventsQuery, EventsResponse, RealtimePulse, RecentMcpError, TrafficData, TrafficTopPage};
+use crate::types::{
+    ContentPerformanceRow, DashboardData, EventFeedRow, EventsQuery, EventsResponse, RealtimePulse,
+    RecentMcpError, TrafficData, TrafficTopPage,
+};
 
 pub async fn get_dashboard_data(
     pool: &PgPool,

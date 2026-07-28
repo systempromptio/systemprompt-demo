@@ -55,10 +55,7 @@ fn invalidate(conversation_id: &ContextId) {
 // and a turn's tool calls would each schedule their own collection.
 const PUSH_DEBOUNCE: std::time::Duration = std::time::Duration::from_millis(750);
 
-pub(crate) async fn snapshot(
-    pool: &PgPool,
-    session: &PiSession,
-) -> Option<serde_json::Value> {
+pub(crate) async fn snapshot(pool: &PgPool, session: &PiSession) -> Option<serde_json::Value> {
     if let Some(body) = cached_body(&session.conversation_id) {
         return serde_json::from_str(&body).ok();
     }

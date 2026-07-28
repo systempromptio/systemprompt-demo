@@ -22,9 +22,9 @@
 pub mod activity;
 pub mod audit_event_bus;
 pub mod authz;
+pub mod device_service;
 pub mod error;
 pub mod event_hub;
-pub mod device_service;
 pub mod gateway_safety;
 pub mod hooks_track;
 pub mod identity;

@@ -10,7 +10,10 @@ pub use queries::{
 
 use sqlx::PgPool;
 
-use crate::types::{TopPageDailyBucket, TrafficData, TrafficDevice, TrafficGeo, TrafficSource, TrafficTimeBucket, TrafficTopPage};
+use crate::types::{
+    TopPageDailyBucket, TrafficData, TrafficDevice, TrafficGeo, TrafficSource, TrafficTimeBucket,
+    TrafficTopPage,
+};
 
 fn range_params(range: &str) -> (&str, &str, &str) {
     match range {

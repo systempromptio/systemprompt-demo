@@ -60,11 +60,7 @@ pub async fn revoke_expired_pats_by_name_prefix(
     Ok(revoked)
 }
 
-pub async fn revoke_device_cert(
-    pool: &PgPool,
-    user_id: &UserId,
-    id: &str,
-) -> GovernanceResult<()> {
+pub async fn revoke_device_cert(pool: &PgPool, user_id: &UserId, id: &str) -> GovernanceResult<()> {
     let revoked = bridge::revoke_device_cert(pool, user_id, id).await?;
     if !revoked {
         return Err(GovernanceError::NotFound("cert not found".to_owned()));

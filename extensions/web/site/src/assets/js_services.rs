@@ -97,7 +97,6 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
 }
 
 
-
 fn service_webauthn_js(p: &Path) -> Vec<AssetDefinition> {
     vec![
         svc_js!(p, "webauthn-helpers.js"),

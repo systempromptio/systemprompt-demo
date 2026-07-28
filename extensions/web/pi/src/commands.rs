@@ -142,11 +142,12 @@ pub(super) async fn approve(
     // trail shows.
     let decided_at = chrono::Utc::now();
     let user_id = session.user_id.clone();
-    let username = systemprompt_web_governance::repositories::user_access::find_display_name(&pool, &user_id)
-        .await
-        .ok()
-        .flatten()
-        .unwrap_or_else(|| user_id.to_string());
+    let username =
+        systemprompt_web_governance::repositories::user_access::find_display_name(&pool, &user_id)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| user_id.to_string());
     let attribution = session::Attribution {
         user_id,
         username,

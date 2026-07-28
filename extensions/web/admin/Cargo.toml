@@ -9,7 +9,13 @@ repository.workspace = true
 homepage.workspace = true
 publish = false
 
+[package.metadata.cargo-machete]
+# `inventory` is reached only through the register_extension! expansion.
+ignored = ["inventory"]
+
 [dependencies]
+inventory = { workspace = true }
+
 # Foundation
 systemprompt-web-shared = { workspace = true }
 systemprompt-web-governance = { workspace = true }
@@ -25,8 +31,6 @@ sqlx = { workspace = true }
 
 # Web framework
 axum = { workspace = true }
-futures = { workspace = true }
-async-stream = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 
@@ -37,7 +41,6 @@ tokio = { workspace = true }
 # 0.12 line already in the graph via the core CLI, with default features off:
 # the call is plain HTTP to an address only this server can reach, and the 0.13
 # workspace spec pulls an aws-lc TLS backend this crate has no use for.
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
 
 # Serialization
 serde = { workspace = true }
@@ -54,7 +57,6 @@ tracing = { workspace = true }
 
 # Secret detection (governance secret_scan + gateway safety scanner). Pinned to
 # the 1.x line already in the graph transitively.
-regex = "1"
 
 # Crypto & encoding
 sha2 = { workspace = true }
@@ -74,7 +76,6 @@ tempfile = { workspace = true }
 # Utilities
 url = { workspace = true }
 urlencoding = { workspace = true }
-inventory = { workspace = true }
 async-trait = { workspace = true }
 
 [dev-dependencies]

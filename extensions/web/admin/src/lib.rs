@@ -56,7 +56,6 @@ pub mod test_support {
 }
 
 
-
 /// The public page-markdown surface: `/index.md` and `/md/{section}/{slug}.md`.
 ///
 /// Serves the site's `markdown_content` rows as raw markdown for agents — the

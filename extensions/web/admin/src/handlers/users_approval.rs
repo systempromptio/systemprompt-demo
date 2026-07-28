@@ -94,14 +94,10 @@ pub(crate) async fn grant_credit_handler(
         .filter(|r| !r.is_empty())
         .unwrap_or_else(|| format!("manual-{}", chrono::Utc::now().format("%Y%m%dT%H%M%SZ")));
 
-    let granted = systemprompt_credits::grant_credit(
-        &pool,
-        user_id.as_str(),
-        microdollars,
-        &reason,
-    )
-    .await
-    .map_err(AdminError::internal)?;
+    let granted =
+        systemprompt_credits::grant_credit(&pool, user_id.as_str(), microdollars, &reason)
+            .await
+            .map_err(AdminError::internal)?;
     let balance = systemprompt_credits::get_balance(&pool, user_id.as_str())
         .await
         .map_err(AdminError::internal)?;

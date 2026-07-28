@@ -51,9 +51,7 @@ pub(crate) fn registration_submitted(
             why_assessing: &profile.why_assessing,
             credit_plans: profile.credit_plans.as_deref(),
         };
-        if let Err(e) =
-            systemprompt_email::send_registration_notice(&notice, &site_url).await
-        {
+        if let Err(e) = systemprompt_email::send_registration_notice(&notice, &site_url).await {
             tracing::warn!(email = %email, error = %e, "registration notice not sent");
         }
     });

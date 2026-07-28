@@ -129,10 +129,9 @@ impl ExtensionError for BlogError {
             Self::InvalidRequest(_) | Self::Validation(_) | Self::Parse(_) => {
                 StatusCode::BAD_REQUEST
             },
-            Self::Database(_)
-            | Self::Serialization(_)
-            | Self::Io(_)
-            | Self::Yaml(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::Database(_) | Self::Serialization(_) | Self::Io(_) | Self::Yaml(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            },
         }
     }
 

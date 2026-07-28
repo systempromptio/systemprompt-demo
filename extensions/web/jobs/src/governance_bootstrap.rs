@@ -58,11 +58,9 @@ async fn execute_inner(ctx: &JobContext) -> Result<JobResult, JobError> {
     let db_pool = ctx.db_pool::<DbPool>().ok_or(WebError::Internal(
         "Database not available in job context".to_owned(),
     ))?;
-    let paths = ctx
-        .app_paths::<Arc<AppPaths>>()
-        .ok_or(WebError::Internal(
-            "AppPaths not available in job context".to_owned(),
-        ))?;
+    let paths = ctx.app_paths::<Arc<AppPaths>>().ok_or(WebError::Internal(
+        "AppPaths not available in job context".to_owned(),
+    ))?;
     let services_path = paths.system().services().to_path_buf();
 
     let registered = bootstrap_gateway_entities(db_pool).await?;

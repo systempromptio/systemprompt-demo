@@ -20,9 +20,7 @@ pub struct CookieSession {
     pub email: Email,
 }
 
-pub fn extract_user_from_cookie(
-    headers: &HeaderMap,
-) -> Result<CookieSession, GovernanceError> {
+pub fn extract_user_from_cookie(headers: &HeaderMap) -> Result<CookieSession, GovernanceError> {
     let token = extract_token_from_headers(headers)?;
 
     let jwt_issuer = Config::get()?.jwt_issuer.clone();
@@ -52,7 +50,9 @@ fn extract_token_from_headers(headers: &HeaderMap) -> Result<String, GovernanceE
 
     let cookie_header = headers
         .get("cookie")
-        .ok_or_else(|| GovernanceError::Unauthorized("No cookie or Authorization header".to_owned()))?
+        .ok_or_else(|| {
+            GovernanceError::Unauthorized("No cookie or Authorization header".to_owned())
+        })?
         .to_str()
         // lint-ok: http-error — adapting `ToStrError`, which has no variants.
         .map_err(|e| GovernanceError::Unauthorized(format!("Invalid cookie header: {e}")))?;
@@ -61,7 +61,9 @@ fn extract_token_from_headers(headers: &HeaderMap) -> Result<String, GovernanceE
         .split(';')
         .find_map(|c| c.trim().strip_prefix("access_token="))
         .ok_or_else(|| {
-            GovernanceError::Unauthorized("No access_token cookie or Authorization: Bearer".to_owned())
+            GovernanceError::Unauthorized(
+                "No access_token cookie or Authorization: Bearer".to_owned(),
+            )
         })?;
 
     if token.is_empty() {

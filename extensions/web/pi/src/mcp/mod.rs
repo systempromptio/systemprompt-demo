@@ -50,8 +50,8 @@ use systemprompt_security::policy::types::AccessScope;
 use super::auth::{authorize_session, problem, unauthorized};
 use super::gate::PiDeps;
 use super::registry::PiRegistry;
-use systemprompt_web_governance::webhook::governance::inproc::{self, GovernedCall};
 use render::McpCallResult;
+use systemprompt_web_governance::webhook::governance::inproc::{self, GovernedCall};
 
 /// Tools the proxy will forward.
 ///

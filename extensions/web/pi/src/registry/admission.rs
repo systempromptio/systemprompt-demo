@@ -80,10 +80,7 @@ impl PiRegistry {
     // Why: caps are checked while holding the lock and the placeholder is
     // inserted before the `await`, so two simultaneous requests cannot both
     // pass a cap of one.
-    pub(crate) async fn create(
-        &self,
-        req: CreateRequest<'_>,
-    ) -> Result<SessionParts, SpawnError> {
+    pub(crate) async fn create(&self, req: CreateRequest<'_>) -> Result<SessionParts, SpawnError> {
         let CreateRequest {
             conversation_id,
             user_id,

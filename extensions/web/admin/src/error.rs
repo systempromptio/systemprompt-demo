@@ -11,10 +11,10 @@ use systemprompt_web_shared::html_escape;
 use thiserror::Error;
 
 use crate::handlers::shared::ErrorBody;
-use systemprompt_web_governance::GovernanceError;
-use systemprompt_web_governance::repositories::bridge::BridgeRepoError;
 use crate::repositories::secrets::secret_crypto::SecretCryptoError;
 use systemprompt::traits::ExtensionError;
+use systemprompt_web_governance::GovernanceError;
+use systemprompt_web_governance::repositories::bridge::BridgeRepoError;
 use systemprompt_web_shared::error::WebError;
 
 #[derive(Debug, Error)]

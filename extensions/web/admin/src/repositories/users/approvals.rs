@@ -117,9 +117,7 @@ pub async fn approve_on_create(pool: &PgPool, user_id: &UserId, decided_by: &Use
 
     // Why: every approved account must hold the signup credit, whichever path
     // created it; the grant is idempotent, so re-approval cannot double-pay.
-    if let Err(e) =
-        systemprompt_credits::grant_signup_credit(pool, user_id.as_str()).await
-    {
+    if let Err(e) = systemprompt_credits::grant_signup_credit(pool, user_id.as_str()).await {
         tracing::warn!(error = %e, user_id = %user_id, "signup credit grant failed");
     }
 }
