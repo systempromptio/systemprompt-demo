@@ -1,0 +1,140 @@
+# Copy for the homepage demo showcase. The scanner joins these pillars and
+# categories against the on-disk demo/ tree: a category renders only when
+# demo/<id>/ exists with a valid manifest, so editing copy here never breaks
+# the scan. Forks: this file plus theme.yaml carry all homepage branding.
+title: "Run the Platform"
+subtitle: >-
+  Nine guided walkthroughs, each a sequential story you can run against your
+  local instance. Every step is a real shell script; every command is
+  copy-paste ready.
+
+pillars:
+  - id: infrastructure
+    title: Infrastructure
+    subtitle: "What It Is · How You Run It · Why You Can Trust It"
+    feature_url: "https://systemprompt.io/features/self-hosted-ai-platform"
+    category_ids: [infrastructure]
+  - id: capabilities
+    title: Capabilities
+    subtitle: "What It Does · How It Protects You · Why It Passes Audit"
+    feature_url: "https://systemprompt.io/features/governance-pipeline"
+    category_ids: [governance, agents, mcp, analytics, users]
+  - id: integrations
+    title: Integrations
+    subtitle: "What It Connects To · How You Use It · Why It Scales"
+    feature_url: "https://systemprompt.io/features/any-ai-agent"
+    category_ids: [skills, web, performance]
+
+categories:
+  - id: governance
+    title: Governance
+    tagline: "Policy that runs on every tool call, not a slide in a security review."
+    story: >-
+      Staff engineers want to know what actually happens when an agent goes
+      off-script. This walkthrough fires real PreToolUse hooks against the
+      governance endpoint: a clean admin call passes all three rules, a
+      user-scope agent gets denied at the scope and blocklist layers, and
+      plaintext AWS keys, GitHub PATs, and PEM private keys are blocked before
+      they reach a tool. Every decision lands in an audit table you can query,
+      capped by rate limits you can inspect and hooks you can extend.
+    cost: ""
+    feature_url: "https://systemprompt.io/features/governance-pipeline"
+  - id: agents
+    title: Agents
+    tagline: "From \"which agents ship with the platform?\" to a fully traced AI call in five commands."
+    story: >-
+      Staff engineers evaluating an agent runtime want three things: to see
+      what's configured, to watch one actually do work, and to trust that every
+      call is auditable. This walkthrough starts at agent discovery, drills
+      into the config and tool scopes that separate an admin agent from a
+      user-scoped one, sends a live message that triggers real MCP tool use,
+      and ends at the execution trace and A2A registry. By the last step you
+      have seen events, artifacts, cost attribution, and service discovery for
+      a single prompt.
+    cost: "API key required"
+    feature_url: "https://systemprompt.io/features/closed-loop-agents"
+  - id: mcp
+    title: MCP Servers
+    tagline: "Every MCP tool call is inventoried, governed, and costed — watch it catch a leaking secret."
+    story: >-
+      MCP is where agents meet real systems, which is exactly where enterprise
+      reviews stall: who is connected, who called what, and what stops a
+      misbehaving model from exfiltrating a secret. This walkthrough starts at
+      the server inventory, then fires a governance hook with a clean payload
+      and a payload containing an AWS key to show allow and deny decisions
+      hitting the audit tables, and ends in the execution analytics view where
+      every tool call is already counted.
+    cost: ""
+    feature_url: "https://systemprompt.io/features/mcp-governance"
+  - id: analytics
+    title: Analytics
+    tagline: "Every agent call, every token, every dollar — queryable from the CLI."
+    story: >-
+      If you can't answer "what did my agents do today and what did it cost?"
+      you can't run them in production. This walkthrough starts at the 24-hour
+      overview and drills down: which agents are busy, what each model is
+      costing, and the raw request stream with latency and token counts. The
+      same telemetry powers the dashboard, so nothing here is a toy view.
+    cost: ""
+    feature_url: "https://systemprompt.io/features/analytics-and-observability"
+  - id: users
+    title: Users & Access
+    tagline: "Identity, roles, sessions, and abuse response from one CLI."
+    story: >-
+      Before trusting a platform with production agents, you want to know how
+      user identity actually works. This walkthrough lists the user directory,
+      drills into a single user's role, confirms the current authenticated
+      session and profile, then demonstrates the IP-ban lever end to end —
+      add, verify, remove — so you know the abuse-response path is real and
+      reversible.
+    cost: ""
+    feature_url: "https://systemprompt.io/features/compliance"
+  - id: infrastructure
+    title: Infrastructure
+    tagline: "A guided tour of the platform's day-2 operational surface."
+    story: >-
+      Before you adopt anything, you want to know what it looks like at 2am.
+      This walkthrough takes you through the operator CLI the same way an
+      on-call engineer would: check service health, inspect the database,
+      audit scheduled work, tail the logs, then review config. Every command
+      is read-only, every answer is a single CLI call, and nothing here needs
+      a dashboard.
+    cost: ""
+    feature_url: "https://systemprompt.io/features/self-hosted-ai-platform"
+  - id: skills
+    title: Skills & Content
+    tagline: "Skills, the content that grounds them, and the contexts that ship them to live agents."
+    story: >-
+      "Skill" is a loaded word, so this walkthrough defines it by showing the
+      whole supply chain. It starts with the skill lifecycle commands, moves to
+      the content store that skills retrieve from, then to the managed file
+      system that backs the content, then to the plugin package that bundles
+      skills and hooks for distribution, and ends at contexts — the
+      conversation containers every agent session binds to. By the end you can
+      trace a skill from on-disk markdown to a live agent reply.
+    cost: ""
+    feature_url: "https://systemprompt.io/features/bridge"
+  - id: web
+    title: Web Generation
+    tagline: "The same binary that runs governance also ships your marketing site."
+    story: >-
+      Most governance platforms stop at the API. This gateway also publishes
+      systemprompt.io from the same Rust binary, using the same CLI, against
+      the same database. This walkthrough inventories the content model, then
+      runs the validator so you can see the publishing pipeline is real, typed,
+      and CI-friendly.
+    cost: ""
+    feature_url: "https://systemprompt.io/features/web-publisher"
+  - id: performance
+    title: Performance
+    tagline: "Trace one request end-to-end, then prove it holds under 100 concurrent workers."
+    story: >-
+      Staff engineers don't trust benchmarks they can't reproduce. This
+      walkthrough fires a real governance request, follows it through JWT
+      validation, scope resolution, rule evaluation, and the async audit write
+      — showing the typed Rust structs and sqlx-checked SQL at every stage.
+      Then it runs 2,000 requests across three load profiles and prints real
+      throughput, p50/p90/p99, and a capacity estimate in concurrent
+      developers.
+    cost: ""
+    feature_url: ""

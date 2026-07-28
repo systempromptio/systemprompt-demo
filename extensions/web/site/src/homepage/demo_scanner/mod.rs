@@ -1,10 +1,10 @@
 //! Derives the homepage demo showcase from the on-disk `demo/` tree.
 //!
-//! The scanner is the single source of truth for what the homepage advertises:
-//! adding a demo directory is enough, no YAML edit is required.
+//! The scanner joins the pillar/category copy from
+//! `services/web/config/demo-scanner.yaml` against the demo directories that
+//! actually exist: a category renders only when its `demo/<id>/` has a valid
+//! manifest, so copy and code evolve independently.
 
-mod categories_capabilities;
-mod categories_platform;
 mod meta;
 
 use std::fs;
@@ -14,43 +14,14 @@ use serde::Deserialize;
 use thiserror::Error;
 
 use super::config::{DemoCategory, DemoPillar, DemoStep, DemosConfig, QuickStartStep};
-use categories_capabilities::CAPABILITY_CATEGORIES;
-use categories_platform::PLATFORM_CATEGORIES;
-use meta::{CategoryMeta, PillarMeta};
+use meta::CategoryMeta;
+pub use meta::DemoScannerMeta;
 
 const CLI_PREFIXES: &[&str] = &[
     "run_cli_indented ",
     "run_cli_head ",
     "run_cli ",
     "\"$CLI\" ",
-];
-
-const DEFAULT_TITLE: &str = "Run the Platform";
-const DEFAULT_SUBTITLE: &str = "Nine guided walkthroughs, each a sequential story you can run against your local instance. \
-     Every step is a real shell script; every command is copy-paste ready.";
-
-const PILLARS: &[PillarMeta] = &[
-    PillarMeta {
-        id: "infrastructure",
-        title: "Infrastructure",
-        subtitle: "What It Is \u{00b7} How You Run It \u{00b7} Why You Can Trust It",
-        feature_url: "https://systemprompt.io/features/self-hosted-ai-platform",
-        category_ids: &["infrastructure"],
-    },
-    PillarMeta {
-        id: "capabilities",
-        title: "Capabilities",
-        subtitle: "What It Does \u{00b7} How It Protects You \u{00b7} Why It Passes Audit",
-        feature_url: "https://systemprompt.io/features/governance-pipeline",
-        category_ids: &["governance", "agents", "mcp", "analytics", "users"],
-    },
-    PillarMeta {
-        id: "integrations",
-        title: "Integrations",
-        subtitle: "What It Connects To \u{00b7} How You Use It \u{00b7} Why It Scales",
-        feature_url: "https://systemprompt.io/features/any-ai-agent",
-        category_ids: &["skills", "web", "performance"],
-    },
 ];
 
 #[derive(Debug, Error)]
@@ -86,30 +57,30 @@ struct ManifestStep {
     outcome: String,
 }
 
-pub fn scan_demos(demo_root: &Path) -> Result<DemosConfig, DemoScanError> {
+pub fn scan_demos(
+    demo_root: &Path,
+    meta: &DemoScannerMeta,
+) -> Result<DemosConfig, DemoScanError> {
     if !demo_root.is_dir() {
         return Err(DemoScanError::RootMissing(demo_root.display().to_string()));
     }
 
     let quick_start = scan_quick_start(demo_root);
-    let category_map = scan_categories(demo_root);
-    let pillars = assemble_pillars(&category_map);
+    let category_map = scan_categories(demo_root, meta);
+    let pillars = assemble_pillars(meta, &category_map);
 
     Ok(DemosConfig {
-        title: Some(DEFAULT_TITLE.to_owned()),
-        subtitle: Some(DEFAULT_SUBTITLE.to_owned()),
+        title: Some(meta.title.clone()),
+        subtitle: Some(meta.subtitle.clone()),
         quick_start,
         pillars,
     })
 }
 
-fn scan_categories(demo_root: &Path) -> Vec<(String, DemoCategory)> {
+fn scan_categories(demo_root: &Path, scanner: &DemoScannerMeta) -> Vec<(String, DemoCategory)> {
     let mut category_map: Vec<(String, DemoCategory)> = Vec::new();
-    for meta in CAPABILITY_CATEGORIES
-        .iter()
-        .chain(PLATFORM_CATEGORIES.iter())
-    {
-        let dir = demo_root.join(meta.id);
+    for meta in &scanner.categories {
+        let dir = demo_root.join(&meta.id);
         if !dir.is_dir() {
             tracing::warn!(
                 category = meta.id,
@@ -134,14 +105,14 @@ fn scan_categories(demo_root: &Path) -> Vec<(String, DemoCategory)> {
             continue;
         }
         category_map.push((
-            meta.id.to_owned(),
+            meta.id.clone(),
             DemoCategory {
-                id: meta.id.to_owned(),
-                title: meta.title.to_owned(),
-                tagline: meta.tagline.to_owned(),
-                story: meta.story.to_owned(),
-                cost: meta.cost.to_owned(),
-                feature_url: meta.feature_url.to_owned(),
+                id: meta.id.clone(),
+                title: meta.title.clone(),
+                tagline: meta.tagline.clone(),
+                story: meta.story.clone(),
+                cost: meta.cost.clone(),
+                feature_url: meta.feature_url.clone(),
                 steps,
             },
         ));
@@ -149,9 +120,12 @@ fn scan_categories(demo_root: &Path) -> Vec<(String, DemoCategory)> {
     category_map
 }
 
-fn assemble_pillars(category_map: &[(String, DemoCategory)]) -> Vec<DemoPillar> {
+fn assemble_pillars(
+    scanner: &DemoScannerMeta,
+    category_map: &[(String, DemoCategory)],
+) -> Vec<DemoPillar> {
     let mut pillars = Vec::new();
-    for pillar in PILLARS {
+    for pillar in &scanner.pillars {
         let categories: Vec<DemoCategory> = pillar
             .category_ids
             .iter()
@@ -166,10 +140,10 @@ fn assemble_pillars(category_map: &[(String, DemoCategory)]) -> Vec<DemoPillar> 
             continue;
         }
         pillars.push(DemoPillar {
-            id: pillar.id.to_owned(),
-            title: pillar.title.to_owned(),
-            subtitle: pillar.subtitle.to_owned(),
-            feature_url: pillar.feature_url.to_owned(),
+            id: pillar.id.clone(),
+            title: pillar.title.clone(),
+            subtitle: pillar.subtitle.clone(),
+            feature_url: pillar.feature_url.clone(),
             categories,
         });
     }

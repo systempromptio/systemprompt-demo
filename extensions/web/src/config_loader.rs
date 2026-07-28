@@ -61,10 +61,16 @@ pub(crate) fn load_homepage_config() -> Result<Option<Arc<HomepageConfig>>, Conf
         })?;
 
     if let Ok(paths) = load_app_paths() {
-        populate_demo_showcase(
-            &mut homepage_config,
-            paths.system().root().join("demo").as_path(),
-        );
+        match load_demo_scanner_meta()? {
+            Some(meta) => populate_demo_showcase(
+                &mut homepage_config,
+                paths.system().root().join("demo").as_path(),
+                &meta,
+            ),
+            None => tracing::warn!(
+                "config/demo-scanner.yaml missing; homepage demo showcase disabled"
+            ),
+        }
     }
 
     tracing::info!("Loaded homepage config from config/homepage.yaml");
@@ -72,8 +78,24 @@ pub(crate) fn load_homepage_config() -> Result<Option<Arc<HomepageConfig>>, Conf
     Ok(Some(Arc::new(homepage_config)))
 }
 
-fn populate_demo_showcase(homepage_config: &mut HomepageConfig, demo_root: &std::path::Path) {
-    match crate::homepage::demo_scanner::scan_demos(demo_root) {
+fn load_demo_scanner_meta()
+-> Result<Option<crate::homepage::demo_scanner::DemoScannerMeta>, ConfigError> {
+    let Some(value) = load_config_section("demo-scanner.yaml")? else {
+        return Ok(None);
+    };
+    let meta = serde_yaml::from_value(value).map_err(|e| ConfigError::Parse {
+        config_name: "demo-scanner.yaml".to_owned(),
+        message: e.to_string(),
+    })?;
+    Ok(Some(meta))
+}
+
+fn populate_demo_showcase(
+    homepage_config: &mut HomepageConfig,
+    demo_root: &std::path::Path,
+    meta: &crate::homepage::demo_scanner::DemoScannerMeta,
+) {
+    match crate::homepage::demo_scanner::scan_demos(demo_root, meta) {
         Ok(mut scanned) => {
             if let Some(existing) = homepage_config.demos.as_ref() {
                 if existing.title.is_some() {
