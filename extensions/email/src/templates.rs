@@ -65,8 +65,9 @@ fn build_plain_body(display_name: &str, site_url: &str) -> String {
     let setup_url = format!("{site_url}/setup");
     format!(
         "{greeting}\n\n\
-         You've been given $1 of credit to try systemprompt in the embedded web demo.\n\
-         No card, no setup fees — just open it and start building. Here's how:\n\n\
+         You've been given $1 of credit to explore systemprompt in the web demo.\n\
+         No card, no setup — open it, run agents, and interrogate every decision\n\
+         the gateway makes. Here's how:\n\n\
          1. OPEN THE WEB DEMO\n\
          Head to {demo} and sign in. Your $1 credit is applied to\n\
          every request through the governed gateway.\n\n\
@@ -119,7 +120,7 @@ fn build_html_body(display_name: &str, site_url: &str) -> String {
 <td style="padding:20px 48px 0 48px;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:{ACCENT_TINT};border-radius:8px;">
 <tr><td style="padding:18px 20px;font-family:{FONT};font-size:16px;line-height:1.6;color:{TEXT_PRIMARY};">
-<span style="font-weight:700;color:{BRAND_ORANGE};">You've been given $1 of credit</span> to try systemprompt in the embedded <a href="{DEMO_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">web demo</a>. No card, no setup fees — just open it and start building.
+<span style="font-weight:700;color:{BRAND_ORANGE};">You've been given $1 of credit</span> to explore systemprompt in the <a href="{DEMO_URL}" style="color:{BRAND_ORANGE};font-weight:600;text-decoration:none;">web demo</a>. No card, no setup — open it, run agents, and interrogate every decision the gateway makes.
 </td></tr>
 </table>
 </td>

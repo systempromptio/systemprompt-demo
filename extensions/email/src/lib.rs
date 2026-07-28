@@ -40,8 +40,8 @@ pub async fn send_registration_notice(
 ) -> Result<(), EmailError> {
     let Some(service) = EmailService::from_secrets() else {
         tracing::info!(
-            applicant = %notice.email,
-            reviewer = %configured_admin_email(),
+            signup = %notice.email,
+            notify = %configured_admin_email(),
             "email not configured; skipping registration notice (no-op)"
         );
         return Ok(());

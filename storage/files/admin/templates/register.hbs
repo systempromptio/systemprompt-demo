@@ -29,8 +29,8 @@
                     <img src="/files/images/logo.svg" alt="{{branding.domain}}" height="36" class="logo-light">
                     <img src="/files/images/logo-white.svg" alt="{{branding.domain}}" height="36" class="logo-dark">
                 </div>
-                <h1 class="auth-title">Request access</h1>
-                <p class="auth-subtitle">We review every account by hand. Tell us who you are and what you want to evaluate.</p>
+                <h1 class="auth-title">Create your account</h1>
+                <p class="auth-subtitle">Your $1 of evaluation credit is ready. Tell us who you are and what you want to look at.</p>
 
                 <div id="error" class="login-error" role="alert" aria-live="polite"></div>
 
@@ -107,10 +107,7 @@
         } from '/js/services/webauthn-passkey-helpers.js';
 
         const LOGIN_PATH = '/admin/login';
-        // No ?redirect= passthrough: whatever started registration (the bridge
-        // device-link, say) is gated on approval too, so there is nothing to
-        // resume until a human has said yes.
-        const POST_REGISTER = '/admin/pending';
+        const POST_REGISTER = '/admin/continue';
 
         const form = document.getElementById('register-form');
         const errorDiv = document.getElementById('error');

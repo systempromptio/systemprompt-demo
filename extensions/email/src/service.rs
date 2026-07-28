@@ -107,13 +107,13 @@ impl EmailService {
 
     pub async fn send_registration_notice(
         &self,
-        reviewer_email: &str,
+        notify_email: &str,
         notice: &notice::RegistrationNotice<'_>,
         site_url: &str,
     ) -> Result<(), EmailError> {
-        let to: Mailbox = reviewer_email
+        let to: Mailbox = notify_email
             .parse()
-            .map_err(|e| EmailError::BadRequest(format!("Invalid reviewer address: {e}")))?;
+            .map_err(|e| EmailError::BadRequest(format!("Invalid notification address: {e}")))?;
 
         let email =
             notice::build_registration_notice_email(self.from.clone(), to, notice, site_url)?;

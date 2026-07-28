@@ -1,5 +1,5 @@
-//! Self-registration: setup tokens, the company profile, and the manual
-//! approval decision that gates every new account.
+//! Self-registration: setup tokens, the company profile, and the approval row
+//! every new account is written with.
 //!
 //! The write side takes `impl PgExecutor` rather than `&PgPool` so
 //! `public_register_handler` can run account creation, profile, approval row
