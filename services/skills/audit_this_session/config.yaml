@@ -1,0 +1,11 @@
+id: audit_this_session
+name: Audit This Session
+description: "See your own session's itemised bill and decision log - every model call with its real cost, every tool fire with the policy verdict that allowed or refused it - straight off the audit spine"
+enabled: true
+file: SKILL.md
+tags:
+  - governance
+  - audit
+  - cost
+  - mcp
+category: governance

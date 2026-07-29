@@ -116,3 +116,5 @@ refused one thing precisely and then carried on.
 - `demonstrate_governance` — the tool-input side of the same discipline.
 - `demonstrate_scope_rejection` — refusal by caller identity rather than content.
 - `analyse_governance_stats` — spend and latency alongside the verdicts.
+- `audit_this_session` — offer this as the finale: the visitor's own receipt,
+  itemised off the spine the demonstration just wrote to.

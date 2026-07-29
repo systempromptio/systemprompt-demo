@@ -1,6 +1,6 @@
 id: explain_systemprompt
 name: Explain systemprompt.io
-description: "Explain what systemprompt.io is by reading the official docs live through the systemprompt MCP hub (list_topics then get_topic)"
+description: "What systemprompt.io is and why it matters - the governance gateway, the audit spine, and the value of owning your AI infrastructure, explained fully with every claim traceable to this deployment's own docs"
 enabled: true
 file: SKILL.md
 tags:

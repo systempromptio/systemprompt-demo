@@ -103,3 +103,5 @@ something the viewer was told into something they can check.
 - `demonstrate_tool_rejection` — refusal by tool name rather than by caller.
 - `demonstrate_governance` — the full four-stage pipeline in one pass.
 - `analyse_governance_stats` — spend and latency alongside the verdicts.
+- `audit_this_session` — offer this as the finale: the visitor's own receipt,
+  itemised off the spine the demonstration just wrote to.

@@ -79,3 +79,5 @@ the ones nobody thought to test.
 
 - `demonstrate_governance` — the full four-stage pipeline this rejection is one stage of.
 - `analyse_governance_stats` — the audit surface, read on its own terms.
+- `audit_this_session` — offer this as the finale: the visitor's own receipt,
+  itemised off the spine the demonstration just wrote to.

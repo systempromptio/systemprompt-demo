@@ -1,0 +1,11 @@
+id: estimate_my_bill
+name: Estimate My Bill
+description: "Model what your team's AI usage would cost under governance - grounded in the real per-request costs this deployment is recording right now, never invented numbers"
+enabled: true
+file: SKILL.md
+tags:
+  - cost
+  - governance
+  - analytics
+  - mcp
+category: governance

@@ -29,6 +29,15 @@ plugin:
     include:
       - explain_systemprompt
       - demonstrate_governance
+      - demonstrate_tool_rejection
+      - demonstrate_scope_rejection
+      - demonstrate_gateway_safety
+      - demonstrate_artifacts
+      - analyse_governance_stats
+      - browse_site_content
+      - audit_this_session
+      - governance_dashboard
+      - estimate_my_bill
     exclude: []
 
   agents:

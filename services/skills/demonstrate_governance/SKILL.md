@@ -130,3 +130,5 @@ demonstration is complete at the moment the session is quietest.
 - `demonstrate_scope_rejection` — the fourth stage, `scope_check`, fired live.
 - `demonstrate_gateway_safety` — the other secret scanner, on the inference path.
 - `analyse_governance_stats` — spend and latency alongside the verdicts.
+- `audit_this_session` — offer this as the finale: the visitor's own receipt,
+  itemised off the spine the demonstration just wrote to.

@@ -1,0 +1,11 @@
+id: governance_dashboard
+name: Governance Dashboard
+description: "Build a live dashboard of this session's AI activity - spend, verdict totals, policy stages, and per-tool decisions - rendered as typed artifacts from the audit spine, not screenshots"
+enabled: true
+file: SKILL.md
+tags:
+  - governance
+  - artifacts
+  - analytics
+  - mcp
+category: governance

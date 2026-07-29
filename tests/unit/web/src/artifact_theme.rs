@@ -11,20 +11,22 @@ use systemprompt::mcp::services::ui_renderer::{UiRenderer, active_theme};
 use systemprompt::models::artifacts::dashboard::{
     DashboardArtifact, DashboardSection, MetricCard, MetricsCardsData, SectionType,
 };
-use systemprompt::models::{
-    A2aArtifact as Artifact, ArtifactMetadata, DataPart, Part,
-};
+use systemprompt::models::{A2aArtifact as Artifact, ArtifactMetadata, DataPart, Part};
 
 const BRAND_ACCENT: &str = "--mcpui-accent: oklch(0.72 0.17 52)";
 const NOTCHED_CORNER: &str = "--mcpui-radius-card: 1.125rem 0.375rem 1.125rem 1.125rem";
 
 fn spine_dashboard() -> Artifact {
-    let metrics = DashboardSection::new("spine-metrics", "Session at a glance", SectionType::MetricsCards)
-        .with_data(MetricsCardsData::new(vec![
-            MetricCard::new("Verdicts allowed", "15"),
-            MetricCard::new("Verdicts denied", "0"),
-        ]))
-        .expect("metrics section data is the type it declares");
+    let metrics = DashboardSection::new(
+        "spine-metrics",
+        "Session at a glance",
+        SectionType::MetricsCards,
+    )
+    .with_data(MetricsCardsData::new(vec![
+        MetricCard::new("Verdicts allowed", "15"),
+        MetricCard::new("Verdicts denied", "0"),
+    ]))
+    .expect("metrics section data is the type it declares");
 
     let dashboard = DashboardArtifact::new("Governance dashboard").with_sections(vec![metrics]);
     let data = match serde_json::to_value(&dashboard) {
@@ -86,5 +88,11 @@ async fn rendered_dashboard_reaches_no_cdn() {
 
     assert!(!result.html.contains("jsdelivr"));
     assert!(!result.html.contains("<canvas"));
-    assert!(!renderer.csp_policy().script_src.iter().any(|s| s.contains("://")));
+    assert!(
+        !renderer
+            .csp_policy()
+            .script_src
+            .iter()
+            .any(|s| s.contains("://"))
+    );
 }

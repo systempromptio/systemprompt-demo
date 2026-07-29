@@ -45,7 +45,12 @@ agents:
         exclude: []
       skills:
         source: explicit
-        include: []
+        include:
+          - explain_systemprompt
+          - demonstrate_scope_rejection
+          - demonstrate_artifacts
+          - analyse_governance_stats
+          - browse_site_content
         exclude: []
     oauth:
       required: true

@@ -155,7 +155,10 @@ fn initials_fall_back_to_a_question_mark() {
 #[test]
 fn truncate_appends_an_ellipsis_only_when_it_cuts() {
     assert_eq!(call("truncate", &[json!("short"), json!(10)]), "short");
-    assert_eq!(call("truncate", &[json!("exactly10!"), json!(10)]), "exactly10!");
+    assert_eq!(
+        call("truncate", &[json!("exactly10!"), json!(10)]),
+        "exactly10!"
+    );
     assert_eq!(
         call("truncate", &[json!("this one is far too long"), json!(8)]),
         "this one..."
@@ -192,7 +195,10 @@ fn case_helpers_leave_non_strings_empty() {
 #[test]
 fn concat_joins_mixed_scalars_and_skips_nulls() {
     assert_eq!(
-        call("concat", &[json!("run-"), json!(7), json!("-"), json!(true)]),
+        call(
+            "concat",
+            &[json!("run-"), json!(7), json!("-"), json!(true)]
+        ),
         "run-7-true"
     );
     assert_eq!(call("concat", &[json!("a"), json!(null), json!("b")]), "ab");
@@ -202,7 +208,11 @@ fn concat_joins_mixed_scalars_and_skips_nulls() {
 #[test]
 fn governance_color_maps_every_decision_synonym() {
     for allow in ["allow", "pass", "ok", "ALLOW"] {
-        assert_eq!(call("governanceColor", &[json!(allow)]), "success", "{allow}");
+        assert_eq!(
+            call("governanceColor", &[json!(allow)]),
+            "success",
+            "{allow}"
+        );
     }
     for warn in ["flag", "warn", "warning", "review"] {
         assert_eq!(call("governanceColor", &[json!(warn)]), "warning", "{warn}");
