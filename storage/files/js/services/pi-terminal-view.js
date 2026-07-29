@@ -7,7 +7,7 @@
 const chrome = document.createElement('template');
 chrome.innerHTML = ''
   + '<div class="terminal active">'
-  + '<div class="terminal-header">'
+  + '<div class="terminal-header" data-role="header">'
   + '<span class="pi-brand">'
   // The same wordmark asset the site header wears (its over-video variant —
   // this chrome is always dark), not a mark-plus-HTML-text reconstruction
@@ -18,12 +18,6 @@ chrome.innerHTML = ''
   + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
   + '<span class="pi-status" data-role="status"></span></span>'
   + '<span class="pi-jail-chip" data-role="jail" hidden></span>'
-  // Replay chrome. The header is the first thing read, so it carries the
-  // state ("this is a recording") and the way out of it — the visitor should
-  // not have to reach the footer to learn the terminal is not theirs yet.
-  + '<span class="pi-replay-flag" data-role="replay-flag" hidden>read-only replay</span>'
-  + '<button type="button" class="pi-btn pi-btn--cta pi-replay-cta"'
-  + ' data-role="cta-header" hidden>Create account →</button>'
   // Who this session is signed to. The padlock is the claim: every request
   // this terminal makes carries a token minted for exactly this identity, so
   // the badge only exists once a session is actually established.
@@ -208,8 +202,11 @@ export function setSendMode(el, mode, enabled) {
 }
 
 export function setReplayChrome(el, on) {
-  el._replayFlag.hidden = !on;
-  el._ctaHeader.hidden = !on;
+  // The header goes with the composer. Every control in it — meters, model,
+  // approval mode, audit link — reports on a session that does not exist yet,
+  // so during the recording it is a row of dead chrome above the one thing
+  // there is to read. The replay bar under the transcript states the state.
+  el._headerEl.hidden = on;
   el._replayBar.hidden = !on;
   el._composer.hidden = on;
   el._hintEl.hidden = on;

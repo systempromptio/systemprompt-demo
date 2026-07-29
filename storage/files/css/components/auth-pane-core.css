@@ -48,6 +48,38 @@
   color: var(--sp-ap-text-dim);
 }
 
+/* The reply to a CTA pressed in the terminal beside this pane. On a wide
+   screen nothing scrolls when that button is clicked, so the pane answers for
+   itself: one ring out from the border, once. `pi-terminal-setup.js` sets the
+   class and clears it on a timer. */
+@keyframes sp-pane-summon {
+  from {
+    box-shadow:
+      0 24px 60px oklch(0 0 0 / 0.45),
+      0 0 0 1px oklch(1 0 0 / 0.04) inset,
+      0 0 0 0 color-mix(in oklch, var(--sp-color-primary) 60%, transparent);
+  }
+  to {
+    box-shadow:
+      0 24px 60px oklch(0 0 0 / 0.45),
+      0 0 0 1px oklch(1 0 0 / 0.04) inset,
+      0 0 0 12px transparent;
+  }
+}
+
+.auth-pane .pane.is-summoned {
+  border-color: color-mix(in oklch, var(--sp-color-primary) 55%, var(--sp-ap-border));
+  animation: sp-pane-summon 700ms var(--sp-ease-out, ease-out);
+}
+
+/* Reduced motion still needs the answer, just not the travel: the border
+   colour above lands instantly and the ring is skipped. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-pane .pane.is-summoned {
+    animation: none;
+  }
+}
+
 /* ── head ───────────────────────────────────────────────────────────────── */
 
 .auth-pane .pane-title {

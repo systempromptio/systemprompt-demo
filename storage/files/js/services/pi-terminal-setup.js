@@ -39,9 +39,8 @@ export function build(el) {
   el._artCount = role('art-count');
   el._artPanel = role('art-panel');
   el._hintEl = role('hint');
-  el._replayFlag = role('replay-flag');
+  el._headerEl = role('header');
   el._replayBar = role('replay-bar');
-  el._ctaHeader = role('cta-header');
   el._approvalModeBtn = role('approval-mode');
   el._approvalModeLabel = role('approval-mode-label');
 
@@ -88,7 +87,7 @@ export function build(el) {
 }
 
 /**
- * The replay CTAs, all three of which hand off to the auth pane beside this
+ * The replay CTAs, both of which hand off to the auth pane beside this
  * terminal — that pane owns the passkey ceremony, and there is no sign-in
  * page to link to. Every lookup is guarded because the element is embeddable
  * on pages that have no pane at all, where the CTAs simply do nothing.
@@ -107,12 +106,38 @@ function wireCta(el) {
     });
     pane.querySelector('[data-role="tab-' + tab + '"]')?.click();
     pane.querySelector('input[type="email"]')?.focus({ preventScroll: true });
+    summon(pane);
   };
-  el._ctaHeader.addEventListener('click', () => go('register'));
   el.querySelector('[data-role="cta-register"]')
     .addEventListener('click', () => go('register'));
   el.querySelector('[data-role="cta-signin"]')
     .addEventListener('click', () => go('signin'));
+}
+
+/**
+ * Flag the pane as the thing that just answered the click.
+ *
+ * The button and the form it acts on are in different halves of the page, and
+ * on a wide screen nothing moves when the CTA is pressed — the tab swap alone
+ * is too quiet to read as a response. The class drives a one-shot ring in
+ * `auth-pane-core.css`; it comes off on a timer rather than on animationend,
+ * because under `prefers-reduced-motion` there is no animation to end and the
+ * highlight would never clear.
+ */
+const SUMMON_MS = 750;
+
+function summon(pane) {
+  const shell = pane.querySelector('.pane');
+  if (!shell) return;
+  clearTimeout(pane._summonTimer);
+  shell.classList.remove('is-summoned');
+  // Force the removal to land before the class is set again, or the same
+  // frame's add/remove pair is coalesced and no animation restarts.
+  void shell.offsetWidth;
+  shell.classList.add('is-summoned');
+  pane._summonTimer = setTimeout(
+    () => shell.classList.remove('is-summoned'), SUMMON_MS,
+  );
 }
 
 // Autoscroll only while the visitor is actually at the bottom. Yanking the

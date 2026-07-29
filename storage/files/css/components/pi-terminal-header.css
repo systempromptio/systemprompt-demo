@@ -12,6 +12,12 @@
   border-bottom: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
 }
 
+/* The replay hides the whole row, and the authored `display` above would
+   otherwise beat the UA's `[hidden] { display: none }`. */
+.pi-terminal .terminal-header[hidden] {
+  display: none;
+}
+
 /* Until a signed-in session is actually live (`is-session`, set on
    session_ready) the header is a statement, not a control surface: it dims,
    and its chips take no clicks. */
@@ -22,52 +28,6 @@
 .pi-terminal:not(.is-session) .terminal-header :is(button, select, a) {
   pointer-events: none;
   cursor: default;
-}
-
-/* The one exception: the way out of this state cannot be dimmed by the state
-   itself. It sits at full strength and takes clicks while everything else in
-   the header is a statement. */
-.pi-terminal .terminal-header .pi-replay-cta {
-  opacity: 1;
-  pointer-events: auto;
-  cursor: pointer;
-  /* Pushed to the trailing edge, where the header's commit action belongs;
-     `wrap` on the row means it drops to its own line rather than shrinking. */
-  margin-left: auto;
-}
-
-/* Read-only, said once, in the register the header speaks in. Warning-toned
-   rather than error: nothing is broken, it is simply not live. */
-.pi-replay-flag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid color-mix(in oklch, var(--sp-color-warning) 45%, transparent);
-  border-radius: var(--sp-radius-full);
-  color: var(--sp-color-warning);
-  font-family: var(--sp-font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-/* The class sets display, so the hidden attribute needs saying twice. */
-.pi-replay-flag[hidden] {
-  display: none;
-}
-
-.pi-replay-flag::before {
-  content: '▶';
-  font-size: 0.7em;
-}
-
-/* Header density: the CTA is a chip here, not a composer button. */
-.pi-replay-cta {
-  min-height: 1.75rem;
-  min-width: 0;
-  padding: 0.2rem var(--sp-space-3);
-  font-size: 0.72rem;
 }
 
 /* The titlebar is branded rather than labelled.
