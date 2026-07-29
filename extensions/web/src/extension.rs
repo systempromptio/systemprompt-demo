@@ -7,14 +7,12 @@ use std::sync::{Arc, OnceLock};
 
 use crate::config::BlogConfigValidated;
 use crate::config_loader::{self, ConfigError};
-use crate::homepage::HomepageConfig;
 use crate::jobs::ContentIngestionJob;
 use crate::navigation::NavigationConfig;
 
 use systemprompt::extension::prelude::*;
 
 static NAVIGATION_CONFIG: OnceLock<Result<Option<Arc<NavigationConfig>>, String>> = OnceLock::new();
-static HOMEPAGE_CONFIG: OnceLock<Result<Option<Arc<HomepageConfig>>, String>> = OnceLock::new();
 
 #[derive(Debug, Default, Clone)]
 pub struct WebExtension {
@@ -57,15 +55,6 @@ impl WebExtension {
             &NAVIGATION_CONFIG,
             config_loader::load_navigation_config,
             "Navigation config error",
-        )
-    }
-
-    #[must_use]
-    pub fn homepage_config() -> Option<Arc<HomepageConfig>> {
-        log_and_discard_err(
-            &HOMEPAGE_CONFIG,
-            config_loader::load_homepage_config,
-            "Homepage config error",
         )
     }
 }

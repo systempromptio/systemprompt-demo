@@ -1,11 +1,9 @@
 //! Public-site page data providers for the web extension.
 //!
-//! Each module owns the data model for a section of the marketing/docs site
+//! Each module owns the data model for a section of the public site
 //! and exposes a `*PageDataProvider` that the core SSR runtime calls when
-//! rendering. Queries are confined to `repositories`, which reads the
-//! `markdown_content` tables populated by the content ingestion job.
+//! rendering.
 //!
-//! - [`homepage`], [`blog`], [`docs`] — section providers.
 //! - [`navigation`] — header / footer nav config consumed by every page.
 //! - [`partials`] / `partials_animations` — shared template fragments.
 //! - [`extenders`] — URL extenders that splice org-specific routes onto the
@@ -14,14 +12,10 @@
 //!   extension trait.
 
 pub mod assets;
-pub mod blog;
-pub mod docs;
 pub mod extenders;
-pub mod homepage;
 pub mod navigation;
 pub mod partials;
 mod partials_animations;
-mod repositories;
 pub mod resources;
 
 pub use assets::web_assets;

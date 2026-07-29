@@ -55,28 +55,3 @@ social:
     type: "twitter"
     label: "Twitter"
 
-# Docs sidebar - rendered dynamically via site.docs_sidebar in templates
-docs_sidebar:
-  - title: "Terminal Demos"
-    links:
-      - label: "Setup & Authentication"
-        href: "/documentation/demo-terminal-setup"
-      - label: "Governance Decisions"
-        href: "/documentation/demo-terminal-agents"
-      - label: "Audit Trails & Costs"
-        href: "/documentation/demo-terminal-audit"
-      - label: "Governance API"
-        href: "/documentation/demo-terminal-governance"
-      - label: "MCP Access Tracking"
-        href: "/documentation/demo-terminal-mcp"
-      - label: "Request Tracing & Benchmark"
-        href: "/documentation/demo-terminal-tracing"
-      - label: "Agent Tracing"
-        href: "/documentation/demo-terminal-agent-tracing"
-
-  - title: "Dashboard"
-    links:
-      - label: "Authentication & Login"
-        href: "/documentation/authentication"
-      - label: "Dashboard Usage"
-        href: "/documentation/dashboard"

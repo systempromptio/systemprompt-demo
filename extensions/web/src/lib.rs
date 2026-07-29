@@ -14,7 +14,7 @@
 //!   sitemap, llms.txt, secret migration, content analytics).
 //! - `shared` — config schemas, error types, branding, ID newtypes, HTML-escape
 //!   helpers.
-//! - `site` — public homepage / blog / docs / features content providers.
+//! - `site` — public homepage and resources content providers.
 
 mod artifact_theme;
 mod config_loader;
@@ -36,28 +36,17 @@ pub use systemprompt_web_shared as shared;
 pub use systemprompt_web_shared::{
     BrandingConfig, config, config_errors, error, html_escape, models,
 };
-pub use systemprompt_web_site::{
-    assets, blog, docs, extenders, homepage, navigation, partials, resources,
-};
+pub use systemprompt_web_site::{assets, extenders, navigation, partials, resources};
 pub mod utils {
     pub use systemprompt_web_shared::html_escape;
 }
 
-pub use blog::{BlogListPageDataProvider, BlogPostPageDataProvider};
 pub use config::{
     BlogConfigRaw, BlogConfigValidated, ContentSourceRaw, ContentSourceValidated,
     ExtensionConfigError, ExtensionConfigErrors,
 };
-pub use docs::{ChildDoc, DocsContentDataProvider, DocsPageDataProvider};
 pub use error::BlogError;
 pub use extension::WebExtension;
-pub use homepage::{
-    ComparisonConfig, ComparisonItem, ComparisonSide, DifferentiatorConfig, DifferentiatorItem,
-    ExtensionTrait, ExtensionsConfig, FaqConfig, FaqItem, Feature, FeatureCategory, FinalCtaConfig,
-    HeroConfig, HomepageConfig, HomepageFeaturesConfig, HomepagePageDataProvider, HowItWorksConfig,
-    HowItWorksStep, IntegrationBrand, IntegrationsConfig, PricingConfig, PricingTier,
-    TechnicalConfig, TechnicalStandard, UseCase, UseCasesConfig, ValueProp,
-};
 pub use models::{
     CampaignLink, CampaignPerformance, Content, ContentJourneyNode, ContentKind,
     ContentLinkMetadata, ContentMetadata, CreateContentParams, CreateLinkParams, DestinationType,

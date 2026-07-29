@@ -133,6 +133,7 @@
 .home-split-pane--terminal .pi-composer,
 .home-split-pane--terminal .pi-hint,
 .home-split-pane--terminal .pi-palette,
+.home-split-pane--terminal .pi-replay-bar,
 .home-split-pane--terminal .pi-gate {
   flex: none;
 }

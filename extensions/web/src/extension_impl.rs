@@ -16,10 +16,7 @@ use systemprompt::traits::{AnalyticsProvider, Job};
 use systemprompt::users::UserService;
 
 use crate::assets::web_assets;
-use crate::blog::{BlogListPageDataProvider, BlogPostPageDataProvider};
-use crate::docs::{DocsContentDataProvider, DocsPageDataProvider};
 use crate::extenders::OrgUrlExtender;
-use crate::homepage::{HomepagePageDataProvider, HomepagePrerenderer};
 use crate::jobs::{
     BundleAdminCssJob, ContentAnalyticsAggregationJob, ContentIngestionJob, ContentPrerenderJob,
     CopyExtensionAssetsJob, GovernanceBootstrapJob, LlmsTxtGenerationJob, PublishPipelineJob,
@@ -57,34 +54,11 @@ impl Extension for WebExtension {
             ));
         }
 
-        if let Some(homepage_config) = Self::homepage_config() {
-            providers.push(Arc::new(HomepagePageDataProvider::new(homepage_config)));
-        }
-
-        let docs_provider: Arc<dyn PageDataProvider> = Arc::new(DocsPageDataProvider::new());
-        providers.extend([
-            docs_provider,
-            Arc::new(BlogListPageDataProvider::new()),
-            Arc::new(BlogPostPageDataProvider::new()),
-        ]);
         providers
     }
 
-    fn content_data_providers(&self) -> Vec<Arc<dyn ContentDataProvider>> {
-        vec![Arc::new(DocsContentDataProvider::new())]
-    }
-
     fn page_prerenderers(&self) -> Vec<Arc<dyn PagePrerenderer>> {
-        let mut prerenderers: Vec<Arc<dyn PagePrerenderer>> = vec![];
-
-        if let Some(config) = Self::homepage_config() {
-            prerenderers.push(Arc::new(HomepagePrerenderer::new(config)));
-        }
-
-        prerenderers.push(Arc::new(ResourcesPrerenderer));
-
-
-        prerenderers
+        vec![Arc::new(ResourcesPrerenderer)]
     }
 
     fn component_renderers(&self) -> Vec<Arc<dyn ComponentRenderer>> {
