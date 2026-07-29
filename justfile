@@ -504,12 +504,11 @@ sync-pull *ARGS:
 # DEPLOY
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Deploy to cloud
+# Build everything and deploy to cloud — one command, no preceding build step.
 # Note: publish_pipeline runs automatically on server startup with correct profile URLs
 # Pinned to the `production` profile (tenant 476147ddbaa3) so a deploy never
 # follows whichever profile the CLI session happens to be switched to.
-deploy *FLAGS:
-    just build --release
+deploy *FLAGS: build-all
     {{CLI_RELEASE}} cloud deploy --profile {{DEPLOY_PROFILE}} {{FLAGS}}
 
 # Pre-deploy preflight only — no build, no push
