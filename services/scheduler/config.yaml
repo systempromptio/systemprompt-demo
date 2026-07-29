@@ -19,11 +19,19 @@ scheduler:
       schedule: "0 0 3 * * *"
       enabled: true
 
+    # DISABLED — destroys MCP tool-call audit rows.
+    #
+    # Core defines "empty" as "has no task_messages" and prunes after a
+    # hardcoded 1 hour. A demo visitor who drives the tool surface without
+    # chatting produces exactly that shape, so their context is deleted, and
+    # database_cleanup below then reaps their mcp_tool_executions as orphans.
+    # Neither window is expressible in YAML, so the only lever is `enabled`.
+    # Replaced by the web extension's `retention` job.
     - name: cleanup_empty_contexts
       extension: core
       owner: admin
       schedule: "0 0 * * * *"
-      enabled: true
+      enabled: false
 
     - name: cleanup_inactive_sessions
       extension: core
@@ -31,11 +39,38 @@ scheduler:
       schedule: "0 0 * * * *"
       enabled: true
 
+    # DISABLED — its delete_orphaned_mcp_executions sweep hard-deletes
+    # governance audit rows with NO age guard at all, keyed on a context_id
+    # that carries no foreign key. Removed from bootstrap_jobs below too: it
+    # ran on every process start, so each deploy took another bite.
+    # Replaced by the web extension's `retention` job.
     - name: database_cleanup
       extension: core
       owner: admin
       schedule: "0 0 4 * * *"
+      enabled: false
+
+    # Replaces the two disabled core cleanup jobs above.
+    #
+    # Governance audit rows (mcp_tool_executions) are kept for 90 days, flat.
+    # The dashboard aggregates them as lifetime totals, so anything shorter
+    # would make the published usage numbers decay on their own. Empty
+    # contexts — no messages, no tool calls, owner inactive — carry no
+    # statistic and go after 7 days.
+    #
+    # `enforce: false` (the default) makes it report what it would delete
+    # without deleting. Flip it on once the reported counts look right.
+    #
+    # The windows are not yet settable here: core's JobConfig is
+    # deny_unknown_fields with no `parameters` map, so the job reads its own
+    # defaults. Adding that field to core is the follow-up that makes this
+    # block fully self-describing.
+    - name: retention
+      extension: web
+      owner: admin
+      schedule: "0 0 4 * * *"
       enabled: true
+      enforce: false
 
     # Web extension jobs (publishing pipeline)
     - name: publish_pipeline
@@ -150,9 +185,11 @@ scheduler:
   # system admin. It materialises the profile's gateway-route entities and
   # projects services/access-control + gateway-policy YAML into the authz tables
   # so authorization is correct at app start.
+  # database_cleanup is deliberately absent: core lists it in its own
+  # default_bootstrap_jobs(), so it fired on every restart and deploy. This
+  # explicit list overrides that default and is what keeps it from running.
   bootstrap_jobs:
     - governance_bootstrap
-    - database_cleanup
     - cleanup_inactive_sessions
     # Publish web assets before the cron loop: web/dist is generated, not
     # shipped in the image, so without this the site 404s until the first

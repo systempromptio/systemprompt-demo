@@ -11,7 +11,8 @@
 //!   [`CopyExtensionAssetsJob`], [`ContentPrerenderJob`]) — emit the static
 //!   surface under `web/dist/` consumed by the SSR layer.
 //! - **Analytics / housekeeping** ([`ContentAnalyticsAggregationJob`],
-//!   [`SecretMigrationJob`]) — periodic rollups and one-shot migrations.
+//!   [`SecretMigrationJob`], [`RetentionJob`]) — periodic rollups, one-shot
+//!   migrations, and data retention.
 //!
 //! Errors normalise on [`JobError`]; the scheduler logs and surfaces them
 //! through `infra logs trace`.
@@ -27,6 +28,7 @@ mod ingestion;
 mod llms_txt;
 mod prerender;
 mod publish;
+mod retention;
 mod robots;
 mod secret_migration;
 mod sitemap;
@@ -42,6 +44,7 @@ pub use ingestion::ContentIngestionJob;
 pub use llms_txt::LlmsTxtGenerationJob;
 pub use prerender::ContentPrerenderJob;
 pub use publish::PublishPipelineJob;
+pub use retention::RetentionJob;
 pub use robots::RobotsTxtGenerationJob;
 pub use secret_migration::SecretMigrationJob;
 pub use sitemap::SitemapGenerationJob;

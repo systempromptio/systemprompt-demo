@@ -15,6 +15,6 @@ pub mod site_markdown;
 pub mod users;
 
 pub use systemprompt_web_governance::repositories::{
-    analytics, bridge, dashboard, governance, scope,
+    analytics, bridge, dashboard, governance, retention, scope,
 };
 pub use systemprompt_web_pi::repositories as pi;
