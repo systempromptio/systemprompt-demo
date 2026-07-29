@@ -15,11 +15,8 @@ systemprompt-web-shared = { workspace = true }
 systemprompt = { workspace = true, features = ["database"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true }
 async-trait = { workspace = true }
 tracing = { workspace = true }
-sqlx = { workspace = true }
-chrono = { workspace = true }
 url = { workspace = true }
 thiserror = { workspace = true }
 

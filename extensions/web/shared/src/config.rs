@@ -241,7 +241,10 @@ fn resolve_blog_config_path() -> PathBuf {
     }
     ProfileBootstrap::get()
         .map_err(|e| e.to_string())
-        .and_then(|profile| AppPaths::from_profile(&profile.paths, profile.path_resolution()).map_err(|e| e.to_string()))
+        .and_then(|profile| {
+            AppPaths::from_profile(&profile.paths, profile.path_resolution())
+                .map_err(|e| e.to_string())
+        })
         .map_or_else(
             |_| PathBuf::from("./services/config/blog.yaml"),
             |paths| paths.system().services().join("config/blog.yaml"),
