@@ -20,8 +20,9 @@ COPY . /src
 # The workspace patches every systemprompt-* crate to a sibling checkout of
 # systemprompt-core ([patch.crates-io] in Cargo.toml), so the builder needs
 # that checkout at /systemprompt-core (= ../systemprompt-core from /src).
-# CORE_REV must match the workflows' env.CORE_REV and the committed .sqlx cache.
-ARG CORE_REV=bea90de53df50aee55163976f111adc69a0e4472
+# CORE_REV must match the committed .sqlx cache. The CI workflows no longer
+# clone core, so this pin is the only one left to keep in step.
+ARG CORE_REV=df697271349d756e84135a36b56f79ed929df421
 RUN git clone https://github.com/systempromptio/systemprompt-core.git /systemprompt-core \
     && git -C /systemprompt-core checkout --quiet "$CORE_REV"
 
