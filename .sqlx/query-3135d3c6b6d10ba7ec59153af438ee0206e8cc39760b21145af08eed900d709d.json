@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM mcp_tool_executions\n           WHERE created_at < NOW() - $1::text::interval",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3135d3c6b6d10ba7ec59153af438ee0206e8cc39760b21145af08eed900d709d"
+}

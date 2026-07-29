@@ -1,0 +1,75 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT g.created_at as \"at!\", g.tool_name as \"tool_name!\",\n                  g.decision as \"decision!\",\n                  COALESCE(NULLIF(g.policy, ''), 'default_included') as \"policy!\",\n                  COALESCE(g.reason, '') as \"reason!\",\n                  EXISTS (\n                      SELECT 1 FROM governance_decisions r\n                       WHERE r.user_id = g.user_id\n                         AND r.session_id = g.session_id\n                         AND r.evaluated_rules->>'call_id' = g.evaluated_rules->>'call_id'\n                         AND r.evaluated_rules->>'origin' = 'reverified'\n                  ) as \"reverified!\"\n           FROM governance_decisions g\n           WHERE g.user_id = $1 AND g.session_id IN (\n                     SELECT b.session_id FROM pi_conversation_sessions b\n                      WHERE b.conversation_id IN (\n                            SELECT conversation_id FROM pi_conversation_sessions\n                             WHERE session_id = $2)\n                     UNION ALL SELECT $2)\n             AND g.evaluated_rules->>'origin' IS DISTINCT FROM 'reverified'\n           ORDER BY g.created_at DESC\n           LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "at!",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "tool_name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "tool_name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "decision!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "decision"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "policy!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "reason!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "reverified!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "1869bd360a12ef8c938d7b0c95910b93836ce3d15b347c876ba03d025a1f1df2"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM user_contexts uc\n           WHERE uc.created_at < NOW() - $1::text::interval\n             AND (uc.kind != 'cli_session' OR uc.session_id IS NULL)\n             AND NOT EXISTS (\n                 SELECT 1 FROM task_messages tm WHERE tm.context_id = uc.context_id)\n             AND NOT EXISTS (\n                 SELECT 1 FROM mcp_tool_executions m WHERE m.context_id = uc.context_id)\n             AND NOT EXISTS (\n                 SELECT 1 FROM user_sessions s\n                  WHERE s.user_id = uc.user_id\n                    AND s.last_activity_at > NOW() - $2::text::interval)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8599d936afdbab89af0538c9d1b063e54ed7ef9170f088b703c50dbb4320783c"
+}

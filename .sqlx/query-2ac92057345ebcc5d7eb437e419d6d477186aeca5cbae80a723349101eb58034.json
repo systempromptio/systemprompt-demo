@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(NULLIF(policy, ''), 'default_included') as \"policy!\",\n                  COUNT(*) FILTER (WHERE decision = 'allow') as \"allowed!\",\n                  COUNT(*) FILTER (WHERE decision = 'deny')  as \"denied!\"\n           FROM governance_decisions\n           WHERE user_id = $1 AND session_id IN (\n                     SELECT b.session_id FROM pi_conversation_sessions b\n                      WHERE b.conversation_id IN (\n                            SELECT conversation_id FROM pi_conversation_sessions\n                             WHERE session_id = $2)\n                     UNION ALL SELECT $2)\n           GROUP BY 1\n           ORDER BY 3 DESC, 2 DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "policy!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "allowed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "denied!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "2ac92057345ebcc5d7eb437e419d6d477186aeca5cbae80a723349101eb58034"
+}
