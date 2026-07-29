@@ -12,9 +12,8 @@ use std::net::SocketAddr;
 use axum::http::StatusCode;
 
 use crate::app::App;
-use crate::globals;
-use crate::principal;
 use crate::tempdb::TempDb;
+use crate::{globals, principal};
 
 const REGISTER: &str = "/admin/api/register";
 

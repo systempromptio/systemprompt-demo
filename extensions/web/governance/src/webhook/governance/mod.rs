@@ -4,14 +4,11 @@
 //! Scope check, secret scan, blocklist, then rate limit. Every decision is
 //! audited with a trace id whether it allows or denies.
 
-mod audit;
 mod authz;
+mod engine;
 mod handler;
 pub mod inproc;
-pub(crate) mod policies;
-pub mod policy;
 pub(crate) mod scope;
-pub(crate) mod secrets;
 pub mod stages;
 pub mod types;
 

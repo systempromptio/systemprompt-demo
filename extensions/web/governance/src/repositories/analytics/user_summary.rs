@@ -67,7 +67,7 @@ pub async fn list_user_conversation_kpis(
               AND metadata->>'session_id' IN (SELECT session_id FROM pi_conversation_sessions
                                               WHERE conversation_id = c.id)
         ) t ON TRUE
-        WHERE c.user_id = $1 AND c.deleted_at IS NULL
+        WHERE c.user_id = $1 AND c.archived_at IS NULL
         ORDER BY c.updated_at DESC
         LIMIT $2
         "#,

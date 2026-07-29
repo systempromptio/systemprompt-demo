@@ -22,12 +22,15 @@ use systemprompt::identifiers::{AgentId, CallId, SessionId, UserId};
 use systemprompt::traits::AnalyticsProvider;
 use systemprompt_security::authz::Decision;
 use systemprompt_security::policy::types::AccessScope;
+use systemprompt_security::policy::{GovernedInput, GovernedTarget};
+
+use systemprompt_security::policy::{
+    AgentScope, AuditOrigin, ChainEntryOutcome, ChainEntryResult, PolicyContext,
+};
 
 use super::handler::attested_session_id;
-use super::handler::evaluate::{EvaluateInput, evaluate};
-use super::scope;
 use super::stages::{StageOutcome, StageResult};
-use super::types::{AuditOrigin, ChainEntryOutcome, ChainEntryResult};
+use super::{engine, scope};
 
 mod record;
 
@@ -40,10 +43,10 @@ pub const PI_PLUGIN_ID: &str = "enterprise-demo";
 
 #[derive(Debug)]
 pub struct GovernedCall<'a> {
-    pub tool_name: &'a str,
+    pub target: &'a GovernedTarget,
     pub user_id: &'a UserId,
     pub agent_session: &'a SessionId,
-    pub tool_input: Option<&'a serde_json::Value>,
+    pub input: &'a GovernedInput,
     pub scope_ceiling: AccessScope,
     // Why: an enforcement point behind another still runs the chain, so one
     // call reaches it more than once. Carrying the identity the first point
@@ -51,8 +54,6 @@ pub struct GovernedCall<'a> {
     pub call_id: &'a CallId,
     pub origin: AuditOrigin,
 }
-
-pub const PROMPT_TOOL_NAME: &str = "user_prompt";
 
 #[derive(Debug)]
 pub struct PolicyVerdict {
@@ -99,14 +100,18 @@ pub async fn govern_call(
     let resolved = scope::higher_privilege(db_scope, scope::resolve_agent_scope(&agent_id));
     let access_scope = scope::cap_at(resolved, call.scope_ceiling);
 
-    let (decision, chain) = evaluate(&EvaluateInput {
-        tool_name: call.tool_name,
+    let evaluation = engine::engine().evaluate(&PolicyContext {
+        target: call.target.clone(),
+        agent_scope: AgentScope::User {
+            user_id: call.user_id.clone(),
+        },
+        access_scope,
         session_id: call.agent_session,
         user_id: call.user_id,
-        access_scope,
-        tool_input: call.tool_input,
+        input: call.input,
         call_id: call.call_id,
     });
+    let (decision, chain) = (evaluation.decision, evaluation.chain);
 
     let (allowed, reason) = match &decision {
         Decision::Allow { .. } => (true, None),

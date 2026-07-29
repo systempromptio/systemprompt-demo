@@ -47,9 +47,8 @@ pub use error::{GovernanceError, GovernanceResult};
 /// they touch needs a public name. Re-exporting here keeps that list explicit
 /// and reviewable instead of widening each item in place.
 pub mod test_support {
-    pub use crate::webhook::governance::policies::rate_limit::RateLimit;
     pub use crate::webhook::governance::scope::cap_at;
-    pub use crate::webhook::governance::secrets::scan_str_for_secret;
+    pub use systemprompt_security::policy::secrets::scan_str_for_secret;
 }
 
 pub fn hooks_webhook_router(

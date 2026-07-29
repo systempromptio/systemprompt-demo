@@ -75,7 +75,10 @@ fn an_unknown_top_level_key_is_ignored() {
 #[test]
 fn an_unknown_department_key_is_rejected() {
     let err = parse("departments:\n  - name: Platform\n    desription: typo\n").unwrap_err();
-    assert!(err.contains("desription"), "error did not name the key: {err}");
+    assert!(
+        err.contains("desription"),
+        "error did not name the key: {err}"
+    );
 }
 
 #[test]
@@ -109,6 +112,9 @@ fn a_scalar_where_a_list_belongs_is_rejected() {
 fn the_shipped_departments_file_parses() {
     let doc = parse(SHIPPED_DEPARTMENTS).unwrap();
     for dept in &doc.departments {
-        assert!(!dept.name.trim().is_empty(), "shipped department has no name");
+        assert!(
+            !dept.name.trim().is_empty(),
+            "shipped department has no name"
+        );
     }
 }

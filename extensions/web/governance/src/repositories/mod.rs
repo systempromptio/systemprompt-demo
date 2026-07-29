@@ -8,6 +8,7 @@ pub mod analytics;
 pub mod bridge;
 pub mod dashboard;
 pub mod governance;
+pub mod scope;
 pub mod share_token;
 pub mod usage_events;
 pub mod user_access;

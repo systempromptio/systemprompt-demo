@@ -28,7 +28,7 @@ use crate::tool_inputs::{
     GovernanceStatsInput, ListSitePagesInput, ListTopicsInput, RenderArtifactInput,
     SafetyFindingsInput, SearchDocsInput,
 };
-use rmcp::model::{Meta, Tool};
+use rmcp::model::{MetaObject, Tool};
 use std::sync::Arc;
 use systemprompt::mcp::{WEBSITE_URL, default_tool_visibility, tool_ui_meta};
 use systemprompt::models::artifacts::{CliArtifact, ToolResponse};
@@ -68,7 +68,7 @@ fn create_tool(def: &ToolDef<'_>) -> Tool {
     tool.description = Some(def.description.to_owned().into());
     tool.input_schema = Arc::new(input_obj);
     tool.output_schema = Some(Arc::new(output_obj));
-    tool.meta = Some(Meta(tool_ui_meta(
+    tool.meta = Some(MetaObject(tool_ui_meta(
         def.server_name,
         &default_tool_visibility(),
     )));

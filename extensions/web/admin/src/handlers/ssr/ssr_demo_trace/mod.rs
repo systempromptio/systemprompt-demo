@@ -30,6 +30,7 @@ use crate::error::{AdminHtmlError, AdminHtmlResult};
 use crate::repositories::analytics::session_detail;
 use crate::repositories::governance::demo_trace;
 use crate::repositories::pi::{conversations, events as event_repo};
+use crate::repositories::scope::StatsScope;
 use crate::templates::AdminTemplateEngine;
 
 use super::branding_context;
@@ -62,11 +63,12 @@ async fn insert_conversation(
     owner_name: &str,
 ) -> AdminHtmlResult<()> {
     let attested = &row.attested_session_id;
-    let trace = demo_trace::list_demo_trace(pool, &row.id, TRACE_LIMIT)
+    let scope = StatsScope::conversation(&row.user_id, &row.id);
+    let trace = demo_trace::list_trace_with_denials(pool, scope, TRACE_LIMIT)
         .await
         // lint-ok: http-error — every read failure on this page is a 500.
         .map_err(|e| AdminHtmlError::internal(format!("demo trace read failed: {e:?}")))?;
-    let kpis = session_detail::get_conversation_kpis(pool, &row.id)
+    let kpis = session_detail::get_scoped_kpis(pool, scope)
         .await
         // lint-ok: http-error — every read failure on this page is a 500.
         .map_err(|e| AdminHtmlError::internal(format!("demo trace kpi read failed: {e:?}")))?;

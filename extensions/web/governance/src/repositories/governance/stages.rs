@@ -16,9 +16,9 @@
 //! below match `'pass'` and `'fail'`, not the Rust variant names.
 
 use sqlx::PgPool;
-use systemprompt::identifiers::ContextId;
 
 use super::{GovernanceCounts, PerPolicyCounts};
+use crate::repositories::scope::StatsScope;
 
 /// The pipeline's stages, in the order they actually run — the sequence in
 /// `services/governance/config.yaml`, which `default_configs()` in
@@ -40,14 +40,14 @@ pub const STAGES: [(&str, &str); 4] = [
     ("rate_limit", "Rate limit"),
 ];
 
-/// Pass/fail counts per policy for one conversation (across every attested
-/// session it was ever bound to), newest activity noted.
+/// Pass/fail counts per policy across every attested session in scope, newest
+/// activity noted.
 ///
 /// Only stages that actually ran come back; callers fold these onto [`STAGES`]
 /// to fill in the zeros.
-pub async fn list_conversation_policy_stages(
+pub async fn list_scoped_policy_stages(
     pool: &PgPool,
-    conversation_id: &ContextId,
+    scope: StatsScope<'_>,
 ) -> Result<Vec<PerPolicyCounts>, sqlx::Error> {
     sqlx::query_as!(
         PerPolicyCounts,
@@ -57,38 +57,50 @@ pub async fn list_conversation_policy_stages(
                   MAX(created_at)                                          AS "last_at?"
            FROM governance_decisions,
                 LATERAL jsonb_array_elements(evaluated_rules->'chain') entry
-           WHERE session_id IN (
-                 SELECT session_id FROM pi_conversation_sessions
-                 WHERE conversation_id = $1)
+           WHERE user_id = $1
+             AND ($2::text IS NULL OR session_id IN (
+                   SELECT session_id FROM pi_conversation_sessions
+                   WHERE conversation_id = $2))
              AND jsonb_typeof(evaluated_rules->'chain') = 'array'
              AND entry->>'policy_id' IS NOT NULL
            GROUP BY entry->>'policy_id'"#,
-        conversation_id.as_str(),
+        scope.user(),
+        scope.conversation_filter(),
     )
     .fetch_all(pool)
     .await
 }
 
-/// The conversation's headline verdict counts.
+/// The scope's headline verdict counts.
+///
+/// The only source for any figure the pane displays. Counting the trace instead
+/// reports the newest N rather than the truth, because the trace is a bounded
+/// window and this is not.
 ///
 /// `secret_breaches` counts denials attributed to `secret_scan` — the stage
 /// whose trips are worth calling out on their own, because a caught credential
 /// is the demo's sharpest single moment.
-pub async fn get_conversation_governance_counts(
+pub async fn get_scoped_governance_counts(
     pool: &PgPool,
-    conversation_id: &ContextId,
+    scope: StatsScope<'_>,
 ) -> Result<GovernanceCounts, sqlx::Error> {
     let row = sqlx::query!(
         r#"SELECT COUNT(*)::bigint                                          AS "total!",
                   COUNT(*) FILTER (WHERE decision = 'allow')::bigint        AS "allowed!",
                   COUNT(*) FILTER (WHERE decision = 'deny')::bigint         AS "denied!",
                   COUNT(*) FILTER (WHERE decision = 'deny'
-                                     AND policy = 'secret_scan')::bigint    AS "secret_breaches!"
+                                     AND policy = 'secret_scan')::bigint    AS "secret_breaches!",
+                  COUNT(*) FILTER (WHERE decision = 'deny'
+                                     AND tool_name = 'user_prompt')::bigint AS "prompts_blocked!",
+                  COUNT(*) FILTER (WHERE decision = 'deny'
+                                     AND tool_name <> 'user_prompt')::bigint AS "tools_blocked!"
            FROM governance_decisions
-           WHERE session_id IN (
-                 SELECT session_id FROM pi_conversation_sessions
-                 WHERE conversation_id = $1)"#,
-        conversation_id.as_str(),
+           WHERE user_id = $1
+             AND ($2::text IS NULL OR session_id IN (
+                   SELECT session_id FROM pi_conversation_sessions
+                   WHERE conversation_id = $2))"#,
+        scope.user(),
+        scope.conversation_filter(),
     )
     .fetch_one(pool)
     .await?;
@@ -98,5 +110,27 @@ pub async fn get_conversation_governance_counts(
         allowed: row.allowed,
         denied: row.denied,
         secret_breaches: row.secret_breaches,
+        prompts_blocked: row.prompts_blocked,
+        tools_blocked: row.tools_blocked,
+        tool_calls: count_scoped_tool_calls(pool, scope).await?,
     })
+}
+
+// Why: `user_activity` has no `session_id` column — the id is stamped into
+// `metadata` — so narrowing to one conversation reads the JSON, while the
+// account-wide count uses the indexed `user_id` directly.
+async fn count_scoped_tool_calls(pool: &PgPool, scope: StatsScope<'_>) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"SELECT COUNT(*)::bigint AS "calls!"
+           FROM user_activity
+           WHERE user_id = $1
+             AND category = 'mcp_access' AND action = 'used'
+             AND ($2::text IS NULL OR metadata->>'session_id' IN (
+                   SELECT session_id FROM pi_conversation_sessions
+                   WHERE conversation_id = $2))"#,
+        scope.user(),
+        scope.conversation_filter(),
+    )
+    .fetch_one(pool)
+    .await
 }

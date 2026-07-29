@@ -16,13 +16,21 @@
 //! `user_id` through a join rather than a column, and `list_all_decisions` is
 //! deliberately unscoped because it backs an admin-only tool.
 //!
-//! Every other query is scoped by **both** `user_id` and `session_id`, and the
-//! two do different jobs. `user_id` is the security boundary: the tool takes no
-//! arguments, so there is no selector a caller could widen to read somebody
-//! else's rows. `session_id` is the honesty boundary: the tool is presented as
-//! a readout of *this* session, and scoping by user alone made it a lifetime
-//! total instead — a viewer comparing the numbers against the handful of calls
-//! they just watched would find they matched nothing.
+//! Every other query is scoped by **both** `user_id` and the session set, and
+//! the two do different jobs. `user_id` is the security boundary: the tool
+//! takes no arguments, so there is no selector a caller could widen to read
+//! somebody else's rows. The session set is the honesty boundary: the tool is
+//! presented as a readout of *this* conversation, and scoping by user alone
+//! made it a lifetime total instead — a viewer comparing the numbers against
+//! the handful of calls they just watched would find they matched nothing.
+//!
+//! That set is every session bound to the same conversation, not the one
+//! session the caller happens to hold. A reload or resume mints a fresh
+//! attested session, so an equality test reported only the slice written since
+//! the last refresh and silently under-reported spend for the conversation the
+//! caller is looking at. The bound session ids are the only path back to the
+//! earlier rows. The caller's own id is unioned in so a session not yet bound
+//! still reads its own activity.
 //!
 //! Tool fires come from `user_activity`, which is where `record_mcp_access`
 //! writes them. `plugin_usage_events` only ever carries marketplace-webhook
@@ -90,7 +98,12 @@ pub(crate) async fn list_policy_tallies(
                   COUNT(*) FILTER (WHERE decision = 'allow') as "allowed!",
                   COUNT(*) FILTER (WHERE decision = 'deny')  as "denied!"
            FROM governance_decisions
-           WHERE user_id = $1 AND session_id = $2
+           WHERE user_id = $1 AND session_id IN (
+                     SELECT b.session_id FROM pi_conversation_sessions b
+                      WHERE b.conversation_id IN (
+                            SELECT conversation_id FROM pi_conversation_sessions
+                             WHERE session_id = $2)
+                     UNION ALL SELECT $2)
            GROUP BY 1
            ORDER BY 3 DESC, 2 DESC"#,
         user_id.as_str(),
@@ -122,7 +135,12 @@ pub(crate) async fn list_recent_decisions(
                          AND r.evaluated_rules->>'origin' = 'reverified'
                   ) as "reverified!"
            FROM governance_decisions g
-           WHERE g.user_id = $1 AND g.session_id = $2
+           WHERE g.user_id = $1 AND g.session_id IN (
+                     SELECT b.session_id FROM pi_conversation_sessions b
+                      WHERE b.conversation_id IN (
+                            SELECT conversation_id FROM pi_conversation_sessions
+                             WHERE session_id = $2)
+                     UNION ALL SELECT $2)
              AND g.evaluated_rules->>'origin' IS DISTINCT FROM 'reverified'
            ORDER BY g.created_at DESC
            LIMIT $3"#,
@@ -146,7 +164,12 @@ pub(crate) async fn get_spend(
                   COALESCE(SUM(output_tokens), 0)::BIGINT as "output_tokens!",
                   COALESCE(SUM(cost_microdollars), 0)::BIGINT as "cost_microdollars!"
            FROM ai_requests
-           WHERE user_id = $1 AND session_id = $2"#,
+           WHERE user_id = $1 AND session_id IN (
+                     SELECT b.session_id FROM pi_conversation_sessions b
+                      WHERE b.conversation_id IN (
+                            SELECT conversation_id FROM pi_conversation_sessions
+                             WHERE session_id = $2)
+                     UNION ALL SELECT $2)"#,
         user_id.as_str(),
         session_id.as_str(),
     )

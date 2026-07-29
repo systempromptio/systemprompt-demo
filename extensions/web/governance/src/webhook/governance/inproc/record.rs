@@ -14,10 +14,9 @@ use sqlx::PgPool;
 use systemprompt::identifiers::{AgentId, PluginId, PolicyId};
 use systemprompt_security::authz::{Decision, MatchedBy};
 
-use crate::webhook::governance::audit;
-use crate::webhook::governance::types::{
+use systemprompt_security::policy::{
     ApproverStamp, AuditTarget, ChainEntryOutcome, ChainEntryResult, DecisionAudit,
-    PrincipalSnapshot,
+    PrincipalSnapshot, record_decision,
 };
 
 use super::{GovernedCall, PI_AGENT_ID, PI_PLUGIN_ID, PolicyVerdict};
@@ -54,7 +53,7 @@ pub async fn record_human_decision(
             agent_scope: verdict.access_scope,
         },
         target: AuditTarget {
-            tool_name: call.tool_name.to_owned(),
+            tool_name: call.target.as_str().to_owned(),
             plugin_id: Some(PluginId::new(PI_PLUGIN_ID)),
         },
         chain: vec![ChainEntryOutcome {
@@ -70,6 +69,7 @@ pub async fn record_human_decision(
             duration_ms: 0.0,
         }],
         approver,
+        act_chain: Vec::new(),
     };
     if outcome.allowed() {
         spawn_write(pool, audit);
@@ -103,7 +103,7 @@ pub async fn record_policy_denial(
             agent_scope: verdict.access_scope,
         },
         target: AuditTarget {
-            tool_name: call.tool_name.to_owned(),
+            tool_name: call.target.as_str().to_owned(),
             plugin_id: Some(PluginId::new(PI_PLUGIN_ID)),
         },
         chain: vec![ChainEntryOutcome {
@@ -113,6 +113,7 @@ pub async fn record_policy_denial(
             duration_ms: 0.0,
         }],
         approver: None,
+        act_chain: Vec::new(),
     };
     write_now(pool, audit).await;
 }
@@ -159,11 +160,12 @@ pub(crate) async fn record(
             agent_scope: verdict.access_scope,
         },
         target: AuditTarget {
-            tool_name: call.tool_name.to_owned(),
+            tool_name: call.target.as_str().to_owned(),
             plugin_id: Some(PluginId::new(PI_PLUGIN_ID)),
         },
         chain: verdict.chain.clone(),
         approver: None,
+        act_chain: Vec::new(),
     };
     if verdict.allowed {
         spawn_write(pool, audit);
@@ -181,7 +183,7 @@ fn spawn_write(pool: &Arc<PgPool>, audit: DecisionAudit) {
 
 async fn write_now(pool: &Arc<PgPool>, audit: DecisionAudit) {
     let session_id = audit.principal.session_id.clone();
-    if let Err(e) = audit::record_decision(pool, &audit).await {
+    if let Err(e) = record_decision(pool, &audit).await {
         tracing::error!(
             target: "governance.audit.write_failed",
             error = %e,

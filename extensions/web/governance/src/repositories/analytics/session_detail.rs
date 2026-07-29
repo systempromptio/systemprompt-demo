@@ -1,14 +1,20 @@
-//! Conversation-detail repository.
+//! Request-detail repository, read through a [`StatsScope`].
 //!
-//! A conversation may span many attested sessions — every resume binds a fresh
-//! one — so each query here joins through `pi_conversation_sessions` rather
-//! than keying on a single session id. That join is what makes the numbers
-//! survive a reload: the rows written before a resume keep their old session
-//! id, and the binding history is the only path back to them.
+//! Ownership is the `user_id` column. Narrowing to one conversation goes
+//! through `pi_conversation_sessions`, because a conversation may span many
+//! attested sessions — every resume binds a fresh one — and the binding history
+//! is the only path back to the rows written before a resume.
+//!
+//! Keeping those two jobs separate is what makes the account-wide read agree
+//! with the credit meter exactly: both reduce to `WHERE user_id = $1` over
+//! `ai_requests`. Reaching the same rows through the conversation join instead
+//! would drop every request that predates its conversation's binding.
 
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use systemprompt::identifiers::{ContextId, TraceId};
+
+use crate::repositories::scope::StatsScope;
 
 #[derive(Debug, Clone, Copy)]
 pub struct SessionKpis {
@@ -66,9 +72,9 @@ pub struct RequestBucket {
     pub output_tokens: i64,
 }
 
-pub async fn get_conversation_kpis(
+pub async fn get_scoped_kpis(
     pool: &PgPool,
-    conversation_id: &ContextId,
+    scope: StatsScope<'_>,
 ) -> Result<SessionKpis, sqlx::Error> {
     let row = sqlx::query!(
         r#"
@@ -84,11 +90,14 @@ pub async fn get_conversation_kpis(
             COALESCE(SUM(cache_creation_tokens), 0)::bigint    AS "total_cache_creation_tokens!",
             COUNT(*) FILTER (WHERE cache_hit)::bigint          AS "cache_hit_count!"
         FROM ai_requests
-        WHERE session_id IN (
-            SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1
-        )
+        WHERE user_id = $1
+          AND ($2::text IS NULL OR session_id IN (
+              SELECT session_id FROM pi_conversation_sessions
+              WHERE conversation_id = $2
+          ))
         "#,
-        conversation_id.as_str()
+        scope.user(),
+        scope.conversation_filter()
     )
     .fetch_one(pool)
     .await?;
@@ -106,9 +115,9 @@ pub async fn get_conversation_kpis(
     })
 }
 
-pub async fn list_conversation_requests(
+pub async fn list_scoped_requests(
     pool: &PgPool,
-    conversation_id: &ContextId,
+    scope: StatsScope<'_>,
 ) -> Result<Vec<SessionRequestRow>, sqlx::Error> {
     sqlx::query_as!(
         SessionRequestRow,
@@ -128,13 +137,16 @@ pub async fn list_conversation_requests(
             NULLIF(error_message, '')           AS "error_message?",
             created_at                          AS "created_at!"
         FROM ai_requests
-        WHERE session_id IN (
-            SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1
-        )
+        WHERE user_id = $1
+          AND ($2::text IS NULL OR session_id IN (
+              SELECT session_id FROM pi_conversation_sessions
+              WHERE conversation_id = $2
+          ))
         ORDER BY created_at DESC
         LIMIT 200
         "#,
-        conversation_id.as_str()
+        scope.user(),
+        scope.conversation_filter()
     )
     .fetch_all(pool)
     .await
@@ -145,16 +157,16 @@ pub async fn list_conversation_requests(
 /// `bucket_secs` is clamped by the caller; percentiles come from
 /// `percentile_cont` so a bucket with one row reports that row rather than an
 /// interpolation artifact.
-pub async fn list_conversation_request_buckets(
+pub async fn list_scoped_request_buckets(
     pool: &PgPool,
-    conversation_id: &ContextId,
+    scope: StatsScope<'_>,
     bucket_secs: i64,
 ) -> Result<Vec<RequestBucket>, sqlx::Error> {
     sqlx::query_as!(
         RequestBucket,
         r#"
         SELECT
-            date_bin(make_interval(secs => $2::double precision),
+            date_bin(make_interval(secs => $3::double precision),
                      created_at, TIMESTAMPTZ '2001-01-01') AS "at!",
             COUNT(*)::bigint                                  AS "requests!",
             COUNT(*) FILTER (WHERE status = 'failed')::bigint AS "errors!",
@@ -164,14 +176,17 @@ pub async fn list_conversation_request_buckets(
             COALESCE(SUM(input_tokens), 0)::bigint            AS "input_tokens!",
             COALESCE(SUM(output_tokens), 0)::bigint           AS "output_tokens!"
         FROM ai_requests
-        WHERE session_id IN (
-            SELECT session_id FROM pi_conversation_sessions WHERE conversation_id = $1
-        )
+        WHERE user_id = $1
+          AND ($2::text IS NULL OR session_id IN (
+              SELECT session_id FROM pi_conversation_sessions
+              WHERE conversation_id = $2
+          ))
         GROUP BY 1
         ORDER BY 1
         LIMIT 200
         "#,
-        conversation_id.as_str(),
+        scope.user(),
+        scope.conversation_filter(),
         bucket_secs as f64
     )
     .fetch_all(pool)
