@@ -16,42 +16,57 @@ pub async fn list_top_users(pool: &PgPool) -> Result<Vec<TopUser>, sqlx::Error> 
     sqlx::query_as!(
         TopUser,
         r#"SELECT
-            combined.user_id as "user_id!: UserId",
-            COALESCE(u.display_name, u.full_name, u.name, u.email, combined.user_id) AS "display_name!",
+            base.user_id as "user_id!: UserId",
+            COALESCE(u.display_name, u.full_name, u.name, u.email, base.user_id) AS "display_name!",
             u.email as "email: Email",
-            COALESCE(combined.logins, 0)::BIGINT AS "logins!",
-            COALESCE(combined.edits, 0)::BIGINT AS "edits!",
+            COALESCE(sess.logins, 0)::BIGINT AS "logins!",
+            COALESCE(act.edits, 0)::BIGINT AS "edits!",
             COALESCE(mcp.mcp_calls, 0)::BIGINT AS "mcp_calls!",
             GREATEST(
-                COALESCE(combined.last_active, '1970-01-01'::timestamptz),
+                COALESCE(act.last_active, '1970-01-01'::timestamptz),
                 COALESCE(mcp.last_mcp, '1970-01-01'::timestamptz),
-                COALESCE(pue.last_pue, '1970-01-01'::timestamptz)
+                COALESCE(pue.last_pue, '1970-01-01'::timestamptz),
+                COALESCE(sess.last_session, '1970-01-01'::timestamptz)
             ) AS "last_active!"
         FROM (
+            SELECT user_id FROM user_activity
+            UNION
+            SELECT user_id FROM mcp_tool_executions
+            UNION
+            SELECT user_id FROM user_sessions WHERE user_id IS NOT NULL
+        ) base
+        JOIN users u ON u.id = base.user_id
+        LEFT JOIN (
             SELECT user_id,
-                COUNT(*) FILTER (WHERE category = 'login')::BIGINT AS logins,
                 COUNT(*) FILTER (WHERE category = 'marketplace_edit')::BIGINT AS edits,
                 MAX(created_at) AS last_active
             FROM user_activity
             GROUP BY user_id
-        ) combined
-        JOIN users u ON u.id = combined.user_id
+        ) act ON act.user_id = base.user_id
         LEFT JOIN (
             SELECT user_id,
                 COUNT(*)::BIGINT AS mcp_calls,
                 MAX(created_at) AS last_mcp
             FROM mcp_tool_executions
-            WHERE user_id IS NOT NULL
             GROUP BY user_id
-        ) mcp ON mcp.user_id = combined.user_id
+        ) mcp ON mcp.user_id = base.user_id
         LEFT JOIN (
             SELECT user_id, MAX(created_at) AS last_pue
             FROM plugin_usage_events
             GROUP BY user_id
-        ) pue ON pue.user_id = combined.user_id
+        ) pue ON pue.user_id = base.user_id
+        LEFT JOIN (
+            SELECT user_id,
+                COUNT(*)::BIGINT AS logins,
+                MAX(started_at) AS last_session
+            FROM user_sessions
+            WHERE user_id IS NOT NULL
+            GROUP BY user_id
+        ) sess ON sess.user_id = base.user_id
         WHERE NOT ('anonymous' = ANY(u.roles))
           AND u.email NOT LIKE '%@anonymous.local'
-        ORDER BY (COALESCE(combined.edits, 0) + COALESCE(mcp.mcp_calls, 0)) DESC, logins DESC
+        ORDER BY (COALESCE(act.edits, 0) + COALESCE(mcp.mcp_calls, 0)) DESC,
+                 COALESCE(sess.logins, 0) DESC
         LIMIT 10"#,
     )
     .fetch_all(pool)

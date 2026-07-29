@@ -10,7 +10,7 @@ pub async fn get_activity_stats(pool: &PgPool) -> Result<ActivityStats, sqlx::Er
             COALESCE(COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE), 0)::BIGINT AS "events_today!",
             COALESCE(COUNT(*) FILTER (WHERE created_at >= DATE_TRUNC('week', CURRENT_DATE)), 0)::BIGINT AS "events_this_week!",
             COALESCE(COUNT(*) FILTER (WHERE category = 'marketplace_edit'), 0)::BIGINT AS "total_edits!",
-            COALESCE(COUNT(*) FILTER (WHERE category = 'login'), 0)::BIGINT AS "total_logins!"
+            (SELECT COUNT(*) FROM user_sessions WHERE user_id IS NOT NULL)::BIGINT AS "total_logins!"
         FROM user_activity"#,
     )
     .fetch_one(pool)
@@ -68,10 +68,23 @@ pub async fn list_usage_timeseries(
                 0::BIGINT AS mcp_calls,
                 COUNT(*) FILTER (WHERE a.category = 'marketplace_edit')::BIGINT AS edits,
                 COUNT(DISTINCT a.user_id)::BIGINT AS active_users,
-                COUNT(*) FILTER (WHERE a.category = 'login')::BIGINT AS logins,
+                0::BIGINT AS logins,
                 0::BIGINT AS mcp_errors
             FROM user_activity a
             WHERE a.created_at >= NOW() - $2::text::interval
+            GROUP BY 1
+        ),
+        sessions AS (
+            SELECT
+                date_trunc($1, s.started_at) AS bucket,
+                0::BIGINT AS mcp_calls,
+                0::BIGINT AS edits,
+                0::BIGINT AS active_users,
+                COUNT(*)::BIGINT AS logins,
+                0::BIGINT AS mcp_errors
+            FROM user_sessions s
+            WHERE s.started_at >= NOW() - $2::text::interval
+              AND s.user_id IS NOT NULL
             GROUP BY 1
         ),
         mcp AS (
@@ -95,7 +108,9 @@ pub async fn list_usage_timeseries(
             COALESCE(SUM(d.mcp_errors), 0)::BIGINT AS "errors!"
         FROM buckets b
         LEFT JOIN (
-            SELECT * FROM activity UNION ALL SELECT * FROM mcp
+            SELECT * FROM activity
+            UNION ALL SELECT * FROM mcp
+            UNION ALL SELECT * FROM sessions
         ) d ON d.bucket = b.bucket
         GROUP BY b.bucket
         ORDER BY b.bucket"#,

@@ -32,7 +32,7 @@ pub async fn find_user_detail(
             COALESCE(pe.prompt_count, 0)::BIGINT AS "prompts!",
             COALESCE(pe.session_count, 0)::BIGINT AS "sessions!",
             COALESCE(bytes.total_bytes, 0)::BIGINT AS "bytes!",
-            COALESCE(COUNT(DISTINCT a.id) FILTER (WHERE a.category = 'login'), 0)::BIGINT AS "logins!"
+            (SELECT COUNT(*) FROM user_sessions s WHERE s.user_id = u.id)::BIGINT AS "logins!"
         FROM users u
         LEFT JOIN user_activity a ON a.user_id = u.id
         LEFT JOIN (

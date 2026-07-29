@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
-use systemprompt::extension::{GatewayDenyReason, GatewayRequestGuard};
+use systemprompt::extension::{GatewayDenyReason, GatewayGuardRequest, GatewayRequestGuard};
 
 const CACHE_TTL: Duration = Duration::from_secs(30);
 
@@ -50,7 +50,12 @@ pub struct CreditBalanceGuard;
 
 #[async_trait::async_trait]
 impl GatewayRequestGuard for CreditBalanceGuard {
-    async fn check(&self, pool: &sqlx::PgPool, subject: &str) -> Result<(), GatewayDenyReason> {
+    async fn check(
+        &self,
+        pool: &sqlx::PgPool,
+        request: &GatewayGuardRequest<'_>,
+    ) -> Result<(), GatewayDenyReason> {
+        let subject = request.user_id;
         let balance = match cached_balance(subject) {
             Some(balance) => balance,
             None => match crate::get_balance_microdollars(pool, subject).await {
@@ -69,7 +74,7 @@ impl GatewayRequestGuard for CreditBalanceGuard {
         if balance > 0 {
             Ok(())
         } else {
-            Err(GatewayDenyReason::new(
+            Err(GatewayDenyReason::forbidden(
                 "Credit exhausted. Your systemprompt credit has been used up — add credit to continue.",
             ))
         }
