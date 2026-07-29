@@ -30,7 +30,28 @@ server-side from the same spine `governance_stats` reads — when, which tool,
 allow or deny, and the deciding policy. Point the visitor at the artifact shelf
 and the tool row's **view result** button.
 
-### 2. Itemise the bill
+### 2. Quote the summary line before you interpret it
+
+`governance_stats` returns a one-line summary of the form:
+
+```
+<allowed> allowed, <denied> denied across <N> decision(s);
+<N> provider request(s), <N> tokens in / <N> out, $<cost>
+```
+
+Reproduce that line verbatim first, then write the receipt around it. Do not
+restate spend in your own words before quoting it, and do not reconcile it
+against anything — if your reading disagrees with the summary, the summary is
+right and your reading is wrong.
+
+**The table artifact records decisions, not spend.** It has no token or cost
+column, so a table full of tool rows and no model rows says nothing whatsoever
+about whether the session reached a provider. Concluding "no LLM calls" or
+"$0.00" from the table — while the summary line reports requests and cost — is
+the one failure this step exists to prevent. Spend comes from the summary line
+and from nowhere else.
+
+### 3. Itemise the bill
 
 From the `governance_stats` result, write the receipt. Keep it short and
 concrete, in this order:
@@ -44,9 +65,10 @@ concrete, in this order:
   enforcement, made countable.
 
 Every figure you state must come from the tool result in this conversation.
-If the session is empty, an empty receipt is the honest report.
+A zero is only reportable when the summary line itself says zero. If the session
+is genuinely empty, an empty receipt is the honest report.
 
-### 3. Say what the receipt proves
+### 4. Say what the receipt proves
 
 One closing paragraph: every inference and every tool call in this session is
 attributable to one identity, joined by a session id, with the policy decision
