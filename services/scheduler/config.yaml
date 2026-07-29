@@ -47,9 +47,12 @@ scheduler:
     # Standalone core jobs, running on each job's built-in default schedule
     # (no `schedule:` override). Security jobs run in observe-and-log mode
     # because `enforce:` defaults to false.
+    # Offset off :00 for the same reason as content_analytics_aggregation —
+    # its built-in default collides with publish_pipeline. :10/:25/:40/:55.
     - name: no_js_cleanup
       extension: core
       owner: admin
+      schedule: "0 10-59/15 * * * *"
       enabled: true
 
     - name: ghost_session_cleanup
@@ -78,9 +81,17 @@ scheduler:
       enabled: true
 
     # Standalone web extension jobs
+    #
+    # Offset off :00 deliberately. This job's built-in default is
+    # "0 */15 * * * *" — the same second as publish_pipeline and no_js_cleanup,
+    # so all three woke together every quarter hour and queued on each other's
+    # pg_advisory_lock, each holding a pool connection while blocked. On a small
+    # machine that is enough to starve web requests. :05/:20/:35/:50 keeps the
+    # 15-minute cadence and lands between the other two.
     - name: content_analytics_aggregation
       extension: web
       owner: admin
+      schedule: "0 5-59/15 * * * *"
       enabled: true
 
     - name: secret_migration
