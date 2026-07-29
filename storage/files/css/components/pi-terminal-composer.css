@@ -174,6 +174,12 @@
   font-size: 0.66rem;
 }
 
+/* Both set display, so a JS `hidden = true` needs the attribute stated. */
+.pi-composer[hidden],
+.pi-hint[hidden] {
+  display: none;
+}
+
 .pi-hint__item {
   display: inline-flex;
   align-items: center;
@@ -275,7 +281,8 @@
 /* Nothing to run yet. Stated by draining the colour out of the button rather
    than by fading it, so it reads as "not yet" instead of "broken". */
 .pi-btn--send:disabled,
-.pi-composer:has(.pi-input:placeholder-shown) .pi-btn--send {
+.pi-composer:has(.pi-input:placeholder-shown)
+  .pi-btn--send:not([data-mode="reconnect"]) {
   background: color-mix(in oklch, var(--sp-color-primary) 10%, var(--sp-color-terminal-bg));
   border-color: var(--sp-color-terminal-border);
   color: var(--sp-color-terminal-text-dim);
@@ -284,6 +291,18 @@
   cursor: default;
   filter: none;
   transform: none;
+}
+
+/* Ended session. The composer is dead but the commit button is not: it becomes
+   the way back, so it keeps full emphasis while the dead textarea beside it
+   greys out. Only one of the two glyphs is ever in the flow. */
+.pi-btn__icon--reconnect,
+.pi-btn--send[data-mode="reconnect"] .pi-btn__icon--send {
+  display: none;
+}
+
+.pi-btn--send[data-mode="reconnect"] .pi-btn__icon--reconnect {
+  display: block;
 }
 
 /* Mid-turn Run steers the running turn — a real action, but not the emphasised
@@ -298,6 +317,29 @@
 .pi-composer[data-busy] .pi-btn--stop {
   border-color: color-mix(in oklch, var(--sp-color-primary) 45%, transparent);
   color: var(--sp-color-primary);
+}
+
+/* The one loud button outside a live session: register. Same weight as the
+   auth pane's primary, built from the shared accent token rather than that
+   pane's classes — the two surfaces should agree on emphasis without one
+   importing the other's stylesheet. */
+.pi-btn--cta {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--sp-color-primary), white 12%),
+    var(--sp-color-primary)
+  );
+  color: var(--sp-color-text-on-primary);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, white 30%, transparent),
+    0 1px 2px oklch(0 0 0 / 0.35);
+}
+
+.pi-btn--cta:hover {
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, white 34%, transparent),
+    0 4px 10px -2px color-mix(in oklch, var(--sp-color-primary) 45%, transparent);
 }
 
 .pi-btn--ghost {

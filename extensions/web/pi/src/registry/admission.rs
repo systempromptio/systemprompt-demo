@@ -14,6 +14,7 @@ use crate::session::PiSession;
 use crate::{persist, session, spawn};
 use systemprompt_web_governance::repositories::bridge::IssuedApiKey;
 
+use super::super::events::ExitReason;
 use super::{CreateRequest, PiRegistry, SessionParts, Slot};
 
 // Why: holds a claimed slot until the session is live — dropped on any error
@@ -138,6 +139,7 @@ impl PiRegistry {
             stdin,
             persist: persist_tx,
             start_seq,
+            manual_approval: self.0.cfg.require_approval(),
         }));
 
         if let Ok(mut sessions) = self.0.sessions.lock() {
@@ -209,13 +211,13 @@ impl PiRegistry {
     // also orders the old child's workspace cleanup before the new spawn
     // recreates that same directory.
     async fn make_room_for(&self, user_id: &UserId, incoming: &ContextId) {
-        self.remove(incoming, None).await;
+        self.remove(incoming, None, ExitReason::Resumed).await;
         for stale in self.surplus_for(user_id, incoming) {
             tracing::info!(
                 conversation_id = %stale,
                 "displacing a pi session for a new one from the same user"
             );
-            self.remove(&stale, None).await;
+            self.remove(&stale, None, ExitReason::Superseded).await;
         }
     }
 

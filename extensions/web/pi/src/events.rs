@@ -153,9 +153,10 @@ pub enum PiEventBody {
         title: Option<String>,
         server_name: String,
     },
-    /// A call the gate cleared without asking anyone — `approve_all` is off, so
-    /// policy alone decided. Emitted so the transcript still shows what ran and
-    /// under which chain, instead of the call passing silently.
+    /// A call the gate cleared without asking anyone — the session is in
+    /// auto-approve mode, so policy alone decided. Emitted so the transcript
+    /// still shows what ran and under which chain, instead of the call
+    /// passing silently.
     ApprovalAuto {
         tool_name: String,
         // JSON: arbitrary tool arguments, rendered to the viewer as-is
@@ -185,7 +186,34 @@ pub enum PiEventBody {
     },
     Exit {
         code: Option<i32>,
+        reason: ExitReason,
     },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExitReason {
+    Idle,
+    MaxLifetime,
+    ChildExited,
+    Superseded,
+    Resumed,
+    Closed,
+    StaleReservation,
+}
+
+impl ExitReason {
+    pub(super) const fn as_str(self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::MaxLifetime => "max lifetime",
+            Self::ChildExited => "child exited",
+            Self::Superseded => "superseded",
+            Self::Resumed => "resumed",
+            Self::Closed => "closed",
+            Self::StaleReservation => "stale reservation",
+        }
+    }
 }
 
 /// Translate one pi event frame into zero or one widget frames.

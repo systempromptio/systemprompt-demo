@@ -1,3 +1,4 @@
+import { EXIT_REASONS } from './pi-constants.js';
 import { append, line, echo } from './pi-terminal-dom.js';
 import { delta, flushStream } from './pi-terminal-prose.js';
 import { orphanRail, policyStages } from './pi-terminal-rail.js';
@@ -8,6 +9,7 @@ import {
 import { toolArtifact } from './pi-terminal-artifacts.js';
 import { meters } from './pi-terminal-meters.js';
 import { remember, send } from './pi-terminal-input.js';
+import { setSendMode } from './pi-terminal-view.js';
 
 /** The one dispatcher every frame goes through, live or replayed. */
 export function onFrame(el, raw) {
@@ -115,7 +117,7 @@ function enable(el) {
   el._status('live');
   el.classList.add('is-session');
   el._input.disabled = false;
-  el._sendBtn.disabled = false;
+  setSendMode(el, 'send', true);
   // A welcome chip clicked before the session was live parked its prompt in
   // the composer; the moment the session can carry it, it goes.
   if (el._input.dataset.pending) {
@@ -158,8 +160,14 @@ function exit(el, f) {
   el._status('ended');
   el.classList.remove('is-session');
   el._input.disabled = true;
-  el._sendBtn.disabled = true;
   el._stopBtn.hidden = true;
+  delete el._composer.dataset.busy;
+  // Sessions end on their own — four ways — so this is the normal case, not a
+  // fault. The button says how to carry on from it.
+  setSendMode(el, 'reconnect', true);
+  const why = EXIT_REASONS[f.reason];
   line(el, 'output-dim', 'Session ended'
-    + (typeof f.code === 'number' ? ' (exit ' + f.code + ')' : '') + '.');
+    + (why ? ' — ' + why : '')
+    + (typeof f.code === 'number' ? ' (exit ' + f.code + ')' : '')
+    + '. Reconnect to start a new one.');
 }

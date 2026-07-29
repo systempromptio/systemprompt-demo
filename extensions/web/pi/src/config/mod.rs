@@ -42,7 +42,7 @@ pub struct PiConfig {
     pub(super) tools: Vec<String>,
     pub(super) child_path: String,
     pub(super) approval_timeout: Duration,
-    pub(super) approve_all: bool,
+    pub(super) require_approval: bool,
     pub(super) idle_timeout: Duration,
     pub(super) max_lifetime: Duration,
     pub(super) max_sessions_per_user: usize,
@@ -177,7 +177,7 @@ impl PiConfig {
                 .collect(),
             child_path: raw.child_path,
             approval_timeout: Duration::from_secs(raw.timeouts.approval_secs),
-            approve_all: raw.approve_all,
+            require_approval: raw.require_approval,
             idle_timeout: Duration::from_secs(raw.timeouts.idle_secs),
             max_lifetime: Duration::from_secs(raw.timeouts.max_lifetime_secs),
             max_sessions_per_user: raw.sessions.max_per_user,
@@ -223,8 +223,8 @@ impl PiConfig {
         self.version_check
     }
 
-    pub const fn approve_all(&self) -> bool {
-        self.approve_all
+    pub const fn require_approval(&self) -> bool {
+        self.require_approval
     }
 
     pub fn jail_read_paths(&self) -> &[PathBuf] {

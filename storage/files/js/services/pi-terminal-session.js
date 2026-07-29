@@ -9,7 +9,8 @@ import { degrade } from './pi-terminal-canned.js';
 import { enterQueue } from './pi-terminal-capacity.js';
 import { closeArtifact } from './pi-artifact-overlay.js';
 import { resetArtifacts } from './pi-terminal-artifacts.js';
-import { mountWelcome } from './pi-terminal-view.js';
+import { mountWelcome, setReplayChrome, setSendMode } from './pi-terminal-view.js';
+import { setApprovalMode } from './pi-terminal-gate.js';
 
 /**
  * Re-run the whole start sequence against whatever credential now exists.
@@ -58,10 +59,12 @@ export async function restart(el, resume) {
   el._metersEl.hidden = true;
   el._traceEl.hidden = true;
   el._userEl.hidden = true;
+  el._approvalModeBtn.hidden = true;
   el._gateEl.hidden = true;
   el._gateEl.replaceChildren();
   el.classList.remove('is-replay');
   el.classList.remove('is-session');
+  setReplayChrome(el, false);
   await start(el, resume);
 }
 
@@ -74,6 +77,9 @@ export async function restart(el, resume) {
  */
 export async function start(el, resume) {
   el._status('connecting');
+  // Back to a disabled Send for the duration: leaving Reconnect live would
+  // invite a second click that opens a second session.
+  setSendMode(el, 'send', false);
   // whoami first: an anonymous visitor never POSTs embed-token, so a public
   // page load logs no 401.
   el._who = await whoami();
@@ -105,6 +111,10 @@ export async function start(el, resume) {
   }
   const body = await res.json();
   el._conversationId = body.conversation_id;
+  // The server decides which mode a session opens in; the chip only ever
+  // shows what the gate is actually doing.
+  setApprovalMode(el, Boolean(body.manual_approval));
+  el._approvalModeBtn.hidden = false;
   // Replay before the stream attaches, so the live frames land after the
   // history rather than interleaved with it.
   if (body.resumed) await replay(el);

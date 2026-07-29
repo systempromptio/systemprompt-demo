@@ -146,9 +146,12 @@ tools:
 # so no new deployment inherits an unjailed child by default.
 sandbox: required
 
-# Ask a human about every tool call, not just flagged ones. With a read-only
-# tool set nothing is flagged, so this is what makes the approval UI visible.
-approve_all: true
+# Which approval mode a new session opens in. `false` clears policy-passing
+# tool calls without asking; the terminal's header toggle switches the session
+# to manual, where every call waits on a person. Policy is unaffected either
+# way — a denial is still a denial, and manual mode can only be more
+# restrictive than the chain.
+require_approval: false
 
 timeouts:
   approval_secs: 120       # how long a tool call waits on a human, then fails closed

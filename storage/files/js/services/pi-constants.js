@@ -41,3 +41,17 @@ export const INPUT_ROW_PX = 22;
  *  bounds a restore at a few round trips rather than an unbounded loop against
  *  a conversation that keeps reporting more. */
 export const REPLAY_PAGES = 8;
+
+/** Why a session ended, keyed by the `reason` on the exit frame. The server
+ *  knows which of four evictions fired; without this the widget could only say
+ *  "ended", and a visitor evicted by their own second tab would read it as a
+ *  crash. Unknown or absent — a frame replayed from before the field existed —
+ *  falls through to no explanation rather than a guess. */
+export const EXIT_REASONS = {
+  idle: 'idle for too long',
+  max_lifetime: 'demo sessions are capped at an hour',
+  child_exited: 'the agent process stopped',
+  superseded: 'you started a session in another tab',
+  resumed: 'it was reopened elsewhere',
+  closed: 'you closed this conversation',
+};

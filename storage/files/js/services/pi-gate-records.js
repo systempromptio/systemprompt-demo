@@ -11,7 +11,7 @@ import {
 
 /**
  * A call the gate cleared without asking anyone — either policy alone decided
- * (approve_all off), or a standing approval a person armed earlier answered for
+ * (auto-approve mode), or a standing approval a person armed earlier answered for
  * them. The two are never presented as the same thing: a standing approval is a
  * human decision made early, and it is stamped with the human who made it.
  */

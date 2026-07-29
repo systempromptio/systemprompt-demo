@@ -102,8 +102,8 @@ pub mod test_support {
     pub use crate::config::{PiConfig, SandboxMode, VersionCheckMode};
     pub use crate::conversations::collapse_duplicate_errors;
     pub use crate::events::{
-        CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind, PiEvent,
-        PiEventBody, readable_provider_error, translate, upgrade_legacy_error,
+        CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, ErrorKind, ExitReason,
+        PiEvent, PiEventBody, readable_provider_error, translate, upgrade_legacy_error,
     };
     pub use crate::format::{cost, cost_round, median};
     pub use crate::jail::gateway_port;
@@ -204,11 +204,7 @@ pub fn pi_router(
         .route("/api/public/pi/pulse", get(pulse::pulse))
         .route("/api/public/pi/capacity", get(capacity::capacity))
         .route("/api/public/pi/models", get(api::models))
-        .route("/api/public/pi/prompt", post(commands::prompt))
-        .route("/api/public/pi/steer", post(commands::steer))
-        .route("/api/public/pi/follow-up", post(commands::follow_up))
-        .route("/api/public/pi/abort", post(commands::abort))
-        .route("/api/public/pi/approve", post(commands::approve))
+        .merge(command_routes())
         .route("/api/public/pi/mcp", post(mcp::call))
         .route(
             "/api/public/pi/artifacts/{artifact_id}",
@@ -234,4 +230,20 @@ pub fn pi_router(
         .layer(Extension(registry))
         .layer(Extension(deps))
         .with_state(pool)
+}
+
+// Why: everything a viewer sends *into* a live conversation, kept together
+// because they share one authorisation shape — an embed token plus the
+// conversation it was minted for. See `commands`.
+fn command_routes() -> Router<Arc<PgPool>> {
+    Router::new()
+        .route("/api/public/pi/prompt", post(commands::prompt))
+        .route("/api/public/pi/steer", post(commands::steer))
+        .route("/api/public/pi/follow-up", post(commands::follow_up))
+        .route("/api/public/pi/abort", post(commands::abort))
+        .route("/api/public/pi/approve", post(commands::approve))
+        .route(
+            "/api/public/pi/approval-mode",
+            post(commands::approval_mode),
+        )
 }

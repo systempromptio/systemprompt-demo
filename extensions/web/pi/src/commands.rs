@@ -40,6 +40,13 @@ pub(super) struct ApproveBody {
     decision: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub(super) struct ApprovalModeBody {
+    token: String,
+    conversation_id: systemprompt::identifiers::ContextId,
+    manual: bool,
+}
+
 pub(super) async fn prompt(
     State(pool): State<Arc<PgPool>>,
     Extension(registry): Extension<PiRegistry>,
@@ -161,11 +168,39 @@ pub(super) async fn approve(
     } else {
         Verdict::Deny(attribution)
     };
-    if session.resolve_approval(&body.approval_id, verdict, always) {
+    if session
+        .approvals
+        .resolve(&body.approval_id, verdict, always)
+    {
         StatusCode::NO_CONTENT.into_response()
     } else {
         problem(StatusCode::CONFLICT, "approval is no longer pending")
     }
+}
+
+// Why: the mode a call is judged under is read at the call, so a flip that
+// lands mid-turn applies to the next tool call rather than the next session —
+// and pending approvals stay pending, because a person was already asked.
+pub(super) async fn approval_mode(
+    State(pool): State<Arc<PgPool>>,
+    Extension(registry): Extension<PiRegistry>,
+    Json(body): Json<ApprovalModeBody>,
+) -> Response {
+    // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
+    let Some(session) =
+        authorize_session(&pool, &registry, &body.token, &body.conversation_id).await
+    else {
+        return unauthorized();
+    };
+    session.touch();
+    session.approvals.set_manual(body.manual);
+    tracing::info!(
+        conversation_id = %body.conversation_id,
+        user_id = %session.user_id,
+        manual = body.manual,
+        "pi approval mode changed"
+    );
+    StatusCode::NO_CONTENT.into_response()
 }
 
 async fn send(session: &Arc<session::PiSession>, command: rpc::RpcCommand) -> Response {

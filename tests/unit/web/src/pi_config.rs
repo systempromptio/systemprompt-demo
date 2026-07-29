@@ -14,7 +14,7 @@ use systemprompt_web_pi::test_support::{PiConfig, SandboxMode, VersionCheckMode}
 fn empty_file_is_all_defaults() {
     let cfg = PiConfig::parse("{}").expect("an empty map is the all-defaults state");
     assert_eq!(cfg.sandbox(), SandboxMode::Required);
-    assert!(cfg.approve_all());
+    assert!(!cfg.require_approval());
     assert!(cfg.tools().iter().any(|t| t == "read"));
     assert!(!cfg.jail_read_paths().is_empty());
 }
@@ -77,7 +77,7 @@ fn the_checked_in_config_is_valid() {
             .iter()
             .any(|t| matches!(t.as_str(), "bash" | "write" | "edit"))
     );
-    assert!(cfg.approve_all());
+    assert!(!cfg.require_approval());
     // The version pin is load-bearing security (see version.rs): the shipped
     // file must carry one, and must fail closed on a mismatch.
     assert!(cfg.expected_version().is_some());

@@ -14,6 +14,7 @@ use systemprompt::traits::AnalyticsProvider;
 
 use super::config::PiConfig;
 use super::credentials;
+use super::events::ExitReason;
 use super::session::PiSession;
 
 mod admission;
@@ -123,14 +124,19 @@ impl PiRegistry {
         (used, self.0.cfg.max_sessions_total)
     }
 
-    pub(super) async fn remove(&self, conversation_id: &ContextId, code: Option<i32>) {
+    pub(super) async fn remove(
+        &self,
+        conversation_id: &ContextId,
+        code: Option<i32>,
+        reason: ExitReason,
+    ) {
         let slot = {
             let Ok(mut sessions) = self.0.sessions.lock() else {
                 return;
             };
             sessions.remove(conversation_id)
         };
-        self.tear_down(conversation_id, slot, code).await;
+        self.tear_down(conversation_id, slot, code, reason).await;
     }
 
     // Why: a conversation id can be re-admitted (resume) while the previous
@@ -142,6 +148,7 @@ impl PiRegistry {
         conversation_id: &ContextId,
         expected: &Arc<PiSession>,
         code: Option<i32>,
+        reason: ExitReason,
     ) {
         let slot = {
             let Ok(mut sessions) = self.0.sessions.lock() else {
@@ -156,13 +163,19 @@ impl PiRegistry {
             }
             sessions.remove(conversation_id)
         };
-        self.tear_down(conversation_id, slot, code).await;
+        self.tear_down(conversation_id, slot, code, reason).await;
     }
 
-    async fn tear_down(&self, conversation_id: &ContextId, slot: Option<Slot>, code: Option<i32>) {
+    async fn tear_down(
+        &self,
+        conversation_id: &ContextId,
+        slot: Option<Slot>,
+        code: Option<i32>,
+        reason: ExitReason,
+    ) {
         if let Some(session) = slot.as_ref().and_then(Slot::live).map(Arc::clone) {
             let fast_exit = session.age() < std::time::Duration::from_secs(2);
-            let code = session.close(code).await;
+            let code = session.close(code, reason).await;
             if fast_exit {
                 tracing::warn!(
                     conversation_id = %session.conversation_id,

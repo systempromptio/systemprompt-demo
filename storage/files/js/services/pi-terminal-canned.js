@@ -7,6 +7,7 @@ import { blockedRow } from './pi-gate-records.js';
 import { endGateRun, gateRecord } from './pi-gate-runs.js';
 import { append, line, echo } from './pi-terminal-dom.js';
 import { policyStages } from './pi-terminal-rail.js';
+import { setReplayChrome } from './pi-terminal-view.js';
 import { toolRow } from './pi-terminal-gate.js';
 import { cannedMeters } from './pi-terminal-meters.js';
 
@@ -20,6 +21,7 @@ export function degrade(el, reason, info) {
       : (reason === 'stream' ? 'disconnected' : 'replay')));
   el._input.disabled = true;
   el._sendBtn.disabled = true;
+  setReplayChrome(el, true);
 
   cannedPlay(el);
 
@@ -64,10 +66,12 @@ export function degrade(el, reason, info) {
     // Anonymous. The pane beside this terminal owns sign-in and registration —
     // one implementation of the ceremony, and it is the half of the screen the
     // visitor is already looking at. Here, say only what the replay is.
+    // The replay bar above already carries the ask and the buttons, so this
+    // says only what the transcript is — two statements of the same CTA read
+    // as nagging, and dilute both.
     const lead = document.createElement('strong');
     lead.textContent = 'This is a replay.';
-    blurb.append(lead, ' Create an account or sign in to drive a real agent — '
-      + 'every tool call it makes will stop here for your approval.');
+    blurb.append(lead, ' A recording of a real governed session, played back.');
   }
   el._gateEl.replaceChildren(blurb);
 }

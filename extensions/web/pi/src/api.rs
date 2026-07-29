@@ -51,6 +51,7 @@ struct CreatedSession {
     conversation_id: ContextId,
     last_seq: i64,
     resumed: bool,
+    manual_approval: bool,
 }
 
 pub(super) async fn create_session(
@@ -116,6 +117,7 @@ pub(super) async fn create_session(
                 conversation_id,
                 last_seq: i64::try_from(start_seq).unwrap_or(i64::MAX),
                 resumed,
+                manual_approval: deps.cfg.require_approval(),
             },
         ),
         Err(e) => spawn_error_response(&e),

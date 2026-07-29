@@ -215,6 +215,22 @@
     flex-direction: column;
   }
 
+  /* The CTA is the one thing on a phone that must stay side by side and
+     full-width-ish: stacked into a column it pushes the transcript off the
+     first screen, which is the thing it is selling. */
+  .pi-replay-bar {
+    padding: var(--sp-space-3);
+  }
+
+  .pi-replay-bar .pi-gate-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .pi-replay-bar .pi-gate-actions .pi-btn {
+    flex: 1 1 0;
+  }
+
   /* Args over the cleared chain, single column. */
   .pi-approval-grid {
     grid-template-columns: 1fr;

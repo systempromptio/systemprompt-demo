@@ -159,6 +159,46 @@ export function approvalAuto(el, f) {
   gateRecord(el, 'ok', autoApprovedCard(f), f.tool_name);
 }
 
+/**
+ * Draw the approval-mode chip for a mode the server is already in.
+ *
+ * The chip is the only place the mode is stated, so it carries the whole
+ * contract in its title: what happens now, and what the click changes. Manual
+ * is the pressed state because it is the restrictive one — a lit chip means
+ * calls are being held.
+ */
+export function setApprovalMode(el, manual) {
+  el._manualApproval = manual;
+  el._approvalModeBtn.setAttribute('aria-pressed', manual ? 'true' : 'false');
+  el._approvalModeLabel.textContent = manual ? 'Manual approval' : 'Auto-approve';
+  el._approvalModeBtn.title = manual
+    ? 'Manual approval — every tool call the policy chain clears waits for you.'
+      + ' Click to let cleared calls run.'
+    : 'Auto-approve — tool calls the policy chain clears run without asking.'
+      + ' Click to approve each one yourself.';
+}
+
+/**
+ * Flip the mode, optimistically and then for real.
+ *
+ * Drawn before the POST lands because the chip is a control, not a readout,
+ * and a control that lags reads as broken — but a refusal puts it straight
+ * back, since the server, not this element, owns what the gate will do.
+ */
+export async function toggleApprovalMode(el) {
+  const next = !el._manualApproval;
+  setApprovalMode(el, next);
+  const res = await el._post('approval-mode', { manual: next });
+  if (!res || !res.ok) {
+    setApprovalMode(el, !next);
+    line(el, 'output-warn', 'the approval mode could not be changed');
+    return;
+  }
+  line(el, 'output-dim', next
+    ? 'manual approval — every cleared tool call now waits for you'
+    : 'auto-approve — cleared tool calls now run without asking');
+}
+
 async function decide(el, approvalId, decision, toolName) {
   const res = await el._post('approve', { approval_id: approvalId, decision });
   // 409 means it was already settled — by the timeout, by another viewer, or

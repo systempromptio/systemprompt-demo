@@ -11,7 +11,7 @@ use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt as _, BufReader};
 use tokio::process::{ChildStderr, ChildStdout};
 
-use super::events::{self, PiEventBody};
+use super::events::{self, ExitReason, PiEventBody};
 use super::gate::{self, PiDeps};
 use super::registry::PiRegistry;
 use super::rpc::{self, ExtensionUiResponse, RpcFrame};
@@ -54,7 +54,12 @@ async fn read_stdout(
         }
     }
     registry
-        .remove_if(&session.conversation_id, &session, None)
+        .remove_if(
+            &session.conversation_id,
+            &session,
+            None,
+            ExitReason::ChildExited,
+        )
         .await;
 }
 

@@ -10,6 +10,12 @@
 //! is never offered the chance to override a policy deny — policy is a floor,
 //! and a person can only be more restrictive than it.
 //!
+//! Whether a person is asked at all is the session's own mode, not the tool's:
+//! a session opens in the mode `require_approval` names and the terminal's
+//! header toggle flips it mid-conversation, read fresh on every call. Manual
+//! mode adds a person to a call policy already cleared; it can never subtract
+//! one.
+//!
 //! A standing approval (armed from the approval card, scoped to one tool for
 //! the life of the session) skips the prompt but not the pipeline: the chain
 //! still runs, and each skipped prompt is audited under the stamp of the person
@@ -30,7 +36,7 @@ use super::session::PiSession;
 use super::stage::PolicyStage;
 use systemprompt_security::policy::{ApproverStamp, AuditOrigin};
 use systemprompt_web_governance::webhook::governance::inproc::{
-    self, InprocCall, HumanOutcome, PolicyVerdict,
+    self, HumanOutcome, InprocCall, PolicyVerdict,
 };
 use systemprompt_web_governance::webhook::governance::stages::{StageOutcome, StageResult};
 
@@ -171,12 +177,12 @@ async fn consent(deps: &PiDeps, session: &Arc<PiSession>, cleared: Cleared<'_>) 
         verdict,
     } = cleared;
 
-    if !needs_human(&deps.cfg, tool_name) {
+    if !session.approvals.manual() {
         emit_auto_approval(session, tool_name, arguments, stages, None);
         return true;
     }
 
-    if let Some(attribution) = session.standing_approval(tool_name) {
+    if let Some(attribution) = session.approvals.standing_for(tool_name) {
         let username = attribution.username.clone();
         let stamp = ApproverStamp {
             user_id: attribution.user_id,
@@ -278,10 +284,6 @@ fn cleared_policies(stages: &[StageOutcome]) -> Vec<String> {
         .collect();
     cleared.push(WORKSPACE_SCOPE.to_owned());
     cleared
-}
-
-const fn needs_human(cfg: &PiConfig, _tool_name: &str) -> bool {
-    cfg.approve_all
 }
 
 fn emit_denial(

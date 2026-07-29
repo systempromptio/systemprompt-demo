@@ -8,7 +8,9 @@
 //! — stay out of the record entirely.
 
 use systemprompt::identifiers::ContextId;
-use systemprompt_web_pi::test_support::{Journal, NewPiEvent, PiEvent, PiEventBody};
+use systemprompt_web_pi::test_support::{
+    ExitReason, Journal, NewPiEvent, PiEvent, PiEventBody,
+};
 
 /// Drive a whole conversation through the journal, as the writer task does.
 fn journal(bodies: Vec<PiEventBody>) -> Vec<NewPiEvent> {
@@ -85,7 +87,10 @@ fn frames_that_are_not_conversation_are_not_stored() {
         PiEventBody::Stderr {
             line: "sp-pi-jail: Landlock v5".to_owned(),
         },
-        PiEventBody::Exit { code: Some(0) },
+        PiEventBody::Exit {
+            code: Some(0),
+            reason: ExitReason::ChildExited,
+        },
     ]);
     assert!(rows.is_empty(), "stored {rows:?}");
 }

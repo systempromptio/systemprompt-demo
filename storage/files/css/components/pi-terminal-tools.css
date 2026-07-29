@@ -90,6 +90,47 @@
   margin: var(--sp-space-3) 0 0;
 }
 
+/* ── replay footer ──────────────────────────────────────────────────────── */
+
+/* What stands where the composer would be while the terminal is a recording.
+   It is deliberately heavier than the gate blurb below it: the blurb explains
+   the state, this is the way out of it. */
+.pi-replay-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-space-2) var(--sp-space-3);
+  padding: var(--sp-space-3) var(--sp-space-4);
+  border-top: 1px solid color-mix(in oklch, var(--sp-color-primary) 35%, transparent);
+  background: color-mix(in oklch, var(--sp-color-primary) 10%, var(--sp-color-terminal-header));
+}
+
+.pi-replay-bar[hidden] {
+  display: none;
+}
+
+.pi-replay-bar__lock {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: none;
+  color: var(--sp-color-primary);
+}
+
+.pi-replay-bar__copy {
+  flex: 1 1 14rem;
+  min-width: 0;
+  margin: 0;
+  color: var(--sp-color-terminal-text);
+  font-size: 0.85rem;
+}
+
+/* The actions sit on the same row as the copy when there is width for them,
+   so this loses the block margin the gate version carries. */
+.pi-replay-bar .pi-gate-actions {
+  margin: 0;
+  margin-left: auto;
+}
+
 .pi-auth {
   margin-top: var(--sp-space-4);
   max-width: 380px;

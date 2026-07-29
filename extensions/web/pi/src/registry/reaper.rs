@@ -8,6 +8,7 @@
 use systemprompt::identifiers::ContextId;
 
 use super::super::credentials;
+use super::super::events::ExitReason;
 use super::{PiRegistry, STALE_RESERVATION, Slot};
 
 impl PiRegistry {
@@ -71,15 +72,19 @@ impl PiRegistry {
                     registry.sweep_workspaces().await;
                 }
                 for (id, why) in registry.expired() {
-                    tracing::info!(conversation_id = %id, reason = why, "reaping pi session");
-                    registry.remove(&id, None).await;
+                    tracing::info!(
+                        conversation_id = %id,
+                        reason = why.as_str(),
+                        "reaping pi session"
+                    );
+                    registry.remove(&id, None, why).await;
                 }
                 registry.waitlist_prune();
             }
         });
     }
 
-    fn expired(&self) -> Vec<(ContextId, &'static str)> {
+    fn expired(&self) -> Vec<(ContextId, ExitReason)> {
         let Ok(sessions) = self.0.sessions.lock() else {
             return Vec::new();
         };
@@ -89,18 +94,18 @@ impl PiRegistry {
                 let why = match slot {
                     Slot::Reserving { at, .. } => {
                         if at.elapsed() > STALE_RESERVATION {
-                            "stale reservation"
+                            ExitReason::StaleReservation
                         } else {
                             return None;
                         }
                     },
                     Slot::Live(s) => {
                         if s.is_closed() {
-                            "child exited"
+                            ExitReason::ChildExited
                         } else if s.age() > self.0.cfg.max_lifetime {
-                            "max lifetime"
+                            ExitReason::MaxLifetime
                         } else if s.idle_for() > self.0.cfg.idle_timeout {
-                            "idle"
+                            ExitReason::Idle
                         } else {
                             return None;
                         }

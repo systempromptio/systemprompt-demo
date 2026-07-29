@@ -24,6 +24,52 @@
   cursor: default;
 }
 
+/* The one exception: the way out of this state cannot be dimmed by the state
+   itself. It sits at full strength and takes clicks while everything else in
+   the header is a statement. */
+.pi-terminal .terminal-header .pi-replay-cta {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+  /* Pushed to the trailing edge, where the header's commit action belongs;
+     `wrap` on the row means it drops to its own line rather than shrinking. */
+  margin-left: auto;
+}
+
+/* Read-only, said once, in the register the header speaks in. Warning-toned
+   rather than error: nothing is broken, it is simply not live. */
+.pi-replay-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-warning) 45%, transparent);
+  border-radius: var(--sp-radius-full);
+  color: var(--sp-color-warning);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* The class sets display, so the hidden attribute needs saying twice. */
+.pi-replay-flag[hidden] {
+  display: none;
+}
+
+.pi-replay-flag::before {
+  content: '▶';
+  font-size: 0.7em;
+}
+
+/* Header density: the CTA is a chip here, not a composer button. */
+.pi-replay-cta {
+  min-height: 1.75rem;
+  min-width: 0;
+  padding: 0.2rem var(--sp-space-3);
+  font-size: 0.72rem;
+}
+
 /* The titlebar is branded rather than labelled.
    It used to read "pi — governed", which named an internal binary and a property
    in a way that meant nothing to a visitor. A product surface should say whose
@@ -252,3 +298,51 @@
   text-decoration: underline;
 }
 
+
+/* The approval-mode toggle. Quiet in auto-approve, where it is stating the
+   ordinary case, and lit in manual, where it is stating that this terminal is
+   holding calls for a person — the state the operator must not lose track of.
+   Warn rather than success for the lit state: manual is not "safer", it is
+   attention owed. */
+.pi-approve-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-text-dim) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  background: color-mix(in oklch, var(--sp-color-terminal-text-dim) 8%, transparent);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pi-approve-chip svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: none;
+}
+
+.pi-approve-chip:hover {
+  color: var(--sp-color-terminal-text);
+  border-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 70%, transparent);
+}
+
+.pi-approve-chip[aria-pressed='true'] {
+  border-color: color-mix(in oklch, var(--sp-color-warning) 55%, transparent);
+  background: color-mix(in oklch, var(--sp-color-warning) 12%, transparent);
+  color: var(--sp-color-warning);
+}
+
+/* The tick belongs to the mode that lets calls through; manual is a pause,
+   not a pass. */
+.pi-approve-chip[aria-pressed='true'] svg {
+  display: none;
+}
+
+.pi-approve-chip:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 1px;
+}

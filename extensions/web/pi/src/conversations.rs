@@ -17,6 +17,7 @@ use sqlx::PgPool;
 use systemprompt::identifiers::ContextId;
 
 use super::auth::{authenticate, authorize_conversation, problem, unauthorized};
+use super::events::ExitReason;
 use super::registry::PiRegistry;
 use crate::repositories::{conversations as repo, events as event_repo};
 
@@ -223,7 +224,9 @@ pub(super) async fn archive(
     match repo::archive_conversation(&pool, &conversation_id, &user_id).await {
         Ok(0) => problem(StatusCode::NOT_FOUND, "no such conversation"),
         Ok(_) => {
-            registry.remove(&conversation_id, None).await;
+            registry
+                .remove(&conversation_id, None, ExitReason::Closed)
+                .await;
             StatusCode::NO_CONTENT.into_response()
         },
         Err(e) => {

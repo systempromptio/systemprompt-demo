@@ -18,6 +18,12 @@ chrome.innerHTML = ''
   + '<span class="pi-live" data-role="live"><i class="pi-live-dot" aria-hidden="true"></i>'
   + '<span class="pi-status" data-role="status"></span></span>'
   + '<span class="pi-jail-chip" data-role="jail" hidden></span>'
+  // Replay chrome. The header is the first thing read, so it carries the
+  // state ("this is a recording") and the way out of it — the visitor should
+  // not have to reach the footer to learn the terminal is not theirs yet.
+  + '<span class="pi-replay-flag" data-role="replay-flag" hidden>read-only replay</span>'
+  + '<button type="button" class="pi-btn pi-btn--cta pi-replay-cta"'
+  + ' data-role="cta-header" hidden>Create account →</button>'
   // Who this session is signed to. The padlock is the claim: every request
   // this terminal makes carries a token minted for exactly this identity, so
   // the badge only exists once a session is actually established.
@@ -38,6 +44,18 @@ chrome.innerHTML = ''
   + 'Artifacts <b class="pi-art-count" data-role="art-count">0</b></button>'
   + '<div class="pi-art-panel" data-role="art-panel" hidden></div>'
   + '</span>'
+  // The session's approval mode, and the way to change it. Hidden until a
+  // session exists, because until then there is nothing to set it on. The
+  // pressed state is manual — the louder, more restrictive of the two — so the
+  // chip lights up exactly when the terminal is holding calls for a person.
+  + '<button type="button" class="pi-approve-chip" data-role="approval-mode"'
+  + ' aria-pressed="false" hidden>'
+  + '<svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+  + '<path d="M2.5 6.25 4.75 8.5 9.5 3.75" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '</svg>'
+  + '<span data-role="approval-mode-label">Auto-approve</span>'
+  + '</button>'
   // Hidden until the catalogue arrives with more than one entry; a picker
   // with one option is furniture.
   + '<select class="pi-model" data-role="model" aria-label="Model" hidden></select>'
@@ -102,29 +120,99 @@ chrome.innerHTML = ''
   + '<rect x="3" y="3" width="6" height="6" rx="1" fill="currentColor"/></svg>'
   + '<span class="pi-btn__label">Stop</span>'
   + '</button>'
-  + '<button type="submit" class="pi-btn pi-btn--send" data-role="send" disabled'
-  + ' title="Send (Enter)">'
-  + '<svg class="pi-btn__icon" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+  + '<button type="submit" class="pi-btn pi-btn--send" data-role="send"'
+  + ' data-mode="send" disabled title="Send (Enter)">'
+  + '<svg class="pi-btn__icon pi-btn__icon--send" viewBox="0 0 12 12"'
+  + ' aria-hidden="true" focusable="false">'
   + '<path d="M9.5 2.5v3.25a1.5 1.5 0 0 1-1.5 1.5H3" fill="none" stroke="currentColor"'
   + ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
   + '<path d="M5 4.75 2.5 7.25 5 9.75" fill="none" stroke="currentColor"'
   + ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
   + '</svg>'
-  + '<span class="pi-btn__label">Send</span>'
+  // The ended state reuses this button rather than growing a second one: one
+  // primary control, whose glyph and label state which of the two it is.
+  + '<svg class="pi-btn__icon pi-btn__icon--reconnect" viewBox="0 0 12 12"'
+  + ' aria-hidden="true" focusable="false">'
+  + '<path d="M9.6 5.2A3.75 3.75 0 1 0 9 8.4" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.5" stroke-linecap="round"/>'
+  + '<path d="M9.9 2.3v3H7" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '</svg>'
+  + '<span class="pi-btn__label" data-role="send-label">Send</span>'
   + '</button>'
   + '</form>'
-  + '<div class="pi-hint">'
+  + '<div class="pi-hint" data-role="hint">'
   + '<span class="pi-hint__item"><kbd>↵</kbd>send</span>'
   + '<span class="pi-hint__item"><kbd>⇧↵</kbd>newline</span>'
   + '<span class="pi-hint__item"><kbd>↑↓</kbd>skills</span>'
   + '<span class="pi-hint__item"><kbd>↑</kbd>history</span>'
   + '<span class="pi-hint__item"><kbd>esc</kbd>stop</span>'
   + '</div>'
+  // The composer's replacement while the terminal is a recording. It stands
+  // where the input would be, because that is where a visitor goes to type —
+  // and what they find there is the reason they cannot.
+  + '<div class="pi-replay-bar" data-role="replay-bar" hidden>'
+  + '<svg class="pi-replay-bar__lock" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'
+  + '<rect x="2.25" y="5.25" width="7.5" height="5" rx="1.25" fill="currentColor"/>'
+  + '<path d="M4 5V3.75a2 2 0 0 1 4 0V5" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.4" stroke-linecap="round"/>'
+  + '</svg>'
+  + '<p class="pi-replay-bar__copy">Sign in to drive a real agent — every tool call'
+  + ' it makes is checked and audited, and one click puts them all behind your'
+  + ' approval.</p>'
+  + '<div class="pi-gate-actions">'
+  + '<button type="button" class="pi-btn pi-btn--cta" data-role="cta-register">'
+  + 'Create account</button>'
+  + '<button type="button" class="pi-btn pi-btn--ghost" data-role="cta-signin">'
+  + 'Sign in</button>'
+  + '</div>'
+  + '</div>'
   + '<div class="pi-gate" data-role="gate" hidden></div>'
   + '</div>';
 
 export function terminalChrome() {
   return chrome.content.cloneNode(true);
+}
+
+/**
+ * Swap the chrome between the live terminal and the recording.
+ *
+ * One function for both directions because signing in happens in the pane
+ * beside this element, without a navigation: the same page has to be able to
+ * take the replay dressing back off, and two independent lists of what to
+ * hide would drift the first time one of them gained an entry.
+ *
+ * The composer goes away entirely rather than sitting disabled — a text box
+ * that will not take text reads as a broken page, and the whole point of this
+ * state is to be legible.
+ */
+const SEND_MODES = {
+  send: { label: 'Send', title: 'Send (Enter)' },
+  reconnect: { label: 'Reconnect', title: 'Start a new session' },
+};
+
+/**
+ * Point the primary button at the action the terminal can actually take.
+ *
+ * A session that has timed out leaves a composer nothing can be typed into,
+ * and the only affordance used to be a reload. The commit button becomes the
+ * way back instead: same position, same emphasis, a label that says what it
+ * now does. `pi-terminal-setup.js` reads the mode to route the submit.
+ */
+export function setSendMode(el, mode, enabled) {
+  const spec = SEND_MODES[mode];
+  el._sendBtn.dataset.mode = mode;
+  el._sendBtn.title = spec.title;
+  el._sendLabel.textContent = spec.label;
+  el._sendBtn.disabled = !enabled;
+}
+
+export function setReplayChrome(el, on) {
+  el._replayFlag.hidden = !on;
+  el._ctaHeader.hidden = !on;
+  el._replayBar.hidden = !on;
+  el._composer.hidden = on;
+  el._hintEl.hidden = on;
 }
 
 /**

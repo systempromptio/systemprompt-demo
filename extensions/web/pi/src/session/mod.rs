@@ -1,7 +1,9 @@
 //! One live pi conversation: its child process, its viewers, and the tool calls
 //! currently waiting on a human.
 
-use std::collections::{HashMap, VecDeque};
+mod approvals;
+
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -10,34 +12,16 @@ use std::time::{Duration, Instant};
 use systemprompt::identifiers::{ContextId, SessionId, UserId};
 use tokio::io::AsyncWriteExt as _;
 use tokio::process::{Child, ChildStdin};
-use tokio::sync::{broadcast, mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc};
 
-use super::events::{ErrorDeduper, PiEvent, PiEventBody};
+pub(crate) use approvals::{Approvals, Attribution, Verdict};
+
+use super::events::{ErrorDeduper, ExitReason, PiEvent, PiEventBody};
 use super::ledger::CallLedger;
 
 const REPLAY_CAPACITY: usize = 200;
 
 const BROADCAST_CAPACITY: usize = 512;
-
-// Why: who answered an approval, and when they clicked — captured at the HTTP
-// handler where the embed token was verified, not at audit-write time.
-#[derive(Debug, Clone)]
-pub(crate) struct Attribution {
-    pub(crate) user_id: UserId,
-    pub(crate) username: String,
-    pub(crate) decided_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Clone)]
-pub(super) enum Verdict {
-    Allow(Attribution),
-    Deny(Attribution),
-}
-
-struct Parked {
-    tool_name: String,
-    tx: oneshot::Sender<Verdict>,
-}
 
 pub(super) struct PiSessionInit {
     pub(super) conversation_id: ContextId,
@@ -49,6 +33,7 @@ pub(super) struct PiSessionInit {
     pub(super) stdin: ChildStdin,
     pub(super) persist: mpsc::UnboundedSender<PiEvent>,
     pub(super) start_seq: u64,
+    pub(super) manual_approval: bool,
 }
 
 pub(super) struct PiSession {
@@ -63,10 +48,7 @@ pub(super) struct PiSession {
     events: broadcast::Sender<PiEvent>,
     persist: mpsc::UnboundedSender<PiEvent>,
     replay: Mutex<VecDeque<PiEvent>>,
-    pending: Mutex<HashMap<String, Parked>>,
-    // Why: keyed by tool name, holding the attribution of the click that armed
-    // it — every later skip is stamped with the person who pre-answered.
-    standing: Mutex<HashMap<String, Attribution>>,
+    pub(super) approvals: Approvals,
     pub(super) calls: CallLedger,
     seq: AtomicU64,
     dedupe: Mutex<ErrorDeduper>,
@@ -88,6 +70,7 @@ impl PiSession {
             stdin,
             persist,
             start_seq,
+            manual_approval,
         } = init;
         let (events, _) = broadcast::channel(BROADCAST_CAPACITY);
         Self {
@@ -101,8 +84,7 @@ impl PiSession {
             events,
             persist,
             replay: Mutex::new(VecDeque::with_capacity(REPLAY_CAPACITY)),
-            pending: Mutex::new(HashMap::new()),
-            standing: Mutex::new(HashMap::new()),
+            approvals: Approvals::new(manual_approval),
             calls: CallLedger::default(),
             seq: AtomicU64::new(start_seq),
             dedupe: Mutex::new(ErrorDeduper::default()),
@@ -212,73 +194,11 @@ impl PiSession {
         result
     }
 
-    pub(super) fn park_approval(
-        &self,
-        approval_id: String,
-        tool_name: String,
-    ) -> oneshot::Receiver<Verdict> {
-        let (tx, rx) = oneshot::channel();
-        if let Ok(mut pending) = self.pending.lock() {
-            pending.insert(approval_id, Parked { tool_name, tx });
-        }
-        rx
-    }
-
-    // Why: `arm_standing` is answered from the parked entry rather than from the
-    // request body — the browser names an approval, never a tool, so a client
-    // cannot arm a standing rule for a tool it was not asked about.
-    pub(super) fn resolve_approval(
-        &self,
-        approval_id: &str,
-        verdict: Verdict,
-        arm_standing: bool,
-    ) -> bool {
-        let Ok(mut pending) = self.pending.lock() else {
-            return false;
-        };
-        let Some(parked) = pending.remove(approval_id) else {
-            return false;
-        };
-        drop(pending);
-        let attribution = match &verdict {
-            Verdict::Allow(a) => Some(a.clone()),
-            Verdict::Deny(_) => None,
-        };
-        if parked.tx.send(verdict).is_err() {
-            return false;
-        }
-        if arm_standing
-            && let Some(attribution) = attribution
-            && let Ok(mut standing) = self.standing.lock()
-        {
-            standing.insert(parked.tool_name, attribution);
-        }
-        true
-    }
-
-    pub(super) fn standing_approval(&self, tool_name: &str) -> Option<Attribution> {
-        self.standing
-            .lock()
-            .ok()
-            .and_then(|standing| standing.get(tool_name).cloned())
-    }
-
-    pub(super) fn forget_approval(&self, approval_id: &str) {
-        if let Ok(mut pending) = self.pending.lock() {
-            pending.remove(approval_id);
-        }
-    }
-
-    pub(super) async fn close(&self, code: Option<i32>) -> Option<i32> {
+    pub(super) async fn close(&self, code: Option<i32>, reason: ExitReason) -> Option<i32> {
         if self.closed.swap(true, Ordering::SeqCst) {
             return code;
         }
-        if let Ok(mut pending) = self.pending.lock() {
-            pending.clear();
-        }
-        if let Ok(mut standing) = self.standing.lock() {
-            standing.clear();
-        }
+        self.approvals.clear();
         drop(self.stdin.lock().await.take());
         let child = self.child.lock().await.take();
         let mut code = code;
@@ -292,7 +212,7 @@ impl PiSession {
             }
             _ = child.kill().await;
         }
-        self.emit(PiEventBody::Exit { code });
+        self.emit(PiEventBody::Exit { code, reason });
         super::spawn::cleanup(&self.workspace).await;
         code
     }

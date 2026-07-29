@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use systemprompt_security::policy::ApproverStamp;
 use systemprompt_web_governance::webhook::governance::inproc::{
-    self, InprocCall, HumanOutcome, PolicyVerdict,
+    self, HumanOutcome, InprocCall, PolicyVerdict,
 };
 
 use super::super::events::PiEventBody;
@@ -88,7 +88,9 @@ async fn ask_human(
         tool_name,
         cleared,
     } = ask;
-    let rx = session.park_approval(approval_id.to_owned(), tool_name.to_owned());
+    let rx = session
+        .approvals
+        .park(approval_id.to_owned(), tool_name.to_owned());
     session.emit(PiEventBody::ApprovalRequest {
         approval_id: approval_id.to_owned(),
         tool_name: tool_name.to_owned(),
@@ -115,7 +117,7 @@ async fn ask_human(
                 };
             }
             () = tokio::time::sleep_until(deadline) => {
-                session.forget_approval(approval_id);
+                session.approvals.forget(approval_id);
                 return (HumanOutcome::TimedOut, None);
             }
             () = tokio::time::sleep(ABANDON_CHECK) => {
@@ -124,7 +126,7 @@ async fn ask_human(
                 } else {
                     let since = *viewerless_since.get_or_insert_with(tokio::time::Instant::now);
                     if since.elapsed() >= ABANDON_GRACE {
-                        session.forget_approval(approval_id);
+                        session.approvals.forget(approval_id);
                         return (HumanOutcome::Abandoned, None);
                     }
                 }

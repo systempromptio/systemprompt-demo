@@ -7,6 +7,7 @@ import { refreshPalette, hidePalette } from './pi-terminal-palette.js';
 import { send, onKey, wireWelcome } from './pi-terminal-input.js';
 import { wireArtifacts } from './pi-terminal-artifacts.js';
 import { wireExpand } from './pi-terminal-expand.js';
+import { toggleApprovalMode } from './pi-terminal-gate.js';
 
 /** Draw the chrome once, cache the roles, and wire every listener to it. */
 export function build(el) {
@@ -22,6 +23,7 @@ export function build(el) {
   el._input = role('input');
   el._paletteEl = role('palette');
   el._sendBtn = role('send');
+  el._sendLabel = role('send-label');
   el._stopBtn = role('stop');
   el._clearBtn = role('clear');
   el._jumpBtn = role('jump');
@@ -36,8 +38,15 @@ export function build(el) {
   el._artChip = role('art-chip');
   el._artCount = role('art-count');
   el._artPanel = role('art-panel');
+  el._hintEl = role('hint');
+  el._replayFlag = role('replay-flag');
+  el._replayBar = role('replay-bar');
+  el._ctaHeader = role('cta-header');
+  el._approvalModeBtn = role('approval-mode');
+  el._approvalModeLabel = role('approval-mode-label');
 
   wireArtifacts(el);
+  wireCta(el);
   wireExpand(el);
   wireWelcome(el);
   mountWelcome(el);
@@ -49,11 +58,19 @@ export function build(el) {
   loadModels(el);
   el._paletteEl.id = 'pi-palette-list';
 
+  // One primary button, two contracts. After the session ends there is nothing
+  // to send, so the same control opens a fresh one in place — no page reload,
+  // and no second button competing for the same corner.
   el._composer.addEventListener('submit', (e) => {
     e.preventDefault();
-    void send(el);
+    if (el._sendBtn.dataset.mode === 'reconnect') {
+      void el.newConversation();
+    } else {
+      void send(el);
+    }
   });
   el._stopBtn.addEventListener('click', () => el._post('abort', {}));
+  el._approvalModeBtn.addEventListener('click', () => void toggleApprovalMode(el));
   el._clearBtn.addEventListener('click', () => void el.newConversation());
 
   el._input.addEventListener('input', () => {
@@ -68,6 +85,34 @@ export function build(el) {
   el._input.addEventListener('keydown', (e) => onKey(el, e));
 
   wireScroll(el);
+}
+
+/**
+ * The replay CTAs, all three of which hand off to the auth pane beside this
+ * terminal — that pane owns the passkey ceremony, and there is no sign-in
+ * page to link to. Every lookup is guarded because the element is embeddable
+ * on pages that have no pane at all, where the CTAs simply do nothing.
+ */
+function wireCta(el) {
+  const go = (tab) => {
+    const pane = document.querySelector('sp-auth-pane');
+    if (!pane) return;
+    // The panes stack on narrow screens, so the pane is often off-screen when
+    // the button is pressed; focusing without scrolling would move focus to
+    // something the visitor cannot see.
+    pane.scrollIntoView({
+      block: 'nearest',
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'auto' : 'smooth',
+    });
+    pane.querySelector('[data-role="tab-' + tab + '"]')?.click();
+    pane.querySelector('input[type="email"]')?.focus({ preventScroll: true });
+  };
+  el._ctaHeader.addEventListener('click', () => go('register'));
+  el.querySelector('[data-role="cta-register"]')
+    .addEventListener('click', () => go('register'));
+  el.querySelector('[data-role="cta-signin"]')
+    .addEventListener('click', () => go('signin'));
 }
 
 // Autoscroll only while the visitor is actually at the bottom. Yanking the
