@@ -42,7 +42,7 @@ pub const PI_AGENT_ID: &str = "pi_agent";
 pub const PI_PLUGIN_ID: &str = "enterprise-demo";
 
 #[derive(Debug)]
-pub struct GovernedCall<'a> {
+pub struct InprocCall<'a> {
     pub target: &'a GovernedTarget,
     pub user_id: &'a UserId,
     pub agent_session: &'a SessionId,
@@ -91,7 +91,7 @@ pub async fn govern_call(
     pool: &Arc<PgPool>,
     analytics: &Arc<dyn AnalyticsProvider>,
     claimed_session: &SessionId,
-    call: &GovernedCall<'_>,
+    call: &InprocCall<'_>,
 ) -> PolicyVerdict {
     let agent_id = AgentId::new(PI_AGENT_ID);
     let attested = attested_session_id(analytics, claimed_session, call.user_id).await;

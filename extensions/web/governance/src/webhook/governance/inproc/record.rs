@@ -19,11 +19,11 @@ use systemprompt_security::policy::{
     PrincipalSnapshot, record_decision,
 };
 
-use super::{GovernedCall, PI_AGENT_ID, PI_PLUGIN_ID, PolicyVerdict};
+use super::{InprocCall, PI_AGENT_ID, PI_PLUGIN_ID, PolicyVerdict};
 
 pub async fn record_human_decision(
     pool: &Arc<PgPool>,
-    call: &GovernedCall<'_>,
+    call: &InprocCall<'_>,
     verdict: &PolicyVerdict,
     outcome: HumanOutcome,
     approver: Option<ApproverStamp>,
@@ -80,7 +80,7 @@ pub async fn record_human_decision(
 
 pub async fn record_policy_denial(
     pool: &Arc<PgPool>,
-    call: &GovernedCall<'_>,
+    call: &InprocCall<'_>,
     verdict: &PolicyVerdict,
     policy_id: &PolicyId,
     detail: &str,
@@ -143,7 +143,7 @@ impl HumanOutcome {
 
 pub(crate) async fn record(
     pool: &Arc<PgPool>,
-    call: &GovernedCall<'_>,
+    call: &InprocCall<'_>,
     verdict: &PolicyVerdict,
     agent_id: &AgentId,
 ) {

@@ -30,7 +30,7 @@ use super::session::PiSession;
 use super::stage::PolicyStage;
 use systemprompt_security::policy::{ApproverStamp, AuditOrigin};
 use systemprompt_web_governance::webhook::governance::inproc::{
-    self, GovernedCall, HumanOutcome, PolicyVerdict,
+    self, InprocCall, HumanOutcome, PolicyVerdict,
 };
 use systemprompt_web_governance::webhook::governance::stages::{StageOutcome, StageResult};
 
@@ -87,7 +87,7 @@ pub(super) async fn decide(
 
     let agent_session = SessionId::new(session.conversation_id.clone());
     let call_id = session.calls.mint(&tool_name, arguments);
-    let call = GovernedCall {
+    let call = InprocCall {
         target: &target,
         user_id: &session.user_id,
         agent_session: &agent_session,
@@ -156,7 +156,7 @@ struct Cleared<'a> {
     tool_name: &'a str,
     arguments: Option<&'a serde_json::Value>,
     stages: &'a [StageOutcome],
-    call: &'a GovernedCall<'a>,
+    call: &'a InprocCall<'a>,
     verdict: &'a PolicyVerdict,
 }
 
@@ -212,7 +212,7 @@ async fn consent(deps: &PiDeps, session: &Arc<PiSession>, cleared: Cleared<'_>) 
 }
 
 struct EscapeDenial<'a> {
-    call: &'a GovernedCall<'a>,
+    call: &'a InprocCall<'a>,
     verdict: &'a PolicyVerdict,
     detail: &'a str,
 }

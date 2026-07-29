@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use systemprompt_security::policy::ApproverStamp;
 use systemprompt_web_governance::webhook::governance::inproc::{
-    self, GovernedCall, HumanOutcome, PolicyVerdict,
+    self, InprocCall, HumanOutcome, PolicyVerdict,
 };
 
 use super::super::events::PiEventBody;
@@ -25,7 +25,7 @@ pub(super) async fn human_gate(
     deps: &PiDeps,
     session: &Arc<PiSession>,
     ask: ApprovalAsk<'_>,
-    call: &GovernedCall<'_>,
+    call: &InprocCall<'_>,
     verdict: &PolicyVerdict,
 ) -> bool {
     let approval_id = ask.approval_id.to_owned();

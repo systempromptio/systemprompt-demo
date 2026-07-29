@@ -52,7 +52,7 @@ use super::auth::{authorize_session, problem, unauthorized};
 use super::gate::PiDeps;
 use super::registry::PiRegistry;
 use render::McpCallResult;
-use systemprompt_web_governance::webhook::governance::inproc::{self, GovernedCall};
+use systemprompt_web_governance::webhook::governance::inproc::{self, InprocCall};
 
 /// Tools the proxy will forward.
 ///
@@ -116,7 +116,7 @@ pub(super) async fn call(
         &deps.pool,
         &deps.analytics,
         &session.attested_session,
-        &GovernedCall {
+        &InprocCall {
             target: &GovernedTarget::Tool {
                 tool: McpToolName::new(tool_name.clone()),
             },

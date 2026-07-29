@@ -34,8 +34,8 @@ pub(super) fn warn(cfg: &PiConfig) {
     }
 }
 
-/// The filesystem type of the mount `path` lands on: the longest mount point
-/// that prefixes it, since `/tmp` on its own mount must win over `/`.
+// Why: the longest matching mount point wins, since `/tmp` on its own mount
+// must beat the `/` entry that also prefixes it.
 fn backing_fstype(path: &Path) -> Option<String> {
     let mounts = std::fs::read_to_string("/proc/self/mounts").ok()?;
     mounts

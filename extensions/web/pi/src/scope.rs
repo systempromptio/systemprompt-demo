@@ -16,11 +16,11 @@
 
 use std::path::{Component, Path, PathBuf};
 
-/// pi 0.82 names the argument `path` on every built-in that takes one — read,
-/// write, edit, ls, find, grep — so `path` alone covers the tool set this
-/// deployment allows. The rest are aliases an MCP tool might use; matching a
-/// key no allowlisted tool sends costs nothing, and missing one costs the
-/// whole check on a host where Landlock is unavailable.
+// Why: pi 0.82 names the argument `path` on every built-in that takes one —
+// read, write, edit, ls, find, grep — so `path` alone covers the tool set this
+// deployment allows. The rest are aliases an MCP tool might use; matching a key
+// no allowlisted tool sends costs nothing, and missing one costs the whole
+// check on a host where Landlock is unavailable.
 const PATH_KEYS: &[&str] = &["path", "file_path", "filePath", "file"];
 
 /// Why a call was refused, or `None` when it stays inside the workspace.
