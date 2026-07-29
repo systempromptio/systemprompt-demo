@@ -125,7 +125,7 @@ export function wireWelcome(el) {
   el._body.addEventListener('click', (e) => {
     const chip = e.target.closest('[data-chip]');
     if (chip) {
-      el._input.value = 'data-secret' in chip.dataset
+      el._input.value = 'secret' in chip.dataset
         ? secretPrompt()
         : chip.dataset.prompt;
       autogrow(el);
