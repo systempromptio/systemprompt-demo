@@ -7,9 +7,8 @@
 //! credit-exhausted account look like four turns that began, ended, and
 //! explained nothing.
 
-use systemprompt_web_pi::test_support::PolicyStage;
 use systemprompt_web_pi::test_support::{
-    CREDIT_EXHAUSTED_CODE, ErrorKind, PiEvent, PiEventBody, readable_provider_error,
+    CREDIT_EXHAUSTED_CODE, ErrorKind, PiEvent, PiEventBody, PolicyStage, readable_provider_error,
     translate,
 };
 

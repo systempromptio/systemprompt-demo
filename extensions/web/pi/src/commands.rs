@@ -153,12 +153,15 @@ pub(super) async fn approve(
         username,
         decided_at,
     };
-    let verdict = if body.decision == "allow" {
+    // Why: fail closed — only the two spellings of yes are allowed, anything
+    // else (including a typo or an unknown future verb) denies.
+    let always = body.decision == "allow_always";
+    let verdict = if always || body.decision == "allow" {
         Verdict::Allow(attribution)
     } else {
         Verdict::Deny(attribution)
     };
-    if session.resolve_approval(&body.approval_id, verdict) {
+    if session.resolve_approval(&body.approval_id, verdict, always) {
         StatusCode::NO_CONTENT.into_response()
     } else {
         problem(StatusCode::CONFLICT, "approval is no longer pending")

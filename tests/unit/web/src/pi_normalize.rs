@@ -1,9 +1,7 @@
 //! Rounding and suppression for the signed-in tier of the pulse: buckets must
 //! never report traffic as silence, and a sparse window is withheld outright.
 
-use systemprompt_web_pi::test_support::{
-    MIN_PEOPLE, bucket, bucket_tokens, window_is_publishable,
-};
+use systemprompt_web_pi::test_support::{MIN_PEOPLE, bucket, bucket_tokens, window_is_publishable};
 
 #[test]
 fn small_counts_collapse_to_a_threshold() {

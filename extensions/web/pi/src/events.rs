@@ -161,6 +161,10 @@ pub enum PiEventBody {
         // JSON: arbitrary tool arguments, rendered to the viewer as-is
         tool_input: serde_json::Value,
         policy_chain: Vec<String>,
+        // Why: `None` is policy clearing the call with no human in the loop;
+        // `Some` names the person whose standing approval answered for them —
+        // the viewer must never render the second as the first.
+        standing_by: Option<String>,
     },
     TurnEnd,
     /// The governance/cost snapshot pushed after activity settles, replacing

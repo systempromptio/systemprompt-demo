@@ -7,10 +7,9 @@
 //! rule over rows persisted before the deduper existed, and an agreement test
 //! pins the classification needle to the credit guard's actual wording.
 
-use systemprompt_web_pi::test_support::collapse_duplicate_errors;
 use systemprompt_web_pi::test_support::{
     CREDIT_EXHAUSTED_CODE, CREDIT_EXHAUSTED_NEEDLE, ErrorDeduper, PiEventBody,
-    upgrade_legacy_error,
+    collapse_duplicate_errors, upgrade_legacy_error,
 };
 
 fn provider_error(message: &str) -> PiEventBody {
@@ -167,7 +166,10 @@ fn empty_turns_collapse_but_substantive_and_open_turns_survive() {
     ];
     let collapsed = collapse_duplicate_errors(events);
     let kinds: Vec<_> = collapsed.iter().map(|e| e["type"].clone()).collect();
-    assert_eq!(kinds, ["turn_start", "text_delta", "turn_end", "turn_start"]);
+    assert_eq!(
+        kinds,
+        ["turn_start", "text_delta", "turn_end", "turn_start"]
+    );
 }
 
 /// The classification needle must keep matching the credit guard's actual

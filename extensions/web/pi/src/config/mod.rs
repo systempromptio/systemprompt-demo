@@ -15,6 +15,7 @@
 //! replaced by those same defaults — see [`PiConfig::load_or_defaults`] for why
 //! that is the fail-closed direction here.
 mod paths;
+mod preflight;
 mod raw;
 
 use std::path::PathBuf;
@@ -230,17 +231,8 @@ impl PiConfig {
         &self.jail_read_paths
     }
 
-    pub(crate) fn warn_if_unsandboxed(&self) {
-        if self.sandbox == SandboxMode::Off {
-            tracing::warn!(
-                "pi sandbox is off (services/config/pi.yaml or the SP_PI_SANDBOX \
-                 override) — pi children run with this \
-                 process's filesystem access. The `read` tool can reach any file this uid \
-                 can, including provider keys and the database URL. Only correct on a host \
-                 without Landlock (Linux 5.13+), and only for a deployment nobody untrusted \
-                 can sign into."
-            );
-        }
+    pub(crate) fn warn_if_relaxed(&self) {
+        preflight::warn(self);
     }
 }
 

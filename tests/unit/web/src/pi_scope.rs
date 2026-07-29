@@ -48,6 +48,32 @@ fn does_not_confuse_a_sibling_prefix_for_containment() {
     assert!(escape_reason(Path::new("/tmp/pi/abc"), Some(&input("/tmp/pi/abcdef/x"))).is_some());
 }
 
+/// pi 0.82's read/write/edit/ls/find/grep all name the argument `path`
+/// (`dist/core/tools/*.d.ts`), so `path` is the key the allowed tool set
+/// actually sends; the rest are MCP-side aliases. On a host without Landlock
+/// this check is the only path confinement there is, so a pi upgrade that
+/// renamed the argument would silently remove it — which is what
+/// `version_check: required` in pi.yaml exists to catch.
+#[test]
+fn covers_every_alias_a_path_may_arrive_under() {
+    let ws = Path::new("/tmp/pi/abc");
+    for key in ["path", "file_path", "filePath", "file"] {
+        let call = serde_json::json!({ key: "/etc/passwd" });
+        assert!(
+            escape_reason(ws, Some(&call)).is_some(),
+            "`{key}` should have been checked"
+        );
+    }
+}
+
+/// Judging the first key found would let the second through unchecked.
+#[test]
+fn rejects_an_escape_under_any_key_when_several_are_present() {
+    let ws = Path::new("/tmp/pi/abc");
+    let call = serde_json::json!({ "path": "README.md", "file_path": "/etc/passwd" });
+    assert!(escape_reason(ws, Some(&call)).is_some());
+}
+
 #[test]
 fn ignores_calls_with_no_path_argument() {
     let ws = Path::new("/tmp/pi/abc");

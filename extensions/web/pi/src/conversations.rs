@@ -210,7 +210,7 @@ pub(super) async fn rename(
     }
 }
 
-pub(super) async fn remove(
+pub(super) async fn archive(
     State(pool): State<Arc<PgPool>>,
     Extension(registry): Extension<PiRegistry>,
     Path(conversation_id): Path<ContextId>,
@@ -220,18 +220,18 @@ pub(super) async fn remove(
     let Some(user_id) = authenticate(&pool, &body.token).await else {
         return unauthorized();
     };
-    match repo::delete_conversation(&pool, &conversation_id, &user_id).await {
+    match repo::archive_conversation(&pool, &conversation_id, &user_id).await {
         Ok(0) => problem(StatusCode::NOT_FOUND, "no such conversation"),
         Ok(_) => {
             registry.remove(&conversation_id, None).await;
             StatusCode::NO_CONTENT.into_response()
         },
         Err(e) => {
-            tracing::error!(error = %e, "could not delete a pi conversation");
+            tracing::error!(error = %e, "could not archive a pi conversation");
             problem(
                 StatusCode::INTERNAL_SERVER_ERROR, /* lint-ok: http-error — logged above; the
                                                     * client is told nothing about why */
-                "could not delete the conversation",
+                "could not archive the conversation",
             )
         },
     }

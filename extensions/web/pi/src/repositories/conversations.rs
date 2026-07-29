@@ -83,7 +83,7 @@ async fn insert_session_binding(
 ///
 /// Scoped to the owner in the `WHERE` clause rather than checked afterwards, so
 /// there is no shape of this function that can return someone else's
-/// conversation. A soft-deleted row is invisible for the same reason a missing
+/// conversation. An archived row is invisible for the same reason a missing
 /// one is.
 pub async fn find_conversation(
     pool: &PgPool,
@@ -94,7 +94,7 @@ pub async fn find_conversation(
         r#"
         SELECT id AS "id: ContextId", user_id, attested_session_id, title, last_seq, closed_at
         FROM pi_conversations
-        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+        WHERE id = $1 AND user_id = $2 AND archived_at IS NULL
         "#,
         id.as_str(),
         user_id.as_str()
@@ -116,7 +116,7 @@ pub async fn find_conversation(
 ///
 /// Deliberately not owner-scoped — the trace page is a shareable report, and
 /// the conversation id in the URL is the unguessable capability that
-/// authorizes the read. A soft-deleted row stays invisible: deleting the
+/// authorizes the read. An archived row stays invisible: archiving the
 /// conversation revokes the link.
 pub async fn find_conversation_with_owner(
     pool: &PgPool,
@@ -129,7 +129,7 @@ pub async fn find_conversation_with_owner(
                u.name AS owner_name
         FROM pi_conversations c
         JOIN users u ON u.id = c.user_id
-        WHERE c.id = $1 AND c.deleted_at IS NULL
+        WHERE c.id = $1 AND c.archived_at IS NULL
         "#,
         id.as_str()
     )
@@ -161,7 +161,7 @@ pub async fn list_conversations(
         r#"
         SELECT id AS "id: ContextId", title, last_seq, created_at, updated_at, closed_at
         FROM pi_conversations
-        WHERE user_id = $1 AND deleted_at IS NULL
+        WHERE user_id = $1 AND archived_at IS NULL
         ORDER BY updated_at DESC
         LIMIT $2
         "#,
@@ -196,7 +196,7 @@ pub async fn update_conversation_title(
         r#"
         UPDATE pi_conversations
         SET title = $3, updated_at = NOW()
-        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+        WHERE id = $1 AND user_id = $2 AND archived_at IS NULL
         "#,
         id.as_str(),
         user_id.as_str(),
@@ -271,9 +271,10 @@ pub async fn update_conversation_closed(pool: &PgPool, id: &ContextId) -> Result
     Ok(())
 }
 
-/// Soft-delete. The transcript stays on disk because the governance rows it
-/// explains do — a conversation a user hid is not one the audit trail forgot.
-pub async fn delete_conversation(
+/// Archive. The transcript stays on disk because the governance rows it
+/// explains do — a conversation a user put away is not one the audit trail
+/// forgot, and its spend still counts against the account.
+pub async fn archive_conversation(
     pool: &PgPool,
     id: &ContextId,
     user_id: &UserId,
@@ -281,8 +282,8 @@ pub async fn delete_conversation(
     let done = sqlx::query!(
         r#"
         UPDATE pi_conversations
-        SET deleted_at = NOW()
-        WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+        SET archived_at = NOW()
+        WHERE id = $1 AND user_id = $2 AND archived_at IS NULL
         "#,
         id.as_str(),
         user_id.as_str()

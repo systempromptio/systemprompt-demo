@@ -34,6 +34,11 @@ pub(super) enum Verdict {
     Deny(Attribution),
 }
 
+struct Parked {
+    tool_name: String,
+    tx: oneshot::Sender<Verdict>,
+}
+
 pub(super) struct PiSessionInit {
     pub(super) conversation_id: ContextId,
     pub(super) user_id: UserId,
@@ -58,7 +63,10 @@ pub(super) struct PiSession {
     events: broadcast::Sender<PiEvent>,
     persist: mpsc::UnboundedSender<PiEvent>,
     replay: Mutex<VecDeque<PiEvent>>,
-    pending: Mutex<HashMap<String, oneshot::Sender<Verdict>>>,
+    pending: Mutex<HashMap<String, Parked>>,
+    // Why: keyed by tool name, holding the attribution of the click that armed
+    // it — every later skip is stamped with the person who pre-answered.
+    standing: Mutex<HashMap<String, Attribution>>,
     pub(super) calls: CallLedger,
     seq: AtomicU64,
     dedupe: Mutex<ErrorDeduper>,
@@ -94,6 +102,7 @@ impl PiSession {
             persist,
             replay: Mutex::new(VecDeque::with_capacity(REPLAY_CAPACITY)),
             pending: Mutex::new(HashMap::new()),
+            standing: Mutex::new(HashMap::new()),
             calls: CallLedger::default(),
             seq: AtomicU64::new(start_seq),
             dedupe: Mutex::new(ErrorDeduper::default()),
@@ -203,21 +212,55 @@ impl PiSession {
         result
     }
 
-    pub(super) fn park_approval(&self, approval_id: String) -> oneshot::Receiver<Verdict> {
+    pub(super) fn park_approval(
+        &self,
+        approval_id: String,
+        tool_name: String,
+    ) -> oneshot::Receiver<Verdict> {
         let (tx, rx) = oneshot::channel();
         if let Ok(mut pending) = self.pending.lock() {
-            pending.insert(approval_id, tx);
+            pending.insert(approval_id, Parked { tool_name, tx });
         }
         rx
     }
 
-    pub(super) fn resolve_approval(&self, approval_id: &str, verdict: Verdict) -> bool {
+    // Why: `arm_standing` is answered from the parked entry rather than from the
+    // request body — the browser names an approval, never a tool, so a client
+    // cannot arm a standing rule for a tool it was not asked about.
+    pub(super) fn resolve_approval(
+        &self,
+        approval_id: &str,
+        verdict: Verdict,
+        arm_standing: bool,
+    ) -> bool {
         let Ok(mut pending) = self.pending.lock() else {
             return false;
         };
-        pending
-            .remove(approval_id)
-            .is_some_and(|tx| tx.send(verdict).is_ok())
+        let Some(parked) = pending.remove(approval_id) else {
+            return false;
+        };
+        drop(pending);
+        let attribution = match &verdict {
+            Verdict::Allow(a) => Some(a.clone()),
+            Verdict::Deny(_) => None,
+        };
+        if parked.tx.send(verdict).is_err() {
+            return false;
+        }
+        if arm_standing
+            && let Some(attribution) = attribution
+            && let Ok(mut standing) = self.standing.lock()
+        {
+            standing.insert(parked.tool_name, attribution);
+        }
+        true
+    }
+
+    pub(super) fn standing_approval(&self, tool_name: &str) -> Option<Attribution> {
+        self.standing
+            .lock()
+            .ok()
+            .and_then(|standing| standing.get(tool_name).cloned())
     }
 
     pub(super) fn forget_approval(&self, approval_id: &str) {
@@ -232,6 +275,9 @@ impl PiSession {
         }
         if let Ok(mut pending) = self.pending.lock() {
             pending.clear();
+        }
+        if let Ok(mut standing) = self.standing.lock() {
+            standing.clear();
         }
         drop(self.stdin.lock().await.take());
         let child = self.child.lock().await.take();

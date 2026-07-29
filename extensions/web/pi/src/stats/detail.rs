@@ -3,6 +3,10 @@
 //!
 //! Same authority model as the rollup — the embed token resolves to one user,
 //! the conversation must be theirs, and every refusal is the same opaque 404.
+//!
+//! `scope=all` (the default) widens the read past the conversation in the path
+//! to every conversation the caller owns, matching the pane's default view.
+//! The path conversation still carries the authority either way.
 
 use std::sync::Arc;
 
@@ -16,12 +20,32 @@ use systemprompt::identifiers::ContextId;
 
 use super::super::auth::{authorize_conversation, problem};
 use super::super::format;
-use super::super::watch::TokenQuery;
+use systemprompt::identifiers::UserId;
 use systemprompt_web_governance::repositories::analytics::session_detail;
+use systemprompt_web_governance::repositories::scope::StatsScope;
 
 const MIN_BUCKET_SECS: i64 = 10;
 const MAX_BUCKET_SECS: i64 = 3600;
 const DEFAULT_BUCKET_SECS: i64 = 60;
+
+fn scoped<'a>(
+    wanted: Option<&str>,
+    user_id: &'a UserId,
+    conversation_id: &'a ContextId,
+) -> StatsScope<'a> {
+    if wanted == Some("current") {
+        StatsScope::conversation(user_id, conversation_id)
+    } else {
+        StatsScope::all(user_id)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct RequestsQuery {
+    token: String,
+    #[serde(default)]
+    scope: Option<String>,
+}
 
 #[derive(Debug, Serialize)]
 struct RequestView {
@@ -48,16 +72,14 @@ struct RequestsBody {
 pub(crate) async fn requests(
     State(pool): State<Arc<PgPool>>,
     Path(conversation_id): Path<ContextId>,
-    Query(q): Query<TokenQuery>,
+    Query(q): Query<RequestsQuery>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
-    if authorize_conversation(&pool, q.token(), &conversation_id)
-        .await
-        .is_none()
-    {
+    let Some(row) = authorize_conversation(&pool, &q.token, &conversation_id).await else {
         return problem(StatusCode::NOT_FOUND, "no such conversation");
-    }
-    match session_detail::list_conversation_requests(&pool, &conversation_id).await {
+    };
+    let scope = scoped(q.scope.as_deref(), &row.user_id, &conversation_id);
+    match session_detail::list_scoped_requests(&pool, scope).await {
         Ok(rows) => Json(RequestsBody {
             conversation_id,
             requests: rows
@@ -95,6 +117,8 @@ pub(crate) struct TimeseriesQuery {
     token: String,
     #[serde(default)]
     bucket: Option<i64>,
+    #[serde(default)]
+    scope: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -122,19 +146,15 @@ pub(crate) async fn timeseries(
     Query(q): Query<TimeseriesQuery>,
 ) -> Response {
     // lint-ok: http-error — this module hand-shapes opaque statuses on purpose
-    if authorize_conversation(&pool, &q.token, &conversation_id)
-        .await
-        .is_none()
-    {
+    let Some(row) = authorize_conversation(&pool, &q.token, &conversation_id).await else {
         return problem(StatusCode::NOT_FOUND, "no such conversation");
-    }
+    };
     let bucket_secs = q
         .bucket
         .unwrap_or(DEFAULT_BUCKET_SECS)
         .clamp(MIN_BUCKET_SECS, MAX_BUCKET_SECS);
-    match session_detail::list_conversation_request_buckets(&pool, &conversation_id, bucket_secs)
-        .await
-    {
+    let scope = scoped(q.scope.as_deref(), &row.user_id, &conversation_id);
+    match session_detail::list_scoped_request_buckets(&pool, scope, bucket_secs).await {
         Ok(rows) => Json(TimeseriesBody {
             conversation_id,
             bucket_secs,

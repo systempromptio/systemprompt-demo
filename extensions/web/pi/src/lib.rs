@@ -159,7 +159,7 @@ pub fn pi_router(
     session_service: Arc<systemprompt::oauth::SessionCreationService>,
     analytics: Arc<dyn systemprompt::traits::AnalyticsProvider>,
 ) -> Router {
-    registry.config().warn_if_unsandboxed();
+    registry.config().warn_if_relaxed();
     let deps = Arc::new(PiDeps {
         pool: Arc::clone(&pool),
         analytics,
@@ -225,7 +225,7 @@ pub fn pi_router(
         .route("/api/public/pi/conversations", get(conversations::list))
         .route(
             "/api/public/pi/conversations/{conversation_id}",
-            patch(conversations::rename).delete(conversations::remove),
+            patch(conversations::rename).delete(conversations::archive),
         )
         .route(
             "/api/public/pi/conversations/{conversation_id}/history",

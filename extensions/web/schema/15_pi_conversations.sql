@@ -29,12 +29,15 @@ CREATE TABLE IF NOT EXISTS pi_conversations (
     -- The child process ended. The row lives on; this is what makes a reload
     -- non-destructive.
     closed_at TIMESTAMPTZ,
-    deleted_at TIMESTAMPTZ
+    -- Out of the picker and out of focus, still in every tally. Conversations
+    -- are archived rather than deleted because the governance rows they explain
+    -- outlive them, and the account's telemetry is read across all of them.
+    archived_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_pi_conversations_user
     ON pi_conversations(user_id, updated_at DESC)
-    WHERE deleted_at IS NULL;
+    WHERE archived_at IS NULL;
 
 -- Every attested session this conversation has ever been bound to.
 -- `attested_session_id` above is only the *current* binding; resumes rewrite

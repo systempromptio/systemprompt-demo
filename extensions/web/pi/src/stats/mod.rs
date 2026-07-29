@@ -13,11 +13,18 @@
 //! 404 for "not yours" as for "does not exist".
 //!
 //! The ownership check reads `pi_conversations`, not the live-session registry.
-//! Every number below is a database query keyed on the conversation, joined
-//! through `pi_conversation_sessions` to every attested session the
-//! conversation was ever bound to — which is what makes these stats survive a
-//! reload (each resume mints a fresh session) and a server restart. Keying on
-//! the current session alone would zero the pane at every F5.
+//! Every number below is a database query joined through
+//! `pi_conversation_sessions` to every attested session in scope — which is
+//! what makes these stats survive a reload (each resume mints a fresh session)
+//! and a server restart. Keying on the current session alone would zero the
+//! pane at every F5.
+//!
+//! The body carries both scopes at once: `all` for everything this account has
+//! ever run, `current` for the conversation in front of the caller. Clearing
+//! the terminal opens a fresh conversation, so a conversation-only payload
+//! reads zero next to a credit meter that is user-scoped and all-time. Shipping
+//! both scopes from one collection is what stops the two contradicting each
+//! other, and lets the client switch between them without a refetch.
 
 use std::sync::Arc;
 
@@ -33,7 +40,7 @@ pub(super) mod detail;
 mod facets;
 mod push;
 
-use facets::{Facets, credit_position, facets, model_mix, policy_stages, trace_counts};
+use facets::{Facets, credit_position, facets, model_mix, policy_stages};
 use push::{cached_body, store_body};
 pub(super) use push::{push_soon, snapshot};
 
@@ -42,6 +49,7 @@ use super::format;
 use super::watch::TokenQuery;
 use systemprompt_web_governance::repositories::analytics::session_detail;
 use systemprompt_web_governance::repositories::governance::{demo_trace, stages};
+use systemprompt_web_governance::repositories::scope::StatsScope;
 
 const TRACE_LIMIT: i64 = 120;
 
@@ -60,6 +68,13 @@ fn json_body(body: String) -> Response {
 #[derive(Debug, Serialize)]
 struct PiStats {
     conversation_id: ContextId,
+    credit: PiCredit,
+    all: PiScopeStats,
+    current: PiScopeStats,
+}
+
+#[derive(Debug, Serialize)]
+struct PiScopeStats {
     model: Option<String>,
     requested_model: Option<String>,
     provider: Option<String>,
@@ -83,10 +98,12 @@ struct PiStats {
     prompts_blocked: i64,
     tools_blocked: i64,
     tool_calls: i64,
+    /// Every decision in scope; `events` is only the window. The client reports
+    /// this rather than counting the array it was sent.
+    decisions_total: i64,
     secrets_caught: i64,
     policy_stages: Vec<PiPolicyStage>,
     model_mix: Vec<PiModelShare>,
-    credit: PiCredit,
     events: Vec<PiStatEvent>,
 }
 
@@ -179,12 +196,20 @@ async fn collect(
     conversation_id: &ContextId,
     user_id: &systemprompt::identifiers::UserId,
 ) -> Result<PiStats, sqlx::Error> {
-    let credit = credit_position(pool, user_id).await;
-    let kpis = session_detail::get_conversation_kpis(pool, conversation_id).await?;
-    let requests = session_detail::list_conversation_requests(pool, conversation_id).await?;
-    let trace = demo_trace::list_demo_trace(pool, conversation_id, TRACE_LIMIT).await?;
-    let counts = stages::get_conversation_governance_counts(pool, conversation_id).await?;
-    let stage_rows = stages::list_conversation_policy_stages(pool, conversation_id).await?;
+    Ok(PiStats {
+        credit: credit_position(pool, user_id).await,
+        all: collect_scope(pool, StatsScope::all(user_id)).await?,
+        current: collect_scope(pool, StatsScope::conversation(user_id, conversation_id)).await?,
+        conversation_id: conversation_id.clone(),
+    })
+}
+
+async fn collect_scope(pool: &PgPool, scope: StatsScope<'_>) -> Result<PiScopeStats, sqlx::Error> {
+    let kpis = session_detail::get_scoped_kpis(pool, scope).await?;
+    let requests = session_detail::list_scoped_requests(pool, scope).await?;
+    let trace = demo_trace::list_trace_with_denials(pool, scope, TRACE_LIMIT).await?;
+    let counts = stages::get_scoped_governance_counts(pool, scope).await?;
+    let stage_rows = stages::list_scoped_policy_stages(pool, scope).await?;
 
     let Facets {
         latency_last_ms,
@@ -208,10 +233,7 @@ async fn collect(
         format::cost(0)
     };
 
-    let counts_from_trace = trace_counts(&trace);
-
-    Ok(PiStats {
-        conversation_id: conversation_id.clone(),
+    Ok(PiScopeStats {
         model,
         requested_model,
         provider,
@@ -233,12 +255,12 @@ async fn collect(
         secrets_caught: counts.secret_breaches,
         policy_stages: policy_stages(&stage_rows),
         model_mix: model_mix(&requests),
-        allowed: counts_from_trace.allowed,
-        denied: counts_from_trace.denied,
-        prompts_blocked: counts_from_trace.prompts_blocked,
-        tools_blocked: counts_from_trace.tools_blocked,
-        tool_calls: counts_from_trace.tool_calls,
-        credit,
+        allowed: counts.allowed,
+        denied: counts.denied,
+        prompts_blocked: counts.prompts_blocked,
+        tools_blocked: counts.tools_blocked,
+        tool_calls: counts.tool_calls,
+        decisions_total: counts.total,
         events: stat_events(trace),
     })
 }

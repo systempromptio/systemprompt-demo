@@ -44,8 +44,9 @@ use axum::{Extension, Json};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use systemprompt::identifiers::{ArtifactId, SessionId};
+use systemprompt::identifiers::{ArtifactId, McpToolName, SessionId};
 use systemprompt_security::policy::types::AccessScope;
+use systemprompt_security::policy::{GovernedInput, GovernedTarget, McpToolInput};
 
 use super::auth::{authorize_session, problem, unauthorized};
 use super::gate::PiDeps;
@@ -116,10 +117,12 @@ pub(super) async fn call(
         &deps.analytics,
         &session.attested_session,
         &GovernedCall {
-            tool_name: &tool_name,
+            target: &GovernedTarget::Tool {
+                tool: McpToolName::new(tool_name.clone()),
+            },
             user_id: &session.user_id,
             agent_session: &agent_session,
-            tool_input: Some(&body.arguments),
+            input: &GovernedInput::tool_arguments(McpToolInput::new(body.arguments.clone())),
             scope_ceiling: AccessScope::User,
             call_id: &call_id,
             origin,

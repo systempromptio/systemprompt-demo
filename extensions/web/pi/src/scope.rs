@@ -16,17 +16,29 @@
 
 use std::path::{Component, Path, PathBuf};
 
-const PATH_KEYS: &[&str] = &["path", "file_path"];
+/// pi 0.82 names the argument `path` on every built-in that takes one — read,
+/// write, edit, ls, find, grep — so `path` alone covers the tool set this
+/// deployment allows. The rest are aliases an MCP tool might use; matching a
+/// key no allowlisted tool sends costs nothing, and missing one costs the
+/// whole check on a host where Landlock is unavailable.
+const PATH_KEYS: &[&str] = &["path", "file_path", "filePath", "file"];
 
 /// Why a call was refused, or `None` when it stays inside the workspace.
 ///
 /// A tool call carrying no path argument is not this check's business and
 /// passes: confinement of *those* is the jail's job, not a string match's.
 pub fn escape_reason(workspace: &Path, tool_input: Option<&serde_json::Value>) -> Option<String> {
-    let raw = PATH_KEYS
+    let input = tool_input?;
+    // Why: every path-bearing key is checked, not the first that matches — a
+    // call carrying both `path` and `file_path` would otherwise be judged on
+    // one of them and smuggle the other past.
+    PATH_KEYS
         .iter()
-        .find_map(|key| tool_input?.get(*key)?.as_str())?;
+        .filter_map(|key| input.get(*key)?.as_str())
+        .find_map(|raw| escapes(workspace, raw))
+}
 
+fn escapes(workspace: &Path, raw: &str) -> Option<String> {
     if raw.starts_with('~') {
         return Some(format!(
             "path `{raw}` refers to a home directory outside the session workspace"

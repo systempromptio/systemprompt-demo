@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use super::super::format;
 use super::{PiCredit, PiModelShare, PiPolicyStage};
 use systemprompt_web_governance::repositories::analytics::session_detail;
-use systemprompt_web_governance::repositories::governance::{demo_trace, stages};
+use systemprompt_web_governance::repositories::governance::stages;
 
 pub(super) async fn credit_position(
     pool: &PgPool,
@@ -114,31 +114,6 @@ pub(super) fn model_mix(requests: &[session_detail::SessionRequestRow]) -> Vec<P
             cost_display: format::cost(t.cost_microdollars),
         })
         .collect()
-}
-
-
-pub(super) struct TraceCounts {
-    pub(super) allowed: i64,
-    pub(super) denied: i64,
-    pub(super) prompts_blocked: i64,
-    pub(super) tools_blocked: i64,
-    pub(super) tool_calls: i64,
-}
-
-pub(super) fn trace_counts(trace: &[demo_trace::DemoTraceRow]) -> TraceCounts {
-    let counted = |kind: &str, outcome: &str| {
-        trace
-            .iter()
-            .filter(|r| r.kind == kind && r.outcome == outcome)
-            .count() as i64
-    };
-    TraceCounts {
-        allowed: trace.iter().filter(|r| r.outcome == "allow").count() as i64,
-        denied: trace.iter().filter(|r| r.outcome == "deny").count() as i64,
-        prompts_blocked: counted("prompt", "deny"),
-        tools_blocked: counted("tool", "deny"),
-        tool_calls: trace.iter().filter(|r| r.kind == "fire").count() as i64,
-    }
 }
 
 pub(super) struct Facets {

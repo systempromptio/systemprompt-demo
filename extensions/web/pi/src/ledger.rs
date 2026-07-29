@@ -24,7 +24,7 @@ use std::time::{Duration, Instant};
 
 use systemprompt::identifiers::CallId;
 
-use systemprompt_web_governance::webhook::governance::types::AuditOrigin;
+use systemprompt_security::policy::AuditOrigin;
 
 const TTL: Duration = Duration::from_secs(10);
 
