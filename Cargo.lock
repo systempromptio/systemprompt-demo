@@ -5945,7 +5945,6 @@ dependencies = [
  "hex",
  "inventory",
  "rand 0.9.5",
- "regex",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -6032,9 +6031,6 @@ dependencies = [
  "serde_json",
  "systemprompt",
  "systemprompt-web-shared",
- "thiserror 2.0.19",
- "tracing",
- "url",
 ]
 
 [[package]]

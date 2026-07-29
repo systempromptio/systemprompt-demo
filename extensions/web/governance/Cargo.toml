@@ -9,6 +9,11 @@ repository.workspace = true
 homepage.workspace = true
 publish = false
 
+[package.metadata.cargo-machete]
+# `inventory` is reached only through `register_safety_scanner!`, which expands
+# to `inventory::submit!` — machete cannot see through the expansion.
+ignored = ["inventory"]
+
 [dependencies]
 systemprompt-web-shared = { workspace = true }
 # Audit: uses ai, identifiers, models, oauth, traits — requires `full`.
@@ -32,7 +37,6 @@ tracing = { workspace = true }
 
 # Secret detection (governance secret_scan + gateway safety scanner). Pinned to
 # the 1.x line already in the graph transitively.
-regex = "1"
 
 sha2 = { workspace = true }
 hex = { workspace = true }

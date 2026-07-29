@@ -16,9 +16,6 @@ systemprompt = { workspace = true, features = ["database"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
-tracing = { workspace = true }
-url = { workspace = true }
-thiserror = { workspace = true }
 
 [lints]
 workspace = true
