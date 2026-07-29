@@ -396,6 +396,13 @@ start:
 start-release:
     {{CLI_RELEASE}} infra services start --profile local
 
+# Optional: download the GeoLite2-City database (IP -> country for analytics).
+# Needs your own MAXMIND_LICENSE_KEY; --mirror uses the CC BY-SA redistribution
+# instead, --force refreshes an existing copy. Nothing else runs this — country
+# analytics stay off until you fetch a database AND set paths.geoip_database.
+geoip *FLAGS:
+    bash scripts/fetch-geoip.sh {{FLAGS}}
+
 # Run migrations
 migrate:
     #!/usr/bin/env bash

@@ -125,7 +125,8 @@ terraform/tfplan
 docker-compose.override.yml
 .dockerignore.local
 
-# GeoIP databases
+# GeoIP databases — ~60 MB, fetched per clone by scripts/fetch-geoip.sh
+storage/geoip/
 /data/GeoLite2-*.mmdb
 /data/GeoLite2-*.tar.gz
 /data/news_cache/GeoLite2-*.tar.gz

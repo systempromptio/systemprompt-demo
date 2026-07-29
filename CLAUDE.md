@@ -196,6 +196,37 @@ compile-time query verification and the offline-cache workflow that gate this re
 
 ---
 
+## GeoIP (country analytics) — opt-in, off by default
+
+`analytics traffic geo` and the country column on `user_sessions` come from a
+MaxMind GeoLite2-City database resolved at boot from `paths.geoip_database`.
+It is **off in a fresh clone and stays off**: `setup-local` doesn't fetch it,
+the Dockerfile doesn't download it, and the generated profiles leave
+`geoip_database: null`. GeoLite2 needs the operator's own MaxMind account, so
+nothing here obtains one on their behalf. No database = a startup notice and a
+NULL country, never a failure.
+
+To enable it, as this deployment does:
+
+```bash
+export MAXMIND_LICENSE_KEY=...   # https://www.maxmind.com/en/geolite2/signup
+just geoip                       # or: just geoip --mirror (CC BY-SA redistribution)
+# then set paths.geoip_database in the profile and restart
+```
+
+The ~60 MB `.mmdb` is gitignored. `cloud deploy` generates a Dockerfile that
+does `COPY storage /app/storage`, so `storage/geoip/GeoLite2-City.mmdb` in the
+working copy ships with `just deploy` — that plus `paths.geoip_database` in
+`.systemprompt/profiles/production/` (gitignored too) is the whole production
+wiring, with nothing landing in the public template.
+
+Country attribution needs the *client* IP, so it only works behind a proxy when
+`security.trusted_proxies` covers that proxy — the production profile lists the
+Cloudflare and Fly ranges; local trusts nothing, so local sessions record
+`127.0.0.1` with no country.
+
+---
+
 ## Repository Naming Convention
 
 Every function under `extensions/web/admin/src/repositories/` is named for what
