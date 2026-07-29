@@ -1,0 +1,125 @@
+/* The expand toggle and the expanded state.
+ *
+ * Expanded is a fixed overlay rather than :fullscreen — same approach as the
+ * artifact overlay — so the browser chrome stays, Escape is ours to handle,
+ * and nothing renegotiates the stream. The field is solid stage ink: over the
+ * moving video the shell is glass, but at full bleed the footage behind the
+ * transcript is noise, not atmosphere. */
+
+.pi-expand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-text-dim) 40%, transparent);
+  border-radius: var(--sp-radius-full);
+  background: color-mix(in oklch, var(--sp-color-terminal-text-dim) 8%, transparent);
+  color: var(--sp-color-terminal-text-dim);
+  font-family: var(--sp-font-mono);
+  font-size: 0.66rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pi-expand-chip svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: none;
+}
+
+.pi-expand-chip:hover,
+.pi-expand-chip[aria-pressed='true'] {
+  color: var(--sp-color-terminal-text);
+  border-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 70%, transparent);
+}
+
+.pi-expand-chip:focus-visible {
+  outline: 2px solid var(--sp-color-primary);
+  outline-offset: 1px;
+}
+
+.pi-terminal.pi-terminal--expanded {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sp-z-modal);
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: oklch(0.12 0.01 55);
+}
+
+/* Full bleed means no shell: the glass, the rim, the border, and the brand
+   corner all belong to a floating surface, and this one is the page. The
+   selector carries .home-split-body so it outweighs the stage's glass rule. */
+.pi-terminal.pi-terminal--expanded .terminal,
+.home-split-body .pi-terminal.pi-terminal--expanded .terminal {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: oklch(0.12 0.01 55);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+.home-split-body .pi-terminal.pi-terminal--expanded .terminal::before {
+  content: none;
+}
+
+.pi-terminal.pi-terminal--expanded .pi-body-wrap {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pi-terminal.pi-terminal--expanded .terminal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* Full screen is a reading surface. The transcript centres into a bounded
+   column — on a wide monitor the tool rows otherwise stretch the full glass
+   while the prose strands at the left edge, and the eye has to travel between
+   them. Type steps up with the room. */
+.pi-terminal.pi-terminal--expanded .terminal-body {
+  padding-block: var(--sp-space-6);
+  padding-inline: max(var(--sp-space-6), calc((100% - 110ch) / 2));
+}
+
+.pi-terminal.pi-terminal--expanded .pi-prose {
+  font-size: 1rem;
+  line-height: 1.85;
+}
+
+/* Expanded, the composer is the instrument, not a seam: bigger type, a
+   multi-line field, and its own lifted surface so it reads as "type here"
+   from across the room. The min-height wins over autogrow's inline height,
+   so the field stays tall while empty and still grows past three lines. */
+.pi-terminal.pi-terminal--expanded .pi-composer {
+  --pi-composer-size: 1rem;
+  --pi-composer-leading: 1.55;
+  padding-block: var(--sp-space-5);
+  padding-inline: max(var(--sp-space-6), calc((100% - 110ch) / 2));
+  background: oklch(0.155 0.012 55);
+  border-top: 1px solid var(--sp-stage-glass-border, var(--sp-color-terminal-border));
+}
+
+.pi-terminal.pi-terminal--expanded .pi-input {
+  min-height: calc(3 * var(--pi-composer-size) * var(--pi-composer-leading));
+  cursor: text;
+}
+
+.pi-terminal.pi-terminal--expanded .pi-composer:focus-within {
+  background: color-mix(in oklch, var(--sp-color-primary) 7%, oklch(0.155 0.012 55));
+}
+
+body.pi-terminal-expanded {
+  overflow: hidden;
+}

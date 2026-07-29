@@ -5,7 +5,7 @@
  */
 
 import {
-  tabsHtml, panelHtml, overviewHtml, trafficHtml, usageHtml, activityHtml,
+  tabsHtml, scopeHtml, panelHtml, overviewHtml, trafficHtml, usageHtml, activityHtml,
   governanceHtml, platformHtml,
 } from './sp-auth-pane-view.js';
 
@@ -127,6 +127,7 @@ export function profileHtml(pending) {
     // about it. Every panel is rendered once and stays in the DOM; switching
     // only toggles `hidden`, so live updates keep landing in panels the
     // visitor is not looking at.
+    + scopeHtml()
     + tabsHtml()
     + panelHtml('overview', overviewHtml(), false)
     + panelHtml('traffic', trafficHtml(), true)

@@ -23,9 +23,7 @@
     <link rel="stylesheet" href="{{CSS_BASE_PATH}}/bundles/homepage-bundle.css?v={{CSS_BUNDLE_VERSION}}">
     <script src="{{JS_BASE_PATH}}/hero-header.js" defer></script>
     <script type="module" src="{{JS_BASE_PATH}}/components/video-modal.js"></script>
-    <script src="{{JS_BASE_PATH}}/home-scene.js" defer></script>
     <script type="module" src="{{JS_BASE_PATH}}/services/sp-pi-terminal.js"></script>
-    <script type="module" src="{{JS_BASE_PATH}}/services/sp-conversation-list.js"></script>
     <script type="module" src="{{JS_BASE_PATH}}/services/sp-auth-pane.js"></script>
 </head>
 <body class="home-split-body" data-scroll-header>
@@ -52,9 +50,6 @@
         <section class="home-split-pane home-split-pane--profile" aria-label="Your account and agent telemetry">
             <sp-auth-pane></sp-auth-pane>
         </section>
-        <a class="home-split-scroll-cue" href="#home-below">
-            <span>More below</span><span aria-hidden="true">&#8595;</span>
-        </a>
     </main>
 
     <!--
@@ -150,113 +145,6 @@
         </div>
     </aside>
 
-    <!--
-      Below the fold: what the terminal above actually is, and the two other
-      places the same gateway runs. The hosts converge on one pipeline because
-      that is literally what happens — the governance stages do not know or care
-      which client called them.
-    -->
-    <section id="home-below" class="home-scene" aria-labelledby="scene-title">
-        <div class="home-scene-inner">
-            <p class="scene-eyebrow">Governance for your AI infrastructure</p>
-            <h2 id="scene-title" class="scene-title">Your agents. Your infrastructure.<br>You own it.</h2>
-            <p class="scene-deck">systemprompt.io is the governance layer between your organisation
-                and AI. Self hosted, self run: the bridge signs any first-class AI client into
-                one gateway, every one of them answers to your policies, and every call lands
-                in a record you own.</p>
-
-            <ul class="scene-verbs">
-                <li>Brand them</li>
-                <li>Govern them</li>
-                <li>Control them</li>
-                <li>Analyse them</li>
-                <li>Improve them</li>
-                <li class="scene-verb--own">Own them</li>
-            </ul>
-
-            <ul class="scene-hosts">
-                <li class="scene-host" data-host="web">
-                    <div class="scene-host-head">
-                        <h3 class="scene-host-name">Embedded web agent</h3>
-                        <span class="scene-host-tag">This page</span>
-                    </div>
-                    <p class="scene-host-role">Runs in the browser with no install. Read-only tools,
-                        one session per account, ten-minute idle timeout.</p>
-                    <a class="scene-host-live" href="#main">Live above &#8593;</a>
-                </li>
-                <li class="scene-host" data-host="claude-code">
-                    <div class="scene-host-head">
-                        <h3 class="scene-host-name">Claude Code</h3>
-                        <span class="scene-host-tag">Bridge</span>
-                    </div>
-                    <p class="scene-host-role">Your terminal, your repo, your policies. The bridge signs
-                        it into the account you are already using here.</p>
-                    <span class="scene-host-via">Connected by the bridge</span>
-                </li>
-                <li class="scene-host" data-host="codex">
-                    <div class="scene-host-head">
-                        <h3 class="scene-host-name">OpenAI Codex</h3>
-                        <span class="scene-host-tag">Bridge</span>
-                    </div>
-                    <p class="scene-host-role">Nothing here is Claude-specific. The bridge speaks to any
-                        first-class client, whoever built it.</p>
-                    <span class="scene-host-via">Connected by the bridge</span>
-                </li>
-            </ul>
-
-            <!-- Decorative: the lanes restate the list above and the list below. -->
-            <div class="scene-lanes" aria-hidden="true">
-                <div class="scene-lane"><span class="scene-pip"></span></div>
-                <div class="scene-lane"><span class="scene-pip"></span></div>
-                <div class="scene-lane"><span class="scene-pip"></span></div>
-            </div>
-
-            <ol class="scene-pipeline" aria-label="What every tool call passes through">
-                <li class="scene-stage">
-                    <span class="scene-stage-name">Scope check</span>
-                    <span class="scene-stage-note">Is this identity allowed this tool?</span>
-                </li>
-                <li class="scene-stage">
-                    <span class="scene-stage-name">Secret scan</span>
-                    <span class="scene-stage-note">32 patterns plus an entropy check, before the call leaves.</span>
-                </li>
-                <li class="scene-stage">
-                    <span class="scene-stage-name">Blocklist</span>
-                    <span class="scene-stage-note">Denied arguments never reach the tool.</span>
-                </li>
-                <li class="scene-stage">
-                    <span class="scene-stage-name">Rate limit</span>
-                    <span class="scene-stage-note">Per identity, per tool, per window.</span>
-                </li>
-                <li class="scene-stage scene-stage--audit">
-                    <span class="scene-stage-name">Audit row</span>
-                    <span class="scene-stage-note">Identity &#8594; tool &#8594; result &#8594; cost, one trace_id.</span>
-                </li>
-            </ol>
-
-            <div class="scene-offer">
-                <p class="scene-offer-copy"><strong>One binary. One account.</strong> The bridge is a Mac
-                    and Windows app that signs Claude Code and Cowork into the same identity as the web
-                    agent above. Same policies, same audit trail, no second login.</p>
-                <div class="scene-offer-actions">
-                    <a class="cta-button" href="https://systemprompt.io/#demo-request" target="_blank" rel="noopener noreferrer">Book a live demo</a>
-                    <a class="scene-offer-link"
-                       href="https://www.youtube.com/watch?v=Tup3ClQM0bo"
-                       target="_blank" rel="noopener noreferrer"
-                       data-video-id="Tup3ClQM0bo"
-                       data-video-title="The platform demo"
-                       data-video-source="home-scene-offer">Watch the platform demo</a>
-                    <a class="scene-offer-link"
-                       href="https://www.youtube.com/watch?v=pbHArVcCGFY&amp;t=41s"
-                       target="_blank" rel="noopener noreferrer"
-                       data-video-id="pbHArVcCGFY"
-                       data-video-start="41"
-                       data-video-title="The Bridge demo"
-                       data-video-source="home-scene-offer">Watch the Bridge demo</a>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!--
       Signing in happens in the pane without a navigation, so nothing reloads
@@ -273,8 +161,6 @@
             if (t && t.restart) t.restart();
         });
     </script>
-
-    {{{FOOTER}}}
 
     {{{SCRIPTS}}}
 </body>

@@ -17,6 +17,24 @@ const TABS = [
   { id: 'governance', label: 'Governance' },
 ];
 
+/**
+ * Which window the tabs read through.
+ *
+ * Clearing the terminal starts a new conversation, so a conversation-only
+ * readout goes to zero while the credit meter beside it still reports real
+ * spend. Defaulting to the account and naming the alternative makes the two
+ * numbers legible as different questions rather than a contradiction.
+ */
+export function scopeHtml() {
+  return '<div class="pane-filter pane-filter--scope" role="group"'
+    + ' aria-label="Telemetry scope" data-role="scope-filter">'
+    + [['all', 'All conversations'], ['current', 'This conversation']]
+      .map(([id, label], i) => '<button type="button" class="pane-filter-btn'
+        + (i === 0 ? ' is-active' : '') + '" data-scope="' + id + '" aria-pressed="'
+        + (i === 0) + '">' + label + '</button>').join('')
+    + '</div>';
+}
+
 export function tabsHtml() {
   return '<div class="pane-tabs pane-tabs--stats" role="tablist" aria-label="Session telemetry">'
     + TABS.map((t, i) => {
@@ -49,7 +67,7 @@ export function overviewHtml() {
     + statHtml('requests', 'Requests', '0')
     + statHtml('tools', 'Tool calls', '0')
     + statHtml('blocked', 'Blocked', '0')
-    + statHtml('cost', 'Session cost', '$0')
+    + statHtml('cost', 'Cost', '$0')
     + statHtml('latencyAvg', 'Avg latency', '—')
     + statHtml('costPer', 'Per request', '$0')
     + '</dl>'
@@ -139,7 +157,7 @@ export function usageHtml() {
     statHtml('cacheWrite', 'Cache written', '0'),
   ])
   + sectionHtml('Cost', 'cost-section', [
-    statHtml('cost', 'This session', '$0'),
+    statHtml('cost', 'Cost', '$0'),
     statHtml('costPer', 'Per request', '$0'),
   ])
   + sectionHtml('Model &amp; route', 'route', [

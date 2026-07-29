@@ -71,8 +71,6 @@ class SpPiTerminal extends HTMLElement {
   }
 
   disconnectedCallback() {
-    if (this._onDocClick) document.removeEventListener('click', this._onDocClick);
-    if (this._onDocKey) document.removeEventListener('keydown', this._onDocKey);
     this._teardownStream();
     if (this._reconnectTimer) clearTimeout(this._reconnectTimer);
     if (this._capTimer) clearTimeout(this._capTimer);
@@ -93,22 +91,14 @@ class SpPiTerminal extends HTMLElement {
     return restart(this, resume);
   }
 
-  /** Abandon the current conversation and open an empty one. */
+  /**
+   * Leave the current conversation where it is and open an empty one.
+   *
+   * The old conversation is not deleted — it stays in the store as the audit
+   * trail; `restart(this, null)` is what empties the transcript on screen.
+   */
   async newConversation() {
-    this._toggleConv(false);
     await restart(this, null);
-  }
-
-  /** Reopen a stored conversation of this viewer's. */
-  async openConversation(conversationId) {
-    this._toggleConv(false);
-    await restart(this, conversationId);
-  }
-
-  _toggleConv(open) {
-    if (!this._convPanel) return;
-    this._convPanel.hidden = !open;
-    this._convChip.setAttribute('aria-expanded', String(open));
   }
 
   _teardownStream() {

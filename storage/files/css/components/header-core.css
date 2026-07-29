@@ -42,8 +42,6 @@
   justify-content: space-between;
   align-items: center;
   height: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
   padding: 0 var(--sp-space-6);
 }
 
@@ -58,32 +56,6 @@
   height: 36px;
   width: auto;
 }
-
-/* `margin-right: auto` rather than a wrapper: .site-nav is space-between, so a
-   bare third child would be spread to the centre instead of sitting with the
-   logo. Below the split threshold there is no room for it beside the burger.
-
-   The hairline is what makes this read as a lockup rather than two unrelated
-   pieces of text sharing a row — it ties the tagline to the wordmark and gives
-   the left edge of the header a deliberate rhythm. */
-.logo-tagline {
-  margin-right: auto;
-  margin-left: var(--sp-space-5);
-  padding-left: var(--sp-space-5);
-  border-left: 1px solid var(--sp-color-border);
-  font-family: var(--sp-font-brand);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: var(--sp-color-text-muted);
-  white-space: nowrap;
-}
-
-@media (max-width: 1100px) {
-  .logo-tagline { display: none; }
-}
-
 
 .logo-container {
   display: flex;
@@ -165,6 +137,38 @@
   margin-left: var(--sp-space-8);
 }
 
+/* The watch links are the ghost siblings of the CTA: same metrics and shape,
+   an outline instead of a fill, so the one paid action stays the loudest
+   thing in the header. */
+.nav-cta-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-space-2) var(--sp-space-4);
+  border: 1px solid var(--sp-color-border);
+  border-radius: var(--sp-radius-sm);
+  background: transparent;
+  font-family: var(--sp-font-brand);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sp-color-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--sp-transition-fast), border-color var(--sp-transition-fast);
+}
+
+.nav-cta-link:hover,
+.nav-cta-link:focus-visible {
+  color: var(--sp-color-text);
+  border-color: var(--sp-color-text-secondary);
+}
+
+@media (max-width: 900px) {
+  .nav-cta-link { display: none; }
+}
+
 a.cta-button,
 button.cta-button {
   display: inline-flex;
@@ -202,6 +206,7 @@ button.cta-button:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .nav-links a,
+  .nav-cta-link,
   a.cta-button,
   button.cta-button {
     transition: none;

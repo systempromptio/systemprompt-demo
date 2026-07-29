@@ -51,7 +51,9 @@ const buildDialog = () => {
 const openVideo = (videoId, opts) => {
   if (!dialog) buildDialog();
   const start = opts.start ? `&start=${encodeURIComponent(opts.start)}` : '';
-  const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?autoplay=1&rel=0&modestbranding=1${start}`;
+  // No autoplay: YouTube does not count autoplayed embed plays as views, so
+  // the visitor presses play and the view lands in analytics.
+  const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?rel=0&modestbranding=1${start}`;
   const title = opts.title || 'Video';
   titleEl.textContent = title;
   frameWrap.innerHTML = `

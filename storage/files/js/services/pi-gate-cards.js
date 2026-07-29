@@ -13,7 +13,9 @@ import { approvalGrid, metaRow, settledRecord, toolTitle } from './pi-gate-parts
  * The operator is being asked to add a judgement on top of policy, not to
  * trust a bare prompt.
  *
- * `onDecide(decision)` is called with 'allow' or 'deny'. Returns a handle with
+ * `onDecide(decision)` is called with 'allow', 'deny', or 'allow_always' — the
+ * last one also arms a standing approval for this tool for the session, so the
+ * gate stops asking about it. Returns a handle with
  * `el` and `settle()`, because resolution can arrive from another tab or from
  * the server's own timeout, not only from these buttons.
  */
@@ -39,10 +41,9 @@ export function approvalCard(frame, onDecide) {
   const title = toolTitle(frame.tool_name, 'wants to run — policy cleared it, you decide');
   head.append(ring, title, countdown);
 
-  const meta = metaRow(
-    frame.policy_chain || [],
-    frame.timeout_secs ? ['auto-denied if ignored'] : [],
-  );
+  const hints = frame.timeout_secs ? ['auto-denied if ignored'] : [];
+  hints.push('always: this tool, this session');
+  const meta = metaRow(frame.policy_chain || [], hints);
 
   const actions = document.createElement('div');
   actions.className = 'pi-approval-actions';
@@ -54,9 +55,18 @@ export function approvalCard(frame, onDecide) {
   allow.type = 'button';
   allow.className = 'pi-btn pi-btn--allow';
   allow.textContent = 'Approve';
+  const always = document.createElement('button');
+  always.type = 'button';
+  always.className = 'pi-btn pi-btn--always';
+  always.textContent = 'Always allow';
+  always.title = 'Approve this call and every later ' + frame.tool_name
+    + ' call in this session, without asking again';
+  always.setAttribute('aria-label', 'Always allow ' + frame.tool_name
+    + ' for the rest of this session');
   // Deny first in the DOM, so it is also first in tab order. Three of the four
-  // ways an approval can end are denials; the UI should not lean on allow.
-  actions.append(deny, allow);
+  // ways an approval can end are denials; the UI should not lean on allow, and
+  // the standing approval sits last because it answers calls not yet made.
+  actions.append(deny, allow, always);
 
   card.append(head, approvalGrid(frame, 'already cleared'), meta, actions);
 
@@ -117,6 +127,7 @@ export function approvalCard(frame, onDecide) {
     lock() {
       allow.disabled = true;
       deny.disabled = true;
+      always.disabled = true;
       card.classList.add('is-settling');
     },
     focus() {
@@ -129,6 +140,7 @@ export function approvalCard(frame, onDecide) {
 
   allow.addEventListener('click', () => onDecide('allow'));
   deny.addEventListener('click', () => onDecide('deny'));
+  always.addEventListener('click', () => onDecide('allow_always'));
 
   return handle;
 }

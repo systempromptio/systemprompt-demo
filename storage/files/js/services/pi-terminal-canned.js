@@ -14,6 +14,7 @@ import { cannedMeters } from './pi-terminal-meters.js';
  *  public page can embed it unconditionally. */
 export function degrade(el, reason, info) {
   el.classList.add('is-replay');
+  el.classList.remove('is-session');
   el._status(reason === 'busy' ? 'session in use'
     : (reason === 'queued' ? 'in line'
       : (reason === 'stream' ? 'disconnected' : 'replay')));

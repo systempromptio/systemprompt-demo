@@ -10,13 +10,15 @@ import {
  */
 
 /**
- * A call the gate cleared without asking anyone — approve_all is off, so policy
- * alone decided. A compact, non-interactive record: the same facts the human
- * card shows (tool, args, cleared chain), minus the question.
+ * A call the gate cleared without asking anyone — either policy alone decided
+ * (approve_all off), or a standing approval a person armed earlier answered for
+ * them. The two are never presented as the same thing: a standing approval is a
+ * human decision made early, and it is stamped with the human who made it.
  */
 export function autoApprovedCard(frame) {
   const card = document.createElement('div');
   card.className = 'pi-approval-card pi-approval-card--auto';
+  const standing = frame.standing_by || null;
 
   const head = document.createElement('div');
   head.className = 'pi-approval-head';
@@ -24,13 +26,20 @@ export function autoApprovedCard(frame) {
   mark.className = 'pi-auto-mark';
   mark.textContent = '✓';
   mark.setAttribute('aria-hidden', 'true');
-  head.append(mark, toolTitle(frame.tool_name, 'ran — policy cleared it, no human asked'));
+  const sub = standing
+    ? 'ran — policy cleared it, ' + standing + ' had already approved this tool'
+    : 'ran — policy cleared it, no human asked';
+  head.append(mark, toolTitle(frame.tool_name, sub));
+
+  const stamp = standing
+    ? { name: standing, actor: 'user', action: 'standing approval for this tool, this session' }
+    : { name: 'policy', actor: 'system', action: 'cleared this call — no human asked' };
 
   card.append(
     head,
     approvalGrid(frame, 'cleared'),
-    metaRow(frame.policy_chain || [], ['auto-approved']),
-    attributionStamp({ name: 'policy', actor: 'system', action: 'cleared this call — no human asked' }),
+    metaRow(frame.policy_chain || [], [standing ? 'standing approval' : 'auto-approved']),
+    attributionStamp(stamp),
   );
   return card;
 }

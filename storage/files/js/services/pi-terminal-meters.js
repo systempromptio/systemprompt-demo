@@ -5,7 +5,12 @@ import { compact } from './pi-format.js';
  * paint) and the frame dispatcher (pushed `stats` frames) draw it — importing
  * it from either of those would make the other a circular import.
  */
-export function meters(el, s) {
+export function meters(el, body) {
+  // The stats payload carries both scopes. This strip is the chrome around one
+  // running conversation, so it reads `current` — deliberately unlike the
+  // profile pane, which defaults to the whole account. `cannedMeters` passes a
+  // flat object, and the replay must keep working, so fall through to it.
+  const s = body.current || body.all || body;
   el._metersEl.hidden = false;
   el._traceEl.hidden = false;
   if (el._conversationId) {

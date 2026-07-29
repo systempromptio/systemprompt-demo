@@ -56,8 +56,7 @@
 
 .home-split-body {
   background: transparent;
-  /* Native form controls and scrollbars follow, without claiming the global
-     theme — the footer's theme toggle still owns that. */
+  /* Native form controls and scrollbars follow; the stage is always dark. */
   color-scheme: dark;
   color: var(--sp-stage-text);
   /* The page scrolls now; only the horizontal overflow is unwanted. */
@@ -175,13 +174,6 @@
 .home-split-body .logo-dark { display: none; }
 .home-split-body .logo-video { display: block; }
 
-/* The muted grey the tagline uses elsewhere is unreadable on the dark field,
-   and its hairline needs the glass border rather than the light-theme one. */
-.home-split-body .logo-tagline {
-  color: var(--sp-stage-text-muted);
-  border-left-color: var(--sp-stage-glass-border);
-}
-
 /* ── header ─────────────────────────────────────────────────────────────── */
 
 /* Over the stage the header is a logo and nothing else: it dissolves into the
@@ -210,106 +202,22 @@
   border-bottom-color: var(--sp-stage-glass-border);
 }
 
-/* `display: none` rather than visual hiding: the nav is genuinely gone here,
-   so it leaves the tab order and the a11y tree with it. The same links live in
-   the band below, built from the same config. Auth actions too — the pane owns
-   sign-in and sign-out entirely, so the header carries the wordmark and
-   nothing else. */
+/* `display: none` rather than visual hiding: the nav links are genuinely gone
+   here, so they leave the tab order and the a11y tree with them. The actions
+   stay — the header is the wordmark and the three CTAs, nothing else. */
 .home-split-body .nav-links,
-.home-split-body .nav-actions,
 .home-split-body .mobile-menu-toggle,
 .home-split-body .mobile-menu-overlay { display: none; }
 
-/* ── the scroll cue ─────────────────────────────────────────────────────── */
-
-/* A 100dvh hero reads as the whole page unless something says otherwise, and
-   then nobody finds the band. */
-.home-split-body .home-split {
-  position: relative;
-}
-
-.home-split-scroll-cue {
-  position: absolute;
-  left: 50%;
-  bottom: var(--sp-space-3);
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-space-2);
-  color: var(--sp-stage-text-muted);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-  transition: opacity 0.3s ease;
-}
-
-.home-split-scroll-cue:hover {
-  color: var(--sp-stage-text-dim);
-}
-
-/* Once you have scrolled, the cue has done its job — and it must stop taking
-   clicks as well as fading, or it sits invisible over the band. */
-[data-scrolled] .home-split-scroll-cue {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* ── below the fold ─────────────────────────────────────────────────────── */
-
-/* The band itself is `components/home-scene.css` — it needs the stage tokens
-   declared above, and nothing else here needs it. */
-
-/* ── footer ─────────────────────────────────────────────────────────────── */
-
-/* The homepage emits a footer for the first time here — it had nowhere to
-   scroll to before. It carries the legal links and the theme toggle for free;
-   it just has to stop being a light slab. */
-.home-split-body .site-footer {
-  background: transparent;
-  border-top: 1px solid var(--sp-stage-glass-border);
-  color: var(--sp-stage-text-dim);
-}
-
-.home-split-body .site-footer a,
-.home-split-body .site-footer h3,
-.home-split-body .site-footer p {
-  color: var(--sp-stage-text-dim);
-}
-
-.home-split-body .site-footer a:hover {
-  color: var(--sp-stage-text);
-}
-
-/* The footer markup carries only the two themed logos and neither has the ink
-   for this field — the white wordmark the header uses over the video is not in
-   the partial, and the partial is compiled into the binary. So the logo comes
-   in as a background image on the ::after: the real asset, at the real aspect
-   ratio, without a rebuild to add a third <img> the rest of the site would
-   never show. */
-.home-split-body .site-footer .logo-light,
-.home-split-body .site-footer .logo-dark { display: none; }
-
-.home-split-body .site-footer .footer-logo::after {
-  content: '';
-  display: block;
-  width: 140px;
-  height: 32px;
-  background: url("/files/images/logo-white.svg") left center / contain no-repeat;
-}
-
-.home-split-body .theme-toggle-btn {
+/* The ghost CTAs need the stage's light ink and glass edge, not the
+   light-theme grey. */
+.home-split-body .nav-cta-link {
   color: var(--sp-stage-text-dim);
   border-color: var(--sp-stage-glass-border);
 }
 
-/* ── narrow ─────────────────────────────────────────────────────────────── */
-
-@media (max-width: 900px) {
-  /* With the hero stacked there is no fold to cue past. */
-  .home-split-scroll-cue { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .home-split-scroll-cue { transition: none; }
+.home-split-body .nav-cta-link:hover,
+.home-split-body .nav-cta-link:focus-visible {
+  color: var(--sp-stage-text);
+  border-color: var(--sp-stage-text-muted);
 }

@@ -45,9 +45,10 @@
 .pi-terminal .terminal-line {
   white-space: pre-wrap;
   word-break: break-word;
-  /* Measure cap. Mono at 0.875rem across the full 860px shell runs past 150
-     characters a line — unreadable. ~72ch is where prose stops being a wall. */
-  max-width: 72ch;
+  /* Measure cap: without one, mono across the full pane runs past 150
+     characters a line. Matches .pi-prose so the two kinds of text share one
+     right edge. */
+  max-width: 88ch;
 }
 
 .pi-terminal .prompt {

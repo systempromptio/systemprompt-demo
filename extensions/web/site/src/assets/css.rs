@@ -105,11 +105,9 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/pi-terminal-tools.css"),
         css!(p, "components/pi-terminal-motion.css"),
         css!(p, "components/pi-artifact.css"),
+        css!(p, "components/pi-terminal-expand.css"),
         css!(p, "components/home-split.css"),
         css!(p, "components/home-stage.css"),
-        css!(p, "components/home-scene-rail.css"),
-        css!(p, "components/home-scene-lanes.css"),
-        css!(p, "components/home-scene-offer.css"),
         css!(p, "components/home-marquee.css"),
         css!(p, "components/video-modal.css"),
         css!(p, "components/auth-pane-core.css"),
@@ -117,7 +115,6 @@ fn homepage_css(p: &Path) -> Vec<AssetDefinition> {
         css!(p, "components/auth-pane-telemetry.css"),
         css!(p, "components/auth-pane-charts.css"),
         css!(p, "components/analytics-pane.css"),
-        css!(p, "components/conversation-list.css"),
     ]
 }
 

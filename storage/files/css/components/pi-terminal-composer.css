@@ -345,3 +345,17 @@
   color: var(--sp-primitive-white);
 }
 
+/* Standing approval is the heaviest commitment on the card — it answers calls
+   that have not been made yet — so it is the quietest control, not a second
+   Approve. */
+.pi-btn--always {
+  background: transparent;
+  border-color: var(--sp-color-terminal-border);
+  color: var(--sp-color-terminal-text-dim);
+}
+
+.pi-btn--always:hover {
+  border-color: color-mix(in oklch, var(--sp-color-success) 45%, transparent);
+  color: var(--sp-color-terminal-text);
+}
+

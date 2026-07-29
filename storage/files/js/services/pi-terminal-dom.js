@@ -41,6 +41,10 @@ export function line(el, cls, text) {
 
 /** Append, trim, and scroll — the one place the transcript grows. */
 export function append(el, node) {
+  if (el._welcomeEl) {
+    el._welcomeEl.remove();
+    el._welcomeEl = null;
+  }
   el._body.append(node);
   el._lines += 1;
   trim(el);

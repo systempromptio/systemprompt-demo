@@ -1,9 +1,14 @@
 /* ── rendered prose ─────────────────────────────────────────────────────── */
 
+/* The agent's answers keep the terminal's mono voice, tuned for reading
+   rather than for output: a step up in size, looser leading, a tighter
+   measure, and the full-strength ink — the transcript's dimmer greys are for
+   chrome, not for the thing the visitor came to read. */
 .pi-prose {
   color: var(--sp-color-terminal-text);
-  max-width: 72ch;
-  line-height: 1.7;
+  max-width: 88ch;
+  font-size: 0.95rem;
+  line-height: 1.8;
   margin-block: var(--sp-space-3) var(--sp-space-4);
 }
 
@@ -11,13 +16,14 @@
 .pi-prose > :last-child { margin-bottom: 0; }
 
 .pi-prose p {
-  margin: 0 0 var(--sp-space-3);
+  margin: 0 0 var(--sp-space-4);
 }
 
 .pi-heading {
   margin: var(--sp-space-4) 0 var(--sp-space-2);
   font-family: var(--sp-font-mono);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: var(--sp-font-semibold);
   color: var(--sp-color-terminal-text);
 }
 
@@ -35,6 +41,7 @@
 }
 
 .pi-code {
+  font-family: var(--sp-font-mono);
   padding: 0.05rem 0.3rem;
   background: color-mix(in oklch, var(--sp-color-terminal-header) 80%, var(--sp-color-primary) 8%);
   border-radius: var(--sp-radius-xs);
@@ -87,6 +94,7 @@
   margin: 0;
   padding: var(--sp-space-3);
   overflow-x: auto;
+  font-family: var(--sp-font-mono);
   font-size: 0.8rem;
   line-height: 1.55;
 }

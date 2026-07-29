@@ -36,9 +36,15 @@ export function applyGovChip(pane, count, denials) {
  * "four checks run on every call, none has tripped" is the claim, and a list
  * that grows from one row to four as things happen argues the opposite.
  */
-export function applyStages(pane, stages) {
+export function applyStages(pane, stages, denied) {
   if (!pane._stages) return;
-  const blocked = stages.reduce((n, st) => n + (st.failed || 0), 0);
+  // The headline is the authoritative denial count, not the sum of the four
+  // rows below it. `human_approval` refuses calls without being one of the four
+  // pipeline stages, so summing the visible rows under-reports every block it
+  // made — the header and the feed would disagree about the same refusals.
+  const blocked = denied === undefined
+    ? stages.reduce((n, st) => n + (st.failed || 0), 0)
+    : denied;
   pane._stageSub.textContent = blocked
     ? blocked + (blocked === 1 ? ' block' : ' blocks')
     : stages.length + ' checks per call';
@@ -85,16 +91,35 @@ export function applyStageMini(pane, stages) {
   });
 }
 
-export function renderFeed(pane, events) {
-  const denied = events.filter((e) => e.outcome === 'deny').length;
-  pane._feedCount.textContent = events.length
-    ? events.length + ' recorded' + (denied ? ' · ' + denied + ' blocked' : '')
+/**
+ * `total` and `denied` are server-side aggregates over every row in scope;
+ * `events` is only the window the server sent. Counting the array instead
+ * reports the window as if it were the truth.
+ */
+export function renderFeed(pane, events, total, denied) {
+  const shown = events.length;
+  const recorded = Math.max(total || 0, shown);
+  pane._feedCount.textContent = recorded
+    ? (shown < recorded ? shown + ' of ' + recorded : String(recorded)) + ' recorded'
+      + (denied ? ' · ' + denied + ' blocked' : '')
     : '';
-  if (!events.length) return;
   pane._feed.innerHTML = '';
+  // An empty payload has to clear the list, not skip it: leaving the previous
+  // conversation's rows up beside freshly-zeroed tiles reads as lost history.
+  if (!events.length) {
+    const li = document.createElement('li');
+    li.className = 'pane-feed-empty';
+    li.textContent = 'Ask the agent to read a file. Every decision it triggers '
+      + 'is recorded here.';
+    pane._feed.append(li);
+    syncFeedPreview(pane);
+    return;
+  }
   // Newest first: the pane is short, and the thing that just happened is the
-  // thing being watched for.
-  events.slice(-40).reverse().forEach((e) => {
+  // thing being watched for. Everything delivered is rendered — the filter
+  // buttons are a CSS rule over this list, so a row trimmed here is a row the
+  // "Blocked" filter can never find.
+  events.slice().reverse().forEach((e) => {
     const li = feedItem(e);
     // Stored decisions carry their audit row's id; a live pushFeed entry does
     // not, so only the durable ones get a deep link.

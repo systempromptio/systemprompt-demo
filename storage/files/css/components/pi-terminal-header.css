@@ -12,6 +12,18 @@
   border-bottom: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 70%, transparent);
 }
 
+/* Until a signed-in session is actually live (`is-session`, set on
+   session_ready) the header is a statement, not a control surface: it dims,
+   and its chips take no clicks. */
+.pi-terminal:not(.is-session) .terminal-header {
+  opacity: 0.55;
+}
+
+.pi-terminal:not(.is-session) .terminal-header :is(button, select, a) {
+  pointer-events: none;
+  cursor: default;
+}
+
 /* The titlebar is branded rather than labelled.
    It used to read "pi — governed", which named an internal binary and a property
    in a way that meant nothing to a visitor. A product surface should say whose
@@ -83,66 +95,13 @@
   white-space: nowrap;
 }
 
-/* The conversation picker: a chip in the header that drops a panel hosting
-   <sp-conversation-list>. The wrapper anchors the panel; the shell's own
-   overflow:hidden keeps the drop inside the glass. */
-.pi-conv {
-  position: relative;
-  display: inline-flex;
-  flex: none;
-}
-
-.pi-conv-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-text-dim) 40%, transparent);
-  border-radius: var(--sp-radius-full);
-  background: color-mix(in oklch, var(--sp-color-terminal-text-dim) 8%, transparent);
-  color: var(--sp-color-terminal-text-dim);
-  font-family: var(--sp-font-mono);
-  font-size: 0.66rem;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.pi-conv-chip::after {
-  content: '';
-  width: 0.45rem;
-  height: 0.35rem;
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M1 1.5 4 4.5 7 1.5' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 6'%3E%3Cpath d='M1 1.5 4 4.5 7 1.5' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
-}
-
-.pi-conv-chip:hover,
-.pi-conv-chip[aria-expanded='true'] {
-  color: var(--sp-color-terminal-text);
-  border-color: color-mix(in oklch, var(--sp-color-terminal-text-dim) 70%, transparent);
-}
-
-.pi-conv-panel {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  left: 0;
-  z-index: 30;
-  width: min(24rem, 72vw);
-  padding: var(--sp-space-3) var(--sp-space-4);
-  background: oklch(0.16 0.01 55 / 0.97);
-  border: 1px solid var(--sp-stage-glass-border, var(--sp-color-terminal-border));
-  border-radius: 6px 6px 6px 14px;
-  box-shadow: 0 16px 40px oklch(0 0 0 / 0.5);
-}
-
-.pi-conv-panel[hidden] {
-  display: none;
-}
-
 /* In replay the composer takes no input, so buttons that cannot act are not
-   drawn at all — dead controls read as a broken page, not a demo. */
+   drawn at all — dead controls read as a broken page, not a demo. Clear joins
+   them: with no live session there is nothing to clear. */
 .pi-terminal.is-replay .pi-btn--send,
-.pi-terminal.is-replay .pi-btn--stop {
+.pi-terminal.is-replay .pi-btn--stop,
+.pi-terminal.is-replay .pi-btn--clear,
+.pi-terminal:not(.is-session) .pi-btn--clear {
   display: none;
 }
 

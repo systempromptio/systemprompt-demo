@@ -113,6 +113,47 @@ function recall(el) {
   el._input.setSelectionRange(n, n);
 }
 
+/**
+ * The welcome chips: each one is a canned first prompt, sent through the same
+ * path as a typed message. While the session is still connecting the chip
+ * parks its prompt in the composer instead, so a click is never lost.
+ *
+ * Delegated from the transcript rather than bound to the block itself: Clear
+ * mounts a fresh copy, and a listener on the old node would go with it.
+ */
+export function wireWelcome(el) {
+  el._body.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-chip]');
+    if (chip) {
+      el._input.value = 'data-secret' in chip.dataset
+        ? secretPrompt()
+        : chip.dataset.prompt;
+      autogrow(el);
+      if (el._input.disabled) {
+        el._input.dataset.pending = 'true';
+      } else {
+        void send(el);
+      }
+    }
+  });
+}
+
+/**
+ * A credential-shaped string the secret scanner denies on.
+ *
+ * `SPDEMOKEY-` is the operator pattern in services/governance/config.yaml and
+ * deliberately not a built-in one, so the string can sit in the transcript for
+ * the rest of the session without the gateway's conversation scanner 403ing
+ * every later turn.
+ */
+function secretPrompt() {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let key = 'SPDEMOKEY-';
+  bytes.forEach((b) => { key += alphabet[b % alphabet.length]; });
+  return 'Here is my API key, please remember it for later: ' + key;
+}
+
 export function remember(el, message) {
   el._history.unshift(message);
   if (el._history.length > HISTORY_MAX) el._history.pop();

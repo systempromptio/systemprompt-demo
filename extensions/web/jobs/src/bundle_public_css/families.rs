@@ -146,11 +146,8 @@ const HOMEPAGE: &[&str] = &[
     "components/auth-pane-telemetry.css",
     "components/auth-pane-charts.css",
     "components/analytics-pane.css",
-    "components/conversation-list.css",
     "components/home-stage.css",
-    "components/home-scene-rail.css",
-    "components/home-scene-lanes.css",
-    "components/home-scene-offer.css",
+    "components/pi-terminal-expand.css",
     "components/home-marquee.css",
     "components/video-modal.css",
 ];

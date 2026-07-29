@@ -31,14 +31,14 @@ function badgeRow(el, row, f) {
   btn.type = 'button';
   btn.className = 'pi-tool-artifact';
   btn.textContent = 'view result';
-  // A <summary> click toggles the row; the button answers a different
-  // question, so it must not also fold the arguments open.
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    openArtifact(el, f);
-  });
-  row.details.querySelector('summary').append(btn);
+  btn.addEventListener('click', () => openArtifact(el, f));
+  // A sibling of the <details>, painted onto the summary row by the wrapper:
+  // nesting the button inside <summary> is invalid — one control may not
+  // contain another — and the audit flags it.
+  const wrap = document.createElement('div');
+  wrap.className = 'pi-tool-artifact-wrap';
+  row.details.before(wrap);
+  wrap.append(row.details, btn);
 }
 
 /** Chip + dropdown panel in the header — every result, newest last. */

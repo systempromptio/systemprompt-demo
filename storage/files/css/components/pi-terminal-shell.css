@@ -139,3 +139,53 @@
   border-top-color: var(--sp-stage-glass-border);
 }
 
+/* ── welcome ────────────────────────────────────────────────────────────── */
+
+/* The empty transcript's one job: hand the visitor a first prompt. Removed by
+   the transcript's own append, so it never coexists with real output. */
+.pi-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-space-4);
+  padding: var(--sp-space-6) var(--sp-space-4);
+  max-width: 34rem;
+}
+
+.pi-welcome__lead {
+  margin: 0;
+  color: var(--sp-color-terminal-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.pi-welcome__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-space-2);
+}
+
+.pi-welcome__chip {
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--sp-color-terminal-text);
+  background: color-mix(in oklch, var(--sp-color-terminal-border) 30%, transparent);
+  border: 1px solid color-mix(in oklch, var(--sp-color-terminal-border) 80%, transparent);
+  border-radius: var(--sp-corners-sm);
+  padding: var(--sp-space-2) var(--sp-space-3);
+  text-align: start;
+  transition: border-color var(--sp-transition-fast), background var(--sp-transition-fast);
+}
+
+.pi-welcome__chip:hover,
+.pi-welcome__chip:focus-visible {
+  border-color: var(--sp-color-primary);
+  background: color-mix(in oklch, var(--sp-color-primary) 14%, transparent);
+}
+
+.pi-welcome__more {
+  margin: 0;
+  color: var(--sp-color-text-secondary);
+  font-size: 0.8rem;
+}
+

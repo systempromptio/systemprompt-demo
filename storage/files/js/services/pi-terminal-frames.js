@@ -7,7 +7,7 @@ import {
 } from './pi-terminal-gate.js';
 import { toolArtifact } from './pi-terminal-artifacts.js';
 import { meters } from './pi-terminal-meters.js';
-import { remember } from './pi-terminal-input.js';
+import { remember, send } from './pi-terminal-input.js';
 
 /** The one dispatcher every frame goes through, live or replayed. */
 export function onFrame(el, raw) {
@@ -113,8 +113,15 @@ function error(el, f) {
 
 function enable(el) {
   el._status('live');
+  el.classList.add('is-session');
   el._input.disabled = false;
   el._sendBtn.disabled = false;
+  // A welcome chip clicked before the session was live parked its prompt in
+  // the composer; the moment the session can carry it, it goes.
+  if (el._input.dataset.pending) {
+    delete el._input.dataset.pending;
+    void send(el);
+  }
   // The session is established, so the header can now say — truthfully —
   // whose identity every call is signed to.
   if (el._who && el._who.email) {
@@ -149,6 +156,7 @@ function exit(el, f) {
   el._teardownStream();
   flushStream(el);
   el._status('ended');
+  el.classList.remove('is-session');
   el._input.disabled = true;
   el._sendBtn.disabled = true;
   el._stopBtn.hidden = true;

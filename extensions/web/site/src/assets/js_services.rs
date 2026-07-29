@@ -20,7 +20,6 @@ pub(super) fn public_js_assets(storage_js: &Path) -> Vec<AssetDefinition> {
         AssetDefinition::js(storage_js.join("mobile-menu.js"), "js/mobile-menu.js"),
         AssetDefinition::js(storage_js.join("terminal-demo.js"), "js/terminal-demo.js"),
         AssetDefinition::js(storage_js.join("hero-header.js"), "js/hero-header.js"),
-        AssetDefinition::js(storage_js.join("home-scene.js"), "js/home-scene.js"),
         AssetDefinition::js(
             storage_js.join("components/video-modal.js"),
             "js/components/video-modal.js",
@@ -81,6 +80,7 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
         svc_js!(p, "pi-terminal-setup.js"),
         svc_js!(p, "pi-terminal-stream.js"),
         svc_js!(p, "pi-terminal-artifacts.js"),
+        svc_js!(p, "pi-terminal-expand.js"),
         svc_js!(p, "pi-artifact-overlay.js"),
         svc_js!(p, "pi-highlight.js"),
         svc_js!(p, "pi-markdown.js"),
@@ -90,7 +90,6 @@ fn service_core_js(p: &Path) -> Vec<AssetDefinition> {
         svc_js!(p, "pi-gate-records.js"),
         svc_js!(p, "pi-gate-runs.js"),
         svc_js!(p, "sp-pi-terminal.js"),
-        svc_js!(p, "sp-conversation-list.js"),
         svc_js!(p, "sp-toast.js"),
         svc_js!(p, "toast.js"),
     ]

@@ -1,11 +1,12 @@
 import { PIN_SLACK_PX } from './pi-constants.js';
 import { getJson } from './pi-transport.js';
 import { modelLabel, modelTitle } from './pi-format.js';
-import { terminalChrome } from './pi-terminal-view.js';
+import { terminalChrome, mountWelcome } from './pi-terminal-view.js';
 import { autogrow, clearUnseen } from './pi-terminal-dom.js';
 import { refreshPalette, hidePalette } from './pi-terminal-palette.js';
-import { send, onKey } from './pi-terminal-input.js';
+import { send, onKey, wireWelcome } from './pi-terminal-input.js';
 import { wireArtifacts } from './pi-terminal-artifacts.js';
+import { wireExpand } from './pi-terminal-expand.js';
 
 /** Draw the chrome once, cache the roles, and wire every listener to it. */
 export function build(el) {
@@ -22,6 +23,7 @@ export function build(el) {
   el._paletteEl = role('palette');
   el._sendBtn = role('send');
   el._stopBtn = role('stop');
+  el._clearBtn = role('clear');
   el._jumpBtn = role('jump');
   el._metersEl = role('meters');
   el._traceEl = role('trace');
@@ -30,15 +32,15 @@ export function build(el) {
   el._userEl = role('user');
   el._userNameEl = role('user-name');
   el._composer = role('composer');
-  el._convChip = role('conv-chip');
-  el._convPanel = role('conv-panel');
   el._artWrap = role('art-wrap');
   el._artChip = role('art-chip');
   el._artCount = role('art-count');
   el._artPanel = role('art-panel');
 
-  wireConversations(el);
   wireArtifacts(el);
+  wireExpand(el);
+  wireWelcome(el);
+  mountWelcome(el);
   // A change spawns a fresh child on the new model, resuming the same
   // conversation so the transcript carries over.
   el._modelEl.addEventListener('change', () => {
@@ -52,6 +54,7 @@ export function build(el) {
     void send(el);
   });
   el._stopBtn.addEventListener('click', () => el._post('abort', {}));
+  el._clearBtn.addEventListener('click', () => void el.newConversation());
 
   el._input.addEventListener('input', () => {
     autogrow(el);
@@ -65,32 +68,6 @@ export function build(el) {
   el._input.addEventListener('keydown', (e) => onKey(el, e));
 
   wireScroll(el);
-}
-
-function wireConversations(el) {
-  // The picker element is created here rather than written in the page so
-  // the dropdown works wherever the terminal is embedded. It talks back via
-  // `for` and the document-level pi-* events, exactly as it did as a sibling.
-  const convList = document.createElement('sp-conversation-list');
-  if (el.id) convList.setAttribute('for', el.id);
-  convList.setAttribute('endpoint', el._endpoint);
-  el._convPanel.append(convList);
-
-  el._convChip.addEventListener('click', () => {
-    el._toggleConv(el._convPanel.hidden);
-  });
-  // Light-dismiss: a click outside the chip and panel, or Escape, closes it.
-  el._onDocClick = (e) => {
-    if (el._convPanel.hidden) return;
-    if (!el._convChip.contains(e.target) && !el._convPanel.contains(e.target)) {
-      el._toggleConv(false);
-    }
-  };
-  el._onDocKey = (e) => {
-    if (e.key === 'Escape' && !el._convPanel.hidden) el._toggleConv(false);
-  };
-  document.addEventListener('click', el._onDocClick);
-  document.addEventListener('keydown', el._onDocKey);
 }
 
 // Autoscroll only while the visitor is actually at the bottom. Yanking the

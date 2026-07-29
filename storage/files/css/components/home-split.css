@@ -5,6 +5,15 @@
  * approval, the pane shows the audit row that decision wrote. Putting them on
  * separate pages was the old design, and it meant nobody ever saw both. */
 
+/* The whole page is one viewport: hero on top, the marquee as its baseline,
+   nothing below the fold to scroll to. */
+.home-split-body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .home-split {
   display: grid;
   /* Asymmetric: the terminal is the argument, the pane is its receipt. The
@@ -14,20 +23,18 @@
   /* The site header is `position: fixed`, so it reserves no space — this is the
      one rule that owns the hero's geometry. `reset.css` also puts a
      `padding-top` on `main`, and `.home-split` *is* the `<main>`, so declaring
-     the same property here replaces it rather than stacking with it. `dvh`
-     rather than `vh` because mobile browsers retract their chrome mid-scroll,
-     and `vh` measures the wrong one. `box-sizing: border-box` is global, so the
-     padding sits inside the viewport height. */
-  height: 100dvh;
+     the same property here replaces it rather than stacking with it. */
+  flex: 1 1 auto;
   padding-top: var(--sp-header-height);
   padding-inline: var(--sp-space-6);
-  /* The scroll cue is absolutely positioned against this box, so the panes have
-     to stop above it — otherwise they run underneath the one thing telling you
-     there is more page. Enough for the cue plus its own offset. */
-  padding-block-end: var(--sp-space-7);
+  padding-block-end: var(--sp-space-5);
   min-height: 0;
   /* The body owns the field now. */
   background: none;
+}
+
+.home-split-body .compat-marquee {
+  flex: none;
 }
 
 .home-split-pane {
@@ -36,23 +43,49 @@
   min-height: 0;
   min-width: 0;
   padding-block: var(--sp-space-5);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* Both halves are one sheet of glass, so they need one top edge and one bottom
-   edge. The terminal already fills its column; this is the account card doing
-   the same. `flex-shrink: 0`, never `1`: the signed-in card is taller than the
-   column and the half scrolls it — letting it shrink instead squashes every
-   section into the next (tabs printed over the credit figure, request rows
-   pushed through the bottom radius). */
+   edge. The card fills its column and scrolls *inside* its own glass — pane-
+   level scrolling put a bare browser scrollbar outside the card and cropped
+   its radii against the column edge. */
 .home-split-pane--profile .auth-pane {
   display: flex;
   flex-direction: column;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .home-split-pane--profile .auth-pane .pane {
-  flex: 1 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sp-stage-glass-border, var(--sp-color-terminal-border)) transparent;
+}
+
+/* The card's sections keep their natural height and the card scrolls past
+   them; letting them shrink instead squashes every section into the next
+   (tabs printed over the credit figure, rows through the bottom radius). */
+.home-split-pane--profile .auth-pane .pane > * {
+  flex: none;
+}
+
+.home-split-pane--profile .auth-pane .pane::-webkit-scrollbar {
+  width: 10px;
+}
+
+.home-split-pane--profile .auth-pane .pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.home-split-pane--profile .auth-pane .pane::-webkit-scrollbar-thumb {
+  background: var(--sp-stage-glass-border, var(--sp-color-terminal-border));
+  border-radius: var(--sp-radius-full);
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
 
 /* ── the terminal, filling its half ─────────────────────────────────────── */
@@ -110,6 +143,13 @@
    thing worth looking at, and the pane reads as its caption. Each keeps enough
    height to be usable rather than each getting an unreadable sliver. */
 @media (max-width: 900px) {
+  /* Stacked panes need real height again, so the page goes back to scrolling. */
+  .home-split-body {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
   .home-split {
     /* minmax(0, 1fr), never bare 1fr: a bare 1fr's implicit minimum is
        min-content, and the widest row inside the terminal (meters, approval

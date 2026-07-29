@@ -94,10 +94,25 @@ export function toolBlocked(el, f) {
   gateRecord(el, 'blocked', blockedRow(f), f.tool_name);
 }
 
+/**
+ * A prompt the gate refused, given the same record a blocked tool call gets.
+ *
+ * A dim transcript line would leave the one denial that never involves a tool
+ * as the only one with no record to open, no policy chain, and no audit link
+ * — the case the demo most needs to be traceable.
+ */
 export function promptBlocked(el, f) {
-  line(el, 'output-warn', 'Prompt blocked'
-    + (f.policy ? ' by ' + f.policy : '') + (f.reason ? ' — ' + f.reason : '')
-    + '. It never reached a provider.');
+  const why = f.reason || 'The governance chain refused it';
+  const reason = (/[.!?]$/.test(why) ? why : why + '.') + ' It never reached a provider.';
+  const record = blockedRow({ tool_name: 'your prompt', policy: f.policy, reason });
+  // The chain that judged this prompt is held for the row it belongs to, and
+  // for a blocked prompt no tool row is ever coming to claim it.
+  if (el._railFor) {
+    record.querySelector('.pi-blocked-head').append(railEl(el, el._railFor, true));
+    el._railFor = null;
+    el._railDecision = null;
+  }
+  gateRecord(el, 'blocked', record, 'your prompt');
 }
 
 function takeRow(el, id, name) {
@@ -126,7 +141,7 @@ function takeRow(el, id, name) {
 export function approvalRequest(el, f) {
   const handle = approvalCard(f, (decision) => {
     handle.lock();
-    void decide(el, f.approval_id, decision);
+    void decide(el, f.approval_id, decision, f.tool_name);
   });
   el._approvals.set(f.approval_id, handle);
   el._approvalsEl.append(handle.el);
@@ -144,11 +159,19 @@ export function approvalAuto(el, f) {
   gateRecord(el, 'ok', autoApprovedCard(f), f.tool_name);
 }
 
-async function decide(el, approvalId, decision) {
+async function decide(el, approvalId, decision, toolName) {
   const res = await el._post('approve', { approval_id: approvalId, decision });
   // 409 means it was already settled — by the timeout, by another viewer, or
   // by abandonment. Say so rather than implying the click landed.
-  if (res && res.status === 409) settle(el, approvalId, 'expired');
+  if (res && res.status === 409) {
+    settle(el, approvalId, 'expired');
+    return;
+  }
+  // A standing approval takes future prompts away, so it says so once in the
+  // transcript rather than only on the card that is about to fold away.
+  if (decision === 'allow_always' && res && res.ok) {
+    line(el, 'output-dim', 'standing approval armed for ' + toolName + ' — this session');
+  }
 }
 
 export function approvalResolved(el, f) {

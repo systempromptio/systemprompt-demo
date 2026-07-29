@@ -1,7 +1,8 @@
 /**
  * The Traffic tab's drilldowns and the Overview's request-pulse strip: every
- * request the conversation has made, as a latency chart, a success split,
- * and an expandable per-request list with audit links.
+ * request in the pane's current scope — the whole account by default, or just
+ * the focused conversation — as a latency chart, a success split, and an
+ * expandable per-request list with audit links.
  *
  * Data comes from the stats sub-resources, refreshed whenever the headline
  * stats land (push or poll) and throttled so a busy turn costs one fetch.
@@ -20,7 +21,8 @@ export function refreshRequests(pane) {
   if (pane._reqFetchAt && now - pane._reqFetchAt < REFRESH_MIN_MS) return;
   pane._reqFetchAt = now;
   const base = '/api/public/pi/stats/' + encodeURIComponent(pane._conversation);
-  const token = 'token=' + encodeURIComponent(pane._token);
+  const token = 'token=' + encodeURIComponent(pane._token)
+    + '&scope=' + encodeURIComponent(pane._scope || 'all');
   fetchJson(base + '/requests?' + token).then((body) => {
     if (body) renderRequests(pane, body.requests || []);
   });

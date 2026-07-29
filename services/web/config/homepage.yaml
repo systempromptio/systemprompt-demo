@@ -7,7 +7,7 @@
 hero:
   title: "Stop renting AI."
   title_highlight: "Own the system."
-  subtitle: "This is a live demo of systemprompt.io, the only AI infrastructure you actually own. Create an account with a passkey, take $1 of credit, and run Claude Desktop through a gateway that answers to you: your policies, your audit trail, your bill."
+  subtitle: "This is a live demo of systemprompt.io, the only AI infrastructure you actually own. Ask the terminal below to block a leaked secret, build a spend dashboard, or audit its own session — type / for the full demo menu. Then create an account with a passkey, take $1 of credit, and run Claude Desktop through a gateway that answers to you: your policies, your audit trail, your bill."
   eyebrow: "Live demo · Five steps · $1 credit included"
   cta: "Start the demo"
   cta_url: "/register"

@@ -9,6 +9,7 @@ import { degrade } from './pi-terminal-canned.js';
 import { enterQueue } from './pi-terminal-capacity.js';
 import { closeArtifact } from './pi-artifact-overlay.js';
 import { resetArtifacts } from './pi-terminal-artifacts.js';
+import { mountWelcome } from './pi-terminal-view.js';
 
 /**
  * Re-run the whole start sequence against whatever credential now exists.
@@ -31,6 +32,9 @@ export async function restart(el, resume) {
   el._approvals.clear();
   el._approvalsEl.replaceChildren();
   el._body.replaceChildren();
+  // An emptied transcript is an empty transcript: the same opening chips a
+  // first-time visitor gets. `append` clears it again on the first line.
+  mountWelcome(el);
   el._toolRows.clear();
   el._gateRun = null;
   closeArtifact(el);
@@ -57,6 +61,7 @@ export async function restart(el, resume) {
   el._gateEl.hidden = true;
   el._gateEl.replaceChildren();
   el.classList.remove('is-replay');
+  el.classList.remove('is-session');
   await start(el, resume);
 }
 
@@ -106,7 +111,6 @@ export async function start(el, resume) {
   // The stats pane polls per conversation and cannot mint its own token, so
   // the credential travels with the announcement. Same origin, same page.
   el._emit('pi-session', { conversation_id: el._conversationId, token: el._token });
-  el._emit('pi-conversations-changed', {});
   // Not awaited: the palette is discovery, and the stream is the thing the
   // viewer is waiting for.
   loadCommands(el);

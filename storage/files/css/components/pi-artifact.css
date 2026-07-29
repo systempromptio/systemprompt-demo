@@ -1,8 +1,25 @@
 /* ── artifacts: the results tools left behind ───────────────────────────── */
 
-/* The "view result" affordance on a finished tool row. */
+/* The "view result" affordance on a finished tool row. The wrapper exists so
+   the button can sit on the summary line without living inside <summary>,
+   which may not contain another control. */
+.pi-tool-artifact-wrap {
+  position: relative;
+  margin: var(--sp-space-2) 0;
+}
+
+.pi-tool-artifact-wrap > .pi-tool {
+  margin: 0;
+}
+
+.pi-tool-artifact-wrap > .pi-tool > summary {
+  padding-right: 5.5rem;
+}
+
 .pi-tool-artifact {
-  margin-left: auto;
+  position: absolute;
+  top: 0;
+  right: 0;
   padding: 0.05rem 0.45rem;
   border: 1px solid color-mix(in oklch, var(--sp-color-success) 40%, transparent);
   border-radius: var(--sp-radius-full);

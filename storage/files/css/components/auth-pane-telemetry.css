@@ -327,6 +327,17 @@
   color: var(--sp-ap-text);
 }
 
+/* The scope switch governs every tab beneath it, so it sits above the tablist
+   and reads as a heading rather than as one more control inside a panel. */
+.auth-pane .pane-filter--scope {
+  margin-bottom: var(--sp-space-2);
+}
+
+.auth-pane .pane-filter--scope .pane-filter-btn.is-active {
+  color: var(--sp-color-primary);
+  font-weight: 600;
+}
+
 .auth-pane .pane-filter-btn:focus-visible {
   outline: 2px solid var(--sp-color-primary);
   outline-offset: 1px;

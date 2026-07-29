@@ -56,12 +56,29 @@ export async function poll(pane) {
 }
 
 /**
+ * The body carries both scopes; this keeps the last one so switching between
+ * "all conversations" and "this conversation" repaints from memory instead of
+ * waiting on a refetch.
+ */
+export function applyStats(pane, body) {
+  pane._stats = body;
+  applyCredit(pane, body.credit);
+  paintScope(pane, body[pane._scope] || body.all || {});
+}
+
+/** Repaint the tiles from the payload already in hand, at the current scope. */
+export function repaintScope(pane) {
+  if (!pane._stats) return;
+  paintScope(pane, pane._stats[pane._scope] || pane._stats.all || {});
+}
+
+/**
  * Every field is guarded. The pane is served from `web/dist` and the API
  * from the binary, so a deploy can land one without the other; an older
  * server simply omits the new keys, and every new tile falls back to a dash
  * rather than printing `undefined` next to real numbers.
  */
-export function applyStats(pane, s) {
+function paintScope(pane, s) {
   setStat(pane, 'model', s.model || '—');
   // The server sends this only when a route actually rewrote the model, so
   // the usual reading is the reassuring one: you got what you asked for.
@@ -94,11 +111,10 @@ export function applyStats(pane, s) {
   setStat(pane, 'cost', s.cost_display || '$0');
   setStat(pane, 'costPer', s.cost_per_request_display || '$0');
 
-  if (s.policy_stages && s.policy_stages.length) applyStages(pane, s.policy_stages);
-  applyCredit(pane, s.credit);
+  if (s.policy_stages && s.policy_stages.length) applyStages(pane, s.policy_stages, denials);
   applyModelMix(pane, s.model_mix);
-  applyGovChip(pane, (s.events || []).length, denials);
-  renderFeed(pane, s.events || []);
+  applyGovChip(pane, s.decisions_total || (s.events || []).length, denials);
+  renderFeed(pane, s.events || [], s.decisions_total, denials);
   // The headline snapshot is the signal that new rows landed; the drilldowns
   // (per-request list, timeseries, cross-conversation rollup) refresh off the
   // same beat, each behind its own throttle.

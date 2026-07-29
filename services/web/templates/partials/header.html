@@ -1,16 +1,15 @@
 <a href="#main" class="sp-skip-link">Skip to main content</a>
 <header class="site-header" role="banner">
   <nav class="site-nav">
-    <a href="/" class="logo-link">
+    <a href="https://systemprompt.io" class="logo-link">
       <img src="/files/images/logo-dark.svg" alt="{{ORG_NAME}}" class="logo-svg logo-light" width="140" height="32" loading="eager" />
       <img src="/files/images/logo.svg" alt="{{ORG_NAME}}" class="logo-svg logo-dark" width="140" height="32" loading="eager" />
       <img src="/files/images/logo-white.svg" alt="{{ORG_NAME}}" class="logo-svg logo-video" width="140" height="32" loading="eager" />
     </a>
-    <span class="logo-tagline">Fully extendable AI infrastructure owned by you</span>
     <div class="mobile-menu-overlay" aria-hidden="true"></div>
     <div class="nav-links">
       <div class="mobile-menu-header">
-        <a href="/" class="logo-link">
+        <a href="https://systemprompt.io" class="logo-link">
           <img src="/files/images/logo-dark.svg" alt="{{ORG_NAME}}" class="logo-svg logo-light" width="140" height="32" />
           <img src="/files/images/logo.svg" alt="{{ORG_NAME}}" class="logo-svg logo-dark" width="140" height="32" />
         </a>
@@ -69,9 +68,19 @@
       should be reachable from every header.
     -->
     <div class="nav-actions">
-      {{#if site.header_nav.cta}}
-      <a href="{{site.header_nav.cta.href}}" class="cta-button"{{#if site.header_nav.cta.external}} target="_blank" rel="noopener noreferrer"{{/if}}>{{site.header_nav.cta.label}}</a>
-      {{/if}}
+      <a class="nav-cta-link"
+         href="https://www.youtube.com/watch?v=Tup3ClQM0bo"
+         target="_blank" rel="noopener noreferrer"
+         data-video-id="Tup3ClQM0bo"
+         data-video-title="The platform demo"
+         data-video-source="header">Watch the platform demo</a>
+      <a class="nav-cta-link"
+         href="https://www.youtube.com/watch?v=pbHArVcCGFY"
+         target="_blank" rel="noopener noreferrer"
+         data-video-id="pbHArVcCGFY"
+         data-video-title="The Bridge demo"
+         data-video-source="header">Watch the Bridge demo</a>
+      <a class="cta-button" href="https://systemprompt.io/#demo-request" target="_blank" rel="noopener noreferrer">Book a live demo</a>
       <button type="button" class="mobile-menu-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <span class="hamburger-line"></span>
         <span class="hamburger-line"></span>

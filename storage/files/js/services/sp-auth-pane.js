@@ -24,8 +24,9 @@ import { profileHtml } from './sp-auth-pane-forms.js';
 import { wireTabs, selectTab } from './sp-auth-pane-tabs.js';
 import { createPulse } from './sp-auth-pane-pulse.js';
 import {
-  poll, setStat, applyStats, FALLBACK_POLL_MS, PUSH_FRESH_MS,
+  poll, setStat, applyStats, repaintScope, FALLBACK_POLL_MS, PUSH_FRESH_MS,
 } from './sp-auth-pane-stats.js';
+import { refreshRequests } from './sp-auth-pane-requests.js';
 import { applyStages, pushFeed, syncFeedPreview, IDLE_STAGES } from './sp-auth-pane-governance.js';
 
 class SpAuthPane extends HTMLElement {
@@ -39,6 +40,11 @@ class SpAuthPane extends HTMLElement {
     this._lastFrameAt = 0;
     this._lastStatsPushAt = 0;
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
+    // The account, not the conversation. Clearing the terminal opens a fresh
+    // conversation, and a pane that defaulted to it would answer every question
+    // with zero while the credit meter beside it reported real spend.
+    this._scope = 'all';
+    this._stats = null;
   }
 
   async connectedCallback() {
@@ -123,6 +129,7 @@ class SpAuthPane extends HTMLElement {
     const viewGov = this.querySelector('[data-role="view-gov"]');
     if (viewGov) viewGov.addEventListener('click', () => selectTab(this, 'governance'));
     this._wireGovFilter();
+    this._wireScopeFilter();
     syncFeedPreview(this);
     // Render the four stages at zero straight away. Waiting for the first poll
     // would mean the pipeline appears to come into existence once something
@@ -175,6 +182,30 @@ class SpAuthPane extends HTMLElement {
     });
   }
 
+  /**
+   * Both scopes arrive in the same payload, so switching repaints from what is
+   * already in hand. Only the drilldowns — per-request list and timeseries —
+   * have to go back to the server, and their throttle is cleared so the switch
+   * is not silently ignored for the next few seconds.
+   */
+  _wireScopeFilter() {
+    const group = this.querySelector('[data-role="scope-filter"]');
+    if (!group) return;
+    group.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-scope]');
+      if (!btn || btn.dataset.scope === this._scope) return;
+      this._scope = btn.dataset.scope;
+      group.querySelectorAll('[data-scope]').forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      repaintScope(this);
+      this._reqFetchAt = 0;
+      refreshRequests(this);
+    });
+  }
+
   // ── session ───────────────────────────────────────────────────────────────
 
   _onSession(detail) {
@@ -185,6 +216,11 @@ class SpAuthPane extends HTMLElement {
     // counters over would show the visitor tool calls they never made.
     this._live = { tools: 0, blocked: 0, approvals: 0, turns: 0 };
     this._lastStatsPushAt = 0;
+    // The drilldown throttles have to go with them, or the strip and the
+    // conversation list keep showing the previous conversation for their whole
+    // refresh interval while the tiles have already moved on.
+    this._reqFetchAt = 0;
+    this._actFetchAt = 0;
     if (this._who) this._startPolling();
     if (this._pulse) this._pulse.setToken(this._token);
   }
