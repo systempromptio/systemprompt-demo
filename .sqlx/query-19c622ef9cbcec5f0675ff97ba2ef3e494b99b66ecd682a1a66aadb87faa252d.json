@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT c.id AS \"id: ContextId\", c.user_id, c.attested_session_id,\n               c.title, c.last_seq, c.closed_at,\n               u.name AS owner_name\n        FROM pi_conversations c\n        JOIN users u ON u.id = c.user_id\n        WHERE c.id = $1 AND c.archived_at IS NULL\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ContextId",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pi_conversations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pi_conversations",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "attested_session_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pi_conversations",
+            "name": "attested_session_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pi_conversations",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "last_seq",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "pi_conversations",
+            "name": "last_seq"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "closed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pi_conversations",
+            "name": "closed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "owner_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "19c622ef9cbcec5f0675ff97ba2ef3e494b99b66ecd682a1a66aadb87faa252d"
+}

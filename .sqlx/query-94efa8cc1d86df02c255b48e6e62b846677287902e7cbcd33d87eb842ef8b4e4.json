@@ -1,0 +1,87 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            COUNT(*)::bigint                                   AS \"request_count!\",\n            COUNT(DISTINCT context_id)::bigint                 AS \"context_count!\",\n            COUNT(DISTINCT trace_id)::bigint                   AS \"trace_count!\",\n            COUNT(*) FILTER (WHERE status = 'failed')::bigint  AS \"error_count!\",\n            COALESCE(SUM(input_tokens), 0)::bigint             AS \"total_input_tokens!\",\n            COALESCE(SUM(output_tokens), 0)::bigint            AS \"total_output_tokens!\",\n            COALESCE(SUM(cost_microdollars), 0)::bigint        AS \"total_cost_microdollars!\",\n            COALESCE(SUM(cache_read_tokens), 0)::bigint        AS \"total_cache_read_tokens!\",\n            COALESCE(SUM(cache_creation_tokens), 0)::bigint    AS \"total_cache_creation_tokens!\",\n            COUNT(*) FILTER (WHERE cache_hit)::bigint          AS \"cache_hit_count!\"\n        FROM ai_requests\n        WHERE user_id = $1\n          AND ($2::text IS NULL OR session_id IN (\n              SELECT session_id FROM pi_conversation_sessions\n              WHERE conversation_id = $2\n          ))\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "request_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "context_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "trace_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "error_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "total_input_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "total_output_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "total_cost_microdollars!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "total_cache_read_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "total_cache_creation_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "cache_hit_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "94efa8cc1d86df02c255b48e6e62b846677287902e7cbcd33d87eb842ef8b4e4"
+}

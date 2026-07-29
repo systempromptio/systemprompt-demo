@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE pi_conversations\n        SET archived_at = NOW()\n        WHERE id = $1 AND user_id = $2 AND archived_at IS NULL\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "057435fdb44c37bb72dc26f06371ffff24c9e91402bc7ac6e6e303c3ff0d184f"
+}

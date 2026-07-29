@@ -1,0 +1,109 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id as \"id!\", created_at as \"at!\",\n                  CASE WHEN tool_name = 'user_prompt' THEN 'prompt'\n                       WHEN policy = 'authz_rule_based' THEN 'route'\n                       ELSE 'tool' END as \"kind!\",\n                  tool_name as \"subject!\", decision as \"outcome!\", policy as \"policy!\",\n                  reason as \"detail!\", evaluated_rules as \"evaluated_rules?\"\n           FROM governance_decisions\n           WHERE decision = 'deny'\n             AND user_id = $1\n             AND ($2::text IS NULL OR session_id IN (\n                   SELECT session_id FROM pi_conversation_sessions\n                   WHERE conversation_id = $2))\n           ORDER BY created_at DESC\n           LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "at!",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "kind!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "subject!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "tool_name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "outcome!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "decision"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "policy!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "policy"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "detail!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "evaluated_rules?",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "governance_decisions",
+            "name": "evaluated_rules"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "56e7730daa2cfd1327761e590b04d675e1702b89c14b2ddb81707f2413c5386d"
+}

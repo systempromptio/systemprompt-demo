@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*)::bigint AS \"calls!\"\n           FROM user_activity\n           WHERE user_id = $1\n             AND category = 'mcp_access' AND action = 'used'\n             AND ($2::text IS NULL OR metadata->>'session_id' IN (\n                   SELECT session_id FROM pi_conversation_sessions\n                   WHERE conversation_id = $2))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "calls!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5917d60c69910689f34b01d0a59a01e41c8f6efaa4dd7425de7007205c60e286"
+}

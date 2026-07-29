@@ -1,0 +1,45 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) as \"requests!\",\n                  COALESCE(SUM(input_tokens), 0)::BIGINT as \"input_tokens!\",\n                  COALESCE(SUM(output_tokens), 0)::BIGINT as \"output_tokens!\",\n                  COALESCE(SUM(cost_microdollars), 0)::BIGINT as \"cost_microdollars!\"\n           FROM ai_requests\n           WHERE user_id = $1 AND session_id IN (\n                     SELECT b.session_id FROM pi_conversation_sessions b\n                      WHERE b.conversation_id IN (\n                            SELECT conversation_id FROM pi_conversation_sessions\n                             WHERE session_id = $2)\n                     UNION ALL SELECT $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "requests!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "input_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "output_tokens!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "cost_microdollars!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e294edff8985c96638482ff0da411950a4231ba2288108f3cb2cc03af35efca5"
+}
