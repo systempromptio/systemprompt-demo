@@ -78,6 +78,7 @@ impl PolicyVerdict {
                 result: match entry.result {
                     ChainEntryResult::Pass => StageResult::Pass,
                     ChainEntryResult::Fail => StageResult::Fail,
+                    ChainEntryResult::Disabled => StageResult::Disabled,
                     ChainEntryResult::Skip => StageResult::Skip,
                 },
                 detail: entry.detail.clone(),

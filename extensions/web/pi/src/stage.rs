@@ -12,8 +12,9 @@ use systemprompt_web_governance::webhook::governance::stages::{StageOutcome, Sta
 #[derive(Debug, Clone, Serialize)]
 pub struct PolicyStage {
     pub policy: String,
-    /// `pass`, `fail`, or `skip`. Skip is its own state so a policy that never
-    /// ran can be dimmed rather than implying it cleared the call.
+    /// `pass`, `fail`, `disabled`, or `skip`. Neither skip nor disabled
+    /// implies the policy cleared the call, and they stay distinct so a
+    /// switched-off chain does not render as one that merely stopped early.
     pub result: &'static str,
     pub detail: String,
     /// Milliseconds spent evaluating this policy; zero if it never ran.
@@ -27,6 +28,7 @@ impl PolicyStage {
             result: match outcome.result {
                 StageResult::Pass => "pass",
                 StageResult::Fail => "fail",
+                StageResult::Disabled => "disabled",
                 StageResult::Skip => "skip",
             },
             detail: outcome.detail.clone(),

@@ -1,6 +1,6 @@
 //! Credential redactor for transcript bodies heading to the DOM.
 
-use systemprompt_security::policy::secrets::find_high_entropy_token;
+use systemprompt_security::policy::secrets::{EntropyConfig, find_high_entropy_token};
 
 /// Defense-in-depth text redactor for prompts/responses heading to the DOM.
 ///
@@ -62,10 +62,12 @@ pub fn redact_text(input: &str) -> (String, u32) {
     }
     // Why: prefix-less key material the list above cannot name; same detector
     // the secret_scan policy and gateway scanner run.
-    while let Some((start, end)) = find_high_entropy_token(&out).map(|token| {
-        let start = token.as_ptr() as usize - out.as_ptr() as usize;
-        (start, start + token.len())
-    }) {
+    while let Some((start, end)) =
+        find_high_entropy_token(&out, &EntropyConfig::default()).map(|token| {
+            let start = token.as_ptr() as usize - out.as_ptr() as usize;
+            (start, start + token.len())
+        })
+    {
         out.replace_range(start..end, "[REDACTED:high_entropy_token]");
         count = count.saturating_add(1);
     }

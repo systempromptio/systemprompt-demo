@@ -13,6 +13,10 @@
 pub enum StageResult {
     Pass,
     Fail,
+    /// Switched off by config. Distinct from [`StageResult::Skip`] because
+    /// both leave a policy unevaluated but only this one means the
+    /// installation is unguarded.
+    Disabled,
     Skip,
 }
 
