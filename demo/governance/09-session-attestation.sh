@@ -11,8 +11,8 @@
 #   5. Show the session row and its source in user_sessions
 #
 # Step 4 deliberately asks for a model the profile does not expose, so the call
-# is rejected at the allow-list (403) instead of spending upstream tokens. That
-# is the point of the assertion: a 403 can only be reached *after* the session
+# is rejected at the allow-list (400) instead of spending upstream tokens. That
+# is the point of the assertion: a 400 can only be reached *after* the session
 # was attested, so it separates "auth accepted my session" from "the model gate
 # said no". Set RUN_INFERENCE=1 to send a real (billed) inference instead.
 #
@@ -111,7 +111,7 @@ if [[ "${RUN_INFERENCE:-0}" == "1" ]]; then
   echo "  RUN_INFERENCE=1 — sending a real, billed request to $MODEL"
 else
   MODEL="not-a-real-model-for-this-profile"
-  EXPECT=403
+  EXPECT=400
   echo "  Asking for an un-exposed model so no upstream tokens are spent."
 fi
 
@@ -120,8 +120,8 @@ echo "  x-session-id: $SESSION_ID"
 echo "  HTTP $STATUS — $(head -c 200 /tmp/sp-attest-body.$$)"
 echo ""
 assert_eq "$STATUS" "$EXPECT" "attested session accepted by auth"
-if [[ "$EXPECT" == "403" ]]; then
-  echo "  (403 is the model allow-list, reached only after attestation passed.)"
+if [[ "$EXPECT" == "400" ]]; then
+  echo "  (400 is the model allow-list, reached only after attestation passed.)"
 fi
 rm -f /tmp/sp-attest-body.$$
 echo ""
