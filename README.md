@@ -61,7 +61,7 @@ Every inference request and every MCP tool call passes a synchronous four-stage 
 
 - **Your keys cannot enter the model's context.** Credentials are decrypted from an encrypted store and injected into the tool subprocess environment only. The process that owns the LLM context never writes the value, and the secret scan denies any tool call that tries to smuggle one through arguments. The recording above is that denial happening.
 - **Your usage is a query, not a mystery.** `systemprompt infra logs request list` shows every gateway request with model, tokens, cost, and latency. `systemprompt infra logs audit <id> --full` reconstructs one request end to end.
-- **Your $1 is enforced at the gateway.** Cost is metered per request in microdollars. When the credit is gone, the gateway returns a clean 429 instead of a surprise bill.
+- **Your $1 is enforced at the gateway.** Cost is metered per request in microdollars. When the credit is gone, the gateway returns a clean 403 instead of a surprise bill.
 
 <details>
 <summary><strong>The pipeline, in one screen</strong></summary>
@@ -92,7 +92,7 @@ The gateway speaks the Anthropic wire format at `POST /v1/messages`, so any Anth
 
 ## Or host the whole funnel yourself
 
-This repository is the source of demo.systemprompt.io. You can run the entire funnel, from splash page to credit-exhaustion 429, on your own machine. One difference from the hosted demo: locally there is no funded gateway behind you, so `setup-local` asks for your own AI provider key and inference is billed to it. The $1 credit mechanics still work, they just meter spend against your key.
+This repository is the source of demo.systemprompt.io. You can run the entire funnel, from splash page to credit exhaustion, on your own machine. One difference from the hosted demo: locally there is no funded gateway behind you, so `setup-local` asks for your own AI provider key and inference is billed to it. The $1 credit mechanics still work, they just meter spend against your key.
 
 ```bash
 git clone https://github.com/systempromptio/systemprompt-demo
@@ -103,7 +103,14 @@ just start            # gateway + agents + MCP server on :8080
 just publish          # prerenders the public pages
 ```
 
-Open http://localhost:8080 and walk the five steps above against your own binary. [TESTING.md](TESTING.md) is the complete end-to-end script, including how to verify the credit grant in SQL and force a 429. The scripted governance and analytics demos live in [`demo/`](demo/README.md), and the Bridge source is in [`bridge/`](bridge/README.md).
+Open http://localhost:8080 and walk the five steps above against your own binary. The scripted governance and analytics demos live in [`demo/`](demo/README.md), and the Bridge source is in [`bridge/`](bridge/README.md).
+
+`setup-local` grants no credit, so the gateway refuses inference until a grant exists — that is the exhaustion path, reached from the other side:
+
+```sql
+INSERT INTO credit_grants (id, user_id, microdollars, reason)
+VALUES (gen_random_uuid(), '<user-id>', 1000000, 'local_dev');
+```
 
 You will need Docker, Rust 1.75+, [`just`](https://just.systems/), and at least one AI provider key. `systemprompt --help` covers the rest.
 
