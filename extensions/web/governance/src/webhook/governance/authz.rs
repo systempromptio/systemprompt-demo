@@ -20,7 +20,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use sqlx::PgPool;
-use systemprompt::identifiers::{Actor, MarketplaceId, SessionId};
+use systemprompt::identifiers::{Actor, ContextId, MarketplaceId, SessionId};
 use systemprompt_security::authz::{
     AccessControlRepository, AccessRule, AuthzDecision, AuthzRequest, Decision, DecisionTag,
     EntityKind, EntityRef, EntityRow, ResolveInput, ResolveParent, resolve,
@@ -142,6 +142,16 @@ async fn audit_decision(
         "rules": rules,
     });
     let actor = Actor::user(req.user_id.clone());
+    // Why: the audit row's context is mandatory, but an enforcement site
+    // without a conversation (server-attach RBAC, MCP) sends none. Derive
+    // deterministically from the attested session so repeated decisions in one
+    // session share a context, and fall back to the legacy context only when
+    // there is no session either.
+    let context_id = req.context_id.clone().unwrap_or_else(|| {
+        req.session_id
+            .as_ref()
+            .map_or_else(ContextId::legacy, ContextId::derived_from_session)
+    });
     let record = GovernanceDecisionRecord {
         id: &id,
         actor: &actor,
@@ -164,10 +174,7 @@ async fn audit_decision(
         evaluated_rules: &evaluated,
         plugin_id: None,
         act_chain: &req.act_chain,
-        context_id: req
-            .context_id
-            .as_ref()
-            .map(systemprompt::identifiers::ContextId::as_str),
+        context_id: context_id.as_str(),
         task_id: req
             .task_id
             .as_ref()

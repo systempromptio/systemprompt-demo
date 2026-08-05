@@ -9,11 +9,13 @@ use std::sync::Arc;
 use axum::Router;
 
 use systemprompt::analytics::AnalyticsService;
+use systemprompt::analytics::repository::AnalyticsRepositories;
 use systemprompt::database::Database;
 use systemprompt::extension::prelude::*;
 use systemprompt::oauth::SessionCreationService;
 use systemprompt::traits::{AnalyticsProvider, Job};
 use systemprompt::users::UserService;
+use systemprompt::users::UserRepository;
 
 use crate::assets::web_assets;
 use crate::extenders::OrgUrlExtender;
@@ -244,12 +246,14 @@ impl WebExtension {
     fn build_session_service(
         dbpool: &Arc<Database>,
     ) -> Option<(Arc<SessionCreationService>, Arc<dyn AnalyticsProvider>)> {
-        let user = UserService::new(dbpool)
-            .map_err(|e| tracing::error!(error = %e, "Failed to build user service"))
+        let user_repository = UserRepository::new(dbpool)
+            .map_err(|e| tracing::error!(error = %e, "Failed to build user repository"))
             .ok()?;
-        let analytics = AnalyticsService::new(dbpool, None, None)
-            .map_err(|e| tracing::error!(error = %e, "Failed to build analytics service"))
+        let user = UserService::new(Arc::new(user_repository));
+        let analytics_repositories = AnalyticsRepositories::new(dbpool)
+            .map_err(|e| tracing::error!(error = %e, "Failed to build analytics repositories"))
             .ok()?;
+        let analytics = AnalyticsService::new(None, None, &analytics_repositories);
         let analytics: Arc<dyn AnalyticsProvider> = Arc::new(analytics);
         Some((
             Arc::new(SessionCreationService::new(

@@ -12,6 +12,7 @@ use sqlx::PgPool;
 use systemprompt::identifiers::UserId;
 
 use systemprompt::database::Database;
+use systemprompt::oauth::repository::OAuthRepository;
 use systemprompt::oauth::services::issue_bridge_exchange_code;
 
 use crate::error::{AdminError, AdminResult};
@@ -29,7 +30,9 @@ pub(crate) async fn issue_bridge_code(
     State(pool): State<Arc<PgPool>>,
 ) -> AdminResult<Response> {
     let db = Arc::new(Database::from_pools(Arc::clone(&pool), None));
-    let issued = issue_bridge_exchange_code(&db, &user_ctx.user_id)
+    let repository = OAuthRepository::new(&db)
+        .map_err(|e| AdminError::internal(format!("failed to open oauth repository: {e}")))?;
+    let issued = issue_bridge_exchange_code(&repository, &user_ctx.user_id)
         .await
         // lint-ok: http-error — `From<OauthError>` maps every variant to
         // Unauthenticated, which would answer an infrastructure failure with 401.
