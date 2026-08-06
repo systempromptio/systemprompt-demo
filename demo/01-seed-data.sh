@@ -168,7 +168,24 @@ else
       3, false, false, country, device_type, browser,
       ref_source, page_url, 'web'
     FROM pick
-    ON CONFLICT (session_id) DO NOTHING
+    -- Re-date on conflict rather than DO NOTHING: the session ids are the fixed
+    -- set traffic-1..100, so a second seed run would otherwise be a no-op and
+    -- leave the rows at their original timestamps. Every traffic rollup filters
+    -- on `started_at >= NOW() - interval`, so those rows silently age out of the
+    -- window and the analytics demos start failing on a database that has simply
+    -- been seeded before.
+    ON CONFLICT (session_id) DO UPDATE SET
+      started_at = EXCLUDED.started_at,
+      last_activity_at = EXCLUDED.last_activity_at,
+      request_count = EXCLUDED.request_count,
+      is_bot = EXCLUDED.is_bot,
+      is_scanner = EXCLUDED.is_scanner,
+      country = EXCLUDED.country,
+      device_type = EXCLUDED.device_type,
+      browser = EXCLUDED.browser,
+      referrer_source = EXCLUDED.referrer_source,
+      landing_page = EXCLUDED.landing_page,
+      session_source = EXCLUDED.session_source
     RETURNING 1
   )
   INSERT INTO engagement_events

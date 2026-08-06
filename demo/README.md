@@ -10,7 +10,7 @@
 
 # Demo Suite
 
-**44 runnable demo scripts** organised into 9 categories, plus 2 setup scripts, plus 2 orchestrated multi-container scenarios that demonstrate the air-gap and horizontal-scaling claims in the factsheet.
+**44 runnable demo scripts** organised into 8 categories, plus 2 setup scripts, plus 2 orchestrated multi-container scenarios that demonstrate the air-gap and horizontal-scaling claims in the factsheet.
 
 Every demo is **self-testing**: it reads structured `--json` data from the CLI and asserts on it, so a script fails loudly (non-zero exit, red `✗ FAIL` line) the moment expected data is missing — it never narrates a result it didn't verify.
 
@@ -22,7 +22,7 @@ Every section below is a fenced code block — open this file in your editor, cl
 - [Categories at a glance](#categories-at-a-glance)
 - [Demos by category](#demos-by-category)
   - [Setup](#setup-run-these-first)
-  - [Infrastructure](#infrastructure) · [Governance](#governance) · [MCP](#mcp) · [Analytics](#analytics) · [Agents](#agents) · [Users](#users) · [Skills](#skills) · [Web](#web) · [Performance](#performance)
+  - [Infrastructure](#infrastructure) · [Governance](#governance) · [MCP](#mcp) · [Analytics](#analytics) · [Agents](#agents) · [Users](#users) · [Skills](#skills) · [Performance](#performance)
 - [Run them all at once](#run-them-all-at-once)
 - [Scenarios — factsheet proofs](#scenarios--factsheet-proofs)
   - [Air-gap scenario](#air-gap-scenario)
@@ -72,13 +72,12 @@ Organised by the three pillars of [systemprompt.io](https://systemprompt.io): **
 | Pillar | Category | Scripts | What it covers | Cost |
 |--------|----------|---------|----------------|------|
 | Infrastructure | [infrastructure/](infrastructure/) | 5 | Services, database, jobs, logs, configuration | Free |
-| Capabilities | [governance/](governance/) | 10 | Audit smoke, scope, secrets, blocklist, rate limit, hooks | Free |
+| Capabilities | [governance/](governance/) | 12 | Audit smoke, scope, secrets, blocklist, rate limit, hooks, attestation, pi | Free |
 | Capabilities | [mcp/](mcp/) | 3 | MCP server management, access tracking, tool execution | Free |
 | Capabilities | [analytics/](analytics/) | 8 | Overview, agents, costs, requests, sessions, content/traffic, conversations, tools | Free |
 | Capabilities | [agents/](agents/) | 5 | Agent discovery, config, messaging, tracing, A2A registry | 1 × ~$0.01 |
 | Capabilities | [users/](users/) | 4 | User CRUD, roles, sessions, IP bans | Free |
 | Integrations | [skills/](skills/) | 5 | Skills, content, files, plugins, contexts | Free |
-| Integrations | [web/](web/) | 2 | Content types, templates, sitemaps, validation | Free |
 | Integrations | [performance/](performance/) | 2 | Request tracing, 2000-request load test | Free |
 
 **Total: 44 category scripts + 2 setup scripts. 43 free, 1 costs ~$0.01.** Plus two multi-container scenarios — see [Scenarios](#scenarios--factsheet-proofs).
@@ -315,18 +314,6 @@ Every demo below is a single fenced command. Run them in any order once prefligh
 ./demo/skills/05-contexts.sh
 ```
 
-### Web
-
-[`web/01-web-config.sh`](web/01-web-config.sh) — content types, templates, assets.
-```bash
-./demo/web/01-web-config.sh
-```
-
-[`web/02-sitemap-validate.sh`](web/02-sitemap-validate.sh) — sitemap config, web validation.
-```bash
-./demo/web/02-sitemap-validate.sh
-```
-
 ### Performance
 
 [`performance/01-request-tracing.sh`](performance/01-request-tracing.sh) — typed data, flow maps, micro-benchmarks.
@@ -350,7 +337,7 @@ Replay the entire free suite in one shot. Skips the paid `agents/03-agent-messag
 for f in demo/infrastructure/*.sh demo/governance/*.sh \
          demo/mcp/*.sh demo/analytics/*.sh \
          demo/agents/01-*.sh demo/agents/02-*.sh demo/agents/04-*.sh demo/agents/05-*.sh \
-         demo/users/*.sh demo/skills/*.sh demo/web/*.sh demo/performance/*.sh; do
+         demo/users/*.sh demo/skills/*.sh demo/performance/*.sh; do
   echo "=== $f ==="; ./"$f" || { echo "FAIL: $f"; break; }
 done
 ```
@@ -552,23 +539,35 @@ Empty analytics / governance tables:
 
 ## Verification status
 
-All 43 category demos + 2 setup scripts + both scenario stacks were run end-to-end on **2026-06-04** against template `v0.15.0`. Every script exited `0`, and every demo's structured-data assertions (`✓ PASS` lines) held against live seeded data.
+All 44 category demos + 2 setup scripts were run end-to-end via `./demo/sweep.sh` on
+**2026-08-06** against template `v0.29.0`. Every script exited `0`, and every demo's
+structured-data assertions (`✓ PASS` lines) held against live seeded data.
 
 | Set | Count | Result |
 |-----|------:|--------|
 | Setup (preflight, seed) | 2 | All pass |
 | infrastructure/ | 5 | All pass |
-| governance/ | 9 | All pass |
+| governance/ | 12 | All pass |
 | mcp/ | 3 | All pass |
 | analytics/ | 8 | All pass |
 | agents/ | 5 | All pass (incl. paid `03-agent-messaging.sh`) |
 | users/ | 4 | All pass |
 | skills/ | 5 | All pass |
-| web/ | 2 | All pass |
 | performance/ | 2 | All pass (incl. 2000-request load test) |
-| scenarios/airgap (just airgap-test) | 3 | All pass |
-| scenarios/scaled (just scaled-test) | 3 | All pass — long soak (`02-soak.sh`) excluded by design |
-| **Total** | **51** | **All pass** |
+| **Total** | **46** | **All pass** |
+
+The scenario stacks (`just airgap-test`, `just scaled-test`) are not covered by this
+run — they were last verified against `v0.15.0` and are re-verified separately.
+
+Two caveats worth knowing when a demo fails on a machine where it used to pass:
+
+- **Restart the server after rebuilding.** Tokens minted by a freshly built CLI fail
+  validation against a server still running the previous binary, and every governance
+  and MCP demo then fails with `Invalid or expired token`. `systemprompt infra services
+  stop --profile local` then `just start`.
+- **`web/` was retired** on 2026-08-06. Its two scripts asserted on the content-type,
+  template and sitemap registries, which the 2026-07-29 "drop the blog and docs
+  subsystems" refactor emptied by design.
 
 ---
 
