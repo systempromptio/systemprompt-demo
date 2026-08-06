@@ -561,10 +561,23 @@ run — they were last verified against `v0.15.0` and are re-verified separately
 
 Two caveats worth knowing when a demo fails on a machine where it used to pass:
 
-- **Restart the server after rebuilding.** Tokens minted by a freshly built CLI fail
-  validation against a server still running the previous binary, and every governance
-  and MCP demo then fails with `Invalid or expired token`. `systemprompt infra services
-  stop --profile local` then `just start`.
+- **Start the server with `just start`, and restart it after every rebuild.** When the
+  running server and the CLI minting the tokens disagree, *every* governance and MCP
+  demo fails at once with `[GOVERNANCE] authz hook unavailable for policy auth_failure:
+  Invalid or expired token`. It reads like a governance regression and is not one — a
+  token minted seconds earlier is rejected just as fast as an old one, so the wording
+  ("expired") is misleading. Two ways to provoke it have been observed: leaving the
+  server up across a `just build`, and launching the binary directly
+  (`target/debug/systemprompt infra services start --profile local`) instead of through
+  `just start`. The remedy for both is the same:
+
+  ```bash
+  systemprompt infra services stop --profile local
+  just start          # then re-run ./demo/00-preflight.sh
+  ```
+
+  If a single demo fails, suspect the demo. If the whole governance and MCP block fails
+  together, suspect the server and restart it before reading any further.
 - **`web/` was retired** on 2026-08-06. Its two scripts asserted on the content-type,
   template and sitemap registries, which the 2026-07-29 "drop the blog and docs
   subsystems" refactor emptied by design.
