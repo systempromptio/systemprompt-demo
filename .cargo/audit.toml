@@ -30,4 +30,23 @@ ignore = [
     # no runtime security surface. Tracked — drop the ignore once `tabled` and
     # `validator` move off it.
     "RUSTSEC-2026-0173",
+    # RUSTSEC-2026-0235 — rkyv shared-pointer validation skips pointer metadata,
+    # so a crafted archive can forge a slice length and read out of bounds.
+    #
+    # Why this is in the lockfile:
+    # `rkyv 0.7.46` is an *optional* dependency of `rust_decimal 1.42.1`, which core's
+    # `systemprompt-database` requires as `rust_decimal = "^1.42"`. The lockfile records
+    # optional dependencies whether or not their feature is on, and cargo-audit reads the
+    # lockfile, so the advisory fires even though nothing enables the feature.
+    #
+    # Exposure under the current architecture: none. `rust_decimal` resolves with
+    # `default,maths,serde,std` — the `rkyv` feature is off, so the crate is never
+    # compiled or linked (`cargo tree -i rkyv --target all -e all` prints nothing).
+    # The vulnerable paths are `rkyv::access` / `rkyv::from_bytes` on untrusted
+    # archives; we build neither, and deserialize no rkyv archives anywhere.
+    #
+    # No upgrade path: the fix landed in 0.8.17, but rust_decimal 1.42.1 (the newest
+    # 1.x, already resolved) pins `rkyv ^0.7.46`, and upstream has dropped the 0.7
+    # series. Drop this ignore once rust_decimal moves to rkyv 0.8.
+    "RUSTSEC-2026-0235",
 ]
