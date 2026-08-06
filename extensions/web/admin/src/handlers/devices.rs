@@ -31,6 +31,9 @@ pub(crate) async fn issue_bridge_code(
 ) -> AdminResult<Response> {
     let db = Arc::new(Database::from_pools(Arc::clone(&pool), None));
     let repository = OAuthRepository::new(&db)
+        // lint-ok: http-error — a pool that will not open is infrastructure,
+        // not an authentication failure, which is what `From<OauthError>` maps
+        // every variant to.
         .map_err(|e| AdminError::internal(format!("failed to open oauth repository: {e}")))?;
     let issued = issue_bridge_exchange_code(&repository, &user_ctx.user_id)
         .await
