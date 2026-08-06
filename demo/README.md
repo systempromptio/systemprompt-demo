@@ -561,23 +561,36 @@ run — they were last verified against `v0.15.0` and are re-verified separately
 
 Two caveats worth knowing when a demo fails on a machine where it used to pass:
 
-- **Start the server with `just start`, and restart it after every rebuild.** When the
-  running server and the CLI minting the tokens disagree, *every* governance and MCP
-  demo fails at once with `[GOVERNANCE] authz hook unavailable for policy auth_failure:
-  Invalid or expired token`. It reads like a governance regression and is not one — a
-  token minted seconds earlier is rejected just as fast as an old one, so the wording
-  ("expired") is misleading. Two ways to provoke it have been observed: leaving the
-  server up across a `just build`, and launching the binary directly
-  (`target/debug/systemprompt infra services start --profile local`) instead of through
-  `just start`. The remedy for both is the same:
+- **Check who owns the HTTP port before believing a governance failure.** If all twelve
+  `governance/` demos fail at once — and *only* those twelve — with
 
-  ```bash
-  systemprompt infra services stop --profile local
-  just start          # then re-run ./demo/00-preflight.sh
+  ```
+  [GOVERNANCE] authz hook unavailable for policy auth_failure: Invalid or expired token
   ```
 
-  If a single demo fails, suspect the demo. If the whole governance and MCP block fails
-  together, suspect the server and restart it before reading any further.
+  the usual cause is that another systemprompt checkout on the same host is serving this
+  repo's port. Every clone's `local` profile defaults to `port: 8080`, so whichever
+  server starts first wins it and the others fail to bind. The demos then send this
+  repo's tokens to the other repo's server, which validates them against *its*
+  `signing_key.pem` — a different RSA authority, so the `kid` is unknown and the token is
+  rejected. `curl localhost:8080/` still answers `200`, because the other server happily
+  serves its own homepage.
+
+  Only `governance/` fails because it is the only category that authenticates over HTTP
+  with a JWT; every other demo drives the CLI against this repo's database directly.
+
+  Confirm it in one line — the cwd must be *this* repo:
+
+  ```bash
+  PID=$(fuser -n tcp 8080 2>/dev/null); readlink /proc/$PID/cwd
+  ```
+
+  Fix it by giving each clone its own port (`just setup-local <key> "" "" 8081 5433`)
+  rather than by restarting until you win the race.
+
+  Note the client-side message is misleading: the token is neither invalid nor expired,
+  and a token minted one second earlier fails identically. The server-side log carries
+  the truth — `unknown signing key — token was minted under a different RSA authority`.
 - **`web/` was retired** on 2026-08-06. Its two scripts asserted on the content-type,
   template and sitemap registries, which the 2026-07-29 "drop the blog and docs
   subsystems" refactor emptied by design.
