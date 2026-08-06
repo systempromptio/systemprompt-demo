@@ -14,8 +14,7 @@ use systemprompt::database::Database;
 use systemprompt::extension::prelude::*;
 use systemprompt::oauth::SessionCreationService;
 use systemprompt::traits::{AnalyticsProvider, Job};
-use systemprompt::users::UserService;
-use systemprompt::users::UserRepository;
+use systemprompt::users::{UserRepository, UserService};
 
 use crate::assets::web_assets;
 use crate::extenders::OrgUrlExtender;
