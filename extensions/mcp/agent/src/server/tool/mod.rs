@@ -11,8 +11,8 @@ use rmcp::ErrorData as McpError;
 use rmcp::model::{CallToolRequestParams, CallToolResult};
 use rmcp::service::{RequestContext, RoleServer};
 use systemprompt::database::DbPool;
-use systemprompt::mcp::McpToolExecutor;
 use systemprompt::mcp::middleware::enforce_rbac_from_registry;
+use systemprompt::mcp::{ClientProfile, McpToolExecutor};
 use systemprompt::models::artifacts::{CliArtifact, TextArtifact};
 use systemprompt::models::execution::context::RequestContext as SysRequestContext;
 use systemprompt::security::authz::SharedAuthzHook;
@@ -117,60 +117,69 @@ pub(super) async fn dispatch_tool(
     tool_name: &str,
     request: &CallToolRequestParams,
     request_context: &SysRequestContext,
+    client: &ClientProfile,
 ) -> Result<CallToolResult, McpError> {
     match tool_name {
         "list_topics" => {
             executor
-                .execute(&ListTopicsHandler, request, request_context)
+                .execute(&ListTopicsHandler, request, request_context, client)
                 .await
         },
         "get_topic" => {
             executor
-                .execute(&GetTopicHandler, request, request_context)
+                .execute(&GetTopicHandler, request, request_context, client)
                 .await
         },
         "search_docs" => {
             executor
-                .execute(&SearchDocsHandler, request, request_context)
+                .execute(&SearchDocsHandler, request, request_context, client)
                 .await
         },
         "list_site_pages" => {
             executor
-                .execute(&ListSitePagesHandler, request, request_context)
+                .execute(&ListSitePagesHandler, request, request_context, client)
                 .await
         },
         "fetch_site_page" => {
             executor
-                .execute(&FetchSitePageHandler, request, request_context)
+                .execute(&FetchSitePageHandler, request, request_context, client)
                 .await
         },
         "governance_stats" => {
             let handler = GovernanceStatsHandler {
                 db_pool: clone_pool(db_pool),
             };
-            executor.execute(&handler, request, request_context).await
+            executor
+                .execute(&handler, request, request_context, client)
+                .await
         },
         "safety_findings" => {
             let handler = SafetyFindingsHandler {
                 db_pool: clone_pool(db_pool),
             };
-            executor.execute(&handler, request, request_context).await
+            executor
+                .execute(&handler, request, request_context, client)
+                .await
         },
         "render_artifact" => {
             let handler = RenderArtifactHandler {
                 db_pool: clone_pool(db_pool),
             };
-            executor.execute(&handler, request, request_context).await
+            executor
+                .execute(&handler, request, request_context, client)
+                .await
         },
         "admin_audit_dump" => {
             let handler = AdminAuditDumpHandler {
                 db_pool: clone_pool(db_pool),
             };
-            executor.execute(&handler, request, request_context).await
+            executor
+                .execute(&handler, request, request_context, client)
+                .await
         },
         "fetch_remote_docs" => {
             executor
-                .execute(&FetchRemoteDocsHandler, request, request_context)
+                .execute(&FetchRemoteDocsHandler, request, request_context, client)
                 .await
         },
         _ => Err(unknown_tool(tool_name)),

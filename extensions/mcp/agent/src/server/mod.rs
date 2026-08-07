@@ -29,6 +29,7 @@ use systemprompt::mcp::{
 use systemprompt::security::authz::SharedAuthzHook;
 use systemprompt_mcp_shared::{McpAccess, record_mcp_access};
 
+use systemprompt::mcp::client_profile_from_peer;
 use tool::{authenticate_tool_request, dispatch_tool};
 
 const ARTIFACT_VIEWER_TEMPLATE: &str = include_str!("../../templates/artifact-viewer.html");
@@ -152,12 +153,14 @@ impl ServerHandler for SystempromptServer {
         )
         .await;
 
+        let client = client_profile_from_peer(&ctx);
         dispatch_tool(
             &self.executor,
             &self.db_pool,
             &tool_name,
             &request,
             &request_context,
+            &client,
         )
         .await
         .map(Into::into)
