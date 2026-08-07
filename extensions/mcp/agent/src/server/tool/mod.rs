@@ -111,14 +111,25 @@ fn clone_pool(db_pool: &DbPool) -> DbPool {
     std::sync::Arc::<systemprompt::database::Database>::clone(db_pool)
 }
 
+pub(super) struct Dispatch<'a> {
+    pub(super) executor: &'a McpToolExecutor,
+    pub(super) db_pool: &'a DbPool,
+    pub(super) request: &'a CallToolRequestParams,
+    pub(super) request_context: &'a SysRequestContext,
+    pub(super) client: &'a ClientProfile,
+}
+
 pub(super) async fn dispatch_tool(
-    executor: &McpToolExecutor,
-    db_pool: &DbPool,
+    ctx: &Dispatch<'_>,
     tool_name: &str,
-    request: &CallToolRequestParams,
-    request_context: &SysRequestContext,
-    client: &ClientProfile,
 ) -> Result<CallToolResult, McpError> {
+    let Dispatch {
+        executor,
+        db_pool,
+        request,
+        request_context,
+        client,
+    } = *ctx;
     match tool_name {
         "list_topics" => {
             executor
