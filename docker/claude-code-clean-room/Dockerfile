@@ -4,9 +4,10 @@
 # from-scratch install path. The gateway runs SEPARATELY on the host; this
 # container reaches it over `--network host` (see run.sh).
 #
-# Base is glibc (bookworm-slim, NOT alpine/musl) because the mounted
-# systemprompt-bridge binary is built x86_64-unknown-linux-gnu (glibc).
-FROM node:22-bookworm-slim
+# Base is glibc (trixie-slim, NOT alpine/musl) because the mounted
+# systemprompt-bridge binary is built x86_64-unknown-linux-gnu (glibc), and
+# trixie's glibc 2.40 accepts binaries built on hosts as new as glibc 2.39.
+FROM node:22-trixie-slim
 
 # curl + jq for the smoke test and reading the loopback secret; ca-certificates
 # for TLS to a remote gateway; bsdextrautils for `script` (pty wrapper that keeps
