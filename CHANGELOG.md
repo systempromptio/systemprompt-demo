@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.32.2 — 2026-08-19
+
+### Fixed
+
+- Tracks systemprompt-core 0.32.2. The deployment manifests pin the 0.32.2 image; the Helm chart is 0.15.0 with appVersion 0.32.2.
+
 ## 0.32.1 — 2026-08-19
 
 ### Fixed
