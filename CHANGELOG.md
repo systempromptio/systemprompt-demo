@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.32.1 — 2026-08-19
+
+### Fixed
+
+- Tracks systemprompt-core 0.32.1: fresh-profile admin bootstrap email. The deployment manifests pin the 0.32.1 image; the Helm chart is 0.14.0 with appVersion 0.32.1.
+
 ## 0.32.0 — 2026-08-19
 
 ### Changed
