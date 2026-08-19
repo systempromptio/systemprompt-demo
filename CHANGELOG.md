@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.32.0 — 2026-08-19
+
+### Changed
+
+- Tracks systemprompt-core 0.32.0 (rmcp 3.1.3). The deployment manifests (Helm, CasaOS, DigitalOcean) pin the 0.32.0 image; the Helm chart is 0.13.0 with appVersion 0.32.0.
+
+### Removed
+
+- The `cloud sync` demo recordings (`svg-app-sync.sh` and the orphaned `infra-cloud` cast/SVGs): the sync CLI surface they exercised was removed from core, so the scenes could only record an error.
+
 ## 0.26.0 — 2026-07-28
 
 ### Changed
