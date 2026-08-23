@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.36.0 — 2026-08-24
+
+Tracks systemprompt-core 0.36.0. The deployment manifests pin the 0.36.0 image;
+the Helm chart is 0.17.0 with appVersion 0.36.0. No source change was needed:
+0.36.0's breaking `McpDomainError::PortHolderUnverifiable` variant is not matched
+in this repo, and the messaging and Slack APIs it changed are not used here.
+
 ## 0.35.0 — 2026-08-23
 
 Tracks systemprompt-core 0.35.0, taking the 0.33.0 and 0.34.0 releases this repo
