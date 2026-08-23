@@ -205,8 +205,16 @@ echo "  For local dev, the CLI shortcut uses your cloud identity."
 echo "------------------------------------------"
 echo ""
 
-# Resolve admin email: ADMIN_EMAIL env > credentials.json user_email > default
+# Resolve admin email: ADMIN_EMAIL env > profile system_admin.email >
+# credentials.json user_email > default.
+# Why: setup-local writes the admin account from the profile's
+# system_admin.email, so a hardcoded guess mints a token for a user the
+# database does not have and every later step fails on a missing JWT.
 CLOUD_EMAIL="${ADMIN_EMAIL:-}"
+PROFILE_YAML="$PROJECT_DIR/.systemprompt/profiles/${SYSTEMPROMPT_PROFILE_NAME:-local}/profile.yaml"
+if [[ -z "$CLOUD_EMAIL" && -f "$PROFILE_YAML" ]]; then
+  CLOUD_EMAIL=$(awk '/^system_admin:/{f=1;next} f&&/^[^[:space:]]/{f=0} f&&/^[[:space:]]+email:/{print $2;exit}' "$PROFILE_YAML" 2>/dev/null || true)
+fi
 if [[ -z "$CLOUD_EMAIL" && -f "$PROJECT_DIR/.systemprompt/credentials.json" ]]; then
   CLOUD_EMAIL=$(python3 -c "import json; print(json.load(open('$PROJECT_DIR/.systemprompt/credentials.json')).get('user_email',''))" 2>/dev/null || true)
 fi

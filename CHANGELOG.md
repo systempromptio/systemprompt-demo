@@ -8,6 +8,11 @@ had skipped. The deployment manifests pin the 0.35.0 image; the Helm chart is
 
 ### Fixed
 
+- **`demo/00-preflight.sh` minted a token for a user that does not exist.** It
+  fell back to a hardcoded `admin@localhost.dev` while `setup-local` writes the
+  admin account from the profile's `system_admin.email` (`admin@localhost.localdomain`
+  by default), so on a clean clone step 3 failed with "did not return a JWT" and
+  every later step with it. The email is now read from the profile first.
 - **`examples/pi/setup.sh` aborted depending on the token's length.**
   `_jwt_payload_b64` ended on a bare `[[ $pad -gt 0 ]] && …` test, so it returned 1
   whenever the JWT payload needed no base64 padding; under `set -e` with `pipefail`
