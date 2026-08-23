@@ -8,6 +8,12 @@ had skipped. The deployment manifests pin the 0.35.0 image; the Helm chart is
 
 ### Fixed
 
+- **`examples/pi/setup.sh` aborted depending on the token's length.**
+  `_jwt_payload_b64` ended on a bare `[[ $pad -gt 0 ]] && …` test, so it returned 1
+  whenever the JWT payload needed no base64 padding; under `set -e` with `pipefail`
+  that killed the caller's pipeline right after the session id was extracted, with
+  no error message. `trace.sh` carried the same pattern inside a pipeline and
+  survived only on payload length. Both are now `if` statements.
 - **The governance webhook wrote its trace correlator into `session_id`.**
   Enforcement sites with no session had nowhere else to put it, so a session id
   that happened to look like a trace id could join unrelated audit rows. Core
