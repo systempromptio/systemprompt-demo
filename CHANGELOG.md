@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.35.0 — 2026-08-23
+
+Tracks systemprompt-core 0.35.0, taking the 0.33.0 and 0.34.0 releases this repo
+had skipped. The deployment manifests pin the 0.35.0 image; the Helm chart is
+0.16.0 with appVersion 0.35.0.
+
+### Fixed
+
+- **The governance webhook wrote its trace correlator into `session_id`.**
+  Enforcement sites with no session had nowhere else to put it, so a session id
+  that happened to look like a trace id could join unrelated audit rows. Core
+  0.34.0 gave `governance_decisions` a real `trace_id` column; the authz hook now
+  writes there and leaves `session_id` empty when there is no session. The five
+  in-process and hook audit sites that have no request-plane trace in scope record
+  `None` rather than a stand-in.
+
 ## 0.32.2 — 2026-08-19
 
 ### Fixed

@@ -70,9 +70,10 @@ pub async fn record_human_decision(
         }],
         approver,
         act_chain: Vec::new(),
-        // Why: an in-process tool call carries no conversational context; only
-        // the gateway path knows one.
+        // Why: an in-process tool call carries no conversational context and no
+        // request-plane trace; only the gateway path knows either.
         context_id: None,
+        trace_id: None,
     };
     if outcome.allowed() {
         spawn_write(pool, audit);
@@ -118,6 +119,7 @@ pub async fn record_policy_denial(
         approver: None,
         act_chain: Vec::new(),
         context_id: None,
+        trace_id: None,
     };
     write_now(pool, audit).await;
 }
@@ -171,6 +173,7 @@ pub(crate) async fn record(
         approver: None,
         act_chain: Vec::new(),
         context_id: None,
+        trace_id: None,
     };
     if verdict.allowed {
         spawn_write(pool, audit);
