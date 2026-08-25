@@ -31,12 +31,21 @@ jobs:
     outputs:
       tag: ${{ steps.t.outputs.tag }}
       version: ${{ steps.t.outputs.version }}
+      core: ${{ steps.t.outputs.core }}
     steps:
+      - uses: actions/checkout@v4
       - id: t
         run: |
           tag="${{ inputs.tag || github.event.release.tag_name }}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          # The gateway binary and the Homebrew formula are the template's
+          # artefacts, released at the core version. The demo's own tag moves
+          # independently on a demo-only patch, and asking the template for
+          # that tag 404s.
+          core=$(sed -n 's|^systemprompt = { version = "\([0-9.]*\)".*|\1|p' Cargo.toml | head -1)
+          [ -n "$core" ] || { echo "no systemprompt core pin in Cargo.toml"; exit 1; }
+          echo "core=${core}" >> "$GITHUB_OUTPUT"
 
   ghcr:
     needs: version
@@ -109,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          bash scripts/install.sh --version ${{ needs.version.outputs.tag }} --prefix "$HOME/.local"
+          bash scripts/install.sh --version "v${{ needs.version.outputs.core }}" --prefix "$HOME/.local"
           "$HOME/.local/bin/systemprompt" --version
 
   homebrew:
