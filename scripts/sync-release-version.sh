@@ -30,6 +30,16 @@ EOV
 : "${PATCH:?ERROR: version must have three components}"
 
 IMAGE="ghcr.io/systempromptio/systemprompt-demo"
+# The demo's own version and the core release it depends on are usually the same
+# number. They diverge on a demo-only patch — 0.38.1 shipping against an
+# unchanged core 0.38.0 — where pinning the core crates to the demo's version
+# would name a release that was never published:
+#
+#   CORE_VERSION=0.38.0 scripts/sync-release-version.sh 0.38.1
+CORE_VERSION="${CORE_VERSION:-$VERSION}"
+case "$CORE_VERSION" in
+  *[!0-9.]*|*..*|.*|*.) echo "ERROR: CORE_VERSION '$CORE_VERSION' is not a plain semver (X.Y.Z)"; exit 1 ;;
+esac
 fail=0
 
 # file, description, grep pattern that must match post-apply
@@ -54,28 +64,28 @@ check_or_apply Cargo.toml \
 
 # Cargo.toml — core crate pins.
 check_or_apply Cargo.toml \
-    "s|^systemprompt = { version = \"[0-9.]*\"|systemprompt = { version = \"$VERSION\"|" \
-    "^systemprompt = \\{ version = \"$VERSION\"" \
+    "s|^systemprompt = { version = \"[0-9.]*\"|systemprompt = { version = \"$CORE_VERSION\"|" \
+    "^systemprompt = \\{ version = \"$CORE_VERSION\"" \
     "systemprompt core pin"
 check_or_apply Cargo.toml \
-    "s|^systemprompt-security = { version = \"[0-9.]*\"|systemprompt-security = { version = \"$VERSION\"|" \
-    "^systemprompt-security = \\{ version = \"$VERSION\"" \
+    "s|^systemprompt-security = { version = \"[0-9.]*\"|systemprompt-security = { version = \"$CORE_VERSION\"|" \
+    "^systemprompt-security = \\{ version = \"$CORE_VERSION\"" \
     "systemprompt-security core pin"
 
 # Helm chart — appVersion + images annotation.
 # extensions/web declares its own core pin rather than inheriting one.
 check_or_apply extensions/web/Cargo.toml \
-    "s|^systemprompt-extension = \"[0-9.]*\"|systemprompt-extension = \"$VERSION\"|" \
-    "^systemprompt-extension = \"$VERSION\"" \
+    "s|^systemprompt-extension = \"[0-9.]*\"|systemprompt-extension = \"$CORE_VERSION\"|" \
+    "^systemprompt-extension = \"$CORE_VERSION\"" \
     "systemprompt-extension pin"
 # tests/ is a separate workspace and does not inherit the root pins.
 check_or_apply tests/Cargo.toml \
-    "s|^systemprompt = { version = \"[0-9.]*\"|systemprompt = { version = \"$VERSION\"|" \
-    "^systemprompt = \\{ version = \"$VERSION\"" \
+    "s|^systemprompt = { version = \"[0-9.]*\"|systemprompt = { version = \"$CORE_VERSION\"|" \
+    "^systemprompt = \\{ version = \"$CORE_VERSION\"" \
     "test workspace systemprompt pin"
 check_or_apply tests/Cargo.toml \
-    "s|^systemprompt-security = { version = \"[0-9.]*\"|systemprompt-security = { version = \"$VERSION\"|" \
-    "^systemprompt-security = \\{ version = \"$VERSION\"" \
+    "s|^systemprompt-security = { version = \"[0-9.]*\"|systemprompt-security = { version = \"$CORE_VERSION\"|" \
+    "^systemprompt-security = \\{ version = \"$CORE_VERSION\"" \
     "test workspace systemprompt-security pin"
 
 check_or_apply helm/gateway/Chart.yaml \
