@@ -95,7 +95,9 @@ jobs:
     steps:
       - name: Chart appVersion matches the release
         env:
-          VERSION: ${{ needs.version.outputs.version }}
+          # charts.systemprompt.io serves the template's gateway chart, whose
+          # appVersion tracks core — not the demo's own version line.
+          VERSION: ${{ needs.version.outputs.core }}
         run: |
           helm repo add systemprompt https://charts.systemprompt.io
           # helm.yml publishes concurrently — wait for the index to update.
