@@ -129,7 +129,7 @@ pub(crate) fn build_request_context(
     RequestContext::new(
         SessionId::new(session_id.as_str()),
         TraceId::new(uuid::Uuid::new_v4().to_string()),
-        ContextId::new(""),
+        ContextId::derived_from_session(session_id),
         AgentName::new("hook-summary"),
     )
     .with_user(AuthenticatedUser::new(

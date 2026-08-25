@@ -26,7 +26,7 @@ use serde::Serialize;
 use sqlx::PgPool;
 use systemprompt::identifiers::ContextId;
 
-use crate::error::{AdminHtmlError, AdminHtmlResult};
+use crate::error::{AdminError, AdminHtmlError, AdminHtmlResult};
 use crate::repositories::analytics::session_detail;
 use crate::repositories::governance::demo_trace;
 use crate::repositories::pi::{conversations, events as event_repo};
@@ -129,7 +129,11 @@ pub(crate) async fn demo_trace_page(
         ));
     };
 
-    let id = ContextId::new(conversation_id);
+    let id = ContextId::try_new(conversation_id).map_err(|e| {
+        AdminHtmlError::from(AdminError::BadRequest(format!(
+            "conversation id is not a valid context id: {e}"
+        )))
+    })?;
     let conversation = conversations::find_conversation_with_owner(&pool, &id)
         .await
         .map_err(|e| {
