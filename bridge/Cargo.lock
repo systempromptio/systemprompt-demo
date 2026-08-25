@@ -4584,7 +4584,7 @@ dependencies = [
 
 [[package]]
 name = "systemprompt-bridge"
-version = "0.28.0"
+version = "0.30.0"
 dependencies = [
  "apple-native-keyring-store",
  "arc-swap",
@@ -4648,7 +4648,7 @@ dependencies = [
 
 [[package]]
 name = "systemprompt-extension"
-version = "0.36.0"
+version = "0.39.0"
 dependencies = [
  "async-trait",
  "axum",
@@ -4665,7 +4665,7 @@ dependencies = [
 
 [[package]]
 name = "systemprompt-identifiers"
-version = "0.36.0"
+version = "0.39.0"
 dependencies = [
  "chrono",
  "schemars",
@@ -4677,7 +4677,7 @@ dependencies = [
 
 [[package]]
 name = "systemprompt-models"
-version = "0.36.0"
+version = "0.39.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4691,6 +4691,7 @@ dependencies = [
  "regex",
  "rmcp",
  "schemars",
+ "semver",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -4707,7 +4708,7 @@ dependencies = [
 
 [[package]]
 name = "systemprompt-provider-contracts"
-version = "0.36.0"
+version = "0.39.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4722,7 +4723,7 @@ dependencies = [
 
 [[package]]
 name = "systemprompt-traits"
-version = "0.36.0"
+version = "0.39.0"
 dependencies = [
  "async-trait",
  "axum",
