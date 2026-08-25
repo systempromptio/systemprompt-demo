@@ -20,6 +20,10 @@ use systemprompt_bridge::brand::{Brand, BrandAssets};
 static SYSTEMPROMPT_BRAND: Brand = Brand {
     app_name: "Systemprompt Bridge",
     binary_name: "systemprompt-bridge",
+    // Why: this crate's version, not the core library's — it is what the
+    // updater compares against the gateway's advertised version. Protocol
+    // compatibility is negotiated separately on `brand::COMPAT_VERSION`.
+    version: env!("CARGO_PKG_VERSION"),
     vendor: "systemprompt.io",
     config_dir: "systemprompt",
     config_file: "systemprompt-bridge.toml",
