@@ -19,10 +19,20 @@ repository admins alike. Protection is pinned to `main` by name, so moving the
 default branch does not move it.
 
 ```
-next   ← default branch. Every agent, every session. Push freely, no gates.
+next   ← default branch. Every agent, every session. Push freely.
+       Bar: it builds and it runs. Nothing else.
   ↓ `just gate` when you are ready, then `just promote` to open the release PR
+       This is where fmt, clippy, the source gates, tests, deny and audit run.
 main   ← protected, release-only. Tagged. Never pushed to directly.
 ```
+
+**The bar for a push to `next` is that the code works.** `just build` compiles
+and the thing you changed actually runs. That is the whole gate — do not run
+`cargo fmt --check`, clippy, the source-gate scripts, `cargo deny`, `cargo
+audit`, or the test workspace before pushing here, and do not hold a working
+change back because one of them is red. Every one of those runs in the
+pre-release cycle below, where a red result is meant to be found and fixed.
+Running them per-push costs minutes each and gates nothing.
 
 **Nothing runs the pre-release cycle for you.** There is no scheduled job and
 nothing gating a push to `next`. The gates run when a person decides to run
@@ -205,7 +215,11 @@ Unknown YAML keys cause loud errors at load time (`#[serde(deny_unknown_fields)]
 
 ## Critical Rules
 
-0. **Load `development:rust-coding-standards` before writing Rust** — mandatory for every agent and subagent, before creating or editing any `.rs` file. Invoke it with the Skill tool first; don't write Rust from memory of the conventions. Spawned subagents that touch Rust must be told to load it too.
+0. **Load `development:rust-coding-standards` before writing Rust** — mandatory for every agent and subagent, before creating or editing any `.rs` file. Invoke it with the Skill tool first; don't write Rust from memory of the conventions. Spawned subagents that touch Rust must be told to load it too. Its style rules
+   apply here in full; its "Validation Workflow — before committing any code"
+   checklist does **not**. On `next` this repo's bar is the one in
+   [Branching & Release Flow](#branching--release-flow): it builds and it runs.
+   Those gates belong to `just gate`.
 1. **`next` builds against the sibling core checkout** — `[patch.crates-io]` in `Cargo.toml` is **live on `next`**, routing every `systemprompt-*` crate to `../systemprompt-core` (itself on its own `next`). Both repos move together: a core change is picked up by a rebuild here, with no crates.io release in between. `Dockerfile`'s `CORE_REV` pins the commit CI and the image build use — bump it, run `just prepare`, and commit the refreshed `.sqlx` in the same change. Re-comment the patch block only for a release that must build from crates.io alone.
 2. **Rust code -> `extensions/`** — All `.rs` files live here.
 3. **Config only -> `services/`** — YAML/Markdown only. No Rust code.
