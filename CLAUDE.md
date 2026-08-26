@@ -12,38 +12,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **All work lands on `next`. Never push to `main`.**
 
-`main` is protected by a ruleset that requires a pull request and grants **no
-bypass to anyone** — a direct `git push origin main` is refused for agents,
-sessions and repository admins alike. That is deliberate: it is the mechanism,
-not a convention you could talk your way around.
+`next` is the repository's default branch, so a fresh clone starts there. `main`
+is protected by a ruleset that requires a pull request and grants **no bypass to
+anyone** — a direct `git push origin main` is refused for agents, sessions and
+repository admins alike. Protection is pinned to `main` by name, so moving the
+default branch does not move it.
 
 ```
-next   ← every agent, every session, every commit. Push freely.
-  ↓ nightly (04:17 UTC): auto-fix → full gate cycle → promote (only if green)
+next   ← default branch. Every agent, every session. Push freely.
+       Bar: it builds and it runs. Nothing else.
+  ↓ `just gate` when you are ready, then `just promote` to open the release PR
+       This is where fmt, clippy, the source gates, tests, deny and audit run.
 main   ← protected, release-only. Tagged. Never pushed to directly.
 ```
 
-**Do not run the pre-release gate cycle to land ordinary work.** The full cycle is expensive and
-runs **once nightly** (`.github/workflows/nightly.yml`), not on your push.
-Committing and pushing to `next` without gating is the intended workflow.
+**The bar for a push to `next` is that the code works.** `just build` compiles
+and the thing you changed actually runs. That is the whole gate — do not run
+`cargo fmt --check`, clippy, the source-gate scripts, `cargo deny`, `cargo
+audit`, or the test workspace before pushing here, and do not hold a working
+change back because one of them is red. Every one of those runs in the
+pre-release cycle below, where a red result is meant to be found and fixed.
+Running them per-push costs minutes each and gates nothing.
 
-What the nightly does, in order:
+**Nothing runs the pre-release cycle for you.** There is no scheduled job and
+nothing gating a push to `next`. The gates run when a person decides to run
+them:
 
-1. **Auto-fixes the mechanical standards** — rustfmt across every workspace in
-   the repo plus clippy's machine-applicable suggestions — and commits the
-   result straight back to `next`. **Do not spend a turn on formatting**; it is
-   applied for you. Anything needing judgement is not touched.
-2. **Runs the whole cycle** (CI, Quality) against that commit.
-3. **Promotes `next` → `main`** by merging a pull request, but only when every
-   gate is green. A failure leaves `main` at its last good commit.
+1. `just gate [REF]` — dispatches every gate workflow against the ref
+   (default: the tip of `next`) and waits.
+2. `just promote [SHA]` — freezes that commit on the `promote` ref and **opens**
+   the release pull request onto `main`. It does not merge; you do.
+3. Tag `main` once merged. Tags are not covered by the ruleset.
 
-So the standard obligations still hold — your commit should compile and its own
-tests should pass, and the coding standards below are not optional — but
-*proving* it across the whole repo is not your turn to spend. A red gate is the
-highest-priority work next morning: `main` is frozen until it is green.
-
-Releasing is a separate, deliberate act (see the release workflows), run on demand from a
-green `main` — never automatically.
+The commit is frozen on `promote` rather than the PR being headed at `next`
+because a PR headed at `next` merges whatever `next` points at *when you merge
+it* — anything pushed meanwhile would ride along ungated. That happened once
+for real.
 
 ## Quick Start
 
@@ -211,8 +215,12 @@ Unknown YAML keys cause loud errors at load time (`#[serde(deny_unknown_fields)]
 
 ## Critical Rules
 
-0. **Load `development:rust-coding-standards` before writing Rust** — mandatory for every agent and subagent, before creating or editing any `.rs` file. Invoke it with the Skill tool first; don't write Rust from memory of the conventions. Spawned subagents that touch Rust must be told to load it too.
-1. **Core is a crate dependency** — consumed from crates.io; the sibling `../systemprompt-core` checkout IS editable for cross-repo work via the `[patch.crates-io]` toggle (publish + bump + re-comment before landing).
+0. **Load `development:rust-coding-standards` before writing Rust** — mandatory for every agent and subagent, before creating or editing any `.rs` file. Invoke it with the Skill tool first; don't write Rust from memory of the conventions. Spawned subagents that touch Rust must be told to load it too. Its style rules
+   apply here in full; its "Validation Workflow — before committing any code"
+   checklist does **not**. On `next` this repo's bar is the one in
+   [Branching & Release Flow](#branching--release-flow): it builds and it runs.
+   Those gates belong to `just gate`.
+1. **`next` builds against the sibling core checkout** — `[patch.crates-io]` in `Cargo.toml` is **live on `next`**, routing every `systemprompt-*` crate to `../systemprompt-core` (itself on its own `next`). Both repos move together: a core change is picked up by a rebuild here, with no crates.io release in between. `Dockerfile`'s `CORE_REV` pins the commit CI and the image build use — bump it, run `just prepare`, and commit the refreshed `.sqlx` in the same change. Re-comment the patch block only for a release that must build from crates.io alone.
 2. **Rust code -> `extensions/`** — All `.rs` files live here.
 3. **Config only -> `services/`** — YAML/Markdown only. No Rust code.
 4. **CSS files -> `storage/files/css/`** — NEVER put CSS in `extensions/*/assets/css/`.

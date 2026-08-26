@@ -62,6 +62,7 @@ jobs:
           # Docker until then.
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/checkout-core
 
       - uses: dtolnay/rust-toolchain@stable
         with:

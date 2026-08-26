@@ -1,0 +1,22 @@
+name: Checkout systemprompt-core
+description: >-
+  Clone systemprompt-core as a sibling of the workspace so the workspace's
+  [patch.crates-io] path dependencies resolve. The revision comes from the
+  Dockerfile's CORE_REV, keeping one pin for CI and the image build.
+
+runs:
+  using: composite
+  steps:
+    - name: Clone systemprompt-core at the pinned revision
+      shell: bash
+      run: |
+        set -euo pipefail
+        CORE_REV=$(sed -n 's/^ARG CORE_REV=\(.*\)$/\1/p' "$GITHUB_WORKSPACE/Dockerfile")
+        if [ -z "$CORE_REV" ]; then
+          echo "::error::No ARG CORE_REV found in Dockerfile."
+          exit 1
+        fi
+        DEST="$(dirname "$GITHUB_WORKSPACE")/systemprompt-core"
+        git clone --quiet https://github.com/systempromptio/systemprompt-core.git "$DEST"
+        git -C "$DEST" checkout --quiet "$CORE_REV"
+        echo "systemprompt-core at ${CORE_REV:0:9} -> $DEST"

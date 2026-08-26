@@ -63,7 +63,7 @@ fn governed_parts(payload: &GovernancePayload) -> (GovernedTarget, GovernedInput
     match payload.kind {
         PayloadKind::Prompt => (
             GovernedTarget::Prompt,
-            GovernedInput::prompt(payload.prompt.clone().unwrap_or_default()),
+            GovernedInput::prompt_text(payload.prompt.clone().unwrap_or_default()),
         ),
         PayloadKind::Tool => (
             payload
