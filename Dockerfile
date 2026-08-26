@@ -22,7 +22,7 @@ COPY . /src
 # that checkout at /systemprompt-core (= ../systemprompt-core from /src).
 # CORE_REV must match the committed .sqlx cache. The CI workflows no longer
 # clone core, so this pin is the only one left to keep in step.
-ARG CORE_REV=df697271349d756e84135a36b56f79ed929df421
+ARG CORE_REV=e1ff7ab5ee81ff0f6f28b18573330c5f313e5ad6
 RUN git clone https://github.com/systempromptio/systemprompt-core.git /systemprompt-core \
     && git -C /systemprompt-core checkout --quiet "$CORE_REV"
 

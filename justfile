@@ -352,6 +352,9 @@ prepare:
     # (first-time bootstrap before any build).
     if [ -x "{{CLI}}" ]; then
         echo "Applying pending migrations..."
+        if [ -z "${SYSTEMPROMPT_PROFILE:-}" ]; then
+            export SYSTEMPROMPT_PROFILE="local"
+        fi
         {{CLI}} infra db migrate
     else
         echo "Warning: no systemprompt binary yet; skipping migrate step."

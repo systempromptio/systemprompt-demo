@@ -206,7 +206,7 @@ Unknown YAML keys cause loud errors at load time (`#[serde(deny_unknown_fields)]
 ## Critical Rules
 
 0. **Load `development:rust-coding-standards` before writing Rust** — mandatory for every agent and subagent, before creating or editing any `.rs` file. Invoke it with the Skill tool first; don't write Rust from memory of the conventions. Spawned subagents that touch Rust must be told to load it too.
-1. **Core is a crate dependency** — consumed from crates.io; the sibling `../systemprompt-core` checkout IS editable for cross-repo work via the `[patch.crates-io]` toggle (publish + bump + re-comment before landing).
+1. **`next` builds against the sibling core checkout** — `[patch.crates-io]` in `Cargo.toml` is **live on `next`**, routing every `systemprompt-*` crate to `../systemprompt-core` (itself on its own `next`). Both repos move together: a core change is picked up by a rebuild here, with no crates.io release in between. `Dockerfile`'s `CORE_REV` pins the commit CI and the image build use — bump it, run `just prepare`, and commit the refreshed `.sqlx` in the same change. Re-comment the patch block only for a release that must build from crates.io alone.
 2. **Rust code -> `extensions/`** — All `.rs` files live here.
 3. **Config only -> `services/`** — YAML/Markdown only. No Rust code.
 4. **CSS files -> `storage/files/css/`** — NEVER put CSS in `extensions/*/assets/css/`.
